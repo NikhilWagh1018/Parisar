@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CycleAudit — Parisar Cycle Track Auditing Platform, Pune</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+<nav id="nav">
+  <a href="#" class="nav-logo">
+    <img src="assets/parisar-logo.png" alt="Parisar" style="height:32px;width:auto;display:block;">
+    <span class="ln-sep" style="width:1px;height:22px;background:var(--bd);margin:0 4px;display:inline-block;vertical-align:middle;"></span>
+    <span class="ln">CycleAudit</span>
+  </a>
+  <div class="nl" id="nl"><a href="#about">About</a><a href="#findings">Findings</a><a href="#features">Features</a><a href="#how">How It Works</a><a href="#scoring">Scoring</a><a href="#roads">Roads</a><a href="auth/login.php" class="cta">Start Audit</a></div>
+  <div class="ham" id="ham" onclick="document.getElementById('nl').classList.toggle('open')"><span></span><span></span><span></span></div>
+</nav>
+<section id="hero">
+  <div class="hbg"></div>
+  <div class="hl">
+    <div class="eyebrow"><span class="dot"></span>Parisar Initiative — Pune, Maharashtra</div>
+    <h1>Auditing Pune's<br><em>Cycle Tracks</em><br>Segment by Segment</h1>
+    <p class="hero-p">A systematic, data-driven field auditing platform built for Parisar's cycle track assessment programme. Surveyors document obstructions, surface conditions, intersections, and safety data across Pune's 19 cycle track roads — generating evidence for municipal advocacy and infrastructure improvement.</p>
+    <div class="hbtns"><a href="auth/login.php" class="btn-p">Start Your Audit →</a><a href="#about" class="btn-s">Learn More</a></div>
+    <div class="hm">
+      <div class="hm-item"><div class="num">19</div><div class="lbl">Roads Audited</div></div>
+      <div class="hm-item"><div class="num">35km</div><div class="lbl">Track Covered</div></div>
+      <div class="hm-item"><div class="num">77</div><div class="lbl">Segments</div></div>
+      <div class="hm-item"><div class="num">11%</div><div class="lbl">Rated "Good"</div></div>
+    </div>
+  </div>
+  <div class="hr">
+    <div style="position:relative;padding:18px 22px 18px 0">
+      <div class="fb t">&#10003; Audit Submitted</div>
+      <div class="hcard">
+        <div class="hc-lbl">Live Audit Dashboard — Sample</div>
+        <div class="hc-road">F.C. Road — Segment Analysis</div>
+        <div class="score-row">
+          <div class="sc-pill"><div class="sc">68</div><div class="sl">Safety</div></div>
+          <div class="sc-pill warn"><div class="sc">44</div><div class="sl">Continuity</div></div>
+          <div class="sc-pill"><div class="sc">74</div><div class="sl">Comfort</div></div>
+        </div>
+        <div class="segs">
+          <div class="sg"><div class="sgd ok"></div><div class="sg-n">Seg 1 · FC Rd Junction → Deccan</div><div class="sg-sc">72</div><span class="sg-b ok">Done</span></div>
+          <div class="sg"><div class="sgd ok"></div><div class="sg-n">Seg 2 · Deccan → Karve Statue</div><div class="sg-sc">58</div><span class="sg-b ok">Done</span></div>
+          <div class="sg"><div class="sgd pd"></div><div class="sg-n">Seg 3 · Karve Statue → Kothrud</div><div class="sg-sc">—</div><span class="sg-b pd">Pending</span></div>
+        </div>
+      </div>
+      <div class="fb b">⚠ 5 Obstructions Logged</div>
+    </div>
+  </div>
+</section>
+<div class="pb">
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <img src="assets/parisar-logo.png" alt="Parisar" style="height:30px;width:auto;filter:brightness(0) invert(1);opacity:.92;flex-shrink:0;">
+    <p class="pb-t"><strong>Parisar</strong> is a Pune-based NGO working on sustainable urban mobility since 1988. In December 2025, Parisar released its Cycle Track Audit Report (2024–25) covering 35 km across 19 roads — finding that <strong>only 11% of segments were rated "Good."</strong></p>
+  </div>
+  <a href="https://parisar.org" target="_blank" class="pb-a">Visit parisar.org →</a>
+</div>
+<section id="about"><div class="mw"><div class="ag">
+  <div class="rv">
+    <div class="ey">About the Platform</div><h2>Field Data That Drives Infrastructure Change</h2>
+    <p class="sub">CycleAudit is Parisar's internal auditing tool used by surveyors on the ground to document the real condition of Pune's cycle tracks. Every obstruction, broken surface, missing ramp, and dangerous intersection is recorded, scored, and converted into advocacy evidence.</p>
+    <div class="about-features">
+      <div class="af"><div class="af-ic">🗺️</div><div><h4>Geo-Referenced Segments</h4><p>Roads are divided into precise 500m segments with GPS coordinates, ensuring complete and consistent coverage.</p></div></div>
+      <div class="af"><div class="af-ic">📊</div><div><h4>Multi-Dimensional Scoring</h4><p>Safety, Continuity, and Comfort — three independent dimensions measured from real field observations and combined into a final weighted score.</p></div></div>
+      <div class="af"><div class="af-ic">📄</div><div><h4>Professional PDF Reports</h4><p>Auto-generate comprehensive stakeholder reports with segment scores, observations, and actionable recommendations.</p></div></div>
+      <div class="af"><div class="af-ic">🔒</div><div><h4>Surveyor Accounts</h4><p>Each audit is linked to a registered surveyor, enabling accountability and historical tracking of audit data over time.</p></div></div>
+    </div>
+  </div>
+  <div class="rv" style="transition-delay:.14s">
+    <div class="av-card">
+      <div><div class="av-big">🚴</div><div class="av-t">Why Cycle Track Audits Matter</div><div class="av-p">Pune has invested crores in cycle track infrastructure, yet most tracks remain underused or inaccessible. Systematic audits create a factual baseline that Parisar uses to advocate with the PMC for targeted repairs, encroachment removal, better lighting, and safer intersections.<br><br>The 2024–25 audit found poor continuity, dangerous intersections, and encroachment as the three most common issues — all documentable through this platform.</div></div>
+      <div class="av-ps"><span class="av-pi">Safety Analysis</span><span class="av-pi">Continuity</span><span class="av-pi">Comfort Ratings</span><span class="av-pi">Obstruction Mapping</span><span class="av-pi">Intersection Audit</span><span class="av-pi">Surface Quality</span></div>
+    </div>
+    <div class="astats" style="margin-top:16px">
+      <div class="asc"><div class="n">77</div><div class="l">Segments, 500m each</div></div>
+      <div class="asc"><div class="n">35km</div><div class="l">Total track covered</div></div>
+      <div class="asc"><div class="n">19</div><div class="l">Roads in Pune</div></div>
+      <div class="asc"><div class="n">3</div><div class="l">Score dimensions</div></div>
+    </div>
+  </div>
+</div></div></section>
+<section id="findings"><div class="mw">
+  <div class="ey">2024–25 Audit Findings</div><h2>What the Field Data Revealed</h2>
+  <p class="sub">Parisar's 2024–25 Cycle Track Audit uncovered critical deficiencies across Pune's cycle network — findings that drive the case for urgent infrastructure intervention.</p>
+  <div class="fg-grid">
+    <div class="fc rv"><div class="fc-ic">⚠️</div><div class="fc-num">11%</div><h4>Rated "Good"</h4><p>Only 11% of 77 audited segments met the threshold for Good quality — safe, continuous, and comfortable for everyday cyclists.</p></div>
+    <div class="fc rv" style="transition-delay:.08s"><div class="fc-ic">🚧</div><div class="fc-num">60%+</div><h4>Have Obstructions</h4><p>More than 60% of segments recorded fixed or movable obstructions blocking the cycle track, from hawkers to utility panels.</p></div>
+    <div class="fc rv" style="transition-delay:.16s"><div class="fc-ic">🔀</div><div class="fc-num">40%</div><h4>Missing Ramps</h4><p>Nearly 40% of intersection points lack proper on/off ramps, forcing cyclists to dismount — a critical continuity failure.</p></div>
+    <div class="fc rv" style="transition-delay:.24s"><div class="fc-ic">💡</div><div class="fc-num">35%</div><h4>No After-Sunset Lighting</h4><p>A third of all segments have no functional lighting after sunset, making night cycling unsafe and discouraging commuters.</p></div>
+    <div class="fc rv" style="transition-delay:.32s"><div class="fc-ic">🛣️</div><div class="fc-num">22%</div><h4>Missing Track Sections</h4><p>22% of segments have portions where the cycle track is entirely absent — forcing cyclists onto vehicular traffic lanes.</p></div>
+    <div class="fc rv" style="transition-delay:.40s"><div class="fc-ic">🚶</div><div class="fc-num">55%</div><h4>Pedestrian Conflict</h4><p>More than half of all segments reported pedestrians regularly walking on the cycle track, reducing usable width.</p></div>
+  </div>
+</div></section>
+<section id="features"><div class="mw">
+  <div class="feat-hd">
+    <div class="rv"><div class="ey">Platform Features</div><h2>Everything Needed for a Complete Field Audit</h2></div>
+    <div class="rv" style="transition-delay:.1s"><p class="sub">CycleAudit captures every dimension of cycle track quality — from surface material to obstruction counts — in a structured, repeatable format that ensures consistency across all surveyors.</p></div>
+  </div>
+  <div class="feat-grid">
+    <div class="feat rv"><div class="f-ic">🛡️</div><h3>Safety Analysis</h3><p>Evaluate buffer zones, lighting conditions, intersection risk, and parked vehicle conflicts to measure how safe each segment is for everyday cyclists.</p><span class="f-tag">Buffer · Lighting · Traffic</span></div>
+    <div class="feat rv" style="transition-delay:.08s"><div class="f-ic">🔗</div><h3>Continuity Score</h3><p>Track missing sections, total obstruction counts, ramp quality at intersections, and signage presence to assess uninterrupted cycling flow.</p><span class="f-tag">Ramps · Signage · Gaps</span></div>
+    <div class="feat rv" style="transition-delay:.16s"><div class="f-ic">🌿</div><h3>Comfort Ratings</h3><p>Assess surface material type, shade coverage, pedestrian conflict frequency, and footpath quality to determine cyclist comfort.</p><span class="f-tag">Surface · Shade · Footpath</span></div>
+    <div class="feat rv" style="transition-delay:.24s"><div class="f-ic">📍</div><h3>Obstruction Mapping</h3><p>Document fixed, movable, and parked vehicle obstructions with specific type, count, and severity across every segment.</p><span class="f-tag">Fixed · Movable · Parked</span></div>
+    <div class="feat rv" style="transition-delay:.32s"><div class="f-ic">🔀</div><h3>Intersection Audit</h3><p>Capture on/off ramp quality, markings, signage, and traffic device presence at every intersection point along the track.</p><span class="f-tag">Ramps · Markings · Devices</span></div>
+    <div class="feat rv" style="transition-delay:.40s"><div class="f-ic">📈</div><h3>PDF Report Export</h3><p>Generate professional audit reports with segment scores, key observations, critical issues, and actionable recommendations in one click.</p><span class="f-tag">Auto-generated · Parisar-branded</span></div>
+  </div>
+</div></section>
+<section id="how"><div class="mw"><div class="how-g">
+  <div class="rv">
+    <div class="ey">Audit Process</div><h2>How a Cycle Track Audit Works</h2>
+    <p class="sub" style="margin-bottom:32px">A structured 5-step process ensures every segment is audited consistently by any surveyor in the field — from road setup to final PDF export.</p>
+    <div class="steps">
+      <div class="step act"><div class="stc">1</div><div class="stb"><h4>Define the Road</h4><p>Select a road from Pune's 19 cycle track roads. Enter start/end landmarks, total length, and GPS coordinates.</p><span class="st-chip">segment.php</span></div></div>
+      <div class="step"><div class="stc">2</div><div class="stb"><h4>Generate Segments</h4><p>Auto-divide the road into standard 500m segments, or manually define custom boundaries with landmark names.</p><span class="st-chip">Auto or Manual</span></div></div>
+      <div class="step"><div class="stc">3</div><div class="stb"><h4>Field Audit Each Segment</h4><p>For each segment, fill in landmarks, obstructions (30+ types), intersections, surface issues, lighting, and footpath data.</p><span class="st-chip">form.html</span></div></div>
+      <div class="step"><div class="stc">4</div><div class="stb"><h4>Submit and Auto-Score</h4><p>Data is stored in MySQL. Safety, Continuity, and Comfort scores are calculated automatically from submitted responses.</p><span class="st-chip">submit.php</span></div></div>
+      <div class="step"><div class="stc">5</div><div class="stb"><h4>Download PDF Report</h4><p>Generate a professional PDF with segment scores, key observations, critical issues, and recommendations for PMC.</p><span class="st-chip">report.php</span></div></div>
+    </div>
+  </div>
+  <div class="rv how-cards" style="transition-delay:.14s">
+    <div class="how-card"><div class="hc-hd"><div class="ic">📋</div><h4>What Gets Audited Per Segment</h4></div><p>Start/end landmarks · GPS coordinates · Fixed obstructions (12 types) · Movable obstructions (6 types) · Parked vehicle causes (6 types) · Track surface issues · Overhead obstructions · Intersection data · Footpath rating · Lighting · Shade · Buffer zone · Geometry type · Dimensions · Surveyor comments</p></div>
+    <div class="how-card"><div class="hc-hd"><div class="ic">🔒</div><h4>Segment Locking</h4></div><p>Once a segment is submitted, it is automatically locked to prevent duplicate entries. Surveyors can view submitted data but cannot overwrite it — ensuring data integrity across the entire audit.</p></div>
+    <div class="how-card"><div class="hc-hd"><div class="ic">🎯</div><h4>Road-Level Final Score</h4></div><p>Once all segments are audited, a weighted final score (0–100) is calculated using segment lengths as weights. Roads scoring below 50 are rated "Poor" and flagged for priority intervention.</p></div>
+  </div>
+</div></div></section>
+<section id="scoring"><div class="mw">
+  <div class="sc-intro">
+    <div class="rv"><div class="ey">Scoring Methodology</div><h2>How Scores Are Calculated</h2><p class="sub">Each segment receives three independent scores — Safety, Continuity, and Comfort — which are averaged into a final score from 0 to 100.</p></div>
+    <div class="rv" style="transition-delay:.1s;background:#fff;border-radius:14px;padding:24px;border:1px solid var(--bd)">
+      <div style="font-size:.8rem;color:var(--gray);margin-bottom:12px;font-weight:600">Rating Scale</div>
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:12px;height:12px;border-radius:50%;background:#16a34a;flex-shrink:0"></div><div style="font-size:.85rem;font-weight:600">80–100 → <span style="color:#16a34a">Good</span> — Safe and usable for everyday cycling</div></div>
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:12px;height:12px;border-radius:50%;background:#d97706;flex-shrink:0"></div><div style="font-size:.85rem;font-weight:600">50–79 → <span style="color:#d97706">Moderate</span> — Usable with significant issues</div></div>
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:12px;height:12px;border-radius:50%;background:#dc2626;flex-shrink:0"></div><div style="font-size:.85rem;font-weight:600">0–49 → <span style="color:#dc2626">Poor</span> — Unsafe or unusable for most cyclists</div></div>
+      </div>
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);font-size:.78rem;color:var(--gray)">Final Score = 100 minus Average Penalty across Safety, Continuity, and Comfort</div>
+    </div>
+  </div>
+  <div class="score-cards">
+    <div class="scr-card rv"><div class="scr-ic">🛡️</div><h3>Safety Score</h3><p>Measures risks that could cause accidents or discourage use of the track.</p><div class="scr-items"><div class="scr-it">Buffer zone presence</div><div class="scr-it">After-sunset lighting</div><div class="scr-it">Intersection traffic devices</div><div class="scr-it">Partial obstruction count</div></div></div>
+    <div class="scr-card b2 rv" style="transition-delay:.1s"><div class="scr-ic">🔗</div><h3>Continuity Score</h3><p>Measures whether a cyclist can travel the segment without interruption.</p><div class="scr-items"><div class="scr-it">Missing ramps at intersections</div><div class="scr-it">Missing markings and signage</div><div class="scr-it">Total obstruction count</div><div class="scr-it">Missing track sections</div></div></div>
+    <div class="scr-card b3 rv" style="transition-delay:.2s"><div class="scr-ic">🌿</div><h3>Comfort Score</h3><p>Measures how pleasant and comfortable the segment is to cycle on.</p><div class="scr-items"><div class="scr-it">Surface material type</div><div class="scr-it">Cyclist slowed by obstructions</div><div class="scr-it">Shade availability</div><div class="scr-it">Footpath quality rating</div></div></div>
+  </div>
+</div></section>
+<section id="impact"><div class="mw">
+  <div class="ey">Why It Matters</div><h2>Driving Change Through Evidence</h2>
+  <p class="sub">Systematic data empowers Parisar to push for meaningful cycle infrastructure improvements from Pune Municipal Corporation — backed by field evidence, not opinion.</p>
+  <div class="imp-g">
+    <div class="ic-card rv"><div class="big">🏙️</div><div class="n">19</div><div class="l">Roads in Pune's Cycle Network</div></div>
+    <div class="ic-card rv" style="transition-delay:.08s"><div class="big">📏</div><div class="n">500m</div><div class="l">Standard Segment Length</div></div>
+    <div class="ic-card rv" style="transition-delay:.16s"><div class="big">🧪</div><div class="n">3</div><div class="l">Score Dimensions Measured</div></div>
+    <div class="ic-card rv" style="transition-delay:.24s"><div class="big">🚴</div><div class="n">100%</div><div class="l">Field-Data Driven Scores</div></div>
+  </div>
+</div></section>
+<section id="roads"><div class="mw">
+  <div class="ey">Coverage</div><h2>Roads in the Audit Network</h2>
+  <p class="sub">These 19 roads across Pune are part of the PMC cycle track network and are covered by this auditing platform.</p>
+  <div class="rg">
+    <div class="rc">BANER ROAD</div><div class="rc">BIBVEWADI ROAD</div><div class="rc">DECCAN COLLEGE ROAD</div>
+    <div class="rc">DP ROAD</div><div class="rc">F.C. ROAD</div><div class="rc">GANGADHAM ROAD</div>
+    <div class="rc">J.M. ROAD</div><div class="rc">KARVE ROAD</div><div class="rc">KHADKI ROAD</div>
+    <div class="rc">PASHAN ROAD</div><div class="rc">PASHAN SUS ROAD</div><div class="rc">PMC ROAD</div>
+    <div class="rc">PRATHAMESH PARK ROAD</div><div class="rc">SANGAMWADI ROAD</div><div class="rc">S.B. ROAD</div>
+    <div class="rc">SINHAGAD ROAD</div><div class="rc">SPICER COLLEGE ROAD</div><div class="rc">SWAMI VIVEKANAD ROAD</div>
+    <div class="rc">COLLEGE ROAD</div>
+  </div>
+</div></section>
+<section id="cta"><div class="mw"><div class="cta-inner">
+  <div class="ey" style="justify-content:center">Get Started</div>
+  <h2>Ready to Audit a Cycle Track?</h2>
+  <p class="sub">Register as a surveyor, pick a road, and start contributing to Pune's cycle infrastructure dataset. Your field data helps Parisar advocate for safer, better cycling conditions.</p>
+  <div class="cta-bs"><a href="auth/register.php" class="btn-p">Register as Surveyor</a><a href="auth/login.php" class="btn-s">Sign In</a></div>
+</div></div></section>
+<footer><div class="mw">
+  <div class="fg-wrap">
+    <div class="fb-brand">
+      <img src="assets/parisar-logo.png" alt="Parisar" style="height:28px;width:auto;filter:brightness(0) invert(1);opacity:.85;margin-bottom:10px;display:block;">
+      <div class="bn">CycleAudit</div>
+      <p>A Parisar initiative to systematically audit and improve cycle track infrastructure across Pune using field data and evidence-based scoring.</p>
+    </div>
+    <div class="fcol"><h5>Platform</h5><a href="auth/login.php">Login</a><a href="auth/register.php">Register</a><a href="pages/segment.php">Start Audit</a><a href="pages/road_result.php">View Results</a></div>
+    <div class="fcol"><h5>Parisar</h5><a href="https://parisar.org" target="_blank">parisar.org</a><a href="https://parisar.org/what-we-do/urban-transport" target="_blank">Urban Transport</a><a href="https://parisar.org/contact-us" target="_blank">Contact</a></div>
+    <div class="fcol"><h5>Audit Scope</h5><a href="#roads">19 Roads</a><a href="#scoring">Scoring Method</a><a href="#findings">2024–25 Findings</a></div>
+  </div>
+  <div class="fb-bot"><span>2026 CycleAudit — Built for <span class="pb-cr">Parisar, Pune</span></span><span>PHP · MySQL · Vanilla JS</span></div>
+</div></footer>
+<button id="topBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<script src="js/landing.js"></script>
+</body>
+</html>

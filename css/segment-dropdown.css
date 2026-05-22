@@ -1,0 +1,56 @@
+/* css/segment-dropdown.css — road search dropdown, extracted from pages/segment.php */
+
+    /* ── Searchable Road Dropdown ── */
+    .road-search-wrap { position: relative; }
+
+    .road-search-input {
+      width: 100%; box-sizing: border-box;
+      padding: 10px 38px 10px 14px;
+      border: 1.5px solid #d1d9c8; border-radius: 8px;
+      font-size: 14px; font-family: inherit; color: #1a2e0e;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b8f4e' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat right 12px center;
+      background-size: 16px;
+      cursor: pointer; transition: border-color .2s;
+    }
+    .road-search-input:focus { outline: none; border-color: #4a7c2f; box-shadow: 0 0 0 3px rgba(74,124,47,.12); }
+    .road-search-input.has-value { background-image: none; padding-right: 14px; }
+
+    .road-dropdown {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: #fff; border: 1.5px solid #d1d9c8; border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12); z-index: 999;
+      max-height: 280px; overflow-y: auto;
+    }
+    .road-dropdown.open { display: block; }
+
+    .road-dropdown-item {
+      padding: 10px 14px; font-size: 13.5px; cursor: pointer;
+      color: #1a2e0e; transition: background .15s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .road-dropdown-item:hover, .road-dropdown-item.highlighted { background: #f0f7ea; }
+    .road-dropdown-item.pinned {
+      border-bottom: 1px solid #e8f0e0;
+      color: #3d7a1f; font-weight: 600;
+      background: #f5fbee;
+    }
+    .road-dropdown-item.pinned:hover { background: #eaf5df; }
+    .road-dropdown-item .match-bold { font-weight: 700; color: #4a7c2f; }
+    .road-dropdown-empty {
+      padding: 12px 14px; font-size: 13px; color: #9aaa88; text-align: center;
+    }
+    .road-dropdown-section-label {
+      padding: 6px 14px 4px; font-size: 11px; font-weight: 600;
+      color: #9aaa88; text-transform: uppercase; letter-spacing: .05em;
+      border-bottom: 1px solid #f0f5ea;
+    }
+
+    /* Custom road text input (shown when Other selected) */
+    .custom-road-wrap {
+      overflow: hidden; max-height: 0; opacity: 0;
+      transition: max-height .35s ease, opacity .3s ease, margin .3s ease;
+      margin-top: 0;
+    }
+    .custom-road-wrap.open { max-height: 120px; opacity: 1; margin-top: 12px; }
+    .road-hint { font-size: 11px; color: #9aaa88; margin-top: 4px; }
+    .road-hint.err { color: #dc2626; }

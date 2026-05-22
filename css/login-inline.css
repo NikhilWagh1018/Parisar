@@ -1,0 +1,18 @@
+/* login-inline.css — extracted from login.php */
+
+    .btn-google {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; width: 100%; padding: 13px 16px;
+      background: #fff; color: #3c4043; border: 1.5px solid #dadce0;
+      border-radius: 10px; font-family: 'DM Sans', sans-serif;
+      font-size: .95rem; font-weight: 600; cursor: pointer;
+      text-decoration: none; transition: all .22s ease;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .btn-google:hover { background: #f8fafc; border-color: #c0c8d0; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+    .divider-row {
+      display: flex; align-items: center; gap: 12px;
+      margin: 22px 0; font-size: .78rem; color: #b8c9a8;
+    }
+    .divider-row::before, .divider-row::after { content: ''; flex: 1; height: 1px; background: #e0ead4; }
+  
