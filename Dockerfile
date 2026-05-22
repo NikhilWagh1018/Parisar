@@ -10,7 +10,9 @@ RUN apt-get update && apt-get install -y \
     php8.1-curl \
     php8.1-mbstring \
     php8.1-xml \
+    php8.1-json \
     libapache2-mod-php8.1 \
+    curl \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
@@ -20,7 +22,8 @@ COPY . .
 
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf \
     && chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html
+    && chmod -R 755 /var/www/html \
+    && chmod -R 775 /var/www/html/assets
 
 EXPOSE 80
 CMD ["apache2ctl", "-D", "FOREGROUND"]
