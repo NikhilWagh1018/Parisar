@@ -15,6 +15,9 @@ RUN apt-get update && apt-get install -y \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
+RUN echo "display_errors = On" >> /etc/php/8.1/apache2/php.ini \
+    && echo "error_reporting = E_ALL" >> /etc/php/8.1/apache2/php.ini
+
 WORKDIR /var/www/html
 RUN rm -f /var/www/html/index.html
 COPY . .
