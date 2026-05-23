@@ -541,8 +541,9 @@ function editAuditedSegment(segId) {
 }
 
 function viewSegmentResult(segId) {
-  const params = new URLSearchParams(window.location.search);
-  const roadId = params.get('road_id') || '';
+  // _currentRoadId is always set once segments load; fall back to URL param
+  const params  = new URLSearchParams(window.location.search);
+  const roadId  = _currentRoadId || params.get('road_id') || '';
   window.location.href = `view.php?segment_id=${segId}${roadId ? '&road_id=' + roadId : ''}`;
 }
 
