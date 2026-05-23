@@ -379,9 +379,12 @@ function clearError(id) {
 
 
 // ── Reset / Confirm ────────────────────────────────────────────
-function resetForm()    { document.getElementById('confirmOverlay').classList.add('show');    }
-function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('show'); }
-function doReset()      { location.reload(); }
+function resetForm()    { document.getElementById('confirmOverlay').classList.add('active');    }
+function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('active'); }
+function doReset() {
+  // In edit mode, reload preserves ?edit_mode=1 so pre-fill runs again
+  location.reload();
+}
 
 // ── Scroll to top ──────────────────────────────────────────────
 window.addEventListener('scroll', () => {
@@ -542,6 +545,24 @@ async function prefillFormIfEditMode() {
     console.warn('Could not pre-fill form:', err);
   }
 }
+
+// ── Radio toggle (click same radio again to uncheck) ───────────
+(function initRadioToggle() {
+  // Track which radio was checked before the click
+  document.addEventListener('mousedown', e => {
+    if (e.target.type === 'radio') {
+      e.target.dataset.wasChecked = e.target.checked ? '1' : '0';
+    }
+  });
+  document.addEventListener('click', e => {
+    if (e.target.type === 'radio' && e.target.dataset.wasChecked === '1') {
+      e.target.checked = false;
+      e.target.dataset.wasChecked = '0';
+      // Fire change so any dependent handlers (toggleMissingLength, updateFootpathScore) react
+      e.target.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
+})();
 
 // ── Init ───────────────────────────────────────────────────────
 ['fixed','movable','parked'].forEach(t => renderList(t, ''));
