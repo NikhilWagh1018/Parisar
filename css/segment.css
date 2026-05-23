@@ -597,6 +597,17 @@ input::placeholder { color: var(--gray-light); }
   background: #fee2e2;
 }
 
+.btn-warning {
+  background: #fff8e1;
+  color: #7a5c00;
+  border: 1.5px solid #f6c90e;
+}
+
+.btn-warning:hover {
+  background: #fff3cd;
+  border-color: #e0b800;
+}
+
 .btn-sm { padding: 7px 13px; font-size: .8rem; }
 .btn-lg { padding: 13px 24px; font-size: .95rem; }
 

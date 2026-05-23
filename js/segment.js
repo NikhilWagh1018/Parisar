@@ -489,7 +489,7 @@ function displaySegments() {
       ${statusHtml}
       <div class="seg-actions">
         ${isDone
-          ? `<button class="btn btn-secondary btn-sm" disabled style="opacity:.5">🔒 Locked</button>
+          ? `<button class="btn btn-warning btn-sm" onclick="editAuditedSegment(${seg.id})">✏️ Edit</button>
              <button class="btn btn-secondary btn-sm" onclick="viewSegmentResult(${seg.id})">Results</button>`
           : `<button class="btn btn-primary btn-sm" onclick="auditSegment(${seg.id})">Start Audit</button>`}
       </div>`;
@@ -507,6 +507,37 @@ function auditSegment(segId) {
   const sessionParam = window._currentSessionId
     ? `&session_id=${window._currentSessionId}` : '';
   window.location.href = `form.php?segment_id=${segId}${sessionParam}`;
+}
+
+function editAuditedSegment(segId) {
+  const seg = segments.find(s => s.id === segId);
+  if (!seg) return;
+
+  if (!confirm(
+    `Re-open Segment ${seg.number} for editing?\n\n` +
+    `Your previous answers will be loaded so you only need to correct what changed.`
+  )) return;
+
+  const csrf = document.querySelector('meta[name="csrf"]')?.content ?? '';
+
+  fetch('../api/segments/unlock.php', {
+    method : 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+    body   : JSON.stringify({ segment_id: segId })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      // Pass edit_mode=1 so form.js fetches and pre-fills existing answers
+      const sessionParam = window._currentSessionId
+        ? `&session_id=${window._currentSessionId}` : '';
+      window.location.href =
+        `form.php?segment_id=${segId}&edit_mode=1${sessionParam}`;
+    } else {
+      alert('Could not unlock segment: ' + (data.error ?? 'Unknown error'));
+    }
+  })
+  .catch(() => alert('Network error — please try again.'));
 }
 
 function viewSegmentResult(segId) {

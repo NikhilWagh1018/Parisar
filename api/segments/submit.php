@@ -42,6 +42,9 @@ if ($sessionId <= 0 || $segmentId <= 0) {
     exit;
 }
 
+// ── Edit mode: update existing record instead of inserting ───
+$editMode = !empty($_POST['edit_mode']) && $_POST['edit_mode'] === '1';
+
 // ── Required text fields ───────────────────────────────────────
 $required = ['start_landmark', 'end_landmark', 'gps_start', 'gps_end'];
 foreach ($required as $field) {
@@ -104,7 +107,7 @@ try {
         exit;
     }
 
-    // ── 3. INSERT segment_audit ────────────────────────────────
+    // ── 3. INSERT or UPDATE segment_audit ────────────────────
     $mainFields = [
         'start_landmark', 'end_landmark', 'gps_start', 'gps_end',
         'cycle_track_missing', 'missing_length', 'cyclist_use', 'better_surface',
@@ -120,34 +123,72 @@ try {
         $mainFields
     );
 
-    $placeholders = implode(',', array_fill(0, count($mainFields), '?'));
-    $columns      = implode(',', $mainFields);
-
-    $pdo->prepare(
-        "INSERT INTO segment_audits (session_id, segment_id, surveyor_id, {$columns})
-         VALUES (?, ?, ?, {$placeholders})"
-    )->execute(array_merge([$sessionId, $segmentId, $CURRENT_USER_ID], $mainValues));
-
-    $auditId = (int)$pdo->lastInsertId();
-
-    // ── FIX: Generate public_id in PHP ─────────────────────────
-    $auditPublicId = 'SA-' . str_pad((string)$auditId, 4, '0', STR_PAD_LEFT);
-    $pdo->prepare('UPDATE segment_audits SET public_id = ? WHERE id = ?')
-        ->execute([$auditPublicId, $auditId]);
-
-    // ── JSON multi-select fields ───────────────────────────────
+    // JSON multi-select fields
     $surfaceIssues  = json_encode(array_values(array_filter((array)($_POST['surface_issues']  ?? []))));
     $overheadIssues = json_encode(array_values(array_filter((array)($_POST['overhead_issues'] ?? []))));
     $footpathRating = json_encode(array_values(array_filter((array)($_POST['footpath_rating'] ?? []))));
+    $footpathScore  = min(100, count(json_decode($footpathRating, true) ?? []) * 20);
 
-    // ── FIX 1: Cap footpath_score at 100 ──────────────────────
-    $footpathScore = min(100, count(json_decode($footpathRating, true) ?? []) * 20);
+    if ($editMode) {
+        // ── EDIT: update the most-recent audit row ─────────────
+        $stmtExisting = $pdo->prepare(
+            'SELECT id FROM segment_audits WHERE segment_id = ? ORDER BY id DESC LIMIT 1'
+        );
+        $stmtExisting->execute([$segmentId]);
+        $existingAudit = $stmtExisting->fetch(PDO::FETCH_ASSOC);
 
-    $pdo->prepare(
-        'UPDATE segment_audits
-         SET surface_issues = ?, overhead_issues = ?, footpath_rating = ?, footpath_score = ?
-         WHERE id = ?'
-    )->execute([$surfaceIssues, $overheadIssues, $footpathRating, $footpathScore, $auditId]);
+        if (!$existingAudit) {
+            // Fallback: no prior record — treat as a fresh insert
+            $editMode = false;
+        } else {
+            $auditId = (int)$existingAudit['id'];
+
+            $setClauses = implode(', ', array_map(fn($f) => "{$f} = ?", $mainFields));
+            $pdo->prepare(
+                "UPDATE segment_audits
+                    SET {$setClauses},
+                        surface_issues = ?, overhead_issues = ?,
+                        footpath_rating = ?, footpath_score = ?,
+                        surveyor_id = ?, session_id = ?
+                  WHERE id = ?"
+            )->execute(array_merge(
+                $mainValues,
+                [$surfaceIssues, $overheadIssues, $footpathRating, $footpathScore,
+                 $CURRENT_USER_ID, $sessionId, $auditId]
+            ));
+
+            $auditPublicId = 'SA-' . str_pad((string)$auditId, 4, '0', STR_PAD_LEFT);
+
+            // Delete old obstructions and intersections so they
+            // can be re-inserted cleanly from the edited form data.
+            $pdo->prepare('DELETE FROM obstructions   WHERE audit_id = ?')->execute([$auditId]);
+            $pdo->prepare('DELETE FROM intersections  WHERE audit_id = ?')->execute([$auditId]);
+        }
+    }
+
+    if (!$editMode) {
+        // ── FRESH INSERT ───────────────────────────────────────
+        $placeholders = implode(',', array_fill(0, count($mainFields), '?'));
+        $columns      = implode(',', $mainFields);
+
+        $pdo->prepare(
+            "INSERT INTO segment_audits (session_id, segment_id, surveyor_id, {$columns})
+             VALUES (?, ?, ?, {$placeholders})"
+        )->execute(array_merge([$sessionId, $segmentId, $CURRENT_USER_ID], $mainValues));
+
+        $auditId = (int)$pdo->lastInsertId();
+
+        // Generate public_id
+        $auditPublicId = 'SA-' . str_pad((string)$auditId, 4, '0', STR_PAD_LEFT);
+        $pdo->prepare('UPDATE segment_audits SET public_id = ? WHERE id = ?')
+            ->execute([$auditPublicId, $auditId]);
+
+        $pdo->prepare(
+            'UPDATE segment_audits
+             SET surface_issues = ?, overhead_issues = ?, footpath_rating = ?, footpath_score = ?
+             WHERE id = ?'
+        )->execute([$surfaceIssues, $overheadIssues, $footpathRating, $footpathScore, $auditId]);
+    }
 
     // ── 4. INSERT obstructions ─────────────────────────────────
     $obsCategories = [

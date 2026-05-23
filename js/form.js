@@ -7,6 +7,7 @@
 const urlParams  = new URLSearchParams(window.location.search);
 const segmentId  = urlParams.get('segment_id');
 const sessionId  = urlParams.get('session_id');
+const editMode   = urlParams.get('edit_mode') === '1';
 
 // road_id comes from a PHP-injected hidden field (not URL) since form.php looks it up
 function getRoadId() {
@@ -23,6 +24,19 @@ if (sessionId) {
   const h = document.getElementById('session_id');
   if (h) h.value = sessionId;
 }
+// Persist edit_mode so submit.php knows to UPDATE, not INSERT
+(function () {
+  let hEdit = document.getElementById('edit_mode');
+  if (!hEdit) {
+    hEdit = document.createElement('input');
+    hEdit.type = 'hidden';
+    hEdit.name = 'edit_mode';
+    hEdit.id   = 'edit_mode';
+    const form = document.getElementById('auditForm');
+    if (form) form.appendChild(hEdit);
+  }
+  hEdit.value = editMode ? '1' : '0';
+})();
 
 // ── CSRF token ─────────────────────────────────────────────────
 function getCsrf() {
@@ -375,5 +389,160 @@ window.addEventListener('scroll', () => {
   if (btn) btn.classList.toggle('visible', window.scrollY > 300);
 });
 
+// ── Pre-fill helpers ───────────────────────────────────────────
+
+function prefillObstructions(obstructions) {
+  if (!obstructions || !obstructions.length) return;
+  obstructions.forEach(o => {
+    const type    = o.category;   // 'fixed' | 'movable' | 'parked'
+    const label   = o.type;       // e.g. 'Trees'
+    const id      = type + '_' + label.replace(/\W/g, '_');
+
+    // Tick the checkbox in the dropdown (renderList builds the DOM)
+    const cb = document.getElementById(id);
+    if (cb) {
+      cb.checked = true;
+      // Fire toggleObstruction to create the counter block
+      toggleObstruction(type, label);
+    }
+
+    // Set counter values
+    const setCounter = (suffix, val) => {
+      const el = document.getElementById(id + suffix);
+      if (el) el.value = val || 0;
+    };
+    setCounter('_slowed',  o.slowed);
+    setCounter('_partial', o.partial);
+    setCounter('_total',   o.total);
+  });
+}
+
+function prefillIntersections(intersections) {
+  if (!intersections || !intersections.length) return;
+  intersections.forEach(saved => {
+    addIntersection();                           // creates card, pushes uid
+    const uid = intUIDCounter;                   // uid just assigned
+    const p   = 'int' + uid + '_';
+
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val != null) el.value = val;
+    };
+    const setRadio = (name, val) => {
+      if (!val) return;
+      const el = document.querySelector(`input[name="${name}"][value="${val}"]`);
+      if (el) el.checked = true;
+    };
+
+    setVal(p + 'gps',  saved.gps_coords);
+    setVal(p + 'name', saved.landmark_name);
+    setRadio(p + 'offRamp',         saved.off_ramp);
+    setRadio(p + 'onRamp',          saved.on_ramp);
+    setRadio(p + 'Markings',        saved.markings);
+    setRadio(p + 'Signage',         saved.signage);
+    setRadio(p + 'TrafficCalming',  saved.traffic_calming);
+    setRadio(p + 'Discontinuity',   saved.discontinuity);
+    setRadio(p + 'Tapering',        saved.tapering);
+    setRadio(p + 'ObstructionType', saved.obstruction_type);
+  });
+}
+
+async function prefillFormIfEditMode() {
+  if (!editMode || !segmentId) return;
+
+  // Show a subtle banner so the user knows data was loaded
+  const heading = document.querySelector('.form-page-heading');
+  if (heading) {
+    const banner = document.createElement('div');
+    banner.style.cssText =
+      'background:#fff8e1;border:1px solid #f6c90e;border-radius:8px;' +
+      'padding:10px 16px;margin-bottom:16px;font-size:13px;color:#7a5c00;';
+    banner.innerHTML =
+      '✏️ <strong>Edit mode</strong> — your previous answers have been loaded. ' +
+      'Review, correct anything, then re-submit.';
+    heading.insertAdjacentElement('afterend', banner);
+  }
+
+  try {
+    const csrf = getCsrf();
+    const res  = await fetch(
+      `../api/segments/audit-data.php?segment_id=${segmentId}`,
+      { headers: { 'X-CSRF-Token': csrf } }
+    );
+    const data = await res.json();
+    if (!data.success || !data.audit) return;
+
+    const a = data.audit;
+
+    // ── Text inputs ─────────────────────────────────────────
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && val != null) el.value = val;
+    };
+    setVal('startLandmark', a.start_landmark);
+    setVal('endLandmark',   a.end_landmark);
+    setVal('gpsStart',      a.gps_start);
+    setVal('gpsEnd',        a.gps_end);
+    setVal('missingLength', a.missing_length);
+    setVal('signageCount',  a.signage_count);
+
+    // ── Radio buttons ────────────────────────────────────────
+    const setRadio = (name, val) => {
+      if (!val) return;
+      const el = document.querySelector(`input[name="${name}"][value="${val}"]`);
+      if (el) {
+        el.checked = true;
+        el.dispatchEvent(new Event('change'));   // trigger any onchange handlers
+      }
+    };
+    setRadio('cycle_track_missing', a.cycle_track_missing);
+    setRadio('cyclist_use',         a.cyclist_use);
+    setRadio('better_surface',      a.better_surface);
+    setRadio('surface_material',    a.surface_material);
+    setRadio('people_walking',      a.people_walking);
+    setRadio('shade',               a.shade);
+    setRadio('light_after_sunset',  a.light_after_sunset);
+    setRadio('track_geometry',      a.track_geometry);
+    setRadio('buffer_zone',         a.buffer_zone);
+
+    // ── Checkboxes (surface_issues, overhead_issues, footpath_rating)
+    const tickCheckboxes = (name, values) => {
+      if (!Array.isArray(values)) return;
+      values.forEach(val => {
+        const el = document.querySelector(
+          `input[name="${name}"][value="${val}"]`
+        );
+        if (el) {
+          el.checked = true;
+          el.dispatchEvent(new Event('change'));
+        }
+      });
+    };
+    tickCheckboxes('surface_issues[]',  a.surface_issues);
+    tickCheckboxes('overhead_issues[]', a.overhead_issues);
+    tickCheckboxes('footpath_rating[]', a.footpath_rating);
+    updateFootpathScore();
+
+    // ── Dimensions / comments ────────────────────────────────
+    const setByName = (name, val) => {
+      const el = document.querySelector(`[name="${name}"]`);
+      if (el && val != null) el.value = val;
+    };
+    setByName('segment_width',  a.segment_width);
+    setByName('segment_length', a.segment_length);
+    setByName('comments',       a.comments);
+
+    // ── Obstructions ─────────────────────────────────────────
+    prefillObstructions(data.obstructions);
+
+    // ── Intersections ────────────────────────────────────────
+    prefillIntersections(data.intersections);
+
+  } catch (err) {
+    console.warn('Could not pre-fill form:', err);
+  }
+}
+
 // ── Init ───────────────────────────────────────────────────────
 ['fixed','movable','parked'].forEach(t => renderList(t, ''));
+prefillFormIfEditMode();
