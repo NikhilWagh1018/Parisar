@@ -164,7 +164,7 @@ foreach ($segs as $seg) {
         json_decode((string)($saRow['overhead_issues'] ?? '[]'), true) ?: []
     ));
 
-    if ($sr['rating'] === 'Poor') $poorSegs[] = "Segment $segNum";
+    if (in_array($sr['rating'], ['Poor','Bad','Very Bad'])) $poorSegs[] = "Segment $segNum";
 
     $totalObsCount += $det['obs_total'];
     $totalNoRamps  += $det['no_ramps'];
