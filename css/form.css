@@ -137,17 +137,18 @@
     }
     .counter-ctrl button:hover { background: #4a7c2f; color: #fff; }
     .counter-ctrl input[type="number"] {
-      width: 56px; border: none;
+      width: 72px; border: none;
       border-left: 1.5px solid #c8e89a;
       border-right: 1.5px solid #c8e89a;
       text-align: center; font-size: 14px; font-weight: 700;
       color: #1a2e0e;
-      margin: 0; padding: 6px 4px; height: 36px;
+      margin: 0; padding: 6px 8px; height: 36px;
       background: #fff;
       -moz-appearance: textfield;
+      box-sizing: border-box;
     }
     .counter-ctrl input[type="number"]::-webkit-inner-spin-button,
-    .counter-ctrl input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .counter-ctrl input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
     /* ── Conditional missing length ── */
     #missingLengthBox {
