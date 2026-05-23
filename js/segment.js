@@ -541,7 +541,9 @@ function editAuditedSegment(segId) {
 }
 
 function viewSegmentResult(segId) {
-  window.location.href = `view.php?segment_id=${segId}`;
+  const params = new URLSearchParams(window.location.search);
+  const roadId = params.get('road_id') || '';
+  window.location.href = `view.php?segment_id=${segId}${roadId ? '&road_id=' + roadId : ''}`;
 }
 
 // ── Edit road ──────────────────────────────────────────────────

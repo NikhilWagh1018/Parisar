@@ -13,6 +13,8 @@ require_once __DIR__ . '/../services/ScoreService.php';
 
 $segmentId = isset($_GET['segment_id']) ? (int)$_GET['segment_id'] : 0;
 if ($segmentId <= 0) { header('Location: dashboard.php'); exit; }
+$roadId = isset($_GET['road_id']) ? (int)$_GET['road_id'] : 0;
+$backUrl = $roadId > 0 ? "segment.php?road_id={$roadId}" : 'dashboard.php';
 
 $stmt = $pdo->prepare(
     'SELECT sa.*, s.length AS seg_length, s.segment_number,
@@ -62,7 +64,7 @@ $footpathRating = json_decode((string)($row['footpath_rating'] ?? '[]'), true) ?
 <body>
 <div class="container">
 
-  <a href="dashboard.php" class="back-btn">← Dashboard</a>
+  <a href="<?= htmlspecialchars($backUrl) ?>" class="back-btn">← Back</a>
 
   <div class="card" style="margin-top:16px">
     <div class="title">
@@ -208,7 +210,7 @@ $footpathRating = json_decode((string)($row['footpath_rating'] ?? '[]'), true) ?
   </div>
   <?php endif; ?>
 
-  <a href="dashboard.php" class="back-btn">← Dashboard</a>
+  <a href="<?= htmlspecialchars($backUrl) ?>" class="back-btn">← Back</a>
 </div>
 </body>
 </html>
