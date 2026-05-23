@@ -548,52 +548,51 @@ async function prefillFormIfEditMode() {
 
 // ── Radio toggle (click same radio again to uncheck) ───────────
 (function initRadioToggle() {
-  // Track which radio was checked before the click.
-  // We listen on the label (or the radio itself) so clicking anywhere
-  // on the styled box — not just the small circle — works correctly.
-  document.addEventListener('mousedown', e => {
-    // Resolve the radio input whether the user clicked the <input> or its <label>
-    let radio = null;
-    if (e.target.type === 'radio') {
-      radio = e.target;
-    } else if (e.target.tagName === 'LABEL') {
-      const id = e.target.htmlFor;
-      radio = id ? document.getElementById(id) : e.target.querySelector('input[type="radio"]');
-    } else {
-      // Click inside a label (e.g. on a span/text node wrapper)
-      const label = e.target.closest('label');
-      if (label) {
-        const id = label.htmlFor;
-        radio = id ? document.getElementById(id) : label.querySelector('input[type="radio"]');
-      }
-    }
-    if (radio) {
-      radio.dataset.wasChecked = radio.checked ? '1' : '0';
-    }
-  });
+  // When a <label> wraps a <input type="radio"> (no `for` attr),
+  // clicking the label fires: mousedown(label) → mousedown(input) → click(input) → click(label)
+  // We must snapshot on the FIRST mousedown (label) and act on the LAST click (label).
+  // Clicking the circle directly fires: mousedown(input) → click(input) only.
 
+  function getRadio(el) {
+    if (el.type === 'radio') return el;
+    const label = el.tagName === 'LABEL' ? el : el.closest('label');
+    if (!label) return null;
+    return label.htmlFor
+      ? document.getElementById(label.htmlFor)
+      : label.querySelector('input[type="radio"]');
+  }
+
+  // Snapshot on mousedown — earliest possible moment
+  document.addEventListener('mousedown', e => {
+    const radio = getRadio(e.target);
+    if (radio && !radio._snapDone) {
+      radio._wasChecked = radio.checked;
+      // Mark so the synthetic second mousedown (on the input itself) doesn't overwrite
+      radio._snapDone = true;
+      // Clear the guard after the click sequence ends
+      setTimeout(() => { radio._snapDone = false; }, 300);
+    }
+  }, true);
+
+  // Act on click — use capture so we run before any other handler
   document.addEventListener('click', e => {
-    // Resolve radio the same way
-    let radio = null;
-    if (e.target.type === 'radio') {
-      radio = e.target;
-    } else if (e.target.tagName === 'LABEL') {
-      const id = e.target.htmlFor;
-      radio = id ? document.getElementById(id) : e.target.querySelector('input[type="radio"]');
-    } else {
-      const label = e.target.closest('label');
-      if (label) {
-        const id = label.htmlFor;
-        radio = id ? document.getElementById(id) : label.querySelector('input[type="radio"]');
-      }
-    }
-    if (radio && radio.dataset.wasChecked === '1') {
+    const radio = getRadio(e.target);
+    if (!radio) return;
+
+    // Only act on the outermost trigger (label click or direct input click)
+    // Ignore the synthetic input click that the browser fires after a label click
+    if (e.target.type !== 'radio' && e.target.tagName !== 'LABEL' && !e.target.closest('label')) return;
+
+    if (radio._wasChecked) {
+      // Prevent the browser from re-checking it
+      e.preventDefault();
       radio.checked = false;
-      radio.dataset.wasChecked = '0';
-      // Fire change so any dependent handlers (toggleMissingLength, updateFootpathScore) react
+      radio._wasChecked = false;
       radio.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+      radio._wasChecked = false;
     }
-  });
+  }, true);
 })();
 
 // ── Init ───────────────────────────────────────────────────────

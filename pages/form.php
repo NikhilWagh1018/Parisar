@@ -20,7 +20,7 @@ if ($segmentIdParam > 0) {
   <meta name="csrf" id="csrf-meta" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
   <title>Segment Audit Form — CycleAudit</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/from.css">
+  <link rel="stylesheet" href="../css/form.css">
   <link rel="stylesheet" href="../css/form-overlay.css">
 </head>
 <body>
