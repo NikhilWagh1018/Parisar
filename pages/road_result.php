@@ -119,7 +119,7 @@ $roads = $stmtRoads->fetchAll(PDO::FETCH_ASSOC);
           </span>
           <div class="prog-mini">
             <div class="prog-mini-fill"
-                 style="width:<?= $score['final'] ?>%;background:<?= $col ?>"></div>
+                 style="width:<?= (100 - $score['final']) ?>%;background:<?= $col ?>"></div>
           </div>
         </div>
         <?php else: ?>

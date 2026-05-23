@@ -97,19 +97,22 @@ function calcScore($row, $obs, $ints) {
     $shP   = $sh==='Yes'?0:($sh==='Partial'?50:100);
     $comf  = ($surfP+$slwP+$shP)/3;
 
-    $pen   = ($safety+$cont+$comf)/3;
-    $final = max(0, round(100-$pen, 1));
+    $pen   = ($safety*1 + $comf*1.25 + $cont*1.5) / 3.75;
+    $final = round(max(0.0, min(100.0, $pen)), 1);
     return [
         'final'      => $final,
-        'safety'     => round(100-$safety,1),
-        'continuity' => round(100-$cont,1),
-        'comfort'    => round(100-$comf,1),
+        'safety'     => round($safety, 1),
+        'continuity' => round($cont, 1),
+        'comfort'    => round($comf, 1),
     ];
 }
 function ratingInfo($s) {
-    if ($s>=80) return ['Good',    '#15803d','#dcfce7','🟢'];
-    if ($s>=50) return ['Moderate','#d97706','#fef3c7','🟡'];
-    return              ['Poor',   '#dc2626','#fee2e2','🔴'];
+    // Score: 0=best, 100=worst (matches PDF & Excel)
+    if ($s<=20) return ['Good',     '#15803d','#dcfce7','🟢'];
+    if ($s<=40) return ['OK',       '#f1c40f','#fef9c3','🟡'];
+    if ($s<=60) return ['Poor',     '#e67e22','#fff7ed','🟠'];
+    if ($s<=80) return ['Bad',      '#dc2626','#fee2e2','🔴'];
+    return              ['Very Bad','#8e1010','#fde8e8','🔴'];
 }
 function bar($pct,$color,$w=180,$h=10) {
     $fw=max(0,min($w,round($w*$pct/100)));
@@ -142,7 +145,7 @@ foreach ($segs as $seg) {
         $noRamp=count(array_filter($ints,fn($i)=>($i['off_ramp']??'')==='No Ramp'||($i['on_ramp']??'')==='No Ramp'));
         if ($noRamp>0) { $observations[]="Segment {$seg['id']}: {$noRamp} intersection(s) missing ramps"; if($noRamp>=2)$critical[]="Unsafe intersections in Segment {$seg['id']} — {$noRamp} missing ramps"; $recs_flags['ramps']=true; }
         if (($audit['people_walking']??'')=='Yes') { $observations[]="Segment {$seg['id']}: Pedestrians walking on cycle track"; }
-        if ($sc && $sc['final']<40)               $critical[]="Segment {$seg['id']} scored {$sc['final']}/100 — critically poor";
+        if ($sc && $sc['final']>60)               $critical[]="Segment {$seg['id']} scored {$sc['final']}/100 — critically poor";
         if (($audit['light_after_sunset']??'')=='No') $recs_flags['lighting']=true;
         if (($audit['buffer_zone']??'')=='None')  $recs_flags['buffer']=true;
     }
@@ -176,7 +179,7 @@ $audited = count($seg_data)-$pending;
 <body>
 
 <div class="pb-bar">
-  <p>CycleAudit Report &nbsp;|&nbsp; <?= htmlspecialchars($road_name) ?> &nbsp;|&nbsp; Score: <?= $road_score ?>/100 (<?= $rl ?>)</p>
+  <p>CycleAudit Report &nbsp;|&nbsp; <?= htmlspecialchars($road_name) ?> &nbsp;|&nbsp; Score: <?= $road_score ?>/100 (<?= $rl ?>) — lower is better</p>
   <button class="pb-btn" onclick="window.print()">
     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
     Print / Save as PDF
@@ -225,8 +228,8 @@ $audited = count($seg_data)-$pending;
       </div>
       <div class="sc-sum">
         <?php
-        if($road_score>=80) echo "This road's cycle track is in <strong>Good</strong> condition overall. Minor targeted improvements can maintain quality.";
-        elseif($road_score>=50) echo "This road is in <strong>Moderate</strong> condition — usable for experienced cyclists but with significant issues that deter regular use.";
+        if($road_score<=20) echo "This road's cycle track is in <strong>Good</strong> condition overall. Minor targeted improvements can maintain quality.";
+        elseif($road_score<=40) echo "This road is in <strong>OK</strong> condition — usable for experienced cyclists but with some issues that need attention.";
         else echo "This road is in <strong>Poor</strong> condition and requires urgent intervention to make it safe and accessible for everyday cyclists.";
         ?>
       </div>
@@ -239,8 +242,8 @@ $audited = count($seg_data)-$pending;
   <div class="sh"><div class="sh-num">3</div><h3>Quick Summary</h3></div>
   <div class="sum-box">
     <?php
-    $worst=null;$ws2=999; $best=null;$bs2=-1;
-    foreach($seg_data as $d){if($d['sc']){if($d['sc']['final']<$ws2){$ws2=$d['sc']['final'];$worst=$d;}if($d['sc']['final']>$bs2){$bs2=$d['sc']['final'];$best=$d;}}}
+    $worst=null;$ws2=-1; $best=null;$bs2=999;
+    foreach($seg_data as $d){if($d['sc']){if($d['sc']['final']>$ws2){$ws2=$d['sc']['final'];$worst=$d;}if($d['sc']['final']<$bs2){$bs2=$d['sc']['final'];$best=$d;}}}
     ?>
     <strong><?= htmlspecialchars($road_name) ?></strong> was audited across <strong><?= count($segs) ?> segments</strong>
     covering approximately <strong><?= number_format((float)$road_length) ?> metres</strong> of cycle track.
@@ -248,7 +251,7 @@ $audited = count($seg_data)-$pending;
     <?php if($worst): ?>Weakest segment is <strong>Segment <?= $worst['seg']['id'] ?></strong> (<?= $worst['sc']['final'] ?>/100);<?php endif; ?>
     <?php if($best): ?> strongest is <strong>Segment <?= $best['seg']['id'] ?></strong> (<?= $best['sc']['final'] ?>/100).<?php endif; ?>
     <?php
-    if($as<$ac&&$as<$acf) echo " <strong>Safety</strong> is the primary concern — inadequate lighting and missing buffer zones are key penalty drivers.";
+    if($as>$ac&&$as>$acf) echo " <strong>Safety</strong> is the primary concern — inadequate lighting and missing buffer zones are key penalty drivers.";
     elseif($ac<$as&&$ac<$acf) echo " <strong>Continuity</strong> is the primary concern — obstructions and missing ramps break cycling flow.";
     else echo " <strong>Comfort</strong> is the primary concern — surface quality, pedestrian conflict, and lack of shade reduce usability.";
     ?>
@@ -397,7 +400,7 @@ $audited = count($seg_data)-$pending;
   </div>
   <div class="rf-r">
     Road: <?= htmlspecialchars($road_name) ?><br>
-    Final Score: <?= $road_score ?>/100 (<?= $rl ?>)<br>
+    Final Score: <?= $road_score ?>/100 (<?= $rl ?>) — lower is better<br>
     Generated: <?= date('d F Y, h:i A') ?><br>
     Surveyor: <?= htmlspecialchars($surveyor) ?>
   </div>

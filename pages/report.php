@@ -204,12 +204,12 @@ if ($safetyAvg < 40)
     $recommendations[] = "Improve after-sunset lighting along the full length of the cycle track.";
 
 // ── Best & worst segments ──────────────────────────────────────
-$bestSeg = null; $worstSeg = null; $bestScore = -1; $worstScore = 999;
+$bestSeg = null; $worstSeg = null; $bestScore = 999; $worstScore = -1;
 foreach ($segs as $seg) {
     $sr = $segResults[(int)$seg['id']] ?? null;
     if (!$sr) continue;
-    if ($sr['final'] > $bestScore)  { $bestScore  = $sr['final'];  $bestSeg  = $seg; }
-    if ($sr['final'] < $worstScore) { $worstScore = $sr['final'];  $worstSeg = $seg; }
+    if ($sr['final'] < $bestScore)  { $bestScore  = $sr['final'];  $bestSeg  = $seg; }
+    if ($sr['final'] > $worstScore) { $worstScore = $sr['final'];  $worstSeg = $seg; }
 }
 
 // ── Total audited length ───────────────────────────────────────
