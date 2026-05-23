@@ -197,19 +197,24 @@ try {
         $intStmt = $pdo->prepare(
             'INSERT INTO intersections
                (audit_id, intersection_num, gps_coords, landmark_name,
-                off_ramp, on_ramp, markings, signage)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                off_ramp, on_ramp, markings, signage,
+                traffic_calming, discontinuity, tapering, obstruction_type)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         foreach ($intersections as $idx => $i) {
             $intStmt->execute([
                 $auditId,
                 $idx + 1,
-                $i['gps_coords']    ?? null,
-                $i['landmark_name'] ?? null,
-                $i['off_ramp']      ?? null,
-                $i['on_ramp']       ?? null,
-                $i['markings']      ?? null,
-                $i['signage']       ?? null,
+                $i['gps_coords']       ?? null,
+                $i['landmark_name']    ?? null,
+                $i['off_ramp']         ?? null,
+                $i['on_ramp']          ?? null,
+                $i['markings']         ?? null,
+                $i['signage']          ?? null,
+                $i['traffic_calming']  ?? null,
+                $i['discontinuity']    ?? null,
+                $i['tapering']         ?? null,
+                $i['obstruction_type'] ?? null,
             ]);
 
             // Generate public_id for intersection

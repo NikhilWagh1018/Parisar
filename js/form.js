@@ -203,6 +203,30 @@ function buildIntersectionBody(uid) {
           ${radioRow(p + 'Signage', ['Present','Absent'])}
         </div>
       </div>
+      <div class="int-field">
+        <label>Traffic Calming Device</label>
+        <div class="options">
+          ${radioRow(p + 'TrafficCalming', ['Present','Absent'])}
+        </div>
+      </div>
+      <div class="int-field">
+        <label>Discontinuity</label>
+        <div class="options">
+          ${radioRow(p + 'Discontinuity', ['Yes','No','NA'])}
+        </div>
+      </div>
+      <div class="int-field">
+        <label>Tapering of Track Width at Intersection</label>
+        <div class="options">
+          ${radioRow(p + 'Tapering', ['Yes','No','NA'])}
+        </div>
+      </div>
+      <div class="int-field">
+        <label>Obstruction Type</label>
+        <div class="options">
+          ${radioRow(p + 'ObstructionType', ['Partial','Total','None'])}
+        </div>
+      </div>
     </div>
     <div class="int-divider"></div>
     <button type="button" class="btn-remove-int"
@@ -274,12 +298,16 @@ async function submitFullAudit() {
   const intersectionData = intersections.map(uid => {
     const p = 'int' + uid + '_';
     return {
-      gps_coords:    document.getElementById(p + 'gps')?.value  || null,
-      landmark_name: document.getElementById(p + 'name')?.value || null,
-      off_ramp:  document.querySelector(`input[name="${p}offRamp"]:checked`)?.value  || null,
-      on_ramp:   document.querySelector(`input[name="${p}onRamp"]:checked`)?.value   || null,
-      markings:  document.querySelector(`input[name="${p}Markings"]:checked`)?.value || null,
-      signage:   document.querySelector(`input[name="${p}Signage"]:checked`)?.value  || null,
+      gps_coords:       document.getElementById(p + 'gps')?.value  || null,
+      landmark_name:    document.getElementById(p + 'name')?.value || null,
+      off_ramp:         document.querySelector(`input[name="${p}offRamp"]:checked`)?.value         || null,
+      on_ramp:          document.querySelector(`input[name="${p}onRamp"]:checked`)?.value          || null,
+      markings:         document.querySelector(`input[name="${p}Markings"]:checked`)?.value        || null,
+      signage:          document.querySelector(`input[name="${p}Signage"]:checked`)?.value         || null,
+      traffic_calming:  document.querySelector(`input[name="${p}TrafficCalming"]:checked`)?.value  || null,
+      discontinuity:    document.querySelector(`input[name="${p}Discontinuity"]:checked`)?.value   || null,
+      tapering:         document.querySelector(`input[name="${p}Tapering"]:checked`)?.value        || null,
+      obstruction_type: document.querySelector(`input[name="${p}ObstructionType"]:checked`)?.value || null,
     };
   });
   formData.set('intersections', JSON.stringify(intersectionData));
