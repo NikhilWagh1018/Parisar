@@ -548,18 +548,50 @@ async function prefillFormIfEditMode() {
 
 // ── Radio toggle (click same radio again to uncheck) ───────────
 (function initRadioToggle() {
-  // Track which radio was checked before the click
+  // Track which radio was checked before the click.
+  // We listen on the label (or the radio itself) so clicking anywhere
+  // on the styled box — not just the small circle — works correctly.
   document.addEventListener('mousedown', e => {
+    // Resolve the radio input whether the user clicked the <input> or its <label>
+    let radio = null;
     if (e.target.type === 'radio') {
-      e.target.dataset.wasChecked = e.target.checked ? '1' : '0';
+      radio = e.target;
+    } else if (e.target.tagName === 'LABEL') {
+      const id = e.target.htmlFor;
+      radio = id ? document.getElementById(id) : e.target.querySelector('input[type="radio"]');
+    } else {
+      // Click inside a label (e.g. on a span/text node wrapper)
+      const label = e.target.closest('label');
+      if (label) {
+        const id = label.htmlFor;
+        radio = id ? document.getElementById(id) : label.querySelector('input[type="radio"]');
+      }
+    }
+    if (radio) {
+      radio.dataset.wasChecked = radio.checked ? '1' : '0';
     }
   });
+
   document.addEventListener('click', e => {
-    if (e.target.type === 'radio' && e.target.dataset.wasChecked === '1') {
-      e.target.checked = false;
-      e.target.dataset.wasChecked = '0';
+    // Resolve radio the same way
+    let radio = null;
+    if (e.target.type === 'radio') {
+      radio = e.target;
+    } else if (e.target.tagName === 'LABEL') {
+      const id = e.target.htmlFor;
+      radio = id ? document.getElementById(id) : e.target.querySelector('input[type="radio"]');
+    } else {
+      const label = e.target.closest('label');
+      if (label) {
+        const id = label.htmlFor;
+        radio = id ? document.getElementById(id) : label.querySelector('input[type="radio"]');
+      }
+    }
+    if (radio && radio.dataset.wasChecked === '1') {
+      radio.checked = false;
+      radio.dataset.wasChecked = '0';
       // Fire change so any dependent handlers (toggleMissingLength, updateFootpathScore) react
-      e.target.dispatchEvent(new Event('change', { bubbles: true }));
+      radio.dispatchEvent(new Event('change', { bubbles: true }));
     }
   });
 })();
