@@ -7,14 +7,12 @@ declare(strict_types=1);
 //          auditor can correct and re-submit their answers.
 //
 //  Audit data (segment_audits, obstructions, intersections) is
-//  intentionally PRESERVED so form.js can pre-fill the form with
-//  the existing answers for the user to review and correct.
+//  intentionally PRESERVED so form.js can pre-fill the form.
 //
 //  Only the road's creator may unlock a segment.
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../../config/auth_guard.php';
-require_once __DIR__ . '/../../config/db.php';
 
 header('Content-Type: application/json');
 
@@ -50,7 +48,7 @@ try {
     $stmt = $pdo->prepare(
         'SELECT s.id, s.status, s.road_id, r.creator_id
            FROM segments s
-           JOIN roads    r ON r.id = s.road_id
+           JOIN roads r ON r.id = s.road_id
           WHERE s.id = ?
           LIMIT 1'
     );
@@ -64,7 +62,7 @@ try {
         exit;
     }
 
-    // ── 2. Authorisation: only the road's creator may unlock ───
+    // ── 2. Only the road creator may unlock ────────────────────
     if ((int)$segment['creator_id'] !== (int)$CURRENT_USER_ID) {
         $pdo->rollBack();
         http_response_code(403);
@@ -80,25 +78,26 @@ try {
         exit;
     }
 
-    // ── 4. Reset segment status only — keep all audit data ─────
-    //       segment_audits / obstructions / intersections rows are
-    //       preserved so the edit form can pre-fill them.
-    //       submit.php will UPDATE (not INSERT) when edit_mode=1.
+    // ── 4. Reset segment status — keep all audit data intact ───
     $pdo->prepare(
         "UPDATE segments
             SET status = 'pending', completed_at = NULL
           WHERE id = ?"
     )->execute([$segmentId]);
 
-    // ── 5. Re-open the audit session so the user can submit ────
-    //       If no active session exists, the form will create one.
+    // ── 5. Re-open the audit session for this road ─────────────
+    //       audit_sessions links to road_id (not segment_id),
+    //       so we find the most-recent completed session for this
+    //       road owned by the current user and reactivate it.
     $pdo->prepare(
         "UPDATE audit_sessions
-            SET status = 'active'
-          WHERE segment_id = ? AND status = 'completed'
+            SET status = 'active', completed_at = NULL
+          WHERE road_id = ?
+            AND user_id = ?
+            AND status  = 'completed'
           ORDER BY id DESC
           LIMIT 1"
-    )->execute([$segmentId]);
+    )->execute([(int)$segment['road_id'], (int)$CURRENT_USER_ID]);
 
     $pdo->commit();
 
