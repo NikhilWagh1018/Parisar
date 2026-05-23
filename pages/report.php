@@ -194,13 +194,13 @@ if (!empty($missingTrackSegs))
     $recommendations[] = "Construct missing cycle track sections to restore full network continuity.";
 if (!empty($allSurface))
     $recommendations[] = "Repair damaged or uneven surface sections to improve cycling comfort.";
-if ($safetyAvg < 70)
+if ($safetyAvg < 50)
     $recommendations[] = "Install buffer zones or physical separators between cycle track and motorised traffic.";
-if ($contAvg < 80)
+if ($contAvg < 65)
     $recommendations[] = "Add clear markings and signage throughout the cycle track for better visibility.";
-if ($comfAvg < 70)
+if ($comfAvg < 50)
     $recommendations[] = "Enforce no-encroachment rules and remove parked vehicles or vendors from the cycle track.";
-if ($safetyAvg < 60)
+if ($safetyAvg < 40)
     $recommendations[] = "Improve after-sunset lighting along the full length of the cycle track.";
 
 // ── Best & worst segments ──────────────────────────────────────
