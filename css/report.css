@@ -44,6 +44,8 @@ body {
 }
 .tbtn-back  { color:var(--g); border-color:var(--g); background:#fff; }
 .tbtn-back:hover  { background:var(--gp); }
+.tbtn-segments { color:var(--g); border-color:var(--g); background:#fff; }
+.tbtn-segments:hover { background:var(--gp); }
 .tbtn-print { background:var(--g); color:#fff; border-color:var(--g); }
 .tbtn-print:hover { background:var(--gd); }
 

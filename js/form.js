@@ -381,9 +381,118 @@ function clearError(id) {
 // ── Reset / Confirm ────────────────────────────────────────────
 function resetForm()    { document.getElementById('confirmOverlay').classList.add('active');    }
 function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('active'); }
-function doReset() {
-  // In edit mode, reload preserves ?edit_mode=1 so pre-fill runs again
-  location.reload();
+
+async function doReset() {
+  // Close the confirm overlay immediately
+  closeConfirm();
+
+  // Show a loading state on the reset button
+  const resetBtn = document.querySelector('.btn-reset');
+  const origText = resetBtn ? resetBtn.textContent : '';
+  if (resetBtn) { resetBtn.textContent = '⏳ Resetting…'; resetBtn.disabled = true; }
+
+  try {
+    // ── 1. Clear audit data from the database ─────────────────
+    const segId  = document.getElementById('segment_id')?.value || segmentId;
+    const sessId = document.getElementById('session_id')?.value || sessionId;
+
+    if (segId && sessId) {
+      const resp = await fetch('../api/segments/reset.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrf(),
+        },
+        body: JSON.stringify({ segment_id: parseInt(segId), session_id: parseInt(sessId) }),
+      });
+      const result = await resp.json();
+      if (!result.success) {
+        console.error('Reset failed:', result.error);
+        alert('Reset failed: ' + (result.error || 'Unknown error'));
+        if (resetBtn) { resetBtn.textContent = origText; resetBtn.disabled = false; }
+        return;
+      }
+    }
+
+    // ── 2. Clear the form DOM in-place ─────────────────────────
+    // Text inputs & textareas
+    document.querySelectorAll('#auditForm input[type="text"], #auditForm input[type="number"], #auditForm textarea')
+      .forEach(el => {
+        if (el.id === 'segment_id' || el.id === 'session_id' || el.id === 'road_id' || el.name === 'edit_mode') return;
+        el.value = el.name === 'signage_count' ? '0' : '';
+      });
+
+    // Radio buttons
+    document.querySelectorAll('#auditForm input[type="radio"]').forEach(el => { el.checked = false; });
+
+    // Checkboxes
+    document.querySelectorAll('#auditForm input[type="checkbox"]').forEach(el => { el.checked = false; });
+
+    // Obstruction tags & counter blocks
+    ['fixed', 'movable', 'parked'].forEach(type => {
+      const tags   = document.getElementById(type + 'Tags');
+      const inputs = document.getElementById(type + 'Inputs');
+      if (tags)   tags.innerHTML   = '';
+      if (inputs) inputs.innerHTML = '';
+      // Uncheck all checkboxes in the dropdown
+      document.querySelectorAll(`#${type}List input[type="checkbox"]`).forEach(cb => { cb.checked = false; });
+    });
+
+    // Intersections
+    const intContainer = document.getElementById('intersectionsContainer');
+    if (intContainer) intContainer.innerHTML = '';
+
+    // Missing length box
+    const missingBox = document.getElementById('missingLengthBox');
+    if (missingBox) missingBox.style.display = 'none';
+
+    // Footpath score badge
+    updateFootpathScore();
+
+    // ── 3. Strip edit_mode from URL and remove the edit banner ─
+    const hEdit = document.getElementById('edit_mode');
+    if (hEdit) hEdit.value = '0';
+
+    // Remove the edit-mode banner if present
+    document.querySelectorAll('.form-page-heading ~ div').forEach(el => {
+      if (el.style.background?.includes('#fff8e1')) el.remove();
+    });
+
+    // Update the URL to remove edit_mode without reloading
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('edit_mode');
+    window.history.replaceState({}, '', newUrl.toString());
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Show a brief success toast
+    showResetToast('✅ Form cleared — all data has been reset.');
+
+  } catch (err) {
+    console.error('doReset error:', err);
+    alert('An unexpected error occurred during reset. Please try again.');
+  } finally {
+    if (resetBtn) { resetBtn.textContent = origText; resetBtn.disabled = false; }
+  }
+}
+
+function showResetToast(msg) {
+  let toast = document.getElementById('resetToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'resetToast';
+    toast.style.cssText =
+      'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
+      'background:#2d6a2d;color:#fff;padding:12px 24px;border-radius:8px;' +
+      'font-size:14px;font-weight:500;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.25);' +
+      'transition:opacity .3s ease;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
 }
 
 // ── Scroll to top ──────────────────────────────────────────────
