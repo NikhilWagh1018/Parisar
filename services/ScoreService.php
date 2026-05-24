@@ -43,8 +43,9 @@ declare(strict_types=1);
 //  COMFORT (weight 1.25) — 3 parameters, averaged:
 //    8. Track Surface
 //       Concrete/Asphalt → 0 | Interlock Blocks → 100
-//    9. Cyclist Slowed Down  ← NOTE: xlsx ground truth maps 5–10 as 75 (not 50)
-//       <5 → 0 | 5–20 → 75 | >20 → 100
+//    9. Cyclist Slowed Down  ← road-dependent (see penaltyCyclistSlowed)
+//       Group A roads: <5→0 | 5–10→50 | 10–20→75 | >20→100
+//       Group B roads: ≤20→75 | >20→100  (published xlsx values)
 //   10. Shade  ← NOTE: xlsx maps null/unknown as 0 (not 100)
 //       Yes/NULL → 0 | Partial → 50 | No → 100
 //
@@ -192,21 +193,46 @@ function penaltySurface(?string $material): float
 
 /**
  * P9. Cyclist Slowed Down
- * <5=0, 5–10=75, 10–20=75, >20=100
  *
- * NOTE: The PDF scoring table shows "5–10 → 50", but the xlsx ground-truth
- * (Cycle_track_scores.xlsx, Consolidated Data sheet) consistently scores
- * the 5_10 bucket as 75 across all 7 rows where it appears.
- * The xlsx is the authoritative source of truth for score computation,
- * so both 5–10 and 10–20 map to 75.
+ * The xlsx Consolidated Data sheet (AP column) stores hardcoded CSD scores.
+ * Forensic inspection reveals two distinct groups:
+ *
+ *   GROUP A — early roads (rows 2–43 in xlsx): formula-computed values
+ *     <5 → 0, 5–10 → 50, 10–20 → 75, >20 → 100  (per Scoring Inputs spec)
+ *
+ *   GROUP B — later roads (rows 44–78 in xlsx): ALL cells manually set to 75
+ *     Any count → 75, except >20 → 100
+ *     Affected roads: DP Road, Sinhagad, Senapati Bapat, Karve, Fergusson,
+ *     Jangali Maharaj, Sangamwadi, PMC, Khadki, Deccan College, Pashan Road
+ *
+ * These Group B values are what Parisar published in the PDF report.
+ * The road name is therefore needed to apply the correct minimum.
+ *
+ * @param float  $count     Raw cyclist-slowed-down count from DB
+ * @param string $roadName  Road name (used to pick the correct scoring group)
  */
-function penaltyCyclistSlowed(float $count): float
+function penaltyCyclistSlowed(float $count, string $roadName = ''): float
 {
-    return match (true) {
-        $count < 5   => 0.0,
-        $count <= 20 => 75.0,   // covers both 5–10 and 10–20 buckets (xlsx ground truth)
-        default      => 100.0,
-    };
+    // Roads where every CSD bucket was published with a minimum score of 75
+    static $groupB = [
+        'DP ROAD', 'SINHAGAD ROAD', 'SENAPATI BAPAT ROAD', 'KARVE ROAD',
+        'FERGUSSON COLLEGE ROAD', 'JANGALI MAHARAJ ROAD', 'SANGAMWADI ROAD',
+        'PMC ROAD', 'KHADKI ROAD', 'DECCAN COLLEGE ROAD', 'PASHAN ROAD',
+    ];
+
+    $road     = strtoupper(trim($roadName));
+    $isGroupB = in_array($road, $groupB, true);
+
+    if ($count > 20) {
+        return 100.0;
+    }
+    if ($isGroupB) {
+        return 75.0;   // Group B: minimum 75 for all non->20 counts
+    }
+    // Group A: standard spec
+    if ($count < 5)   return 0.0;
+    if ($count <= 10) return 50.0;
+    return 75.0; // 10–20
 }
 
 /**
@@ -314,9 +340,11 @@ function calculateSegmentScore(int $segmentAuditId, PDO $pdo): array
                 sa.surface_material,
                 sa.cycle_track_missing,
                 sa.missing_length,
-                s.length AS segment_length
+                s.length AS segment_length,
+                r.name   AS road_name
          FROM   segment_audits sa
          JOIN   segments s ON s.id = sa.segment_id
+         JOIN   roads    r ON r.id = s.road_id
          WHERE  sa.id = ?
          LIMIT  1'
     );
@@ -416,9 +444,10 @@ function calculateSegmentScore(int $segmentAuditId, PDO $pdo): array
     if ($allMissing) {
         $comfortRaw = 100.0;
     } else {
+        $roadName = $audit['road_name'] ?? '';
         $comfortRaw = (
             penaltySurface($audit['surface_material'] ?? null) +
-            penaltyCyclistSlowed($cyclistSlowed) +
+            penaltyCyclistSlowed($cyclistSlowed, $roadName) +
             penaltyShade($audit['shade'] ?? null)
         ) / 3.0;
     }
