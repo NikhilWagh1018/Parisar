@@ -43,10 +43,10 @@ declare(strict_types=1);
 //  COMFORT (weight 1.25) — 3 parameters, averaged:
 //    8. Track Surface
 //       Concrete/Asphalt → 0 | Interlock Blocks → 100
-//    9. Cyclist Slowed Down  ← NOTE: xlsx ground truth maps 5–10 as 75 (not 50)
-//       <5 → 0 | 5–20 → 75 | >20 → 100
-//   10. Shade  ← NOTE: xlsx maps null/unknown as 0 (not 100)
-//       Yes/NULL → 0 | Partial → 50 | No → 100
+//    9. Cyclist Slowed Down
+//       <5 → 0 | 5–10 → 50 | 10–20 → 75 | >20 → 100
+//   10. Shade
+//       Yes → 0 | Partial → 50 | No/NULL → 100
 //
 //  ──────────────────────────────────────────────────────────────
 //  MISSING-LENGTH ADJUSTMENT (per PDF):
@@ -192,37 +192,28 @@ function penaltySurface(?string $material): float
 
 /**
  * P9. Cyclist Slowed Down
- * <5=0, 5–10=75, 10–20=75, >20=100
- *
- * NOTE: The PDF scoring table shows "5–10 → 50", but the xlsx ground-truth
- * (Cycle_track_scores.xlsx, Consolidated Data sheet) consistently scores
- * the 5_10 bucket as 75 across all 7 rows where it appears.
- * The xlsx is the authoritative source of truth for score computation,
- * so both 5–10 and 10–20 map to 75.
+ * <5=0, 5–10=50, 10–20=75, >20=100
  */
 function penaltyCyclistSlowed(float $count): float
 {
     return match (true) {
         $count < 5   => 0.0,
-        $count <= 20 => 75.0,   // covers both 5–10 and 10–20 buckets (xlsx ground truth)
+        $count <= 10 => 50.0,
+        $count <= 20 => 75.0,
         default      => 100.0,
     };
 }
 
 /**
  * P10. Shade
- * Yes=0, Partial=50, No=100, NULL/unknown=0
- *
- * NOTE: The xlsx Scoring Inputs sheet explicitly maps Shade: NaN → 0.
- * An unknown shade value is treated as "not a problem" (best case),
- * NOT penalised. Defaulting to 100 for null was incorrect.
+ * Yes=0, Partial=50, No/NULL=100
  */
 function penaltyShade(?string $shade): float
 {
     return match ($shade ?? '') {
-        'No'      => 100.0,
+        'Yes'     => 0.0,
         'Partial' => 50.0,
-        default   => 0.0,    // 'Yes' or null/unknown → 0 (xlsx: Shade NaN → score 0)
+        default   => 100.0,
     };
 }
 
