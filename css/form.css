@@ -48,7 +48,7 @@
       display:none; position:absolute; top:calc(100% + 4px);
       left:0; right:0; max-height:220px; overflow-y:auto;
       border:1px solid #86B93B; padding:10px; border-radius:6px;
-      background:#fff; z-index:999;
+      background:#fff; z-index:1050;  /* above page content, below sticky topbar (1100) */
       box-shadow:0 6px 20px rgba(0,0,0,0.12);
     }
     .checkbox-container.open { display:block; animation:dropDown 0.15s ease-out; }
@@ -74,7 +74,7 @@
       padding: 0;
       background: #fff;
       box-shadow: 0 2px 8px rgba(134,185,59,.08);
-      overflow: hidden;
+      overflow: visible;   /* must NOT clip absolute dropdown children */
     }
     .item-block-header {
       display: flex;
@@ -83,6 +83,7 @@
       padding: 10px 14px;
       background: linear-gradient(90deg, #f0f7e6 0%, #f7fbf0 100%);
       border-bottom: 1px solid #e0f0c0;
+      border-radius: 12px 12px 0 0;
     }
     .item-block-header .item-pin {
       font-size: 14px;
@@ -311,7 +312,7 @@
 
     /* ── Progress bar ── */
     .progress-wrap {
-      position:sticky; top:0; z-index:1000;
+      position:sticky; top:0; z-index:1000;  /* below topbar (1100) */
       background:#fff; padding:10px 24px 8px;
       border-bottom:1px solid #eee; margin:-24px -24px 20px;
     }

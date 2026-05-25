@@ -22,7 +22,7 @@
       gap: 12px;
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 1100;   /* above dropdown (999) and progress bar (1000) */
       box-shadow: 0 2px 8px rgba(0,0,0,.25);
     }
     .form-topbar-logo {
@@ -100,8 +100,12 @@
       border: 1px solid #e0ead6;
       border-radius: 14px;
       margin-bottom: 20px;
-      overflow: hidden;
+      overflow: visible;   /* must NOT be hidden — clips absolute-positioned dropdowns */
       box-shadow: 0 1px 6px rgba(0,0,0,.05);
+    }
+    /* Re-clip only the header/body, not the card wrapper, so border-radius still shows */
+    .section-card-header {
+      border-radius: 14px 14px 0 0;
     }
     .section-card-header {
       display: flex;
@@ -295,7 +299,7 @@
       padding: 0;
       background: #fff;
       box-shadow: 0 2px 8px rgba(134,185,59,.08);
-      overflow: hidden;
+      overflow: visible;   /* must NOT clip absolute dropdown children */
     }
     .item-block-header {
       display: flex;
@@ -304,6 +308,7 @@
       padding: 11px 16px;
       background: linear-gradient(90deg, #f0f7e6 0%, #f7fbf0 100%);
       border-bottom: 1px solid #e0f0c0;
+      border-radius: 12px 12px 0 0;  /* re-apply top radius since parent no longer clips */
     }
     .item-block-header .item-pin { font-size: 15px; line-height: 1; }
     .item-block-header strong {
