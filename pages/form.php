@@ -4,12 +4,67 @@ require_once __DIR__ . '/../config/auth_guard.php';
 require_once __DIR__ . '/../config/db.php';
 
 $segmentIdParam = isset($_GET['segment_id']) ? (int)$_GET['segment_id'] : 0;
-$roadIdForForm  = 0;
+
+// Fetch segment + road context for the header
+$roadIdForForm = 0;
+$segNum        = 0;
+$segStartDist  = 0.0;
+$segEndDist    = 0.0;
+$segLength     = 0.0;
+$totalSegments = 0;
+$roadName      = '';
+
 if ($segmentIdParam > 0) {
-    $stmtRoad = $pdo->prepare('SELECT road_id FROM segments WHERE id = ? LIMIT 1');
-    $stmtRoad->execute([$segmentIdParam]);
-    $rowRoad = $stmtRoad->fetch(PDO::FETCH_ASSOC);
-    if ($rowRoad) $roadIdForForm = (int)$rowRoad['road_id'];
+    $stmtSeg = $pdo->prepare(
+        'SELECT s.road_id, s.segment_number, s.start_distance, s.end_distance, s.length,
+                r.name AS road_name
+         FROM   segments s
+         JOIN   roads r ON r.id = s.road_id
+         WHERE  s.id = ?
+         LIMIT  1'
+    );
+    $stmtSeg->execute([$segmentIdParam]);
+    $rowSeg = $stmtSeg->fetch(PDO::FETCH_ASSOC);
+    if ($rowSeg) {
+        $roadIdForForm = (int)$rowSeg['road_id'];
+        $segNum        = (int)$rowSeg['segment_number'];
+        $segStartDist  = (float)$rowSeg['start_distance'];
+        $segEndDist    = (float)$rowSeg['end_distance'];
+        $segLength     = (float)$rowSeg['length'];
+        $roadName      = $rowSeg['road_name'];
+
+        $stmtCount = $pdo->prepare('SELECT COUNT(*) FROM segments WHERE road_id = ?');
+        $stmtCount->execute([$roadIdForForm]);
+        $totalSegments = (int)$stmtCount->fetchColumn();
+    }
+}
+
+function fmtDist(float $m): string {
+    return ((floor($m) == $m) ? (string)(int)$m : number_format($m, 0)) . 'm';
+}
+
+$startLabel = fmtDist($segStartDist);
+$endLabel   = fmtDist($segEndDist);
+
+if ($segNum > 0) {
+    $em    = "\xe2\x80\x94";  // em-dash
+    $arrow = "\xe2\x86\x92";  // right arrow
+    $dot   = "\xc2\xb7";      // middle dot
+    $pageTitle    = "Segment {$segNum} Audit {$em} {$startLabel} to {$endLabel}";
+    $pageSubtitle = $totalSegments > 0
+        ? "Segment {$segNum} of {$totalSegments} {$dot} " . fmtDist($segLength) . " long"
+        : fmtDist($segLength) . " long";
+    $topbarTitle  = "Segment {$segNum} Audit";
+    $topbarSub    = "{$startLabel} {$arrow} {$endLabel}";
+    $htmlTitle    = "Segment {$segNum} Audit {$em} CycleAudit";
+    $breadcrumb   = $roadName ? htmlspecialchars($roadName, ENT_QUOTES, 'UTF-8') : 'Road Audit';
+} else {
+    $pageTitle    = 'Full Segment Audit';
+    $pageSubtitle = 'Fill in all details for this segment. Required fields are marked with *';
+    $topbarTitle  = 'Full Segment Audit';
+    $topbarSub    = "CycleAudit · Parisar";
+    $htmlTitle    = "Segment Audit Form — CycleAudit";
+    $breadcrumb   = 'Road Audit';
 }
 ?>
 <!DOCTYPE html>
@@ -18,7 +73,7 @@ if ($segmentIdParam > 0) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf" id="csrf-meta" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
-  <title>Segment Audit Form — CycleAudit</title>
+  <title><?php echo htmlspecialchars($htmlTitle, ENT_QUOTES, 'UTF-8'); ?></title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/form.css">
   <link rel="stylesheet" href="../css/form-overlay.css">
@@ -29,9 +84,12 @@ if ($segmentIdParam > 0) {
 <div class="form-topbar">
   <div class="form-topbar-logo">🚲</div>
   <div class="form-topbar-title">
-    Full Segment Audit
-    <span>CycleAudit · Parisar</span>
+    <?php echo htmlspecialchars($topbarTitle, ENT_QUOTES, 'UTF-8'); ?>
+    <span><?php echo htmlspecialchars($topbarSub, ENT_QUOTES, 'UTF-8'); ?></span>
   </div>
+  <?php if ($segNum > 0 && $totalSegments > 0): ?>
+  <div class="topbar-seg-badge"><?php echo $segNum; ?> / <?php echo $totalSegments; ?></div>
+  <?php endif; ?>
 </div>
 
 <form id="auditForm" onsubmit="event.preventDefault(); submitFullAudit();">
@@ -62,8 +120,17 @@ if ($segmentIdParam > 0) {
   <div class="container">
 
     <div class="form-page-heading">
-      <h2>Full Segment Audit</h2>
-      <p>Fill in all details for this segment. Required fields are marked with *</p>
+      <?php if ($segNum > 0 && $totalSegments > 0): ?>
+      <div class="seg-breadcrumb">
+        <span><?php echo $breadcrumb; ?></span>
+        <span class="seg-breadcrumb-sep">›</span>
+        <span>Segment <?php echo $segNum; ?></span>
+        <span class="seg-breadcrumb-sep">›</span>
+        <span class="seg-breadcrumb-active">Audit Form</span>
+      </div>
+      <?php endif; ?>
+      <h2><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></h2>
+      <p><?php echo htmlspecialchars($pageSubtitle, ENT_QUOTES, 'UTF-8'); ?></p>
     </div>
 
 

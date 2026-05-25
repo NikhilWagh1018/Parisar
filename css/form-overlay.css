@@ -45,6 +45,20 @@
       margin-left: 8px;
     }
 
+    /* ── Segment badge in topbar ── */
+    .topbar-seg-badge {
+      background: #4a7c2f;
+      color: #d4f0a8;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+      letter-spacing: .02em;
+      border: 1px solid #5a9e3f;
+      flex-shrink: 0;
+    }
+
     /* ── Container ── */
     .container {
       max-width: 780px;
@@ -66,6 +80,27 @@
       font-size: 13.5px;
       color: #6b8f4e;
       margin: 0;
+    }
+
+    /* ── Breadcrumb trail ── */
+    .seg-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #8aaa6e;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .seg-breadcrumb span { line-height: 1; }
+    .seg-breadcrumb-sep {
+      color: #b8d490;
+      font-size: 11px;
+    }
+    .seg-breadcrumb-active {
+      color: #4a7c2f;
+      font-weight: 600;
     }
 
 
