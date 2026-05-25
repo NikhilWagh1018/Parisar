@@ -236,7 +236,8 @@ if ($segmentIdParam > 0) {
             <label>⚠ Missing Length (m)</label>
             <input type="number" id="missingLength" name="missing_length"
                    placeholder="Enter missing cycle track length in meters" min="0"
-                   onfocus="this.select()">
+                   inputmode="numeric"
+                   onwheel="event.preventDefault()">
           </div>
         </div>
 
@@ -370,9 +371,11 @@ if ($segmentIdParam > 0) {
             <div class="counter-ctrl">
               <button type="button" onclick="adjustCounter('signageCount',-1)">−</button>
               <input type="number" id="signageCount" name="signage_count"
-                     value="0" min="0" oninput="clampCounter('signageCount')"
+                     value="0" min="0" inputmode="numeric"
                      onfocus="this.select()"
-                     onblur="blurCounter('signageCount')">
+                     oninput="clampCounter('signageCount')"
+                     onblur="blurCounter('signageCount')"
+                     onwheel="event.preventDefault()">
               <button type="button" onclick="adjustCounter('signageCount',1)">+</button>
             </div>
           </div>
@@ -454,12 +457,14 @@ if ($segmentIdParam > 0) {
           <div class="field-group">
             <label class="field-label">Width of Segment (m)</label>
             <input type="number" name="segment_width"
-                   placeholder="e.g. 2.5" min="0" step="0.1">
+                   placeholder="e.g. 2.5" min="0" step="0.1"
+                   onwheel="event.preventDefault()">
           </div>
           <div class="field-group">
             <label class="field-label">Length of Segment (m)</label>
             <input type="number" name="segment_length"
-                   placeholder="e.g. 500" min="0" step="0.1">
+                   placeholder="e.g. 500" min="0" step="0.1"
+                   onwheel="event.preventDefault()">
           </div>
         </div>
         <div class="field-group" style="margin-top:14px">

@@ -22,13 +22,6 @@ function getCsrf() {
   return meta ? meta.content : (window.__CSRF__ || '');
 }
 
-// ── Prevent scroll from changing number inputs ─────────────────
-document.addEventListener('wheel', function (e) {
-  if (document.activeElement && document.activeElement.type === 'number') {
-    e.preventDefault();
-  }
-}, { passive: false });
-
 // ── Boot ───────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('segmentLength')
@@ -285,8 +278,8 @@ function addManualSegment() {
     <div class="mseg-fields">
       <input type="text"   placeholder="Start landmark" id="ms-sl-${n}">
       <input type="text"   placeholder="End landmark"   id="ms-el-${n}">
-      <input type="number" placeholder="Start (m)"      id="ms-sd-${n}" min="0">
-      <input type="number" placeholder="End (m)"        id="ms-ed-${n}" min="0">
+      <input type="number" placeholder="Start (m)"      id="ms-sd-${n}" min="0" inputmode="numeric" onwheel="event.preventDefault()">
+      <input type="number" placeholder="End (m)"        id="ms-ed-${n}" min="0" inputmode="numeric" onwheel="event.preventDefault()">
     </div>
     <button style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;
                    padding:6px 10px;cursor:pointer;font-weight:700"
