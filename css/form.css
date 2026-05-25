@@ -95,28 +95,31 @@
       letter-spacing: .01em;
     }
     .item-block-counters {
-      padding: 12px 16px;
+      padding: 8px 14px 12px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 4px;
     }
     .counter-row {
       display: flex;
       align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      padding: 6px 10px;
-      border-radius: 8px;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 5px 8px;
+      border-radius: 7px;
       transition: background .15s;
     }
     .counter-row:hover { background: #f7fbf0; }
     .counter-row .counter-label {
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 500;
       flex: 1;
-      min-width: 150px;
+      min-width: 0;
       margin: 0;
       color: #3d5a28;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .counter-ctrl {
       display: flex;
@@ -136,8 +139,29 @@
       line-height: 1; padding: 0;
     }
     .counter-ctrl button:hover { background: #4a7c2f; color: #fff; }
+    /* Counter input — uses type="text" inputmode="numeric" */
+    .counter-ctrl input[type="text"] {
+      width: 52px; border: none;
+      border-left: 1.5px solid #c8e89a;
+      border-right: 1.5px solid #c8e89a;
+      text-align: center; font-size: 15px; font-weight: 700;
+      color: #1a2e0e;
+      margin: 0; padding: 0; height: 36px;
+      background: #fff;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .counter-ctrl input[type="text"]::placeholder {
+      color: #bdd49a;
+      font-weight: 400;
+      font-size: 14px;
+    }
+    .counter-ctrl input[type="text"]:focus {
+      background: #f7fbf0;
+    }
+    /* Legacy fallback — keep for any type=number that slips through */
     .counter-ctrl input[type="number"] {
-      width: 80px; border: none;
+      width: 52px; border: none;
       border-left: 1.5px solid #c8e89a;
       border-right: 1.5px solid #c8e89a;
       text-align: center; font-size: 15px; font-weight: 700;
