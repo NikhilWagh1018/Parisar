@@ -108,69 +108,90 @@ function renderList(type, filter) {
   });
 }
 
-// ── Counter controls ───────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════
+//  NUMERIC COUNTER ARCHITECTURE  (single source of truth)
+//
+//  Design principles:
+//  • ONE oninput handler does ALL sanitisation — no keydown tricks,
+//    no onfocus hacks, no competing listeners.
+//  • The field is NEVER mutated during editing except to strip
+//    non-digit characters.  Leading-zero removal is NOT deferred;
+//    it is done inline but only when the result is unambiguous
+//    (i.e. the string starts with 0 AND has more digits after it).
+//  • Caret position is restored after every sanitisation so typing
+//    feels native on desktop AND mobile / Android virtual keyboards
+//    (which send key="Unidentified" — breaking any keydown approach).
+//  • blur is the only place a missing value is snapped to "0".
+//  • +/− buttons call adjustCounter which normalises via the same
+//    numeric read used at submit time.
+//  • No global state, no WeakMap, no closures per-field needed.
+// ════════════════════════════════════════════════════════════════
 
-// +/− buttons: read current numeric value, apply delta, write back
+// ── Internal helper: read a counter field as a safe integer ───
+function _counterRead(el) {
+  const n = parseInt(el.value, 10);
+  return isFinite(n) && n >= 0 ? n : 0;
+}
+
+// ── +/− button handler ────────────────────────────────────────
+// Reads, clamps, writes.  No mutation of an in-progress edit.
 function adjustCounter(id, delta) {
   const el = document.getElementById(id);
   if (!el) return;
-  const current = el.value === '' ? 0 : (parseInt(el.value, 10) || 0);
-  el.value = Math.max(0, current + delta);
+  el.value = Math.max(0, _counterRead(el) + delta);
 }
 
-// Called oninput: sanitise digits, remove leading zeros, preserve cursor
+// ── oninput: the ONE place that sanitises the raw typed string ─
+//
+// Allowed mid-edit values:   ""  "0"  "7"  "34"  "100"
+// Forbidden:                 "03"  "007"  "-1"  "3.5"  "abc"
+//
+// Algorithm:
+//   1. Strip every character that is not 0-9.
+//   2. Strip leading zeros only when a non-zero digit follows
+//      (i.e. "034" → "34", but "0" stays "0", "" stays "").
+//   3. If the sanitised value differs from what the browser shows,
+//      write it back and restore the caret at the correct position.
 function counterInput(id) {
   const el = document.getElementById(id);
   if (!el) return;
 
-  // Remember caret position BEFORE we rewrite el.value
-  const selStart = el.selectionStart;
-  const selEnd   = el.selectionEnd;
-  const oldLen   = el.value.length;
+  const raw    = el.value;
+  const caret  = el.selectionStart;           // caret before any rewrite
+  const oldLen = raw.length;
 
-  // Strip everything that isn't a digit
-  let raw = el.value.replace(/[^0-9]/g, '');
+  // Step 1 – digits only
+  let clean = raw.replace(/[^0-9]/g, '');
 
-  // Remove leading zeros but keep a lone "0" and allow empty string mid-edit
-  if (raw.length > 1) raw = raw.replace(/^0+/, '') || '0';
+  // Step 2 – remove leading zeros (e.g. "034" → "34"), keep lone "0" and ""
+  clean = clean.replace(/^0+([1-9])/, '$1');  // "034"→"34", "007"→"7"
+  // "00" → "0"  (all-zeros collapsed)
+  if (clean.length > 1 && /^0+$/.test(clean)) clean = '0';
 
-  // Only assign if the value actually changed (avoids needless cursor reset)
-  if (el.value !== raw) {
-    const removed = oldLen - raw.length;          // chars stripped
-    el.value = raw;
-    // Restore caret, adjusted for removed characters
-    const newCaret = Math.max(0, selStart - removed);
-    el.setSelectionRange(newCaret, newCaret);
+  // Step 3 – write back only if something changed (avoids needless cursor jump)
+  if (clean !== raw) {
+    const removed   = oldLen - clean.length;
+    el.value        = clean;
+    const newCaret  = Math.max(0, caret - removed);
+    try { el.setSelectionRange(newCaret, newCaret); } catch (_) { /* read-only */ }
   }
 }
 
-// Called onkeydown: intercept the very first keystroke while the field shows "0"
-// so the digit replaces the zero instead of appending to it
-function counterKeydown(id, e) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  // Only act when the current value is exactly "0" and the user pressed a digit key
-  if (el.value === '0' && e.key >= '0' && e.key <= '9') {
-    e.preventDefault();
-    el.value = e.key === '0' ? '0' : e.key;   // keep single "0" if they typed 0
-    // Move caret to end
-    el.setSelectionRange(el.value.length, el.value.length);
-  }
-}
-
-// Called onfocus: auto-select the entire value so typing replaces it immediately
-function counterFocus(id) {
-  const el = document.getElementById(id);
-  if (el) el.select();
-}
-
-// Called onblur: snap empty / invalid field back to 0
+// ── onblur: normalise – empty or invalid → "0" ────────────────
 function counterBlur(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  if (el.value === '' || isNaN(parseInt(el.value, 10))) el.value = 0;
+  if (el.value === '' || !/^\d+$/.test(el.value)) el.value = '0';
 }
 
+// ── Template: builds a counter row ───────────────────────────
+// Attributes used:
+//   oninput   → counterInput  (sanitisation during typing)
+//   onblur    → counterBlur   (normalise on leave)
+//   onwheel   → prevent scroll-hijack
+// NOT used:
+//   onkeydown  (broken on Android virtual keyboards)
+//   onfocus    (el.select() causes confusion when user clicks mid-value)
 function makeCounter(id, labelText) {
   return `
     <div class="counter-row">
@@ -180,8 +201,6 @@ function makeCounter(id, labelText) {
         <input type="text" inputmode="numeric" pattern="[0-9]*"
                id="${id}" name="${id}" value="0"
                oninput="counterInput('${id}')"
-               onkeydown="counterKeydown('${id}', event)"
-               onfocus="counterFocus('${id}')"
                onblur="counterBlur('${id}')"
                onwheel="event.preventDefault()">
         <button type="button" onclick="adjustCounter('${id}',1)">+</button>
@@ -215,7 +234,40 @@ function toggleObstruction(type, label) {
   }
 }
 
-// ── Missing length toggle ──────────────────────────────────────
+// ── Missing Length field (decimal numeric, not a counter) ──────
+// Allows digits and a single decimal point.  No leading zeros before decimal.
+function missingLengthInput(el) {
+  const raw   = el.value;
+  const caret = el.selectionStart;
+  const old   = raw.length;
+
+  // Allow digits and a single dot
+  let clean = raw.replace(/[^0-9.]/g, '');
+
+  // Keep only the first decimal point
+  const dotIdx = clean.indexOf('.');
+  if (dotIdx !== -1) {
+    clean = clean.slice(0, dotIdx + 1) + clean.slice(dotIdx + 1).replace(/\./g, '');
+  }
+
+  // Remove leading zeros before a digit (e.g. "05" → "5", but "0." → "0.")
+  clean = clean.replace(/^0+([0-9])/, '$1');
+
+  if (clean !== raw) {
+    const removed  = old - clean.length;
+    el.value       = clean;
+    const newCaret = Math.max(0, caret - removed);
+    try { el.setSelectionRange(newCaret, newCaret); } catch (_) {}
+  }
+}
+
+function missingLengthBlur(el) {
+  // Remove trailing dot  ("5." → "5")
+  if (el.value.endsWith('.')) el.value = el.value.slice(0, -1);
+  // Empty is fine for this optional field — don't snap to 0
+}
+
+// ── Missing Length toggle ──────────────────────────────────────
 function toggleMissingLength(radio) {
   const box = document.getElementById('missingLengthBox');
   box.style.display = radio.value === 'Yes' ? 'block' : 'none';

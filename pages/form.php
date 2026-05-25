@@ -234,8 +234,9 @@ if ($segmentIdParam > 0) {
           </div>
           <div id="missingLengthBox">
             <label>⚠ Missing Length (m)</label>
-            <input type="number" id="missingLength" name="missing_length"
-                   placeholder="Enter missing cycle track length in meters" min="0">
+            <input type="text" inputmode="decimal" id="missingLength" name="missing_length"
+                   placeholder="Enter missing cycle track length in meters"
+                   oninput="missingLengthInput(this)" onblur="missingLengthBlur(this)">
           </div>
         </div>
 
@@ -372,8 +373,6 @@ if ($segmentIdParam > 0) {
                      id="signageCount" name="signage_count"
                      value="0"
                      oninput="counterInput('signageCount')"
-                     onkeydown="counterKeydown('signageCount', event)"
-                     onfocus="counterFocus('signageCount')"
                      onblur="counterBlur('signageCount')"
                      onwheel="event.preventDefault()">
               <button type="button" onclick="adjustCounter('signageCount',1)">+</button>
