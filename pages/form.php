@@ -372,6 +372,8 @@ if ($segmentIdParam > 0) {
                      id="signageCount" name="signage_count"
                      value="0"
                      oninput="counterInput('signageCount')"
+                     onkeydown="counterKeydown('signageCount', event)"
+                     onfocus="counterFocus('signageCount')"
                      onblur="counterBlur('signageCount')"
                      onwheel="event.preventDefault()">
               <button type="button" onclick="adjustCounter('signageCount',1)">+</button>

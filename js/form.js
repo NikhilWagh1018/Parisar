@@ -109,25 +109,62 @@ function renderList(type, filter) {
 }
 
 // ── Counter controls ───────────────────────────────────────────
+
+// +/− buttons: read current numeric value, apply delta, write back
 function adjustCounter(id, delta) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.value = Math.max(0, (parseInt(el.value, 10) || 0) + delta);
+  const current = el.value === '' ? 0 : (parseInt(el.value, 10) || 0);
+  el.value = Math.max(0, current + delta);
 }
 
-// Strips leading zeros while the user types. Allows empty string mid-edit.
+// Called oninput: sanitise digits, remove leading zeros, preserve cursor
 function counterInput(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  let raw = el.value;
-  // Remove any non-digit characters (e.g. minus, decimal)
-  raw = raw.replace(/[^0-9]/g, '');
-  // Strip leading zeros, but allow a single '0' and allow empty string
-  if (raw.length > 1) raw = raw.replace(/^0+/, '');
-  el.value = raw;
+
+  // Remember caret position BEFORE we rewrite el.value
+  const selStart = el.selectionStart;
+  const selEnd   = el.selectionEnd;
+  const oldLen   = el.value.length;
+
+  // Strip everything that isn't a digit
+  let raw = el.value.replace(/[^0-9]/g, '');
+
+  // Remove leading zeros but keep a lone "0" and allow empty string mid-edit
+  if (raw.length > 1) raw = raw.replace(/^0+/, '') || '0';
+
+  // Only assign if the value actually changed (avoids needless cursor reset)
+  if (el.value !== raw) {
+    const removed = oldLen - raw.length;          // chars stripped
+    el.value = raw;
+    // Restore caret, adjusted for removed characters
+    const newCaret = Math.max(0, selStart - removed);
+    el.setSelectionRange(newCaret, newCaret);
+  }
 }
 
-// On blur: empty field resets to 0
+// Called onkeydown: intercept the very first keystroke while the field shows "0"
+// so the digit replaces the zero instead of appending to it
+function counterKeydown(id, e) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  // Only act when the current value is exactly "0" and the user pressed a digit key
+  if (el.value === '0' && e.key >= '0' && e.key <= '9') {
+    e.preventDefault();
+    el.value = e.key === '0' ? '0' : e.key;   // keep single "0" if they typed 0
+    // Move caret to end
+    el.setSelectionRange(el.value.length, el.value.length);
+  }
+}
+
+// Called onfocus: auto-select the entire value so typing replaces it immediately
+function counterFocus(id) {
+  const el = document.getElementById(id);
+  if (el) el.select();
+}
+
+// Called onblur: snap empty / invalid field back to 0
 function counterBlur(id) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -143,6 +180,8 @@ function makeCounter(id, labelText) {
         <input type="text" inputmode="numeric" pattern="[0-9]*"
                id="${id}" name="${id}" value="0"
                oninput="counterInput('${id}')"
+               onkeydown="counterKeydown('${id}', event)"
+               onfocus="counterFocus('${id}')"
                onblur="counterBlur('${id}')"
                onwheel="event.preventDefault()">
         <button type="button" onclick="adjustCounter('${id}',1)">+</button>
