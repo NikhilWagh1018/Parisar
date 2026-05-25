@@ -371,7 +371,7 @@ if ($segmentIdParam > 0) {
               <button type="button" onclick="adjustCounter('signageCount',-1)">−</button>
               <input type="text" inputmode="numeric" pattern="[0-9]*"
                      id="signageCount" name="signage_count"
-                     value="0"
+                     value="" placeholder="0"
                      oninput="counterInput('signageCount')"
                      onblur="counterBlur('signageCount')"
                      onwheel="event.preventDefault()">

@@ -123,6 +123,16 @@ try {
         $mainFields
     );
 
+    // Integer fields must store 0 when blank, not NULL.
+    // (UI sends "" for blank counter fields; PHP (int)"" = 0, but PDO would
+    //  bind null to the column which may violate NOT NULL constraints.)
+    $integerFields = ['signage_count'];
+    foreach ($mainFields as $i => $f) {
+        if (in_array($f, $integerFields, true) && $mainValues[$i] === null) {
+            $mainValues[$i] = 0;
+        }
+    }
+
     // JSON multi-select fields
     $surfaceIssues  = json_encode(array_values(array_filter((array)($_POST['surface_issues']  ?? []))));
     $overheadIssues = json_encode(array_values(array_filter((array)($_POST['overhead_issues'] ?? []))));

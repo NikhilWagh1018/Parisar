@@ -127,71 +127,72 @@ function renderList(type, filter) {
 //  • No global state, no WeakMap, no closures per-field needed.
 // ════════════════════════════════════════════════════════════════
 
-// ── Internal helper: read a counter field as a safe integer ───
-function _counterRead(el) {
+// ══════════════════════════════════════════════════════════════════
+//  NUMERIC COUNTER ARCHITECTURE  v3 — blank-display / zero-store
+//
+//  Display contract:
+//  • Fields are VISUALLY BLANK by default — value="" in HTML
+//  • Blank display = numeric value 0 (converted at submit/button)
+//  • Typing is uncontrolled mid-edit: only non-digits are stripped.
+//  • Leading zeros are collapsed on blur, never during typing.
+//
+//  Event model — ONE handler per concern, zero overlap:
+//    oninput  → counterInput   strips non-digit chars only
+//    onblur   → counterBlur    collapses leading zeros, blank stays blank
+//    onclick  → adjustCounter  +/− buttons, blank-aware
+//
+//  Blank-to-zero happens ONLY at:
+//    • adjustCounter: reads blank as 0 before applying delta
+//    • submitFullAudit: _numVal() reads blank as 0 in FormData
+//    • PHP backend: (int)$_POST[field] coerces "" to 0
+// ══════════════════════════════════════════════════════════════════
+
+// ── Safe integer read — blank/invalid treated as 0 ————————————
+function _numVal(el) {
+  if (!el) return 0;
   const n = parseInt(el.value, 10);
-  return isFinite(n) && n >= 0 ? n : 0;
+  return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
-// ── +/− button handler ────────────────────────────────────────
-// Reads, clamps, writes.  No mutation of an in-progress edit.
+// ── +/− button handler ——————————————————————————————————————————————
+// blank + (+) → "1"     "1" + (−) → blank (0 shown as blank)
 function adjustCounter(id, delta) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.value = Math.max(0, _counterRead(el) + delta);
+  const next = Math.max(0, _numVal(el) + delta);
+  el.value = next === 0 ? '' : String(next);
 }
 
-// ── oninput: the ONE place that sanitises the raw typed string ─
-//
-// Allowed mid-edit values:   ""  "0"  "7"  "34"  "100"
-// Forbidden:                 "03"  "007"  "-1"  "3.5"  "abc"
-//
-// Algorithm:
-//   1. Strip every character that is not 0-9.
-//   2. Strip leading zeros only when a non-zero digit follows
-//      (i.e. "034" → "34", but "0" stays "0", "" stays "").
-//   3. If the sanitised value differs from what the browser shows,
-//      write it back and restore the caret at the correct position.
+// ── oninput: strip non-digits ONLY — never reformat mid-type —————
+// "034" is intentionally NOT collapsed here — the user might still
+// be typing.  Collapse happens on blur only.
 function counterInput(id) {
   const el = document.getElementById(id);
   if (!el) return;
 
   const raw    = el.value;
-  const caret  = el.selectionStart;           // caret before any rewrite
+  const caret  = el.selectionStart;
   const oldLen = raw.length;
 
-  // Step 1 – digits only
-  let clean = raw.replace(/[^0-9]/g, '');
+  const clean = raw.replace(/[^0-9]/g, '');
 
-  // Step 2 – remove leading zeros (e.g. "034" → "34"), keep lone "0" and ""
-  clean = clean.replace(/^0+([1-9])/, '$1');  // "034"→"34", "007"→"7"
-  // "00" → "0"  (all-zeros collapsed)
-  if (clean.length > 1 && /^0+$/.test(clean)) clean = '0';
-
-  // Step 3 – write back only if something changed (avoids needless cursor jump)
   if (clean !== raw) {
-    const removed   = oldLen - clean.length;
-    el.value        = clean;
-    const newCaret  = Math.max(0, caret - removed);
-    try { el.setSelectionRange(newCaret, newCaret); } catch (_) { /* read-only */ }
+    el.value = clean;
+    const newCaret = Math.max(0, caret - (oldLen - clean.length));
+    try { el.setSelectionRange(newCaret, newCaret); } catch (_) {}
   }
 }
 
-// ── onblur: normalise – empty or invalid → "0" ────────────────
+// ── onblur: collapse leading zeros; blank stays blank ——————————
+// "034" → "34"   "007" → "7"   "0" → blank   "" → blank
 function counterBlur(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  if (el.value === '' || !/^\d+$/.test(el.value)) el.value = '0';
+  const n = parseInt(el.value, 10);
+  el.value = (Number.isFinite(n) && n > 0) ? String(n) : '';
 }
 
-// ── Template: builds a counter row ───────────────────────────
-// Attributes used:
-//   oninput   → counterInput  (sanitisation during typing)
-//   onblur    → counterBlur   (normalise on leave)
-//   onwheel   → prevent scroll-hijack
-// NOT used:
-//   onkeydown  (broken on Android virtual keyboards)
-//   onfocus    (el.select() causes confusion when user clicks mid-value)
+// ── Template: counter row with blank-default input —————————————
 function makeCounter(id, labelText) {
   return `
     <div class="counter-row">
@@ -199,7 +200,8 @@ function makeCounter(id, labelText) {
       <div class="counter-ctrl">
         <button type="button" onclick="adjustCounter('${id}',-1)">−</button>
         <input type="text" inputmode="numeric" pattern="[0-9]*"
-               id="${id}" name="${id}" value="0"
+               id="${id}" name="${id}" value=""
+               placeholder="0"
                oninput="counterInput('${id}')"
                onblur="counterBlur('${id}')"
                onwheel="event.preventDefault()">
@@ -528,7 +530,7 @@ async function doReset() {
     document.querySelectorAll('#auditForm input[type="text"], #auditForm input[type="number"], #auditForm textarea')
       .forEach(el => {
         if (el.id === 'segment_id' || el.id === 'session_id' || el.id === 'road_id' || el.name === 'edit_mode') return;
-        el.value = el.name === 'signage_count' ? '0' : '';
+        el.value = '';
       });
 
     // Radio buttons
@@ -630,7 +632,8 @@ function prefillObstructions(obstructions) {
     // Set counter values
     const setCounter = (suffix, val) => {
       const el = document.getElementById(id + suffix);
-      if (el) el.value = val || 0;
+      // Blank represents 0 in display; only show a value if it is genuinely > 0
+      if (el) el.value = (val && parseInt(val, 10) > 0) ? String(parseInt(val, 10)) : '';
     };
     setCounter('_slowed',  o.slowed);
     setCounter('_partial', o.partial);
@@ -705,7 +708,14 @@ async function prefillFormIfEditMode() {
     setVal('gpsStart',      a.gps_start);
     setVal('gpsEnd',        a.gps_end);
     setVal('missingLength', a.missing_length);
-    setVal('signageCount',  a.signage_count);
+    // Counter fields: show blank for 0, show value only if > 0
+    const setCounter = (id, val) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const n = parseInt(val, 10);
+      el.value = (Number.isFinite(n) && n > 0) ? String(n) : '';
+    };
+    setCounter('signageCount', a.signage_count);
 
     // ── Radio buttons ────────────────────────────────────────
     const setRadio = (name, val) => {
