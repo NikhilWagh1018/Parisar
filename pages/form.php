@@ -369,7 +369,9 @@ if ($segmentIdParam > 0) {
             <div class="counter-ctrl">
               <button type="button" onclick="adjustCounter('signageCount',-1)">−</button>
               <input type="number" id="signageCount" name="signage_count"
-                     value="0" min="0" oninput="clampCounter('signageCount')">
+                     value="0" min="0" oninput="clampCounter('signageCount')"
+                     onfocus="if(this.value==='0')this.value=''"
+                     onblur="blurCounter('signageCount')">
               <button type="button" onclick="adjustCounter('signageCount',1)">+</button>
             </div>
           </div>

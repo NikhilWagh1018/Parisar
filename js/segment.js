@@ -22,6 +22,13 @@ function getCsrf() {
   return meta ? meta.content : (window.__CSRF__ || '');
 }
 
+// ── Prevent scroll from changing number inputs ─────────────────
+document.addEventListener('wheel', function (e) {
+  if (document.activeElement && document.activeElement.type === 'number') {
+    document.activeElement.blur();
+  }
+}, { passive: false });
+
 // ── Boot ───────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('segmentLength')

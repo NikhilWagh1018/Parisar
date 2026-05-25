@@ -108,6 +108,13 @@ function renderList(type, filter) {
   });
 }
 
+// ── Prevent scroll wheel from changing number inputs ───────────
+document.addEventListener('wheel', function (e) {
+  if (document.activeElement && document.activeElement.type === 'number') {
+    document.activeElement.blur();
+  }
+}, { passive: false });
+
 // ── Counter controls ───────────────────────────────────────────
 function adjustCounter(id, delta) {
   const el = document.getElementById(id);
@@ -117,7 +124,15 @@ function adjustCounter(id, delta) {
 function clampCounter(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  if (isNaN(parseInt(el.value)) || parseInt(el.value) < 0) el.value = 0;
+  // Allow empty string while typing; validate on blur
+  const val = parseInt(el.value);
+  if (!isNaN(val) && val < 0) el.value = 0;
+}
+function blurCounter(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const val = parseInt(el.value);
+  if (isNaN(val) || val < 0) el.value = 0;
 }
 function makeCounter(id, labelText) {
   return `
@@ -126,7 +141,9 @@ function makeCounter(id, labelText) {
       <div class="counter-ctrl">
         <button type="button" onclick="adjustCounter('${id}',-1)">−</button>
         <input type="number" id="${id}" name="${id}" value="0" min="0"
-               oninput="clampCounter('${id}')">
+               onfocus="if(this.value==='0')this.value=''"
+               oninput="clampCounter('${id}')"
+               onblur="blurCounter('${id}')">
         <button type="button" onclick="adjustCounter('${id}',1)">+</button>
       </div>
     </div>`;
