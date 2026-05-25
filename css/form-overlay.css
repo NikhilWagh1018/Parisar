@@ -189,6 +189,32 @@
       background: #fff;
     }
 
+    /* ── Counter inputs must NOT inherit the global width:100% / padding ── */
+    .counter-ctrl input[type="text"],
+    .counter-ctrl input[type="number"] {
+      width: 44px !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+      border-left:  1.5px solid #b8db80 !important;
+      border-right: 1.5px solid #b8db80 !important;
+      background: #fff !important;
+      text-align: center !important;
+      font-size: 14px !important;
+      font-weight: 700 !important;
+      color: #1a2e0e !important;
+      height: 32px !important;
+      margin: 0 !important;
+      flex-shrink: 0 !important;
+    }
+    .counter-ctrl input[type="text"]:focus,
+    .counter-ctrl input[type="number"]:focus {
+      background: #f0f7e6 !important;
+      border-color: inherit !important;
+      box-shadow: none !important;
+    }
+
     /* Error state */
     .req-field.error input,
     .req-field.error textarea {
@@ -295,33 +321,37 @@
     .counter-row {
       display: flex;
       align-items: center;
+      flex-wrap: nowrap;
       gap: 12px;
-      flex-wrap: wrap;
-      padding: 6px 10px;
+      padding: 4px 6px;
       border-radius: 8px;
       transition: background .15s;
     }
     .counter-row:hover { background: #f7fbf0; }
     .counter-row .counter-label {
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 500;
       flex: 1;
-      min-width: 150px;
+      min-width: 0;
       margin: 0;
       color: #3d5a28;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* ── Counter control ── */
     .counter-ctrl {
       display: inline-flex;
-      align-items: center;
-      border: 1.5px solid #c8e89a;
-      border-radius: 9px;
+      align-items: stretch;
+      flex-shrink: 0;
+      border: 1.5px solid #b8db80;
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 1px 3px rgba(134,185,59,.1);
+      box-shadow: 0 1px 4px rgba(134,185,59,.12);
     }
     .counter-ctrl button {
-      width: 36px; height: 36px;
+      width: 30px; height: 32px;
       border: none;
       background: #f0f7ea;
       color: #4a7c2f;
@@ -329,21 +359,15 @@
       font-weight: 700;
       cursor: pointer;
       transition: background .15s, color .15s;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      user-select: none;
     }
-    .counter-ctrl button:hover { background: #4a7c2f; color: #fff; }
-    .counter-ctrl input[type="number"] {
-      width: 56px;
-      border: none !important;
-      border-left: 1.5px solid #c8e89a !important;
-      border-right: 1.5px solid #c8e89a !important;
-      border-radius: 0 !important;
-      text-align: center;
-      font-size: 14px;
-      font-weight: 700;
-      color: #1a2e0e;
-      box-shadow: none !important;
-      background: #fff !important;
-    }
+    .counter-ctrl button:hover  { background: #4a7c2f; color: #fff; }
+    .counter-ctrl button:active { background: #2d5a0e; color: #fff; }
 
     /* ── Missing length box ── */
     #missingLengthBox {
