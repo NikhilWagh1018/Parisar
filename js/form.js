@@ -109,35 +109,29 @@ function renderList(type, filter) {
 }
 
 // ── Counter controls ───────────────────────────────────────────
-//
-//  FIX: Counters now use inputmode="numeric" pattern="[0-9]*" so mobile
-//  shows a numeric keyboard. On focus the existing value is fully selected
-//  so typing immediately replaces it (solves the leading-zero problem).
-//  On blur an empty field snaps back to 0. Wheel events are blocked on
-//  every number/counter input so scrolling never mutates a value.
-//
 function adjustCounter(id, delta) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.value = Math.max(0, (parseInt(el.value) || 0) + delta);
+  el.value = Math.max(0, (parseInt(el.value, 10) || 0) + delta);
 }
 
-// Called oninput — allows the field to be empty while the user is typing
-function clampCounter(id) {
+// Strips leading zeros while the user types. Allows empty string mid-edit.
+function counterInput(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  const raw = el.value;
-  if (raw === '' || raw === '-') return; // allow mid-edit empty
-  const v = parseInt(raw, 10);
-  if (isNaN(v) || v < 0) el.value = 0;
+  let raw = el.value;
+  // Remove any non-digit characters (e.g. minus, decimal)
+  raw = raw.replace(/[^0-9]/g, '');
+  // Strip leading zeros, but allow a single '0' and allow empty string
+  if (raw.length > 1) raw = raw.replace(/^0+/, '');
+  el.value = raw;
 }
 
-// Called onblur — snaps empty / invalid to 0
-function blurCounter(id) {
+// On blur: empty field resets to 0
+function counterBlur(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  const v = parseInt(el.value, 10);
-  if (isNaN(v) || v < 0) el.value = 0;
+  if (el.value === '' || isNaN(parseInt(el.value, 10))) el.value = 0;
 }
 
 function makeCounter(id, labelText) {
@@ -146,11 +140,10 @@ function makeCounter(id, labelText) {
       <span class="counter-label">${labelText}</span>
       <div class="counter-ctrl">
         <button type="button" onclick="adjustCounter('${id}',-1)">−</button>
-        <input type="number" id="${id}" name="${id}" value="0" min="0"
-               inputmode="numeric"
-               onfocus="this.select()"
-               oninput="clampCounter('${id}')"
-               onblur="blurCounter('${id}')"
+        <input type="text" inputmode="numeric" pattern="[0-9]*"
+               id="${id}" name="${id}" value="0"
+               oninput="counterInput('${id}')"
+               onblur="counterBlur('${id}')"
                onwheel="event.preventDefault()">
         <button type="button" onclick="adjustCounter('${id}',1)">+</button>
       </div>

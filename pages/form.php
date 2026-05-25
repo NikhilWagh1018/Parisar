@@ -235,9 +235,7 @@ if ($segmentIdParam > 0) {
           <div id="missingLengthBox">
             <label>⚠ Missing Length (m)</label>
             <input type="number" id="missingLength" name="missing_length"
-                   placeholder="Enter missing cycle track length in meters" min="0"
-                   inputmode="numeric"
-                   onwheel="event.preventDefault()">
+                   placeholder="Enter missing cycle track length in meters" min="0">
           </div>
         </div>
 
@@ -370,11 +368,11 @@ if ($segmentIdParam > 0) {
           <div style="margin-top:8px">
             <div class="counter-ctrl">
               <button type="button" onclick="adjustCounter('signageCount',-1)">−</button>
-              <input type="number" id="signageCount" name="signage_count"
-                     value="0" min="0" inputmode="numeric"
-                     onfocus="this.select()"
-                     oninput="clampCounter('signageCount')"
-                     onblur="blurCounter('signageCount')"
+              <input type="text" inputmode="numeric" pattern="[0-9]*"
+                     id="signageCount" name="signage_count"
+                     value="0"
+                     oninput="counterInput('signageCount')"
+                     onblur="counterBlur('signageCount')"
                      onwheel="event.preventDefault()">
               <button type="button" onclick="adjustCounter('signageCount',1)">+</button>
             </div>
@@ -457,14 +455,12 @@ if ($segmentIdParam > 0) {
           <div class="field-group">
             <label class="field-label">Width of Segment (m)</label>
             <input type="number" name="segment_width"
-                   placeholder="e.g. 2.5" min="0" step="0.1"
-                   onwheel="event.preventDefault()">
+                   placeholder="e.g. 2.5" min="0" step="0.1">
           </div>
           <div class="field-group">
             <label class="field-label">Length of Segment (m)</label>
             <input type="number" name="segment_length"
-                   placeholder="e.g. 500" min="0" step="0.1"
-                   onwheel="event.preventDefault()">
+                   placeholder="e.g. 500" min="0" step="0.1">
           </div>
         </div>
         <div class="field-group" style="margin-top:14px">
