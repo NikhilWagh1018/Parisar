@@ -25,7 +25,7 @@ function getCsrf() {
 // ── Prevent scroll from changing number inputs ─────────────────
 document.addEventListener('wheel', function (e) {
   if (document.activeElement && document.activeElement.type === 'number') {
-    document.activeElement.blur();
+    e.preventDefault();
   }
 }, { passive: false });
 

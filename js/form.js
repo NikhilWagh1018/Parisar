@@ -111,7 +111,7 @@ function renderList(type, filter) {
 // ── Prevent scroll wheel from changing number inputs ───────────
 document.addEventListener('wheel', function (e) {
   if (document.activeElement && document.activeElement.type === 'number') {
-    document.activeElement.blur();
+    e.preventDefault();
   }
 }, { passive: false });
 
@@ -141,7 +141,7 @@ function makeCounter(id, labelText) {
       <div class="counter-ctrl">
         <button type="button" onclick="adjustCounter('${id}',-1)">−</button>
         <input type="number" id="${id}" name="${id}" value="0" min="0"
-               onfocus="if(this.value==='0')this.value=''"
+               onfocus="this.select()"
                oninput="clampCounter('${id}')"
                onblur="blurCounter('${id}')">
         <button type="button" onclick="adjustCounter('${id}',1)">+</button>
