@@ -367,15 +367,17 @@ if ($segmentIdParam > 0) {
         <div class="field-group">
           <label class="field-label">Number of signages indicating presence of a cycle track</label>
           <div style="margin-top:8px">
-            <div class="counter-ctrl">
-              <button type="button" onclick="adjustCounter('signageCount',-1)">−</button>
-              <input type="text" inputmode="numeric" pattern="[0-9]*"
-                     id="signageCount" name="signage_count"
-                     value="" placeholder="0"
-                     oninput="counterInput('signageCount')"
-                     onblur="counterBlur('signageCount')"
-                     onwheel="event.preventDefault()">
-              <button type="button" onclick="adjustCounter('signageCount',1)">+</button>
+            <div class="counter-row" style="padding:0">
+              <div class="counter-ctrl">
+                <button type="button" onclick="adjustCounter('signageCount',-1)">−</button>
+                <input type="text" inputmode="numeric" pattern="[0-9]*"
+                       id="signageCount" name="signage_count"
+                       value="" placeholder="0"
+                       oninput="counterInput('signageCount')"
+                       onblur="counterBlur('signageCount')"
+                       onwheel="event.preventDefault()">
+                <button type="button" onclick="adjustCounter('signageCount',1)">+</button>
+              </div>
             </div>
           </div>
         </div>

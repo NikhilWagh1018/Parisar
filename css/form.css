@@ -66,7 +66,7 @@
     .checkbox-item input[type="checkbox"] { width:auto; margin:0; accent-color:#86B93B; }
     .no-results { font-size:13px; color:#999; text-align:center; padding:8px 0; }
 
-    /* ── +/- counter ── */
+    /* ── +/− counter blocks ── */
     .item-block {
       margin-top: 12px;
       border: 1.5px solid #c8e89a;
@@ -80,38 +80,40 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 11px 16px;
+      padding: 10px 14px;
       background: linear-gradient(90deg, #f0f7e6 0%, #f7fbf0 100%);
       border-bottom: 1px solid #e0f0c0;
     }
     .item-block-header .item-pin {
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1;
     }
     .item-block-header strong {
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 700;
       color: #2d5a0e;
       letter-spacing: .01em;
     }
     .item-block-counters {
-      padding: 8px 14px 12px;
+      padding: 6px 12px 10px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 2px;
     }
+
+    /* ── Counter row — label + stepper inline ── */
     .counter-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      padding: 5px 8px;
-      border-radius: 7px;
+      gap: 12px;
+      padding: 4px 6px;
+      border-radius: 6px;
       transition: background .15s;
     }
     .counter-row:hover { background: #f7fbf0; }
     .counter-row .counter-label {
-      font-size: 12.5px;
+      font-size: 12px;
       font-weight: 500;
       flex: 1;
       min-width: 0;
@@ -121,52 +123,75 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
+    /* ── Stepper control ── */
     .counter-ctrl {
-      display: flex;
-      align-items: center;
-      border: 1.5px solid #c8e89a;
-      border-radius: 9px;
+      display: inline-flex;
+      align-items: stretch;
+      border: 1.5px solid #b8db80;
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 1px 3px rgba(134,185,59,.1);
+      box-shadow: 0 1px 4px rgba(134,185,59,.12);
+      flex-shrink: 0;
     }
     .counter-ctrl button {
       background: #f0f7e6;
       border: none;
-      width: 36px; height: 36px;
-      font-size: 20px; font-weight: 700;
-      color: #4a7c2f; cursor: pointer;
+      width: 30px;
+      height: 32px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #4a7c2f;
+      cursor: pointer;
       transition: background .15s, color .15s;
-      line-height: 1; padding: 0;
+      line-height: 1;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      flex-shrink: 0;
     }
-    .counter-ctrl button:hover { background: #4a7c2f; color: #fff; }
-    /* Counter input — uses type="text" inputmode="numeric" */
+    .counter-ctrl button:hover  { background: #4a7c2f; color: #fff; }
+    .counter-ctrl button:active { background: #2d5a0e; color: #fff; }
+
+    /* Counter input — type="text" inputmode="numeric" */
     .counter-ctrl input[type="text"] {
-      width: 52px; border: none;
-      border-left: 1.5px solid #c8e89a;
-      border-right: 1.5px solid #c8e89a;
-      text-align: center; font-size: 15px; font-weight: 700;
+      width: 44px;
+      border: none;
+      border-left:  1.5px solid #b8db80;
+      border-right: 1.5px solid #b8db80;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
       color: #1a2e0e;
-      margin: 0; padding: 0; height: 36px;
+      margin: 0;
+      padding: 0;
+      height: 32px;
       background: #fff;
       box-sizing: border-box;
       outline: none;
+      transition: background .15s;
+      /* prevent iOS zoom on focus */
+      font-size: max(14px, 16px);
     }
     .counter-ctrl input[type="text"]::placeholder {
-      color: #bdd49a;
+      color: #c0d8a0;
       font-weight: 400;
-      font-size: 14px;
+      font-size: 13px;
     }
     .counter-ctrl input[type="text"]:focus {
-      background: #f7fbf0;
+      background: #f0f7e6;
     }
-    /* Legacy fallback — keep for any type=number that slips through */
+
+    /* Legacy fallback — suppress spinners on any stray type=number */
     .counter-ctrl input[type="number"] {
-      width: 52px; border: none;
-      border-left: 1.5px solid #c8e89a;
-      border-right: 1.5px solid #c8e89a;
-      text-align: center; font-size: 15px; font-weight: 700;
+      width: 44px; border: none;
+      border-left: 1.5px solid #b8db80;
+      border-right: 1.5px solid #b8db80;
+      text-align: center; font-size: 14px; font-weight: 700;
       color: #1a2e0e;
-      margin: 0; padding: 0; height: 36px;
+      margin: 0; padding: 0; height: 32px;
       background: #fff;
       -moz-appearance: textfield !important;
       appearance: textfield;
@@ -176,8 +201,15 @@
     .counter-ctrl input[type="number"]::-webkit-outer-spin-button {
       -webkit-appearance: none !important;
       appearance: none !important;
-      margin: 0;
-      display: none;
+      margin: 0; display: none;
+    }
+
+    /* ── Responsive: shrink label on small screens ── */
+    @media (max-width: 480px) {
+      .counter-row { gap: 8px; }
+      .counter-row .counter-label { font-size: 11.5px; }
+      .counter-ctrl button { width: 28px; height: 30px; font-size: 16px; }
+      .counter-ctrl input[type="text"] { width: 40px; height: 30px; }
     }
 
     /* ── Conditional missing length ── */
@@ -348,7 +380,7 @@
       background:rgba(0,0,0,0.45); z-index:9999;
       align-items:center; justify-content:center;
     }
-    .confirm-overlay.show { display:flex; }
+    .confirm-overlay.active { display:flex; }
     .confirm-box {
       background:#fff; border-radius:10px;
       padding:28px 28px 22px; max-width:380px; width:90%;
