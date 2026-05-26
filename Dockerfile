@@ -10,8 +10,12 @@ RUN apt-get update && apt-get install -y \
     php8.1-curl \
     php8.1-mbstring \
     php8.1-xml \
+    php8.1-zip \
     libapache2-mod-php8.1 \
     curl \
+    git \
+    unzip \
+    zip \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
