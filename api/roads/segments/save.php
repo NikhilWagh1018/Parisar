@@ -79,9 +79,9 @@ try {
 
     $stmt = $pdo->prepare(
         "INSERT INTO segments
-           (road_id, segment_number, start_label, end_label,
+           (public_id, road_id, segment_number, start_label, end_label,
             start_distance, end_distance, length, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')"
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')"
     );
 
     $saved = 0;
@@ -95,7 +95,10 @@ try {
 
         if ($segNum <= 0) continue;
 
-        $stmt->execute([$roadId, $segNum, $startL ?: null, $endL ?: null, $startD, $endD, $length]);
+        // Use a temporary unique public_id to avoid UNIQUE KEY collision on
+        // empty string default when inserting multiple segments at once.
+        $tempPublicId = 'SEG-R' . $roadId . 'N' . $segNum;
+        $stmt->execute([$tempPublicId, $roadId, $segNum, $startL ?: null, $endL ?: null, $startD, $endD, $length]);
 
         $segId       = (int)$pdo->lastInsertId();
         $segPublicId = 'SEG-' . str_pad((string)$segId, 4, '0', STR_PAD_LEFT);
