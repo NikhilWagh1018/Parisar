@@ -19,8 +19,10 @@ if (isset($_SESSION['user_id'])) {
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/google_config.php';
+require_once __DIR__ . '/../config/rate_limit.php';
 
-$error = '';
+$error     = '';
+$clientIp  = getClientIp();
 
 // ── Handle POST (local login) ──────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -30,35 +32,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($email === '' || $password === '') {
         $error = 'Please fill in all fields.';
     } else {
-        $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
-        $stmt->execute([$email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user && $user['auth_provider'] === 'google' && empty($user['password'])) {
-            $error = 'This account uses Google Sign-In. Please click "Continue with Google" below.';
-        } elseif ($user && password_verify($password, (string)$user['password'])) {
-            // ── Successful local login ─────────────────────────
-            session_regenerate_id(true);
-            $_SESSION['user_id']         = $user['id'];
-            $_SESSION['user_name']       = $user['name'];
-            $_SESSION['user_email']      = $user['email'];
-            $_SESSION['user_role']       = $user['role'];
-            $_SESSION['profile_picture'] = $user['profile_picture'] ?? null;
-            $_SESSION['auth_provider']   = $user['auth_provider']   ?? 'local';
-
-            // Generate a CSRF token for this session
-            if (empty($_SESSION['csrf_token'])) {
-                $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-            }
-
-            // Update last_login timestamp
-            $pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = ?')
-                ->execute([$user['id']]);
-
-            header('Location: ../pages/dashboard.php');
-            exit;
+        // ── Rate limit check ───────────────────────────────────
+        $rl = checkLoginRateLimit($pdo, $clientIp);
+        if (!$rl['allowed']) {
+            $error = $rl['message'];
         } else {
-            $error = 'Invalid email or password. Please try again.';
+            $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ? LIMIT 1');
+            $stmt->execute([$email]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($user && $user['auth_provider'] === 'google' && empty($user['password'])) {
+                // Google accounts don't count as a brute-force attempt
+                $error = 'This account uses Google Sign-In. Please click "Continue with Google" below.';
+            } elseif ($user && password_verify($password, (string)$user['password'])) {
+                // ── Successful local login ─────────────────────
+                clearLoginAttempts($pdo, $clientIp);
+
+                session_regenerate_id(true);
+                $_SESSION['user_id']         = $user['id'];
+                $_SESSION['user_name']       = $user['name'];
+                $_SESSION['user_email']      = $user['email'];
+                $_SESSION['user_role']       = $user['role'];
+                $_SESSION['profile_picture'] = $user['profile_picture'] ?? null;
+                $_SESSION['auth_provider']   = $user['auth_provider']   ?? 'local';
+
+                // Generate a CSRF token for this session
+                if (empty($_SESSION['csrf_token'])) {
+                    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+                }
+
+                // Update last_login timestamp
+                $pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = ?')
+                    ->execute([$user['id']]);
+
+                header('Location: ../pages/dashboard.php');
+                exit;
+            } else {
+                // Wrong password or unknown email — record the failure
+                recordFailedAttempt($pdo, $clientIp);
+                $remaining = remainingAttempts($pdo, $clientIp);
+
+                $error = 'Invalid email or password. Please try again.';
+                if ($remaining > 0 && $remaining <= 2) {
+                    $error .= " ({$remaining} attempt" . ($remaining === 1 ? '' : 's') . " remaining before lockout)";
+                }
+            }
         }
     }
 }
