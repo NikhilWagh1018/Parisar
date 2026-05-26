@@ -15,6 +15,7 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 
 header('Content-Type: application/json');
 
@@ -281,7 +282,14 @@ try {
         'UPDATE segments SET status = \'completed\', completed_at = NOW() WHERE id = ?'
     )->execute([$segmentId]);
 
-    // ── 7. COMMIT ──────────────────────────────────────────────
+    // ── 7. Log activity ────────────────────────────────────────
+    ActivityLogger::log($pdo, $editMode ? ActivityLogger::SEGMENT_EDITED : ActivityLogger::SEGMENT_SUBMITTED, $CURRENT_USER_ID, [
+        'audit_id'   => $auditId,
+        'segment_id' => $segmentId,
+        'session_id' => $sessionId,
+    ]);
+
+    // ── 8. COMMIT ──────────────────────────────────────────────
     $pdo->commit();
 
     echo json_encode([
