@@ -103,7 +103,7 @@ async function loadSegmentsFromDB(roadId) {
     try { data = JSON.parse(rawText); }
     catch { console.error('loadSegmentsFromDB bad JSON:', rawText.slice(0, 200)); return; }
 
-    if (data.success && data.road && data.segments.length > 0) {
+    if (data.success && data.road) {
       roadData = {
         id:            data.road.id,
         name:          data.road.name,
@@ -115,20 +115,33 @@ async function loadSegmentsFromDB(roadId) {
         method:        data.road.segment_method,
         segmentLength: data.road.segment_length,
       };
-      segments = data.segments.map(s => ({
-        id:            s.id,
-        number:        s.segment_number,
-        startDistance: s.start_distance,
-        endDistance:   s.end_distance,
-        length:        s.length,
-        startLandmark: s.start_label  || '',
-        endLandmark:   s.end_label    || '',
-        status:        s.status,
-        auditData:     s.status === 'completed'
-                         ? { completedAt: s.completed_at }
-                         : null,
-      }));
-      displaySegments();
+
+      if (data.segments.length > 0) {
+        segments = data.segments.map(s => ({
+          id:            s.id,
+          number:        s.segment_number,
+          startDistance: s.start_distance,
+          endDistance:   s.end_distance,
+          length:        s.length,
+          startLandmark: s.start_label  || '',
+          endLandmark:   s.end_label    || '',
+          status:        s.status,
+          auditData:     s.status === 'completed'
+                           ? { completedAt: s.completed_at }
+                           : null,
+        }));
+        displaySegments();
+      } else {
+        // Road exists but has no segments — pre-populate form fields for re-generation
+        showRoadForm();
+        roadSelectItem(data.road.name);
+        document.getElementById('roadStart').value  = data.road.start_point  || '';
+        document.getElementById('roadEnd').value    = data.road.end_point    || '';
+        document.getElementById('roadLength').value = data.road.total_length || '';
+        if (data.road.gps_start) document.getElementById('roadGpsStart').value = data.road.gps_start;
+        if (data.road.gps_end)   document.getElementById('roadGpsEnd').value   = data.road.gps_end;
+        _currentRoadId = data.road.id; // keep so save uses UPDATE not INSERT
+      }
     } else {
       showRoadForm();
     }
@@ -670,8 +683,8 @@ async function apiFetch(url, method, body) {
   try {
     json = JSON.parse(text);
   } catch {
-    console.error('Non-JSON response from', url, '— HTTP', res.status, '\n', text.slice(0, 500));
-    json = { success: false, error: 'HTTP ' + res.status + ': ' + text.slice(0, 200) };
+    console.error('Non-JSON response from', url, '— HTTP', res.status, '\n', text.slice(0, 300));
+    json = { success: false, error: 'Server error (HTTP ' + res.status + '). Check Railway logs.' };
   }
   json.__status = res.status;
   json.__ok     = res.ok;
