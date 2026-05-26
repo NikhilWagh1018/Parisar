@@ -670,8 +670,8 @@ async function apiFetch(url, method, body) {
   try {
     json = JSON.parse(text);
   } catch {
-    console.error('Non-JSON response from', url, '— HTTP', res.status, '\n', text.slice(0, 300));
-    json = { success: false, error: 'Server error (HTTP ' + res.status + '). Check Railway logs.' };
+    console.error('Non-JSON response from', url, '— HTTP', res.status, '\n', text.slice(0, 500));
+    json = { success: false, error: 'HTTP ' + res.status + ': ' + text.slice(0, 200) };
   }
   json.__status = res.status;
   json.__ok     = res.ok;
