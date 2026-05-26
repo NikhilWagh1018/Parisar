@@ -27,7 +27,7 @@ RUN { \
     echo "post_max_size = 12M"; \
     echo "session.cookie_httponly = 1"; \
     echo "session.cookie_secure = 1"; \
-    echo "session.cookie_samesite = Strict"; \
+    echo "session.cookie_samesite = Lax"; \
     echo "session.use_strict_mode = 1"; \
     echo "session.gc_maxlifetime = 28800"; \
     echo "opcache.enable = 1"; \
@@ -38,6 +38,8 @@ RUN { \
 WORKDIR /var/www/html
 RUN rm -f /var/www/html/index.html
 COPY . .
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+    && composer install --no-dev --optimize-autoloader --no-interaction
 
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf \
     && echo "ServerTokens Prod"    >> /etc/apache2/apache2.conf \
