@@ -1,4 +1,4 @@
-﻿FROM ubuntu:22.04
+FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -46,7 +46,13 @@ RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf 
     && chmod -R 755 /var/www/html \
     && chmod -R 775 /var/www/html/assets \
     && mkdir -p /var/log/apache2 \
-    && chown www-data:www-data /var/log/apache2
+    && touch /var/log/apache2/error.log \
+    && touch /var/log/apache2/access.log \
+    && touch /var/log/apache2/php_errors.log \
+    && chown -R www-data:www-data /var/log/apache2 \
+    && chmod -R 755 /var/log/apache2 \
+    && mkdir -p /var/run/apache2 \
+    && chown -R www-data:www-data /var/run/apache2
 
 EXPOSE 80
 STOPSIGNAL SIGWINCH
