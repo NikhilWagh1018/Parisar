@@ -407,7 +407,7 @@ async function saveRoadAndSegments(roadName, segsArr, method, segmentLength) {
 
   } catch (e) {
     console.error(e);
-    showToast('Network error. Is XAMPP running?', 'error');
+    showToast('Network error. Please try again.', 'error');
   }
 }
 

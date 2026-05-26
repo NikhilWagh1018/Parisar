@@ -463,7 +463,7 @@ async function submitFullAudit() {
     }
   } catch (error) {
     console.error('Fetch failed:', error);
-    alert('Failed to connect to server. Check that XAMPP is running.');
+    alert('Network error. Please try again.');
   }
 }
 

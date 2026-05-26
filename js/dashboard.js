@@ -86,7 +86,7 @@ async function loadDashboard() {
 
   } catch (err) {
     console.error(err);
-    showToast('Network error. Is XAMPP running?', 'error');
+    showToast('Network error. Please try again.', 'error');
   }
 }
 
