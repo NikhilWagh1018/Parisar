@@ -3,16 +3,15 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  api/segments/unlock.php
-//  POST — resets a completed segment back to 'pending' so the
-//          auditor can correct and re-submit their answers.
-//
-//  Audit data (segment_audits, obstructions, intersections) is
-//  intentionally PRESERVED so form.js can pre-fill the form.
-//
-//  Only the road's creator may unlock a segment.
+//  POST — resets a completed segment back to 'pending'.
+//  UPDATED: uses SegmentRepository + Validator + gate()
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../../config/auth_guard.php';
+require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/permissions.php';
+require_once __DIR__ . '/../../helpers/Validator.php';
+require_once __DIR__ . '/../../repositories/SegmentRepository.php';
 
 header('Content-Type: application/json');
 
@@ -30,45 +29,38 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
     exit;
 }
 
-// ── Parse body ─────────────────────────────────────────────────
-$raw       = file_get_contents('php://input');
-$data      = json_decode($raw, true);
-$segmentId = isset($data['segment_id']) ? (int)$data['segment_id'] : 0;
+$raw  = file_get_contents('php://input');
+$data = json_decode($raw, true) ?? [];
 
-if ($segmentId <= 0) {
+$v = Validator::make($data)
+    ->required('segment_id')
+    ->integer('segment_id')
+    ->min('segment_id', 1);
+
+if ($v->fails()) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Invalid segment_id.']);
+    echo json_encode(['success' => false, 'error' => $v->firstError()]);
     exit;
 }
 
+$segmentId = (int)$data['segment_id'];
+
 try {
     $pdo->beginTransaction();
+    $repo = new SegmentRepository($pdo);
 
     // ── 1. Fetch segment + road ownership ──────────────────────
-    $stmt = $pdo->prepare(
-        'SELECT s.id, s.status, s.road_id, r.creator_id
-           FROM segments s
-           JOIN roads r ON r.id = s.road_id
-          WHERE s.id = ?
-          LIMIT 1'
-    );
-    $stmt->execute([$segmentId]);
-    $segment = $stmt->fetch(PDO::FETCH_ASSOC);
+    $segment = $repo->findWithRoad($segmentId);
 
-    if (!$segment) {
+    if ($segment === null) {
         $pdo->rollBack();
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Segment not found.']);
         exit;
     }
 
-    // ── 2. Only the road creator may unlock ────────────────────
-    if ((int)$segment['creator_id'] !== (int)$CURRENT_USER_ID) {
-        $pdo->rollBack();
-        http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'You do not have permission to unlock this segment.']);
-        exit;
-    }
+    // ── 2. RBAC gate ───────────────────────────────────────────
+    gate('unlock_segment', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $segment['creator_id']]);
 
     // ── 3. Only completed segments can be unlocked ─────────────
     if ($segment['status'] !== 'completed') {
@@ -78,26 +70,11 @@ try {
         exit;
     }
 
-    // ── 4. Reset segment status — keep all audit data intact ───
-    $pdo->prepare(
-        "UPDATE segments
-            SET status = 'pending', completed_at = NULL
-          WHERE id = ?"
-    )->execute([$segmentId]);
+    // ── 4. Reset segment to pending (keeps audit data) ─────────
+    $repo->resetToPending($segmentId);
 
-    // ── 5. Re-open the audit session for this road ─────────────
-    //       audit_sessions links to road_id (not segment_id),
-    //       so we find the most-recent completed session for this
-    //       road owned by the current user and reactivate it.
-    $pdo->prepare(
-        "UPDATE audit_sessions
-            SET status = 'active', completed_at = NULL
-          WHERE road_id = ?
-            AND user_id = ?
-            AND status  = 'completed'
-          ORDER BY id DESC
-          LIMIT 1"
-    )->execute([(int)$segment['road_id'], (int)$CURRENT_USER_ID]);
+    // ── 5. Re-open the session for this road if completed ──────
+    $repo->reopenCompletedSession((int)$segment['road_id'], $CURRENT_USER_ID);
 
     $pdo->commit();
 

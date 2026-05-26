@@ -3,22 +3,18 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  api/roads/delete.php
-//  DELETE — removes a road and all its cascading children
-//           (audit_sessions → segment_audits → obstructions
-//            → intersections, segments) via DB ON DELETE CASCADE.
-//
-//  Required JSON body: { "road_id": int }
-//
-//  Ownership check: only the creator_id may delete the road.
-//  Returns: { success: true }
+//  POST — removes a road and all its cascading children.
+//  UPDATED: uses RoadRepository + Validator + gate()
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/permissions.php';
+require_once __DIR__ . '/../../helpers/Validator.php';
+require_once __DIR__ . '/../../repositories/RoadRepository.php';
 
 header('Content-Type: application/json');
 
-// ── Method check ───────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'error' => 'Method not allowed.']);
@@ -33,37 +29,36 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
     exit;
 }
 
-// ── Parse body ─────────────────────────────────────────────────
-$raw    = file_get_contents('php://input');
-$data   = json_decode($raw, true);
-$roadId = isset($data['road_id']) ? (int)$data['road_id'] : 0;
+$raw  = file_get_contents('php://input');
+$data = json_decode($raw, true) ?? [];
 
-if ($roadId <= 0) {
+$v = Validator::make($data)
+    ->required('road_id')
+    ->integer('road_id')
+    ->min('road_id', 1);
+
+if ($v->fails()) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Valid road_id is required.']);
+    echo json_encode(['success' => false, 'error' => $v->firstError()]);
     exit;
 }
 
-// ── Ownership check ────────────────────────────────────────────
-try {
-    $stmt = $pdo->prepare('SELECT creator_id FROM roads WHERE id = ? LIMIT 1');
-    $stmt->execute([$roadId]);
-    $road = $stmt->fetch(PDO::FETCH_ASSOC);
+$roadId = (int)$data['road_id'];
 
-    if ($road === false) {
+try {
+    $repo = new RoadRepository($pdo);
+
+    $road = $repo->find($roadId);
+    if ($road === null) {
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Road not found.']);
         exit;
     }
 
-    if ((int)$road['creator_id'] !== $CURRENT_USER_ID) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'You do not have permission to delete this road.']);
-        exit;
-    }
+    // ── RBAC gate ──────────────────────────────────────────────
+    gate('delete_road', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $road['creator_id']]);
 
-    // ── Delete — cascade handles children ─────────────────────
-    $pdo->prepare('DELETE FROM roads WHERE id = ?')->execute([$roadId]);
+    $repo->delete($roadId);
 
     echo json_encode(['success' => true]);
 

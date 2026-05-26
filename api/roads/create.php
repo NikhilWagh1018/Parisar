@@ -4,26 +4,16 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  api/roads/create.php
 //  POST — creates a new road owned by the logged-in user.
-//
-//  Required JSON body fields:
-//    name           string  (3–255 chars)
-//    start_point    string
-//    end_point      string
-//    total_length   float   (metres)
-//    gps_start      string
-//    gps_end        string
-//    segment_method string  "auto"|"manual"
-//    segment_length float   (metres, required when method=auto)
-//
-//  Returns: { success: true, road_id: int, public_id: string }
+//  UPDATED: uses RoadRepository + Validator
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../helpers/Validator.php';
+require_once __DIR__ . '/../../repositories/RoadRepository.php';
 
 header('Content-Type: application/json');
 
-// ── Method check ───────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'error' => 'Method not allowed.']);
@@ -38,7 +28,7 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
     exit;
 }
 
-// ── Parse JSON body ────────────────────────────────────────────
+// ── Parse + validate body ──────────────────────────────────────
 $raw  = file_get_contents('php://input');
 $data = json_decode($raw, true);
 
@@ -48,73 +38,41 @@ if (!is_array($data)) {
     exit;
 }
 
-// ── Input extraction & sanitisation ───────────────────────────
-$name          = trim((string)($data['name']           ?? ''));
-$startPoint    = trim((string)($data['start_point']    ?? ''));
-$endPoint      = trim((string)($data['end_point']      ?? ''));
-$totalLength   = isset($data['total_length'])   ? (float)$data['total_length']   : null;
-$gpsStart      = trim((string)($data['gps_start']      ?? ''));
-$gpsEnd        = trim((string)($data['gps_end']        ?? ''));
+$v = Validator::make($data)
+    ->required('name')
+    ->maxLength('name', 255)
+    ->in('segment_method', ['auto', 'manual'])
+    ->numeric('total_length', 'segment_length');
+
+// Extra business rules
+if (isset($data['name']) && mb_strlen(trim((string)$data['name'])) < 3) {
+    $v->addError('Road name must be at least 3 characters.');
+}
 $segmentMethod = trim((string)($data['segment_method'] ?? 'auto'));
 $segmentLength = isset($data['segment_length']) ? (float)$data['segment_length'] : null;
-
-// ── Validation ─────────────────────────────────────────────────
-$errors = [];
-
-if (strlen($name) < 3) {
-    $errors[] = 'Road name must be at least 3 characters.';
-} elseif (strlen($name) > 255) {
-    $errors[] = 'Road name must be under 255 characters.';
-}
-
-if (!in_array($segmentMethod, ['auto', 'manual'], true)) {
-    $errors[] = 'segment_method must be "auto" or "manual".';
-}
-
 if ($segmentMethod === 'auto' && ($segmentLength === null || $segmentLength <= 0)) {
-    $errors[] = 'segment_length is required and must be > 0 when segment_method is "auto".';
+    $v->addError('segment_length is required and must be > 0 when segment_method is "auto".');
 }
-
+$totalLength = isset($data['total_length']) ? (float)$data['total_length'] : null;
 if ($totalLength !== null && $totalLength <= 0) {
-    $errors[] = 'total_length must be a positive number.';
+    $v->addError('total_length must be a positive number.');
 }
 
-if (!empty($errors)) {
+if ($v->fails()) {
     http_response_code(422);
-    echo json_encode(['success' => false, 'errors' => $errors]);
+    echo json_encode(['success' => false, 'errors' => $v->allErrors()]);
     exit;
 }
 
-// ── Insert ─────────────────────────────────────────────────────
+// ── Create via repository ──────────────────────────────────────
 try {
-    $stmt = $pdo->prepare(
-        'INSERT INTO roads
-           (creator_id, name, start_point, end_point, total_length,
-            gps_start, gps_end, segment_method, segment_length)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    );
-    $stmt->execute([
-        $CURRENT_USER_ID,
-        strtoupper(strip_tags($name)),
-        $startPoint  ?: null,
-        $endPoint    ?: null,
-        $totalLength,
-        $gpsStart    ?: null,
-        $gpsEnd      ?: null,
-        $segmentMethod,
-        $segmentLength,
-    ]);
-
-    $roadId = (int)$pdo->lastInsertId();
-
-    // Generate public_id in PHP (no trigger needed)
-    $roadPublicId = 'ROAD-' . str_pad((string)$roadId, 4, '0', STR_PAD_LEFT);
-    $pdo->prepare('UPDATE roads SET public_id = ? WHERE id = ?')->execute([$roadPublicId, $roadId]);
+    $repo   = new RoadRepository($pdo);
+    $result = $repo->create($CURRENT_USER_ID, $data);
 
     echo json_encode([
         'success'   => true,
-        'road_id'   => $roadId,
-        'public_id' => $roadPublicId,
+        'road_id'   => $result['road_id'],
+        'public_id' => $result['public_id'],
     ]);
 
 } catch (PDOException $e) {

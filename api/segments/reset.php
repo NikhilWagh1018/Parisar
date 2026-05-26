@@ -3,15 +3,8 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  api/segments/reset.php
-//  POST (JSON body) — clears all audit data for a segment and
-//                     resets it back to 'pending' status.
-//
-//  Body: { "segment_id": <int>, "session_id": <int> }
-//
-//  - Deletes segment_audits, obstructions, intersections rows
-//    for this segment.
-//  - Resets segments.status = 'pending'
-//  - Only the current active session owner may reset.
+//  POST — clears all audit data for a segment and resets to pending.
+//  UPDATED: uses SegmentRepository + Validator
 // ═══════════════════════════════════════════════════════════════
 
 ini_set('display_errors', '0');
@@ -19,6 +12,8 @@ error_reporting(E_ALL);
 
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../helpers/Validator.php';
+require_once __DIR__ . '/../../repositories/SegmentRepository.php';
 
 header('Content-Type: application/json');
 
@@ -36,33 +31,30 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
     exit;
 }
 
-// ── Parse JSON body ────────────────────────────────────────────
-$raw       = file_get_contents('php://input');
-$body      = json_decode($raw, true);
-$segmentId = isset($body['segment_id']) ? (int)$body['segment_id'] : 0;
-$sessionId = isset($body['session_id']) ? (int)$body['session_id'] : 0;
+$raw  = file_get_contents('php://input');
+$body = json_decode($raw, true) ?? [];
 
-if ($segmentId <= 0 || $sessionId <= 0) {
+$v = Validator::make($body)
+    ->required('segment_id', 'session_id')
+    ->integer('segment_id', 'session_id')
+    ->min('segment_id', 1)
+    ->min('session_id', 1);
+
+if ($v->fails()) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'segment_id and session_id are required.']);
+    echo json_encode(['success' => false, 'error' => $v->firstError()]);
     exit;
 }
 
+$segmentId = (int)$body['segment_id'];
+$sessionId = (int)$body['session_id'];
+
 try {
     $pdo->beginTransaction();
+    $repo = new SegmentRepository($pdo);
 
-    // ── 1. Verify segment exists and fetch road info ────────────
-    $stmtSeg = $pdo->prepare(
-        'SELECT s.id, s.road_id, r.creator_id
-           FROM segments s
-           JOIN roads r ON r.id = s.road_id
-          WHERE s.id = ?
-          LIMIT 1'
-    );
-    $stmtSeg->execute([$segmentId]);
-    $segment = $stmtSeg->fetch(PDO::FETCH_ASSOC);
-
-    if (!$segment) {
+    // ── 1. Verify segment exists ───────────────────────────────
+    if ($repo->findWithRoad($segmentId) === null) {
         $pdo->rollBack();
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Segment not found.']);
@@ -70,63 +62,24 @@ try {
     }
 
     // ── 2. Verify session ownership ────────────────────────────
-    $stmtSess = $pdo->prepare(
-        'SELECT id FROM audit_sessions
-          WHERE id = ? AND user_id = ?
-          LIMIT 1'
-    );
-    $stmtSess->execute([$sessionId, $CURRENT_USER_ID]);
-    $session = $stmtSess->fetch(PDO::FETCH_ASSOC);
-
-    if (!$session) {
+    if ($repo->findSession($sessionId, $CURRENT_USER_ID) === null) {
         $pdo->rollBack();
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => 'Session not found or not owned by you.']);
         exit;
     }
 
-    // ── 3. Find all audit rows for this segment ────────────────
-    $stmtAudits = $pdo->prepare(
-        'SELECT id FROM segment_audits WHERE segment_id = ?'
+    // ── 3. Delete all audit data for this segment ──────────────
+    $repo->deleteAuditData($segmentId);
+
+    // ── 4. Reset segment to pending ────────────────────────────
+    $repo->resetToPending($segmentId);
+
+    // ── 5. Re-open session if it was completed ─────────────────
+    $repo->reopenCompletedSession(
+        $repo->findWithRoad($segmentId)['road_id'] ?? 0,
+        $CURRENT_USER_ID
     );
-    $stmtAudits->execute([$segmentId]);
-    $auditIds = $stmtAudits->fetchAll(PDO::FETCH_COLUMN);
-
-    // ── 4. Delete obstructions + intersections for each audit ──
-    if (!empty($auditIds)) {
-        $placeholders = implode(',', array_fill(0, count($auditIds), '?'));
-
-        $pdo->prepare(
-            "DELETE FROM obstructions WHERE audit_id IN ({$placeholders})"
-        )->execute($auditIds);
-
-        $pdo->prepare(
-            "DELETE FROM intersections WHERE audit_id IN ({$placeholders})"
-        )->execute($auditIds);
-
-        // ── 5. Delete the audit rows themselves ─────────────────
-        $pdo->prepare(
-            "DELETE FROM segment_audits WHERE segment_id = ?"
-        )->execute([$segmentId]);
-    }
-
-    // ── 6. Reset segment status to pending ────────────────────
-    $pdo->prepare(
-        "UPDATE segments
-            SET status = 'pending', completed_at = NULL
-          WHERE id = ?"
-    )->execute([$segmentId]);
-
-    // ── 7. Re-open the audit session if it was completed ───────
-    $pdo->prepare(
-        "UPDATE audit_sessions
-            SET status = 'active', completed_at = NULL
-          WHERE road_id = (SELECT road_id FROM segments WHERE id = ?)
-            AND user_id = ?
-            AND status  = 'completed'
-          ORDER BY id DESC
-          LIMIT 1"
-    )->execute([$segmentId, $CURRENT_USER_ID]);
 
     $pdo->commit();
 

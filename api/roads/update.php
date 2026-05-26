@@ -4,23 +4,14 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  api/roads/update.php
 //  POST — updates an existing road owned by the logged-in user.
-//
-//  Required JSON body fields:
-//    road_id        int
-//    name           string  (3–255 chars)
-//    start_point    string
-//    end_point      string
-//    total_length   float   (metres)
-//    gps_start      string
-//    gps_end        string
-//    segment_method string  "auto"|"manual"
-//    segment_length float   (metres, required when method=auto)
-//
-//  Returns: { success: true, road_id: int }
+//  UPDATED: uses RoadRepository + Validator + gate()
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/permissions.php';
+require_once __DIR__ . '/../../helpers/Validator.php';
+require_once __DIR__ . '/../../repositories/RoadRepository.php';
 
 header('Content-Type: application/json');
 
@@ -38,7 +29,7 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
     exit;
 }
 
-// ── Parse JSON body ────────────────────────────────────────────
+// ── Parse + validate body ──────────────────────────────────────
 $raw  = file_get_contents('php://input');
 $data = json_decode($raw, true);
 
@@ -48,84 +39,51 @@ if (!is_array($data)) {
     exit;
 }
 
-// ── Input extraction ───────────────────────────────────────────
-$roadId        = isset($data['road_id'])       ? (int)$data['road_id']           : null;
-$name          = trim((string)($data['name']           ?? ''));
-$startPoint    = trim((string)($data['start_point']    ?? ''));
-$endPoint      = trim((string)($data['end_point']      ?? ''));
-$totalLength   = isset($data['total_length'])  ? (float)$data['total_length']    : null;
-$gpsStart      = trim((string)($data['gps_start']      ?? ''));
-$gpsEnd        = trim((string)($data['gps_end']        ?? ''));
+$v = Validator::make($data)
+    ->required('road_id', 'name')
+    ->integer('road_id')
+    ->min('road_id', 1)
+    ->maxLength('name', 255)
+    ->in('segment_method', ['auto', 'manual'])
+    ->numeric('total_length', 'segment_length');
+
+if (isset($data['name']) && mb_strlen(trim((string)$data['name'])) < 3) {
+    $v->addError('Road name must be at least 3 characters.');
+}
 $segmentMethod = trim((string)($data['segment_method'] ?? 'auto'));
 $segmentLength = isset($data['segment_length']) ? (float)$data['segment_length'] : null;
-
-// ── Validation ─────────────────────────────────────────────────
-$errors = [];
-
-if (!$roadId || $roadId <= 0) {
-    $errors[] = 'A valid road_id is required.';
-}
-if (strlen($name) < 3) {
-    $errors[] = 'Road name must be at least 3 characters.';
-} elseif (strlen($name) > 255) {
-    $errors[] = 'Road name must be under 255 characters.';
-}
-if (!in_array($segmentMethod, ['auto', 'manual'], true)) {
-    $errors[] = 'segment_method must be "auto" or "manual".';
-}
 if ($segmentMethod === 'auto' && ($segmentLength === null || $segmentLength <= 0)) {
-    $errors[] = 'segment_length is required and must be > 0 when segment_method is "auto".';
+    $v->addError('segment_length is required and must be > 0 when segment_method is "auto".');
 }
+$totalLength = isset($data['total_length']) ? (float)$data['total_length'] : null;
 if ($totalLength !== null && $totalLength <= 0) {
-    $errors[] = 'total_length must be a positive number.';
+    $v->addError('total_length must be a positive number.');
 }
 
-if (!empty($errors)) {
+if ($v->fails()) {
     http_response_code(422);
-    echo json_encode(['success' => false, 'errors' => $errors]);
+    echo json_encode(['success' => false, 'errors' => $v->allErrors()]);
     exit;
 }
 
-// ── Verify ownership ───────────────────────────────────────────
+$roadId = (int)$data['road_id'];
+
 try {
-    $chk = $pdo->prepare('SELECT id FROM roads WHERE id = ? AND creator_id = ?');
-    $chk->execute([$roadId, $CURRENT_USER_ID]);
-    if (!$chk->fetch()) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Road not found or access denied.']);
+    $repo = new RoadRepository($pdo);
+
+    $road = $repo->find($roadId);
+    if ($road === null) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'Road not found.']);
         exit;
     }
 
-    // ── Update ─────────────────────────────────────────────────
-    $stmt = $pdo->prepare(
-        'UPDATE roads SET
-           name           = ?,
-           start_point    = ?,
-           end_point      = ?,
-           total_length   = ?,
-           gps_start      = ?,
-           gps_end        = ?,
-           segment_method = ?,
-           segment_length = ?
-         WHERE id = ? AND creator_id = ?'
-    );
-    $stmt->execute([
-        strtoupper(strip_tags($name)),
-        $startPoint  ?: null,
-        $endPoint    ?: null,
-        $totalLength,
-        $gpsStart    ?: null,
-        $gpsEnd      ?: null,
-        $segmentMethod,
-        $segmentLength,
-        $roadId,
-        $CURRENT_USER_ID,
-    ]);
+    // ── RBAC gate ──────────────────────────────────────────────
+    gate('edit_road', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $road['creator_id']]);
 
-    echo json_encode([
-        'success' => true,
-        'road_id' => $roadId,
-    ]);
+    $repo->update($roadId, $CURRENT_USER_ID, $data);
+
+    echo json_encode(['success' => true, 'road_id' => $roadId]);
 
 } catch (PDOException $e) {
     error_log('api/roads/update.php error: ' . $e->getMessage());

@@ -3,30 +3,14 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  api/segments/audit-data.php
-//  GET ?segment_id=N
-//  Returns the most-recent audit record for a segment so the
-//  edit form can pre-fill every field with the existing answers.
-//
-//  Response shape:
-//  {
-//    "success": true,
-//    "audit": { ...all segment_audits columns... },
-//    "obstructions": [
-//      { "category":"fixed", "type":"Trees",
-//        "slowed":0, "partial":1, "total":0 }, ...
-//    ],
-//    "intersections": [
-//      { "intersection_num":1, "gps_coords":"...", "landmark_name":"...",
-//        "off_ramp":"...", "on_ramp":"...", "markings":"...",
-//        "signage":"...", "traffic_calming":"...",
-//        "discontinuity":"...", "tapering":"...",
-//        "obstruction_type":"..." }, ...
-//    ]
-//  }
+//  GET ?segment_id=N — returns latest audit record for pre-filling.
+//  UPDATED: uses SegmentRepository + gate()
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/permissions.php';
+require_once __DIR__ . '/../../repositories/SegmentRepository.php';
 
 header('Content-Type: application/json');
 
@@ -45,93 +29,33 @@ if ($segmentId <= 0) {
 }
 
 try {
-    // ── 1. Verify segment exists and belongs to a road owned by
-    //       this user (or the user is the surveyor) ─────────────
-    $stmtSeg = $pdo->prepare(
-        'SELECT s.id, s.road_id, r.creator_id
-           FROM segments s
-           JOIN roads    r ON r.id = s.road_id
-          WHERE s.id = ?
-          LIMIT 1'
-    );
-    $stmtSeg->execute([$segmentId]);
-    $segment = $stmtSeg->fetch(PDO::FETCH_ASSOC);
+    $repo = new SegmentRepository($pdo);
 
-    if (!$segment) {
+    // ── 1. Fetch segment + road ownership via repository ───────
+    $segment = $repo->findWithRoad($segmentId);
+
+    if ($segment === null) {
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Segment not found.']);
         exit;
     }
 
-    if ((int)$segment['creator_id'] !== (int)$CURRENT_USER_ID) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Access denied.']);
-        exit;
-    }
+    // ── 2. RBAC gate ───────────────────────────────────────────
+    gate('view_audit_data', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $segment['creator_id']]);
 
-    // ── 2. Fetch the most-recent audit record ──────────────────
-    $stmtAudit = $pdo->prepare(
-        'SELECT id, session_id,
-                start_landmark, end_landmark, gps_start, gps_end,
-                cycle_track_missing, missing_length, cyclist_use, better_surface,
-                surface_material, people_walking, signage_count, shade,
-                light_after_sunset, track_geometry, buffer_zone,
-                segment_width, segment_length, comments,
-                surface_issues, overhead_issues, footpath_rating
-           FROM segment_audits
-          WHERE segment_id = ?
-          ORDER BY id DESC
-          LIMIT 1'
-    );
-    $stmtAudit->execute([$segmentId]);
-    $audit = $stmtAudit->fetch(PDO::FETCH_ASSOC);
+    // ── 3. Fetch latest audit via repository ───────────────────
+    $audit = $repo->latestAudit($segmentId);
 
-    if (!$audit) {
-        // No audit data yet — nothing to pre-fill
-        echo json_encode(['success' => true, 'audit' => null,
-                          'obstructions' => [], 'intersections' => []]);
+    if ($audit === null) {
+        echo json_encode(['success' => true, 'audit' => null, 'obstructions' => [], 'intersections' => []]);
         exit;
     }
 
     $auditId = (int)$audit['id'];
 
-    // Decode JSON-stored arrays
-    $audit['surface_issues']  = json_decode($audit['surface_issues']  ?? '[]', true) ?? [];
-    $audit['overhead_issues'] = json_decode($audit['overhead_issues'] ?? '[]', true) ?? [];
-    $audit['footpath_rating'] = json_decode($audit['footpath_rating'] ?? '[]', true) ?? [];
-
-    // ── 3. Fetch obstructions ──────────────────────────────────
-    $stmtObs = $pdo->prepare(
-        'SELECT obstruction_category AS category,
-                obstruction_type     AS type,
-                cyclist_slowed       AS slowed,
-                partial_obstructions AS partial,
-                total_obstructions   AS total
-           FROM obstructions
-          WHERE audit_id = ?'
-    );
-    $stmtObs->execute([$auditId]);
-    $obstructions = $stmtObs->fetchAll(PDO::FETCH_ASSOC);
-
-    // Cast counts to int
-    foreach ($obstructions as &$o) {
-        $o['slowed']  = (int)$o['slowed'];
-        $o['partial'] = (int)$o['partial'];
-        $o['total']   = (int)$o['total'];
-    }
-    unset($o);
-
-    // ── 4. Fetch intersections ─────────────────────────────────
-    $stmtInt = $pdo->prepare(
-        'SELECT intersection_num, gps_coords, landmark_name,
-                off_ramp, on_ramp, markings, signage,
-                traffic_calming, discontinuity, tapering, obstruction_type
-           FROM intersections
-          WHERE audit_id = ?
-          ORDER BY intersection_num ASC'
-    );
-    $stmtInt->execute([$auditId]);
-    $intersections = $stmtInt->fetchAll(PDO::FETCH_ASSOC);
+    // ── 4. Fetch obstructions + intersections via repository ───
+    $obstructions  = $repo->obstructionsForAudit($auditId);
+    $intersections = $repo->intersectionsForAudit($auditId);
 
     echo json_encode([
         'success'       => true,

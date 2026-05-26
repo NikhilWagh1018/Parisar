@@ -4,15 +4,14 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  api/segments/complete.php
 //  PUT — manually marks a segment as completed.
-//
-//  FIXES APPLIED:
-//    1. Session ownership check now requires status = 'active'.
-//       Previously a completed/archived session could still mark
-//       segments as complete.
+//  UPDATED: uses SegmentRepository + AuditSessionRepository + Validator
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../helpers/Validator.php';
+require_once __DIR__ . '/../../repositories/SegmentRepository.php';
+require_once __DIR__ . '/../../repositories/AuditSessionRepository.php';
 
 header('Content-Type: application/json');
 
@@ -30,57 +29,54 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
     exit;
 }
 
-// ── Parse body ─────────────────────────────────────────────────
-$raw       = file_get_contents('php://input');
-$data      = json_decode($raw, true);
-$segmentId = isset($data['segment_id']) ? (int)$data['segment_id'] : 0;
-$sessionId = isset($data['session_id']) ? (int)$data['session_id'] : 0;
+$raw  = file_get_contents('php://input');
+$data = json_decode($raw, true) ?? [];
 
-if ($segmentId <= 0 || $sessionId <= 0) {
+$v = Validator::make($data)
+    ->required('segment_id', 'session_id')
+    ->integer('segment_id', 'session_id')
+    ->min('segment_id', 1)
+    ->min('session_id', 1);
+
+if ($v->fails()) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'segment_id and session_id are required.']);
+    echo json_encode(['success' => false, 'error' => $v->firstError()]);
     exit;
 }
 
-try {
-    // ── FIX: Verify session ownership AND require active status ──
-    $stmtSess = $pdo->prepare(
-        'SELECT road_id FROM audit_sessions
-         WHERE  id = ? AND user_id = ? AND status = \'active\'
-         LIMIT  1'
-    );
-    $stmtSess->execute([$sessionId, $CURRENT_USER_ID]);
-    $session = $stmtSess->fetch(PDO::FETCH_ASSOC);
+$segmentId = (int)$data['segment_id'];
+$sessionId = (int)$data['session_id'];
 
-    if ($session === false) {
+try {
+    $segRepo     = new SegmentRepository($pdo);
+    $sessionRepo = new AuditSessionRepository($pdo);
+
+    // ── Verify active session ownership ────────────────────────
+    $session = $segRepo->findActiveSession($sessionId, $CURRENT_USER_ID);
+
+    if ($session === null) {
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => 'Session not found, not owned by you, or not active.']);
         exit;
     }
 
     // ── Verify segment belongs to the session's road ───────────
-    $stmtSeg = $pdo->prepare(
-        'SELECT id FROM segments WHERE id = ? AND road_id = ? LIMIT 1'
-    );
-    $stmtSeg->execute([$segmentId, $session['road_id']]);
-
-    if ($stmtSeg->fetch() === false) {
+    if (!$segRepo->belongsToRoad($segmentId, (int)$session['road_id'])) {
         http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Segment does not belong to this session\'s road.']);
+        echo json_encode(['success' => false, 'error' => "Segment does not belong to this session's road."]);
         exit;
     }
 
-    // ── Update status ──────────────────────────────────────────
-    $affected = $pdo->prepare(
-        'UPDATE segments SET status = \'completed\', completed_at = NOW()
-         WHERE id = ? AND status != \'completed\''
-    );
-    $affected->execute([$segmentId]);
+    // ── Mark completed ─────────────────────────────────────────
+    $updated = $segRepo->markCompleted($segmentId);
 
-    if ($affected->rowCount() === 0) {
+    if (!$updated) {
         echo json_encode(['success' => true, 'already_completed' => true]);
         exit;
     }
+
+    // ── Auto-complete session if all segments done ─────────────
+    $sessionRepo->autoCompleteIfReady($sessionId);
 
     echo json_encode(['success' => true, 'already_completed' => false]);
 
