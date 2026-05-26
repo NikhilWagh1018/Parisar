@@ -24,11 +24,11 @@ registerErrorHandlers();
 // ═══════════════════════════════════════════════════════════════
 
 // ── Database ──────────────────────────────────────────────────
-define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_PORT', (int)(getenv('DB_PORT') ?: 3306));
-define('DB_NAME', getenv('DB_NAME') ?: 'parisar_db');
-define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASS') ?: '');
+define('DB_HOST', getenv('MYSQLHOST')     ?: getenv('DB_HOST') ?: 'localhost');
+define('DB_PORT', (int)(getenv('MYSQLPORT')     ?: getenv('DB_PORT') ?: 3306));
+define('DB_NAME', getenv('MYSQLDATABASE') ?: getenv('DB_NAME') ?: 'parisar_db');
+define('DB_USER', getenv('MYSQLUSER')     ?: getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('MYSQLPASSWORD') ?: getenv('DB_PASS') ?: '');
 
 // ── Application ───────────────────────────────────────────────
 define('BASE_URL',  getenv('BASE_URL') ?: 'http://localhost/Parisar');
