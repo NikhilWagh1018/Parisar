@@ -115,5 +115,5 @@ try {
     if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
     error_log('api/roads/segments/save.php error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
 }
