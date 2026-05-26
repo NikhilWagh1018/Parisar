@@ -4,8 +4,17 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  api/roads/segments/save.php
 //  POST — inserts segments for ONE road.
-//  UPDATED: uses RoadRepository + SegmentRepository + Validator + gate()
 // ═══════════════════════════════════════════════════════════════
+
+// ── JSON header FIRST — ensures even fatal errors return JSON ──
+header('Content-Type: application/json');
+
+set_exception_handler(function (Throwable $e) {
+    http_response_code(500);
+    error_log('save.php uncaught: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
+    exit;
+});
 
 require_once __DIR__ . '/../../../config/auth_guard.php';
 require_once __DIR__ . '/../../../config/db.php';
@@ -13,8 +22,6 @@ require_once __DIR__ . '/../../../config/permissions.php';
 require_once __DIR__ . '/../../../helpers/Validator.php';
 require_once __DIR__ . '/../../../repositories/RoadRepository.php';
 require_once __DIR__ . '/../../../repositories/SegmentRepository.php';
-
-header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -60,16 +67,14 @@ try {
     $road = $roadRepo->find($roadId);
     if ($road === null) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'Road not found.']);
+        echo json_encode(['success' => false, 'error' => 'Road not found (id=' . $roadId . ').']);
         exit;
     }
 
-    // ── RBAC gate ──────────────────────────────────────────────
     gate('save_segments', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $road['creator_id']]);
 
     $pdo->beginTransaction();
 
-    // Delete existing segments (cascade removes child rows)
     $segmentRepo->deleteForRoad($roadId);
 
     $stmt = $pdo->prepare(
@@ -103,9 +108,9 @@ try {
 
     echo json_encode(['success' => true, 'segments_saved' => $saved]);
 
-} catch (PDOException $e) {
-    if ($pdo->inTransaction()) $pdo->rollBack();
+} catch (Throwable $e) {
+    if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
     error_log('api/roads/segments/save.php error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Server error while saving segments.']);
+    echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
 }

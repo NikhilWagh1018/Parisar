@@ -64,8 +64,7 @@ document.addEventListener('visibilitychange', () => {
 // ── Ensure an audit session exists for this road ───────────────
 async function ensureSession(roadId) {
   try {
-    const res  = await apiFetch('../api/audit-sessions/create.php', 'POST', { road_id: roadId });
-    const data = await res.json();
+    const data = await apiFetch('../api/audit-sessions/create.php', 'POST', { road_id: roadId });
     if (data.success) {
       window._currentSessionId = data.session_id;
     }
@@ -99,7 +98,10 @@ async function loadSegmentsFromDB(roadId) {
       `../api/roads/segments/index.php?road_id=${roadId}`,
       { headers: { 'Accept': 'application/json' } }
     );
-    const data = await res.json();
+    const rawText = await res.text();
+    let data;
+    try { data = JSON.parse(rawText); }
+    catch { console.error('loadSegmentsFromDB bad JSON:', rawText.slice(0, 200)); return; }
 
     if (data.success && data.road && data.segments.length > 0) {
       roadData = {
@@ -362,8 +364,7 @@ async function saveRoadAndSegments(roadName, segsArr, method, segmentLength) {
     if (_currentRoadId) {
       // ── Edit mode: update existing road ──────────────────────
       roadPayload.road_id = _currentRoadId;
-      const roadRes  = await apiFetch('../api/roads/update.php', 'POST', roadPayload);
-      const roadResp = await roadRes.json();
+      const roadResp = await apiFetch('../api/roads/update.php', 'POST', roadPayload);
       if (!roadResp.success) {
         showToast(
           roadResp.errors ? roadResp.errors.join(' ') : (roadResp.error || 'Failed to update road.'),
@@ -374,8 +375,7 @@ async function saveRoadAndSegments(roadName, segsArr, method, segmentLength) {
       roadId = _currentRoadId;
     } else {
       // ── Create mode: new road ─────────────────────────────────
-      const roadRes  = await apiFetch('../api/roads/create.php', 'POST', roadPayload);
-      const roadResp = await roadRes.json();
+      const roadResp = await apiFetch('../api/roads/create.php', 'POST', roadPayload);
       if (!roadResp.success) {
         showToast(
           roadResp.errors ? roadResp.errors.join(' ') : (roadResp.error || 'Failed to create road.'),
@@ -388,11 +388,10 @@ async function saveRoadAndSegments(roadName, segsArr, method, segmentLength) {
     }
 
     // 2. Save segments
-    const segRes  = await apiFetch('../api/roads/segments/save.php', 'POST', {
+    const segResp = await apiFetch('../api/roads/segments/save.php', 'POST', {
       road_id:  roadId,
       segments: segsArr,
     });
-    const segResp = await segRes.json();
 
     if (!segResp.success) {
       showToast(segResp.error || 'Failed to save segments.', 'error'); return;
@@ -525,7 +524,7 @@ function editAuditedSegment(segId) {
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
     body   : JSON.stringify({ segment_id: segId })
   })
-  .then(r => r.json())
+  .then(r => r.text().then(t => { try { return JSON.parse(t); } catch { return {}; } }))
   .then(data => {
     if (data.success) {
       // Pass edit_mode=1 so form.js fetches and pre-fills existing answers
@@ -654,9 +653,9 @@ function showToast(msg, type = '') {
   _toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 
-// ── Fetch helper with CSRF ─────────────────────────────────────
-function apiFetch(url, method, body) {
-  return fetch(url, {
+// ── Fetch helper with CSRF — always returns parsed JSON ────────
+async function apiFetch(url, method, body) {
+  const res = await fetch(url, {
     method,
     headers: {
       'Content-Type': 'application/json',
@@ -665,6 +664,18 @@ function apiFetch(url, method, body) {
     },
     body: JSON.stringify(body),
   });
+
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    console.error('Non-JSON response from', url, '— HTTP', res.status, '\n', text.slice(0, 300));
+    json = { success: false, error: 'Server error (HTTP ' + res.status + '). Check Railway logs.' };
+  }
+  json.__status = res.status;
+  json.__ok     = res.ok;
+  return json;
 }
 
 // ── Timestamp formatter ────────────────────────────────────────

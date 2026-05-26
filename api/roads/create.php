@@ -4,15 +4,21 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  api/roads/create.php
 //  POST — creates a new road owned by the logged-in user.
-//  UPDATED: uses RoadRepository + Validator
 // ═══════════════════════════════════════════════════════════════
+
+header('Content-Type: application/json');
+
+set_exception_handler(function (Throwable $e) {
+    http_response_code(500);
+    error_log('create.php uncaught: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
+    exit;
+});
 
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
 require_once __DIR__ . '/../../repositories/RoadRepository.php';
-
-header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -28,7 +34,6 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
     exit;
 }
 
-// ── Parse + validate body ──────────────────────────────────────
 $raw  = file_get_contents('php://input');
 $data = json_decode($raw, true);
 
@@ -44,7 +49,6 @@ $v = Validator::make($data)
     ->in('segment_method', ['auto', 'manual'])
     ->numeric('total_length', 'segment_length');
 
-// Extra business rules
 if (isset($data['name']) && mb_strlen(trim((string)$data['name'])) < 3) {
     $v->addError('Road name must be at least 3 characters.');
 }
@@ -64,7 +68,6 @@ if ($v->fails()) {
     exit;
 }
 
-// ── Create via repository ──────────────────────────────────────
 try {
     $repo   = new RoadRepository($pdo);
     $result = $repo->create($CURRENT_USER_ID, $data);
@@ -75,8 +78,8 @@ try {
         'public_id' => $result['public_id'],
     ]);
 
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     error_log('api/roads/create.php error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Server error while creating road.']);
+    echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
 }

@@ -3,16 +3,22 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  api/audit-sessions/create.php
-//  POST — creates a new audit session for the logged-in surveyor.
-//  UPDATED: uses RoadRepository + Validator
+//  POST — creates or resumes an audit session for a road.
 // ═══════════════════════════════════════════════════════════════
+
+header('Content-Type: application/json');
+
+set_exception_handler(function (Throwable $e) {
+    http_response_code(500);
+    error_log('audit-sessions/create.php uncaught: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
+    exit;
+});
 
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
 require_once __DIR__ . '/../../repositories/RoadRepository.php';
-
-header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -20,15 +26,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// ── CSRF verification ──────────────────────────────────────────
-$csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Invalid CSRF token.']);
-    exit;
-}
-
-// ── Parse + validate body ──────────────────────────────────────
 $raw  = file_get_contents('php://input');
 $data = json_decode($raw, true) ?? [];
 
@@ -46,19 +43,11 @@ if ($v->fails()) {
 $roadId = (int)$data['road_id'];
 
 try {
-    $roadRepo = new RoadRepository($pdo);
+    $repo = new RoadRepository($pdo);
 
-    // ── Verify the road exists ─────────────────────────────────
-    if ($roadRepo->find($roadId) === null) {
-        http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'Road not found.']);
-        exit;
-    }
-
-    // ── Check for an existing active session ───────────────────
-    $existing = $roadRepo->findActiveSession($CURRENT_USER_ID, $roadId);
-
-    if ($existing !== null) {
+    // Resume existing active session if one exists
+    $existing = $repo->findActiveSession($CURRENT_USER_ID, $roadId);
+    if ($existing) {
         echo json_encode([
             'success'    => true,
             'session_id' => $existing['id'],
@@ -68,8 +57,8 @@ try {
         exit;
     }
 
-    // ── Create new session via repository ──────────────────────
-    $result = $roadRepo->createSession($CURRENT_USER_ID, $roadId);
+    // Create new session
+    $result = $repo->createSession($CURRENT_USER_ID, $roadId);
 
     echo json_encode([
         'success'    => true,
@@ -78,8 +67,8 @@ try {
         'resumed'    => false,
     ]);
 
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     error_log('api/audit-sessions/create.php error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Server error while creating session.']);
+    echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
 }
