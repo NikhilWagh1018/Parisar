@@ -92,7 +92,7 @@ function startSecureSession(): void
         'domain'   => '',        // current domain only
         'secure'   => $isHttps,  // HTTPS-only cookie on Railway
         'httponly' => true,      // JS cannot read session cookie
-        'samesite' => 'Strict',  // blocks cross-site cookie sending
+        'samesite' => 'Lax',     // allows OAuth redirects while still blocking CSRF
     ]);
 
     session_start();
