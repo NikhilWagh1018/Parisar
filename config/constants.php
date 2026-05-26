@@ -4,21 +4,37 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  config/constants.php
 //  All application-wide constants in one place.
-//  Uses environment variables for production (Railway).
-//  Falls back to localhost defaults for local XAMPP dev.
+//
+//  Local dev:   reads from .env via phpdotenv (composer package)
+//  Production:  Railway injects env vars directly — .env not needed
 // ═══════════════════════════════════════════════════════════════
 
+// ── Load .env for local development ───────────────────────────
+// Only runs if vendor/autoload.php exists (i.e. composer install has been run)
+// and a .env file is present. On Railway neither exists — falls through cleanly.
+$_vendorAutoload = dirname(__DIR__) . '/vendor/autoload.php';
+if (file_exists($_vendorAutoload)) {
+    require_once $_vendorAutoload;
+
+    $dotenvPath = dirname(__DIR__);
+    if (file_exists($dotenvPath . '/.env')) {
+        $dotenv = Dotenv\Dotenv::createImmutable($dotenvPath);
+        $dotenv->safeLoad();   // safeLoad() — never throws if .env is missing
+    }
+}
+unset($_vendorAutoload);
+
 // ── Database ──────────────────────────────────────────────────
-define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_PORT', (int)(getenv('DB_PORT') ?: 3306));
-define('DB_NAME', getenv('DB_NAME') ?: 'parisar_db');
-define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASS') ?: '');
+define('DB_HOST', $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'localhost');
+define('DB_PORT', (int)($_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: 3306));
+define('DB_NAME', $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'parisar_db');
+define('DB_USER', $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'root');
+define('DB_PASS', $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: '');
 
 // ── Application ───────────────────────────────────────────────
-define('BASE_URL',  getenv('BASE_URL') ?: 'http://localhost/Parisar');
-define('APP_NAME',  'CycleAudit');
-define('APP_ORG',   'Parisar');
+define('BASE_URL', $_ENV['BASE_URL'] ?? getenv('BASE_URL') ?: 'http://localhost/Parisar');
+define('APP_NAME', 'CycleAudit');
+define('APP_ORG',  'Parisar');
 
 // ── Session ───────────────────────────────────────────────────
 define('SESSION_LIFETIME', 60 * 60 * 8);   // 8 hours in seconds

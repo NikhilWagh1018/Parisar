@@ -12,8 +12,12 @@ RUN apt-get update && apt-get install -y \
     php8.1-xml \
     libapache2-mod-php8.1 \
     curl \
+    unzip \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 RUN { \
     echo "display_errors = Off"; \
@@ -38,6 +42,9 @@ RUN { \
 WORKDIR /var/www/html
 RUN rm -f /var/www/html/index.html
 COPY . .
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf \
     && echo "ServerTokens Prod"    >> /etc/apache2/apache2.conf \

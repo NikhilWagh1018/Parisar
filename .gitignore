@@ -1,16 +1,10 @@
-# Debug files - never expose these
-debug/
-
-# Local environment overrides (if you ever add one)
+# Environment — never commit real credentials
 .env
-.env.local
 
-# OS files
+# Composer dependencies — installed during Docker build
+/vendor/
+
+# OS / editor noise
 .DS_Store
 Thumbs.db
-
-# Editor files
-.vscode/
-.idea/
 *.swp
-*.swo
