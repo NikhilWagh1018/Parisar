@@ -5,9 +5,9 @@ declare(strict_types=1);
 //  api/segments/submit.php
 //  POST (multipart/form-data) — full segment audit submission.
 //
-//  FIXES APPLIED:
-//    1. footpath_score capped at 100 (min/max guard)
-//    2. public_id generated in PHP after lastInsertId()
+//  CHANGES IN THIS VERSION:
+//    • Uses helpers/Validator.php for all input validation
+//      (replaces the manual required-field loops and int casts)
 // ═══════════════════════════════════════════════════════════════
 
 ini_set('display_errors', '0');
@@ -16,6 +16,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
+require_once __DIR__ . '/../../helpers/Validator.php';
 
 header('Content-Type: application/json');
 
@@ -33,28 +34,30 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
     exit;
 }
 
-// ── Required field extraction ──────────────────────────────────
-$sessionId  = isset($_POST['session_id'])  ? (int)$_POST['session_id']  : 0;
-$segmentId  = isset($_POST['segment_id'])  ? (int)$_POST['segment_id']  : 0;
+// ── Input validation via Validator ────────────────────────────
+$v = Validator::make($_POST)
+    ->required('session_id', 'segment_id')
+    ->integer('session_id', 'segment_id')
+    ->min('session_id', 1)
+    ->min('segment_id', 1)
+    ->required('start_landmark', 'end_landmark', 'gps_start', 'gps_end')
+    ->maxLength('start_landmark', 255)
+    ->maxLength('end_landmark', 255)
+    ->maxLength('gps_start', 100)
+    ->maxLength('gps_end', 100)
+    ->maxLength('comments', 2000)
+    ->json('intersections');
 
-if ($sessionId <= 0 || $segmentId <= 0) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'session_id and segment_id are required.']);
+if ($v->fails()) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'error' => $v->firstError()]);
     exit;
 }
 
-// ── Edit mode: update existing record instead of inserting ───
-$editMode = !empty($_POST['edit_mode']) && $_POST['edit_mode'] === '1';
-
-// ── Required text fields ───────────────────────────────────────
-$required = ['start_landmark', 'end_landmark', 'gps_start', 'gps_end'];
-foreach ($required as $field) {
-    if (empty(trim($_POST[$field] ?? ''))) {
-        http_response_code(422);
-        echo json_encode(['success' => false, 'error' => "Required field '{$field}' is missing."]);
-        exit;
-    }
-}
+// ── Validated, safe values ────────────────────────────────────
+$sessionId = (int)$_POST['session_id'];
+$segmentId = (int)$_POST['segment_id'];
+$editMode  = !empty($_POST['edit_mode']) && $_POST['edit_mode'] === '1';
 
 try {
     $pdo->beginTransaction();
@@ -125,8 +128,6 @@ try {
     );
 
     // Integer fields must store 0 when blank, not NULL.
-    // (UI sends "" for blank counter fields; PHP (int)"" = 0, but PDO would
-    //  bind null to the column which may violate NOT NULL constraints.)
     $integerFields = ['signage_count'];
     foreach ($mainFields as $i => $f) {
         if (in_array($f, $integerFields, true) && $mainValues[$i] === null) {
