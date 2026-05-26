@@ -43,11 +43,14 @@ function registerErrorHandlers(): void
         }
 
         $isApi = str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json')
-              || str_contains($_SERVER['REQUEST_URI']  ?? '', '/api/');
+              || str_contains($_SERVER['REQUEST_URI']  ?? '', '/api/')
+              || str_contains($_SERVER['CONTENT_TYPE'] ?? '', 'application/json');
 
         if ($isApi) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'error' => 'An unexpected error occurred.']);
+            if (!headers_sent()) {
+                header('Content-Type: application/json');
+            }
+            echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
         } else {
             echo '<!DOCTYPE html><html><body><h2>Something went wrong.</h2>'
                . '<p>Our team has been notified. Please try again shortly.</p></body></html>';
@@ -56,12 +59,32 @@ function registerErrorHandlers(): void
     });
 
     // ── Fatal shutdown errors ─────────────────────────────────
+    // IMPORTANT: PHP fatal errors (E_ERROR, E_PARSE, etc.) do NOT trigger
+    // set_error_handler or set_exception_handler — only register_shutdown_function.
+    // Without a JSON response here, Apache returns 500 with empty body (Content-Length: 0).
     register_shutdown_function(function (): void {
         $error = error_get_last();
         if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
             appLog('fatal', $error['message'], [
                 'file' => $error['file'],
                 'line' => $error['line'],
+            ]);
+
+            if (php_sapi_name() === 'cli') {
+                return;
+            }
+
+            // Send a JSON error response so the client gets something meaningful
+            // instead of an empty 500 body.
+            if (!headers_sent()) {
+                http_response_code(500);
+                header('Content-Type: application/json');
+            }
+            echo json_encode([
+                'success' => false,
+                'error'   => 'Fatal server error: ' . $error['message'],
+                'file'    => basename($error['file']),
+                'line'    => $error['line'],
             ]);
         }
     });
