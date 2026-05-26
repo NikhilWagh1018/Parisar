@@ -23,15 +23,22 @@ registerErrorHandlers();
 //  Falls back to localhost defaults for local XAMPP dev.
 // ═══════════════════════════════════════════════════════════════
 
+// ── Env var helper — reads $_ENV, $_SERVER, then getenv() ─────
+// Railway injects vars into $_SERVER (not getenv()) inside Docker.
+// This fallback chain covers all three sources.
+function _env(string $key, mixed $default = ''): mixed {
+    return $_ENV[$key] ?? $_SERVER[$key] ?? (getenv($key) ?: $default);
+}
+
 // ── Database ──────────────────────────────────────────────────
-define('DB_HOST', getenv('MYSQLHOST')     ?: getenv('DB_HOST') ?: 'localhost');
-define('DB_PORT', (int)(getenv('MYSQLPORT')     ?: getenv('DB_PORT') ?: 3306));
-define('DB_NAME', getenv('MYSQLDATABASE') ?: getenv('DB_NAME') ?: 'parisar_db');
-define('DB_USER', getenv('MYSQLUSER')     ?: getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('MYSQLPASSWORD') ?: getenv('DB_PASS') ?: '');
+define('DB_HOST', _env('MYSQLHOST',     _env('DB_HOST',     'localhost')));
+define('DB_PORT', (int)_env('MYSQLPORT', _env('DB_PORT',    3306)));
+define('DB_NAME', _env('MYSQLDATABASE', _env('DB_NAME',     'parisar_db')));
+define('DB_USER', _env('MYSQLUSER',     _env('DB_USER',     'root')));
+define('DB_PASS', _env('MYSQLPASSWORD', _env('DB_PASS',     '')));
 
 // ── Application ───────────────────────────────────────────────
-define('BASE_URL',  getenv('BASE_URL') ?: 'http://localhost/Parisar');
+define('BASE_URL',  _env('BASE_URL', 'http://localhost/Parisar'));
 define('APP_NAME',  'CycleAudit');
 define('APP_ORG',   'Parisar');
 

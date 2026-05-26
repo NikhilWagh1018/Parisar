@@ -54,7 +54,8 @@ try {
     $repo = new SegmentRepository($pdo);
 
     // ── 1. Verify segment exists ───────────────────────────────
-    if ($repo->findWithRoad($segmentId) === null) {
+    $segment = $repo->findWithRoad($segmentId);
+    if ($segment === null) {
         $pdo->rollBack();
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Segment not found.']);
@@ -77,7 +78,7 @@ try {
 
     // ── 5. Re-open session if it was completed ─────────────────
     $repo->reopenCompletedSession(
-        $repo->findWithRoad($segmentId)['road_id'] ?? 0,
+        $segment['road_id'] ?? 0,
         $CURRENT_USER_ID
     );
 

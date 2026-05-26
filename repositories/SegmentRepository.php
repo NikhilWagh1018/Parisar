@@ -67,7 +67,7 @@ class SegmentRepository
     {
         $stmt = $this->pdo->prepare(
             'SELECT id, public_id, segment_number,
-                    start_label, end_label, length_km, status, completed_at
+                    start_label, end_label, length, status, completed_at
                FROM segments
               WHERE road_id = ?
               ORDER BY segment_number ASC'

@@ -1,0 +1,24 @@
+# Enforce LF line endings for all text files on all platforms.
+# Prevents CRLF creeping in from Windows editors, which can break
+# PHP header() calls and redirects when deployed on Linux (Railway/Docker).
+
+* text=auto eol=lf
+
+# Explicitly enforce LF for source files
+*.php   text eol=lf
+*.js    text eol=lf
+*.css   text eol=lf
+*.html  text eol=lf
+*.sql   text eol=lf
+*.json  text eol=lf
+*.md    text eol=lf
+*.toml  text eol=lf
+*.env   text eol=lf
+
+# Binary files — no line ending conversion
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.zip   binary

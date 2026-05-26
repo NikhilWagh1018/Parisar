@@ -10,6 +10,13 @@ declare(strict_types=1);
 //      (replaces the manual required-field loops and int casts)
 // ═══════════════════════════════════════════════════════════════
 
+header('Content-Type: application/json');
+set_exception_handler(function (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Server error.']);
+    exit;
+});
+
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
@@ -17,8 +24,6 @@ require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
-
-header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

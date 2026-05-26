@@ -80,7 +80,7 @@ try {
 
     echo json_encode(['success' => true, 'already_completed' => false]);
 
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     error_log('api/segments/complete.php error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Server error.']);

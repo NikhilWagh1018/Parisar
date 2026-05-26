@@ -7,7 +7,10 @@ async function loadDashboard() {
     const res  = await fetch('../api/dashboard/stats.php', {
       headers: { 'Accept': 'application/json', 'X-CSRF-Token': CSRF }
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch { showToast('Unexpected server response. Please try again.', 'error'); return; }
 
     if (!data.success) {
       showToast('Failed to load dashboard data.', 'error');
@@ -115,7 +118,10 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', async () =
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF },
       body: JSON.stringify({ road_id: roadIdToDelete })
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch { showToast('Unexpected server response.', 'error'); return; }
     if (data.success) {
       showToast('Road deleted.', 'success');
       loadDashboard();

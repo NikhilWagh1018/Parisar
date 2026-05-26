@@ -7,14 +7,19 @@ declare(strict_types=1);
 //  UPDATED: uses AuditSessionRepository + RoadRepository + SegmentRepository
 // ═══════════════════════════════════════════════════════════════
 
+header('Content-Type: application/json');
+set_exception_handler(function (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Server error.']);
+    exit;
+});
+
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../services/ScoreService.php';
 require_once __DIR__ . '/../../repositories/AuditSessionRepository.php';
 require_once __DIR__ . '/../../repositories/RoadRepository.php';
 require_once __DIR__ . '/../../repositories/SegmentRepository.php';
-
-header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
