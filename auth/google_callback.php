@@ -14,10 +14,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/constants.php';
 
-session_name(SESSION_NAME);
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+startSecureSession();
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/google_config.php';

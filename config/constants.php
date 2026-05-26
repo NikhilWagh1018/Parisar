@@ -49,3 +49,69 @@ define('PER_PAGE', 20);
 define('ROOT_PATH',     dirname(__DIR__));
 define('SERVICES_PATH', ROOT_PATH . '/services');
 define('REPORTS_PATH',  ROOT_PATH . '/reports');
+
+// ── Secure session bootstrap ───────────────────────────────────
+/**
+ * Call this instead of bare session_start() in every auth file
+ * and auth_guard.php. Enforces cookie security in PHP itself,
+ * giving defence-in-depth on top of the Dockerfile php.ini flags.
+ * Safe to call multiple times — exits early if already active.
+ */
+function startSecureSession(): void
+{
+    if (session_status() !== PHP_SESSION_NONE) {
+        return;
+    }
+
+    // Railway terminates TLS at the proxy and forwards the scheme
+    // via X-Forwarded-Proto. Check both to detect HTTPS correctly.
+    $isHttps = (
+        ($_SERVER['HTTPS']                    ?? '') === 'on'
+        || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'
+    );
+
+    session_name(SESSION_NAME);
+    session_set_cookie_params([
+        'lifetime' => SESSION_LIFETIME,
+        'path'     => '/',
+        'domain'   => '',        // current domain only
+        'secure'   => $isHttps,  // HTTPS-only cookie on Railway
+        'httponly' => true,      // JS cannot read session cookie
+        'samesite' => 'Strict',  // blocks cross-site cookie sending
+    ]);
+
+    session_start();
+}
+
+/**
+ * Call after startSecureSession() on every protected page/API.
+ * Destroys the session and sends the user back to login if they
+ * have been inactive longer than SESSION_LIFETIME seconds.
+ */
+function enforceSessionTimeout(): void
+{
+    if (empty($_SESSION['user_id'])) {
+        return; // not logged in — auth_guard.php handles the redirect
+    }
+
+    $lastActivity = (int)($_SESSION['_last_activity'] ?? 0);
+
+    if ($lastActivity > 0 && (time() - $lastActivity) > SESSION_LIFETIME) {
+        session_unset();
+        session_destroy();
+
+        $isApi = str_contains($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json')
+              || str_contains($_SERVER['REQUEST_URI']  ?? '', '/api/');
+
+        if ($isApi) {
+            header('Content-Type: application/json');
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Session expired. Please log in again.']);
+        } else {
+            header('Location: /auth/login.php?expired=1');
+        }
+        exit;
+    }
+
+    $_SESSION['_last_activity'] = time();
+}

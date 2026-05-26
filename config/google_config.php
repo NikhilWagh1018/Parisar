@@ -29,9 +29,7 @@ define('GOOGLE_SCOPES', 'openid email profile');
  */
 function getGoogleAuthUrl(): string
 {
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
+    startSecureSession();
 
     $state = bin2hex(random_bytes(24));
     $_SESSION['oauth_state'] = $state;

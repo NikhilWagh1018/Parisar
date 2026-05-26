@@ -9,10 +9,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/constants.php';
 
-session_name(SESSION_NAME);
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+startSecureSession();
 
 // Already logged in → dashboard
 if (isset($_SESSION['user_id'])) {

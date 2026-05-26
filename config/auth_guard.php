@@ -19,10 +19,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/db.php';
 
-session_name(SESSION_NAME);
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+startSecureSession();
+enforceSessionTimeout();
 
 // ── Content-Security-Policy ────────────────────────────────────
 // Allow Google's CDN for profile pictures on all protected pages.
