@@ -30,7 +30,7 @@ declare(strict_types=1);
 //
 // $ctx is the optional context array passed by the caller.
 
-const PERMISSIONS = [
+$PERMISSIONS = [
 
     // ── Roads ─────────────────────────────────────────────────
     'create_road' => static function (int $userId, string $role, array $ctx): bool {
@@ -116,12 +116,13 @@ const PERMISSIONS = [
  */
 function can(string $permission, int $userId, string $role, array $ctx = []): bool
 {
-    if (!array_key_exists($permission, PERMISSIONS)) {
+    global $PERMISSIONS;
+    if (!array_key_exists($permission, $PERMISSIONS)) {
         // Unknown permissions are denied by default.
         return false;
     }
 
-    return (PERMISSIONS[$permission])($userId, $role, $ctx);
+    return ($PERMISSIONS[$permission])($userId, $role, $ctx);
 }
 
 // ── gate() ────────────────────────────────────────────────────

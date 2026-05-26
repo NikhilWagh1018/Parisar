@@ -6,38 +6,13 @@ declare(strict_types=1);
 //  POST — updates an existing road owned by the logged-in user.
 // ═══════════════════════════════════════════════════════════════
 
-// Buffer all output so headers can always be set, even after requires
-ob_start();
-
 header('Content-Type: application/json');
-
-// Early fatal handler — fires BEFORE error_handler.php is loaded
-// (which happens inside the requires below). The shutdown handler
-// in error_handler.php will OVERRIDE this once loaded, so this only
-// covers fatals that happen during the require chain itself.
-register_shutdown_function(function (): void {
-    $error = error_get_last();
-    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
-        ob_end_clean();
-        http_response_code(500);
-        header('Content-Type: application/json');
-        echo json_encode([
-            'success' => false,
-            'error'   => 'Fatal error during startup: ' . $error['message'],
-            'file'    => basename($error['file']),
-            'line'    => $error['line'],
-        ]);
-    }
-});
 
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../config/permissions.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
 require_once __DIR__ . '/../../repositories/RoadRepository.php';
-
-// Requires loaded OK — discard early buffer, send normal response
-ob_end_clean();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
