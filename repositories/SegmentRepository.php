@@ -107,12 +107,13 @@ class SegmentRepository
     /**
      * Mark a segment as completed.
      * Returns true if the row was actually updated (wasn't already completed).
+     * Uses CURRENT_TIMESTAMP (works in both MySQL and SQLite).
      */
     public function markCompleted(int $segmentId): bool
     {
         $stmt = $this->pdo->prepare(
             "UPDATE segments
-                SET status = 'completed', completed_at = NOW()
+                SET status = 'completed', completed_at = CURRENT_TIMESTAMP
               WHERE id = ? AND status != 'completed'"
         );
         $stmt->execute([$segmentId]);

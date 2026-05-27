@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- phpunit.xml — PHPUnit 10 configuration for Parisar CycleAudit -->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         stopOnFailure="false">
+
+    <testsuites>
+        <testsuite name="Unit">
+            <file>tests/ScoreServiceTest.php</file>
+            <file>tests/ValidatorTest.php</file>
+        </testsuite>
+        <testsuite name="Integration">
+            <file>tests/SegmentRepositoryTest.php</file>
+        </testsuite>
+    </testsuites>
+
+    <!-- Tell PHPUnit which source files to measure (not vendor/) -->
+    <source>
+        <include>
+            <directory>services</directory>
+            <directory>helpers</directory>
+            <directory>repositories</directory>
+            <directory>config</directory>
+        </include>
+        <exclude>
+            <directory>vendor</directory>
+            <directory>tests</directory>
+        </exclude>
+    </source>
+
+</phpunit>

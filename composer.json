@@ -14,13 +14,15 @@
             "Parisar\\": "src/"
         },
         "files": [
-            "services/ScoreService.php"
+            "services/ScoreService.php",
+            "helpers/Validator.php",
+            "repositories/SegmentRepository.php"
         ]
     },
     "autoload-dev": {
-        "psr-4": {
-            "Parisar\\Tests\\": "tests/"
-        }
+        "classmap": [
+            "tests/"
+        ]
     },
     "config": {
         "optimize-autoloader": true,
