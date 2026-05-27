@@ -21,7 +21,7 @@ jobs:
         with:
           php-version: '8.1'
           extensions: pdo, pdo_sqlite, mbstring, xml
-          coverage: none          # no Xdebug needed for plain tests
+          coverage: none
 
       - name: Cache Composer dependencies
         uses: actions/cache@v4
@@ -34,7 +34,6 @@ jobs:
         run: composer install --no-interaction --prefer-dist
 
       - name: PHP syntax lint (all .php files)
-        # Fails fast if any file has a parse error
         run: find . -name "*.php" -not -path "./vendor/*" \
                | xargs -n1 php -l
 
@@ -45,7 +44,7 @@ jobs:
   deploy:
     name: Deploy to Railway
     runs-on: ubuntu-22.04
-    needs: test                   # only runs if test job passes
+    needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
@@ -54,6 +53,11 @@ jobs:
 
       - name: Install Railway CLI
         run: npm install -g @railway/cli
+
+      - name: Verify Railway token
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway whoami
 
       - name: Deploy
         env:
