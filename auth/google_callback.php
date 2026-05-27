@@ -84,16 +84,20 @@ if ($user === false) {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user !== false) {
-        // Link the Google identity to the existing local account
+        // Link the Google identity to the existing local account.
+        // Only use Google's picture if the user hasn't set a custom avatar.
+        $hasCustomAvatar = str_starts_with((string)($user['profile_picture'] ?? ''), 'data:');
+        $picToUse = $hasCustomAvatar ? $user['profile_picture'] : $profilePicture;
+
         $pdo->prepare(
             'UPDATE users
              SET google_id = ?, profile_picture = ?, auth_provider = \'google\',
                  email_verified = 1, last_login = NOW()
              WHERE id = ?'
-        )->execute([$googleId, $profilePicture, $user['id']]);
+        )->execute([$googleId, $picToUse, $user['id']]);
 
         $user['google_id']       = $googleId;
-        $user['profile_picture'] = $profilePicture;
+        $user['profile_picture'] = $picToUse;
     } else {
         // Brand-new Google user — auto-register as surveyor
         $pdo->prepare(
@@ -115,12 +119,15 @@ if ($user === false) {
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
     }
 } else {
-    // Known Google user — refresh picture and last_login
+    // Known Google user — only overwrite picture if user hasn't set a custom avatar
+    $hasCustomAvatar = str_starts_with((string)($user['profile_picture'] ?? ''), 'data:');
+    $picToUse = $hasCustomAvatar ? $user['profile_picture'] : $profilePicture;
+
     $pdo->prepare(
         'UPDATE users SET profile_picture = ?, last_login = NOW() WHERE id = ?'
-    )->execute([$profilePicture, $user['id']]);
+    )->execute([$picToUse, $user['id']]);
 
-    $user['profile_picture'] = $profilePicture;
+    $user['profile_picture'] = $picToUse;
 }
 
 // ── 6. Create authenticated session ───────────────────────────
