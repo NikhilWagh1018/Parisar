@@ -48,6 +48,10 @@ body {
 .tbtn-segments:hover { background:var(--gp); }
 .tbtn-print { background:var(--g); color:#fff; border-color:var(--g); }
 .tbtn-print:hover { background:var(--gd); }
+.tbtn-pdf { background:#c0392b; color:#fff; border-color:#c0392b; }
+.tbtn-pdf:hover { background:#96281b; }
+.tbtn-excel { background:#1d6f42; color:#fff; border-color:#1d6f42; }
+.tbtn-excel:hover { background:#155233; }
 
 /* ── Report wrapper ─────────────────────────────────────────── */
 .report {
