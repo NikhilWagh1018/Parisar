@@ -1,0 +1,121 @@
+/* Restore Banner Styles */
+.restore-banner {
+  background: linear-gradient(135deg, #f0f7ff 0%, #e8f3ff 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.restore-banner-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.restore-banner-message {
+  flex: 1;
+  min-width: 250px;
+}
+
+.restore-banner-message strong {
+  display: block;
+  color: #1e40af;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.restore-banner-message p {
+  color: #3b82f6;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.restore-banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-restore,
+.btn-discard {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-restore {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.btn-restore:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-discard {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.btn-discard:hover {
+  background-color: #d1d5db;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .restore-banner-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .restore-banner-actions {
+    width: 100%;
+  }
+
+  .btn-restore,
+  .btn-discard {
+    flex: 1;
+  }
+}
+
+/* Auto-save indicator (optional) */
+.form-autosave-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 16px;
+  background-color: #10b981;
+  color: white;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.form-autosave-indicator.show {
+  opacity: 1;
+}
