@@ -13,6 +13,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/constants.php';
+require_once __DIR__ . '/../config/rate_limit.php';
 
 startSecureSession();
 
@@ -23,6 +24,15 @@ if (isset($_SESSION['user_id'])) {
 }
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/google_config.php';
+
+// ── Rate limit registrations (reuse login_attempts table) ──────
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $ip       = getClientIp();
+    $rl_check = checkLoginRateLimit($pdo, $ip);
+    if (!$rl_check['allowed']) {
+        $errors[] = $rl_check['message'];
+    }
+}
 
 $errors  = [];
 $success = false;

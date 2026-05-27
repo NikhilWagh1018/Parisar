@@ -10,11 +10,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/constants.php';
 
 // ── Credentials ────────────────────────────────────────────────
-define('GOOGLE_CLIENT_ID',     getenv('GOOGLE_CLIENT_ID')     ?: '');
-define('GOOGLE_CLIENT_SECRET', getenv('GOOGLE_CLIENT_SECRET') ?: '');
+define('GOOGLE_CLIENT_ID',     _env('GOOGLE_CLIENT_ID',     ''));
+define('GOOGLE_CLIENT_SECRET', _env('GOOGLE_CLIENT_SECRET', ''));
 
 // ── Redirect URI ───────────────────────────────────────────────
-define('GOOGLE_REDIRECT_URI',  getenv('GOOGLE_REDIRECT_URI')  ?: BASE_URL . '/auth/google_callback.php');
+define('GOOGLE_REDIRECT_URI',  _env('GOOGLE_REDIRECT_URI',  BASE_URL . '/auth/google_callback.php'));
 
 // ── Google OAuth endpoints (do not change) ─────────────────────
 define('GOOGLE_AUTH_URL',     'https://accounts.google.com/o/oauth2/v2/auth');

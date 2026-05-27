@@ -1,49 +1,78 @@
 <?php
-session_start();
-if (!isset($_SESSION['user_id'])) { header("Location: ../auth/login.php"); exit; }
-require_once "../config/db.php";
+declare(strict_types=1);
+require_once __DIR__ . '/../config/auth_guard.php';
+require_once __DIR__ . '/../config/db.php';
 
 // ── INPUTS ──────────────────────────────────────────────────────
-// Accept road name OR segment IDs — road name is more reliable
-$road_name   = trim($_GET['road']    ?? '');
+// Accept road_id OR segment IDs
+$road_id_raw = trim($_GET['road_id'] ?? '');
 $seg_ids_raw = trim($_GET['seg_ids'] ?? '');
+$road_name_param = trim($_GET['road'] ?? ''); // legacy fallback
 
-// ── FETCH SEGMENTS FROM DATABASE ────────────────────────────────
-// Strategy: try seg_ids first, fallback to road_name, fallback to all
-$segs = [];
+// ── FETCH SEGMENTS + ROAD META ───────────────────────────────────
+$segs      = [];
+$road_meta = null;
 
 if ($seg_ids_raw !== '') {
+    // Strategy 1: explicit segment IDs
     $seg_ids = array_filter(array_map('intval', explode(',', $seg_ids_raw)));
     if (!empty($seg_ids)) {
         $ph   = implode(',', array_fill(0, count($seg_ids), '?'));
-        $stmt = $pdo->prepare("SELECT * FROM segments WHERE id IN ($ph) ORDER BY id ASC");
+        $stmt = $pdo->prepare(
+            "SELECT s.*, r.name AS road_name, r.start_point AS road_start,
+                    r.end_point AS road_end, r.total_length AS road_length,
+                    r.id AS road_id
+               FROM segments s
+               JOIN roads r ON r.id = s.road_id
+              WHERE s.id IN ($ph)
+              ORDER BY s.segment_number ASC"
+        );
         $stmt->execute(array_values($seg_ids));
         $segs = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 
-if (empty($segs) && $road_name !== '') {
-    $stmt = $pdo->prepare("SELECT * FROM segments WHERE road_name = ? ORDER BY id ASC");
-    $stmt->execute([$road_name]);
+if (empty($segs) && $road_id_raw !== '') {
+    // Strategy 2: road_id parameter
+    $road_id = (int)$road_id_raw;
+    $stmt = $pdo->prepare(
+        "SELECT s.*, r.name AS road_name, r.start_point AS road_start,
+                r.end_point AS road_end, r.total_length AS road_length,
+                r.id AS road_id
+           FROM segments s
+           JOIN roads r ON r.id = s.road_id
+          WHERE s.road_id = ?
+          ORDER BY s.segment_number ASC"
+    );
+    $stmt->execute([$road_id]);
     $segs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// If still empty, get the most recently used road from segments table
-if (empty($segs)) {
-    $stmt = $pdo->query("SELECT * FROM segments ORDER BY id ASC");
+if (empty($segs) && $road_name_param !== '') {
+    // Strategy 3: legacy road name lookup via roads table
+    $stmt = $pdo->prepare(
+        "SELECT s.*, r.name AS road_name, r.start_point AS road_start,
+                r.end_point AS road_end, r.total_length AS road_length,
+                r.id AS road_id
+           FROM segments s
+           JOIN roads r ON r.id = s.road_id
+          WHERE r.name = ?
+          ORDER BY s.segment_number ASC"
+    );
+    $stmt->execute([$road_name_param]);
     $segs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 // ── ROAD META ────────────────────────────────────────────────────
 if (!empty($segs)) {
-    $road_name  = $road_name  ?: ($segs[0]['road_name']  ?? 'Unknown Road');
-    $road_start = $segs[0]['road_start'] ?? 'N/A';
-    $road_end   = end($segs)['road_end'] ?? 'N/A';
-    $road_length= $segs[0]['road_length'] ?? 0;
+    $road_name   = $segs[0]['road_name']   ?? 'Unknown Road';
+    $road_start  = $segs[0]['road_start']  ?? 'N/A';
+    $road_end    = end($segs)['road_end']  ?? 'N/A';
+    $road_length = $segs[0]['road_length'] ?? 0;
+    reset($segs);
 } else {
-    // Nothing in DB at all
-    $road_name = $road_name ?: 'No Data';
-    $road_start = $road_end = 'N/A';
+    $road_name   = $road_name_param ?: 'No Data';
+    $road_start  = $road_end = 'N/A';
     $road_length = 0;
 }
 

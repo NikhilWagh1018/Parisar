@@ -82,26 +82,28 @@ if ($action === 'update_profile') {
         json_out(false, error: 'Age must be between 10 and 120.');
     }
 
-    $stmt = $pdo->prepare(
-        'UPDATE users
-         SET name = ?, phone = ?, organisation = ?, gender = ?,
-             age = ?, address = ?
-         WHERE id = ?'
-    );
-    $stmt->execute([
-        $name,
-        $phone ?: null,
-        $org   ?: null,
-        $gender ?: null,
-        $age,
-        $addr  ?: null,
-        $CURRENT_USER_ID,
-    ]);
-
-    // Refresh session name
-    $_SESSION['user_name'] = $name;
-
-    json_out(true, ['message' => 'Profile updated successfully.']);
+    try {
+        $stmt = $pdo->prepare(
+            'UPDATE users
+             SET name = ?, phone = ?, organisation = ?, gender = ?,
+                 age = ?, address = ?
+             WHERE id = ?'
+        );
+        $stmt->execute([
+            $name,
+            $phone ?: null,
+            $org   ?: null,
+            $gender ?: null,
+            $age,
+            $addr  ?: null,
+            $CURRENT_USER_ID,
+        ]);
+        $_SESSION['user_name'] = $name;
+        json_out(true, ['message' => 'Profile updated successfully.']);
+    } catch (Throwable $e) {
+        error_log('profile update_profile error: ' . $e->getMessage());
+        json_out(false, error: 'Server error updating profile.');
+    }
 }
 
 // ── Action: update_email ───────────────────────────────────────
@@ -142,11 +144,15 @@ if ($action === 'update_email') {
         json_out(false, error: 'That email is already in use by another account.');
     }
 
-    $pdo->prepare('UPDATE users SET email = ?, email_verified = 0 WHERE id = ?')
-        ->execute([$newEmail, $CURRENT_USER_ID]);
-
-    $_SESSION['user_email'] = $newEmail;
-    json_out(true, ['message' => 'Email updated. Please verify your new address.']);
+    try {
+        $pdo->prepare('UPDATE users SET email = ?, email_verified = 0 WHERE id = ?')
+            ->execute([$newEmail, $CURRENT_USER_ID]);
+        $_SESSION['user_email'] = $newEmail;
+        json_out(true, ['message' => 'Email updated. Please verify your new address.']);
+    } catch (Throwable $e) {
+        error_log('profile update_email error: ' . $e->getMessage());
+        json_out(false, error: 'Server error updating email.');
+    }
 }
 
 // ── Action: change_password ────────────────────────────────────
@@ -183,17 +189,23 @@ if ($action === 'change_password') {
         json_out(false, error: 'New password must be different from your current password.');
     }
 
-    $hash = password_hash($new, PASSWORD_BCRYPT);
-    $pdo->prepare('UPDATE users SET password = ? WHERE id = ?')
-        ->execute([$hash, $CURRENT_USER_ID]);
-
-    json_out(true, ['message' => 'Password changed successfully.']);
+    try {
+        $hash = password_hash($new, PASSWORD_BCRYPT);
+        $pdo->prepare('UPDATE users SET password = ? WHERE id = ?')
+            ->execute([$hash, $CURRENT_USER_ID]);
+        json_out(true, ['message' => 'Password changed successfully.']);
+    } catch (Throwable $e) {
+        error_log('profile change_password error: ' . $e->getMessage());
+        json_out(false, error: 'Server error changing password.');
+    }
 }
 
-// ── Action: upload_avatar (base64) ────────────────────────────
+// ── Action: upload_avatar (base64 stored in DB) ───────────────
+// NOTE: Railway filesystem is ephemeral — files are lost on redeploy.
+// We store the image as a base64 data URL directly in the DB instead.
 if ($action === 'upload_avatar') {
-    $dataUrl  = $body['image'] ?? '';
-    $allowed  = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    $dataUrl = $body['image'] ?? '';
+    $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
     if (!preg_match('/^data:([a-zA-Z\/]+);base64,/', $dataUrl, $m)) {
         json_out(false, error: 'Invalid image format.');
@@ -211,21 +223,17 @@ if ($action === 'upload_avatar') {
         json_out(false, error: 'Image too large. Max size is 2 MB.');
     }
 
-    $ext     = explode('/', $mime)[1] === 'jpeg' ? 'jpg' : explode('/', $mime)[1];
-    $dir     = ROOT_PATH . '/assets/avatars/';
-    if (!is_dir($dir)) {
-        mkdir($dir, 0755, true);
+    // Store as data URL in DB — survives redeployments unlike filesystem storage
+    try {
+        $pdo->prepare('UPDATE users SET profile_picture = ? WHERE id = ?')
+            ->execute([$dataUrl, $CURRENT_USER_ID]);
+
+        $_SESSION['profile_picture'] = $dataUrl;
+        json_out(true, ['picture_url' => $dataUrl, 'message' => 'Profile picture updated.']);
+    } catch (Throwable $e) {
+        error_log('profile upload_avatar error: ' . $e->getMessage());
+        json_out(false, error: 'Server error saving avatar.');
     }
-
-    $filename = 'avatar_' . $CURRENT_USER_ID . '_' . time() . '.' . $ext;
-    file_put_contents($dir . $filename, $bytes);
-
-    $url = BASE_URL . '/assets/avatars/' . $filename;
-    $pdo->prepare('UPDATE users SET profile_picture = ? WHERE id = ?')
-        ->execute([$url, $CURRENT_USER_ID]);
-
-    $_SESSION['profile_picture'] = $url;
-    json_out(true, ['picture_url' => $url, 'message' => 'Profile picture updated.']);
 }
 
 json_out(false, error: 'Unknown action.');
