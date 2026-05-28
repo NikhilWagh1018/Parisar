@@ -35,15 +35,17 @@ if (empty($_SESSION['csp_nonce'])) {
 }
 $_CSP_NONCE = $_SESSION['csp_nonce'];
 
-header(
-    "Content-Security-Policy: " .
-    "default-src 'self'; " .
-    "script-src 'self' 'nonce-{$_CSP_NONCE}'; " .
-    "style-src 'self' 'nonce-{$_CSP_NONCE}' https://fonts.googleapis.com; " .
-    "font-src 'self' https://fonts.gstatic.com; " .
-    "img-src 'self' data: https://lh3.googleusercontent.com https://*.googleusercontent.com; " .
-    "connect-src 'self';"
-);
+if (!headers_sent()) {
+    header(
+        "Content-Security-Policy: " .
+        "default-src 'self'; " .
+        "script-src 'self' 'nonce-{$_CSP_NONCE}'; " .
+        "style-src 'self' 'nonce-{$_CSP_NONCE}' https://fonts.googleapis.com; " .
+        "font-src 'self' https://fonts.gstatic.com; " .
+        "img-src 'self' data: https://lh3.googleusercontent.com https://*.googleusercontent.com; " .
+        "connect-src 'self';"
+    );
+}
 
 if (!isset($_SESSION['user_id'])) {
     $wantsJson = (
