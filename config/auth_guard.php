@@ -29,8 +29,8 @@ $_SESSION['csp_nonce'] = $nonce;
 header(
     "Content-Security-Policy: " .
     "default-src 'self'; " .
-    "script-src 'self' 'nonce-{$nonce}' 'unsafe-hashes'; " .
-    "style-src 'self' 'nonce-{$nonce}' 'unsafe-hashes' https://fonts.googleapis.com; " .
+    "script-src 'self' 'nonce-{$nonce}' 'unsafe-hashes' 'unsafe-inline'; " .
+    "style-src 'self' 'nonce-{$nonce}' 'unsafe-inline' https://fonts.googleapis.com; " .
     "font-src 'self' https://fonts.gstatic.com; " .
     "img-src 'self' data: https://lh3.googleusercontent.com https://*.googleusercontent.com; " .
     "connect-src 'self';"
