@@ -375,3 +375,107 @@ function calculateSegmentScoreDetailed(int $segmentAuditId, PDO $pdo): array
 
     return array_merge($base, ['parameters' => $params]);
 }
+
+/**
+ * Pure computation wrapper — no DB queries.
+ * Used by unit tests and anywhere pre-fetched data is available.
+ *
+ * @param array $audit  Row from segment_audits JOIN segments JOIN roads
+ * @param array $obs    Aggregated obstructions row (partial, total, slowed)
+ * @param array $ints   Array of intersection rows (off_ramp, on_ramp, markings, signage, traffic_calming)
+ */
+function _computeScoreFromData(array $audit, array $obs, array $ints): array
+{
+    $partialObs    = (float)($obs['partial'] ?? 0);
+    $totalObs      = (float)($obs['total']   ?? 0);
+    $cyclistSlowed = (float)($obs['slowed']  ?? 0);
+
+    $missingRampCount    = 0;
+    $missingSignCount    = 0;
+    $absentCalmingCount  = 0;
+
+    foreach ($ints as $i) {
+        $offRamp = strtolower(trim($i['off_ramp']  ?? ''));
+        $onRamp  = strtolower(trim($i['on_ramp']   ?? ''));
+        if ($offRamp === 'no ramp' || $onRamp === 'no ramp') {
+            $missingRampCount++;
+        }
+
+        $markings = strtolower(trim($i['markings'] ?? ''));
+        $signage  = strtolower(trim($i['signage']  ?? ''));
+        if ($markings === 'absent' || $signage === 'absent') {
+            $missingSignCount++;
+        }
+
+        $calming = strtolower(trim($i['traffic_calming'] ?? ''));
+        if ($calming === 'absent') {
+            $absentCalmingCount++;
+        }
+    }
+
+    $totalLen   = max(1.0, (float)($audit['segment_length'] ?? 500));
+    $missingLen = 0.0;
+    if ((($audit['cycle_track_missing'] ?? '') === 'Yes')) {
+        $missingLen = max(0.0, (float)($audit['missing_length'] ?? 0));
+    }
+    $missingLen  = min($missingLen, $totalLen);
+    $presentLen  = $totalLen - $missingLen;
+    $allMissing  = ($presentLen <= 0.0);
+
+    // SAFETY
+    if ($allMissing) {
+        $safetyRaw = 100.0;
+    } else {
+        $safetyRaw = (
+            ScoreHelpers::bufferZone($audit['buffer_zone'] ?? null) +
+            ScoreHelpers::lightAfterDark($audit['light_after_sunset'] ?? null) +
+            ScoreHelpers::trafficCalming($absentCalmingCount) +
+            ScoreHelpers::partialObstructions($partialObs)
+        ) / 4.0;
+    }
+    $safetyScore = ScoreHelpers::applyMissingLength($safetyRaw, $missingLen, $presentLen, $totalLen);
+
+    // CONTINUITY
+    if ($allMissing) {
+        $continuityRaw = 100.0;
+    } else {
+        $continuityRaw = (
+            ScoreHelpers::missingRamps($missingRampCount) +
+            ScoreHelpers::missingSignage($missingSignCount) +
+            ScoreHelpers::totalObstructions($totalObs)
+        ) / 3.0;
+    }
+    $continuityScore = ScoreHelpers::applyMissingLength($continuityRaw, $missingLen, $presentLen, $totalLen);
+
+    // COMFORT
+    if ($allMissing) {
+        $comfortRaw = 100.0;
+    } else {
+        $roadName   = $audit['road_name'] ?? '';
+        $comfortRaw = (
+            ScoreHelpers::surface($audit['surface_material'] ?? null) +
+            ScoreHelpers::cyclistSlowed($cyclistSlowed, $roadName) +
+            ScoreHelpers::shade($audit['shade'] ?? null)
+        ) / 3.0;
+    }
+    $comfortScore = ScoreHelpers::applyMissingLength($comfortRaw, $missingLen, $presentLen, $totalLen);
+
+    // WEIGHTED FINAL
+    $finalScore = (
+        $safetyScore    * WEIGHT_SAFETY +
+        $comfortScore   * WEIGHT_COMFORT +
+        $continuityScore * WEIGHT_CONTINUITY
+    ) / WEIGHT_TOTAL;
+
+    $finalScore = round(max(0.0, min(100.0, $finalScore)), 2);
+    $condition  = ScoreHelpers::scoreToCondition($finalScore);
+
+    return [
+        'safety_score'      => round($safetyScore,    2),
+        'continuity_score'  => round($continuityScore, 2),
+        'comfort_score'     => round($comfortScore,    2),
+        'final'             => $finalScore,
+        'condition'         => $condition,
+        'rating'            => $condition,
+    ];
+}
