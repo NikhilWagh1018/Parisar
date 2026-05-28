@@ -24,7 +24,7 @@ enforceSessionTimeout();
 
 // ── Content-Security-Policy ────────────────────────────────────
 // Allow Google's CDN for profile pictures on all protected pages.
- = base64_encode(random_bytes(16));
+$nonce = base64_encode(random_bytes(16));
 $_SESSION['csp_nonce'] = $nonce;
 header(
     "Content-Security-Policy: " .
