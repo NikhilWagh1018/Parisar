@@ -120,15 +120,10 @@ class ScoreHelpers
      */
     public static function cyclistSlowed(float $count, string $roadName = ''): float
     {
-        // Group B roads with fixed 75 minimum
-        static $groupB = [
-            'DP ROAD', 'SINHAGAD ROAD', 'SENAPATI BAPAT ROAD', 'KARVE ROAD',
-            'FERGUSSON COLLEGE ROAD', 'JANGALI MAHARAJ ROAD', 'SANGAMWADI ROAD',
-            'PMC ROAD', 'KHADKI ROAD', 'DECCAN COLLEGE ROAD', 'PASHAN ROAD',
-        ];
-
+        // Group B road list is defined in config/constants.php — edit there,
+        // no code deployment needed to add/remove roads.
         $road     = strtoupper(trim($roadName));
-        $isGroupB = in_array($road, $groupB, true);
+        $isGroupB = in_array($road, GROUP_B_ROADS, true);
 
         if ($count > 20) {
             return 100.0;

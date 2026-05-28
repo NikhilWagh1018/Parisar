@@ -148,19 +148,55 @@ function _pruneOldAttempts(PDO $pdo): void
 }
 
 /**
- * Resolves the real client IP, respecting Railway's X-Forwarded-For proxy header.
- * Falls back to REMOTE_ADDR for local dev.
+ * Resolves the real client IP.
+ *
+ * X-Forwarded-For is only trusted when the direct connection (REMOTE_ADDR)
+ * comes from a known Railway/private proxy range — prevents attackers from
+ * spoofing the header to bypass IP-based rate limiting (Issue 18).
+ *
+ * Railway proxy ranges: 100.64.0.0/10 (CGNAT) + RFC-1918 private ranges.
+ * On local XAMPP, REMOTE_ADDR is 127.0.0.1 — also trusted for dev.
  */
 function getClientIp(): string
 {
-    $forwarded = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
-    if ($forwarded !== '') {
-        // X-Forwarded-For can be a comma-separated list — leftmost is the client
-        $ips = array_map('trim', explode(',', $forwarded));
-        $ip  = filter_var($ips[0], FILTER_VALIDATE_IP);
-        if ($ip !== false) {
-            return $ip;
+    $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+    // Trusted proxy subnets: Railway CGNAT + private ranges + localhost
+    $trustedProxyCidrs = [
+        '100.64.0.0/10',  // Railway CGNAT range
+        '10.0.0.0/8',     // RFC-1918
+        '172.16.0.0/12',  // RFC-1918
+        '192.168.0.0/16', // RFC-1918
+        '127.0.0.0/8',    // localhost / XAMPP dev
+    ];
+
+    $isTrustedProxy = false;
+    $remoteIp = inet_pton($remoteAddr);
+    if ($remoteIp !== false) {
+        foreach ($trustedProxyCidrs as $cidr) {
+            [$subnet, $bits] = explode('/', $cidr);
+            $subnetIp  = inet_pton($subnet);
+            $mask      = str_repeat("\xff", (int)($bits / 8))
+                       . (($bits % 8) ? chr(0xff << (8 - ($bits % 8))) : '')
+                       . str_repeat("\x00", strlen($subnetIp) - (int)ceil($bits / 8));
+            if (($remoteIp & $mask) === ($subnetIp & $mask)) {
+                $isTrustedProxy = true;
+                break;
+            }
         }
     }
-    return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+    if ($isTrustedProxy) {
+        $forwarded = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+        if ($forwarded !== '') {
+            // X-Forwarded-For is a comma-separated list — leftmost is the client
+            $ips = array_map('trim', explode(',', $forwarded));
+            $ip  = filter_var($ips[0], FILTER_VALIDATE_IP);
+            if ($ip !== false) {
+                return $ip;
+            }
+        }
+    }
+
+    return $remoteAddr;
 }

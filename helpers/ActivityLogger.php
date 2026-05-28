@@ -60,13 +60,35 @@ class ActivityLogger
 
     private static function clientIp(): string
     {
-        foreach (['HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP', 'REMOTE_ADDR'] as $key) {
-            $val = $_SERVER[$key] ?? '';
-            if ($val !== '') {
-                // X-Forwarded-For can be a comma-separated list; take the first
-                return trim(explode(',', $val)[0]);
+        // Only trust X-Forwarded-For if the direct connection is from a
+        // known Railway/private proxy range — prevents spoofing (Issue 18).
+        $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $trustedCidrs = [
+            '100.64.0.0/10', '10.0.0.0/8',
+            '172.16.0.0/12', '192.168.0.0/16', '127.0.0.0/8',
+        ];
+        $remoteIp = inet_pton($remoteAddr);
+        $trusted  = false;
+        if ($remoteIp !== false) {
+            foreach ($trustedCidrs as $cidr) {
+                [$subnet, $bits] = explode('/', $cidr);
+                $subnetIp = inet_pton($subnet);
+                $mask     = str_repeat("\xff", (int)($bits / 8))
+                          . (($bits % 8) ? chr(0xff << (8 - ($bits % 8))) : '')
+                          . str_repeat("\x00", strlen($subnetIp) - (int)ceil($bits / 8));
+                if (($remoteIp & $mask) === ($subnetIp & $mask)) {
+                    $trusted = true;
+                    break;
+                }
             }
         }
-        return '0.0.0.0';
+        if ($trusted) {
+            $fwd = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+            if ($fwd !== '') {
+                $ip = filter_var(trim(explode(',', $fwd)[0]), FILTER_VALIDATE_IP);
+                if ($ip !== false) return $ip;
+            }
+        }
+        return $remoteAddr;
     }
 }
