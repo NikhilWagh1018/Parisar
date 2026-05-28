@@ -17,7 +17,7 @@ set_exception_handler(function (Throwable $e) {
     exit;
 });
 
-ini_set('display_errors', '1');
+ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
 require_once __DIR__ . '/../../config/auth_guard.php';
@@ -144,18 +144,18 @@ try {
     $surfaceIssues  = json_encode(array_values(array_filter((array)($_POST['surface_issues']  ?? []))));
     $overheadIssues = json_encode(array_values(array_filter((array)($_POST['overhead_issues'] ?? []))));
     $footpathRating = json_encode(array_values(array_filter((array)($_POST['footpath_rating'] ?? []))));
-    \  = json_decode(\, true) ?? [];
-\      = [
+    $dims = json_decode($dims, true) ?? [];
+    $dims     = [
     'minWidth'         => 30,
     'obstructionFree'  => 30,
     'continuous'       => 20,
     'disabledFriendly' => 15,
     'comfort'          => 5,
 ];
-\ = 0;
-foreach (\ as \ => \) {
-    if (!in_array(\, \, true)) {
-        \ += \;
+$score = 0;
+foreach ($dims as $key => $weight) {
+    if (!in_array($key, array_keys($dims), true)) {
+        $score += $weight;
     }
 }
 
@@ -266,7 +266,12 @@ foreach (\ as \ => \) {
     $intersections = json_decode($_POST['intersections'] ?? '[]', true);
     if (is_array($intersections) && !empty($intersections)) {
         $intStmt = $pdo->prepare(
-
+            'INSERT INTO intersections
+                (audit_id, intersection_num, gps_coords, landmark_name,
+                off_ramp, on_ramp, markings, signage,
+                traffic_calming, discontinuity, tapering, obstruction_type)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        );
     // Allowlist validation for intersection enum fields
     $intAllowlists = [
         'off_ramp'        => ['Ramp Present', 'No Ramp'],
@@ -290,12 +295,6 @@ foreach (\ as \ => \) {
             }
         }
     }
-            'INSERT INTO intersections
-               (audit_id, intersection_num, gps_coords, landmark_name,
-                off_ramp, on_ramp, markings, signage,
-                traffic_calming, discontinuity, tapering, obstruction_type)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        );
         foreach ($intersections as $idx => $i) {
             $intStmt->execute([
                 $auditId,
