@@ -346,5 +346,5 @@ foreach ($dims as $key => $weight) {
     }
     error_log('api/segments/submit.php error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Server error. Please try again.']);
+    echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
 }
