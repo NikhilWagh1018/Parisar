@@ -178,16 +178,28 @@ if ($segNum > 0) {
         <div class="field-row" style="margin-top:14px">
           <div class="field-group req-field" id="wrap-gpsStart">
             <label>GPS Start Point <span class="required-star">*</span></label>
-            <input type="text" id="gpsStart" name="gps_start"
-                   oninput="clearError('wrap-gpsStart')"
-                   placeholder="e.g. 18.5204, 73.8567">
+            <div class="gps-input-row">
+              <input type="text" id="gpsStart" name="gps_start"
+                     oninput="clearError('wrap-gpsStart')"
+                     placeholder="e.g. 18.5204, 73.8567">
+              <button type="button" class="btn-gps-fill" onclick="fillGps('gpsStart')" title="Use current location">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/></svg>
+                Locate
+              </button>
+            </div>
             <span class="error-msg">This field is required</span>
           </div>
           <div class="field-group req-field" id="wrap-gpsEnd">
             <label>GPS End Point <span class="required-star">*</span></label>
-            <input type="text" id="gpsEnd" name="gps_end"
-                   oninput="clearError('wrap-gpsEnd')"
-                   placeholder="e.g. 18.5214, 73.8577">
+            <div class="gps-input-row">
+              <input type="text" id="gpsEnd" name="gps_end"
+                     oninput="clearError('wrap-gpsEnd')"
+                     placeholder="e.g. 18.5214, 73.8577">
+              <button type="button" class="btn-gps-fill" onclick="fillGps('gpsEnd')" title="Use current location">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/></svg>
+                Locate
+              </button>
+            </div>
             <span class="error-msg">This field is required</span>
           </div>
         </div>

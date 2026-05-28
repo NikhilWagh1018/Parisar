@@ -40,9 +40,13 @@ class FormStateManager {
       this.clearDraft();
     });
 
-    // Warn on unsaved changes
+    // Warn on unsaved changes — fires from the FIRST keystroke (Fix #17).
+    // Previously gated on hasDraft(), which is only true after the 30-second
+    // auto-save fires. That left a silent window where navigating away right
+    // after typing would lose data without any warning.
+    // Now we guard on isDirty alone: any change to the form triggers the warn.
     window.addEventListener('beforeunload', (e) => {
-      if (this.isDirty && this.hasDraft()) {
+      if (this.isDirty) {
         e.preventDefault();
         e.returnValue = '';
       }

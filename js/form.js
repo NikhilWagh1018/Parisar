@@ -44,6 +44,69 @@ function getCsrf() {
   return meta ? meta.content : (window.__CSRF__ || '');
 }
 
+// ── GPS Auto-fill (Fix #16) ───────────────────────────────────
+// Fills a GPS input field with the device's current coordinates.
+// Works for both the main segment fields (gpsStart / gpsEnd)
+// and dynamically-generated intersection GPS inputs.
+function fillGps(fieldId) {
+  if (!navigator.geolocation) {
+    showFieldError(fieldId, 'Geolocation is not supported by your browser.');
+    return;
+  }
+
+  const btn = document.querySelector(`button[onclick="fillGps('${fieldId}')"]`);
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '…';
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      const field = document.getElementById(fieldId);
+      if (field) {
+        field.value = `${lat}, ${lng}`;
+        // Trigger input event so dirty-guard and validation both notice the change
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '✓ Located';
+        setTimeout(() => {
+          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/></svg> Locate`;
+        }, 2000);
+      }
+    },
+    (err) => {
+      const msgs = {
+        1: 'Location access denied. Please allow location permission.',
+        2: 'Location unavailable. Try again.',
+        3: 'Location request timed out. Try again.',
+      };
+      showFieldError(fieldId, msgs[err.code] || 'Could not get location.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Locate'; }
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+function showFieldError(fieldId, msg) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+  const wrap = field.closest('.field-group') || field.closest('.int-gps-row');
+  if (!wrap) return;
+  let err = wrap.querySelector('.gps-error');
+  if (!err) {
+    err = document.createElement('span');
+    err.className = 'gps-error error-msg';
+    err.style.display = 'block';
+    field.parentNode.insertAdjacentElement('afterend', err);
+  }
+  err.textContent = msg;
+  setTimeout(() => err.remove(), 4000);
+}
+
 // ── Obstruction option lists ───────────────────────────────────
 const fixedOptions = [
   'Trees','Poles','CCTV','TrafficSignal','SignBoard',
@@ -294,8 +357,14 @@ function buildIntersectionBody(uid) {
     <div class="int-gps-row">
       <div>
         <label>GPS Coordinates</label>
-        <input type="text" id="${p}gps"  name="${p}gps"
-               placeholder="e.g. 18.5204, 73.8567">
+        <div class="gps-input-row">
+          <input type="text" id="${p}gps" name="${p}gps"
+                 placeholder="e.g. 18.5204, 73.8567">
+          <button type="button" class="btn-gps-fill" onclick="fillGps('${p}gps')" title="Use current location">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/></svg>
+            Locate
+          </button>
+        </div>
       </div>
       <div>
         <label>Landmark Name</label>

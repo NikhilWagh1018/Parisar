@@ -411,3 +411,20 @@
     }
     #scrollTopBtn.visible { opacity:1; pointer-events:auto; }
     #scrollTopBtn:hover { background:#6eaf30; }
+/* ── GPS auto-fill button (Fix #16) ── */
+.gps-input-row {
+  display: flex; gap: 8px; align-items: center;
+}
+.gps-input-row input {
+  flex: 1; min-width: 0;
+}
+.btn-gps-fill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 8px 12px; border-radius: 8px; border: 1.5px solid #16a34a;
+  background: #f0fdf4; color: #15803d;
+  font-size: .78rem; font-weight: 600; cursor: pointer;
+  white-space: nowrap; transition: background .15s, color .15s;
+  font-family: inherit;
+}
+.btn-gps-fill:hover   { background: #16a34a; color: #fff; }
+.btn-gps-fill:disabled { opacity: .6; cursor: not-allowed; }
