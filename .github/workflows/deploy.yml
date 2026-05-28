@@ -57,6 +57,6 @@ jobs:
       - name: Deploy to Railway
         # --source . uploads the checked-out commit so Railway builds
         # the Docker image from the exact code that passed CI.
-        run: railway up --detach --service Parisar --source .
+        run: railway up --detach --service Parisar .
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
