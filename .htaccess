@@ -25,21 +25,6 @@ RewriteRule ^ index.html [L]
     Header set X-XSS-Protection "1; mode=block"
 </IfModule>
 
-# Cache static assets for 1 year (content-addressed by filename)
-<IfModule mod_headers.c>
-    <FilesMatch "\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$">
-        Header set Cache-Control "public, max-age=31536000, immutable"
-    </FilesMatch>
-</IfModule>
-
-# Never cache PHP pages — always revalidate
-<IfModule mod_headers.c>
-    <FilesMatch "\.php$">
-        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
-        Header set Pragma "no-cache"
-    </FilesMatch>
-</IfModule>
-
 # Disable directory listing
 <IfModule mod_autoindex.c>
     Options -Indexes

@@ -237,7 +237,7 @@ $logoBase64 = file_exists($logoPath)
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Audit Report — <?= htmlspecialchars($session['road_name']) ?></title>
-<link rel="stylesheet" href="../css/report.css" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
+<link rel="stylesheet" href="../css/report.css">
 </head>
 <body>
 

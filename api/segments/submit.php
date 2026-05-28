@@ -21,7 +21,6 @@ ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
 require_once __DIR__ . '/../../config/auth_guard.php';
-require_once __DIR__ . '/../../services/IdGenerator.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
@@ -175,7 +174,7 @@ try {
                  $CURRENT_USER_ID, $sessionId, $auditId]
             ));
 
-            $auditPublicId = generatePublicId('SA', $auditId);
+            $auditPublicId = 'SA-' . str_pad((string)$auditId, 4, '0', STR_PAD_LEFT);
 
             // Delete old obstructions and intersections so they
             // can be re-inserted cleanly from the edited form data.
@@ -197,7 +196,7 @@ try {
         $auditId = (int)$pdo->lastInsertId();
 
         // Generate public_id
-        $auditPublicId = generatePublicId('SA', $auditId);
+        $auditPublicId = 'SA-' . str_pad((string)$auditId, 4, '0', STR_PAD_LEFT);
         $pdo->prepare('UPDATE segment_audits SET public_id = ? WHERE id = ?')
             ->execute([$auditPublicId, $auditId]);
 
@@ -243,7 +242,7 @@ try {
 
                 // Generate public_id for obstruction
                 $obsId       = (int)$pdo->lastInsertId();
-                $obsPublicId = generatePublicId('OBS', $obsId);
+                $obsPublicId = 'OBS-' . str_pad((string)$obsId, 4, '0', STR_PAD_LEFT);
                 $pdo->prepare('UPDATE obstructions SET public_id = ? WHERE id = ?')
                     ->execute([$obsPublicId, $obsId]);
             }
@@ -251,21 +250,6 @@ try {
     }
 
     // ── 5. INSERT intersections ────────────────────────────────
-    // Allowlists for scored fields — values outside these lists break the
-    // scoring engine which checks for exact strings like 'no ramp' / 'absent'.
-    // Unknown values are sanitised to null rather than silently corrupting scores.
-    $allowedRamp     = ['No ramp', 'Ramp present', null];
-    $allowedPresence = ['Present', 'Absent', 'absent', null];
-    $allowedCalming  = ['Present', 'Absent', 'absent', null];
-
-    /**
-     * Return $value if it exists in $allowed, otherwise null.
-     * @param string[]|null[] $allowed
-     */
-    $sanitiseEnum = static function (?string $value, array $allowed): ?string {
-        return in_array($value, $allowed, true) ? $value : null;
-    };
-
     $intersections = json_decode($_POST['intersections'] ?? '[]', true);
     if (is_array($intersections) && !empty($intersections)) {
         $intStmt = $pdo->prepare(
@@ -276,40 +260,24 @@ try {
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         foreach ($intersections as $idx => $i) {
-            // Sanitise free-text fields (GPS, landmark) to max 255 chars
-            $gps      = isset($i['gps_coords'])    ? mb_substr(trim((string)$i['gps_coords']),    0, 100) : null;
-            $landmark = isset($i['landmark_name']) ? mb_substr(trim((string)$i['landmark_name']), 0, 255) : null;
-            $obsType  = isset($i['obstruction_type']) ? mb_substr(trim((string)$i['obstruction_type']), 0, 100) : null;
-
-            // Sanitise scored enum fields against allowlists
-            $offRamp  = $sanitiseEnum($i['off_ramp']        ?? null, $allowedRamp);
-            $onRamp   = $sanitiseEnum($i['on_ramp']         ?? null, $allowedRamp);
-            $markings = $sanitiseEnum($i['markings']        ?? null, $allowedPresence);
-            $signage  = $sanitiseEnum($i['signage']         ?? null, $allowedPresence);
-            $calming  = $sanitiseEnum($i['traffic_calming'] ?? null, $allowedCalming);
-
-            // These fields are informational only — accept any short string
-            $discontinuity = isset($i['discontinuity']) ? mb_substr(trim((string)$i['discontinuity']), 0, 50) : null;
-            $tapering      = isset($i['tapering'])      ? mb_substr(trim((string)$i['tapering']),      0, 50) : null;
-
             $intStmt->execute([
                 $auditId,
                 $idx + 1,
-                $gps,
-                $landmark,
-                $offRamp,
-                $onRamp,
-                $markings,
-                $signage,
-                $calming,
-                $discontinuity,
-                $tapering,
-                $obsType,
+                $i['gps_coords']       ?? null,
+                $i['landmark_name']    ?? null,
+                $i['off_ramp']         ?? null,
+                $i['on_ramp']          ?? null,
+                $i['markings']         ?? null,
+                $i['signage']          ?? null,
+                $i['traffic_calming']  ?? null,
+                $i['discontinuity']    ?? null,
+                $i['tapering']         ?? null,
+                $i['obstruction_type'] ?? null,
             ]);
 
             // Generate public_id for intersection
             $intId       = (int)$pdo->lastInsertId();
-            $intPublicId = generatePublicId('INT', $intId);
+            $intPublicId = 'INT-' . str_pad((string)$intId, 4, '0', STR_PAD_LEFT);
             $pdo->prepare('UPDATE intersections SET public_id = ? WHERE id = ?')
                 ->execute([$intPublicId, $intId]);
         }

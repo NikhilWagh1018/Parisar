@@ -13,9 +13,7 @@ declare(strict_types=1);
 //    $CURRENT_USER_ROLE (string)
 //    $CURRENT_USER_PIC  (string|null)
 //    $CURRENT_USER_AUTH (string)
-//    $_SESSION['csrf_token']  — generated on first use
-//    $_SESSION['csp_nonce']   — per-request nonce for inline scripts/styles
-//    $_CSP_NONCE               — shorthand alias for the nonce
+//    $_SESSION['csrf_token'] — generated on first use
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/constants.php';
@@ -24,28 +22,17 @@ require_once __DIR__ . '/db.php';
 startSecureSession();
 enforceSessionTimeout();
 
-// ── Content-Security-Policy (nonce-based) ─────────────────────
-// A per-request nonce is generated here so PHP page templates can emit:
-//   <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce']) ?>">
-//
-// This replaces 'unsafe-inline' which negated XSS protection entirely.
-// Any inline <script> or <style> without the matching nonce is blocked.
-if (empty($_SESSION['csp_nonce'])) {
-    $_SESSION['csp_nonce'] = base64_encode(random_bytes(16));
-}
-$_CSP_NONCE = $_SESSION['csp_nonce'];
-
-if (!headers_sent()) {
-    header(
-        "Content-Security-Policy: " .
-        "default-src 'self'; " .
-        "script-src 'self' 'nonce-{$_CSP_NONCE}'; " .
-        "style-src 'self' 'nonce-{$_CSP_NONCE}' https://fonts.googleapis.com; " .
-        "font-src 'self' https://fonts.gstatic.com; " .
-        "img-src 'self' data: https://lh3.googleusercontent.com https://*.googleusercontent.com; " .
-        "connect-src 'self';"
-    );
-}
+// ── Content-Security-Policy ────────────────────────────────────
+// Allow Google's CDN for profile pictures on all protected pages.
+header(
+    "Content-Security-Policy: " .
+    "default-src 'self'; " .
+    "script-src 'self' 'unsafe-inline'; " .
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
+    "font-src 'self' https://fonts.gstatic.com; " .
+    "img-src 'self' data: https://lh3.googleusercontent.com https://*.googleusercontent.com; " .
+    "connect-src 'self';"
+);
 
 if (!isset($_SESSION['user_id'])) {
     $wantsJson = (

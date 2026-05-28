@@ -27,28 +27,11 @@ async function loadDashboard() {
     const container = document.getElementById('roadsContainer');
 
     if (data.roads.length === 0) {
-      // ── Get-Started empty state ───────────────────────────────
-      // Hide the stat cards so the first-time view isn't misleading
-      document.getElementById('statGrid').style.display = 'none';
-
       container.innerHTML = `
-        <div class="get-started-card">
-          <div class="gs-icon">🚴</div>
-          <h3 class="gs-title">Welcome to CycleAudit!</h3>
-          <p class="gs-body">
-            You haven't defined any roads yet.<br>
-            Start by creating your first road — then assign segments and begin auditing.
-          </p>
-          <div class="gs-steps">
-            <div class="gs-step"><span class="gs-num">1</span><span>Create a road with a name and group</span></div>
-            <div class="gs-step"><span class="gs-num">2</span><span>Add segments along the route</span></div>
-            <div class="gs-step"><span class="gs-num">3</span><span>Submit audit data for each segment</span></div>
-            <div class="gs-step"><span class="gs-num">4</span><span>View the scored report</span></div>
-          </div>
-          <a href="segment.php" class="gs-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Create Your First Road
-          </a>
+        <div class="empty-state">
+          <div class="empty-icon">🗺️</div>
+          <p>No roads defined yet.<br>
+          <a href="segment.php">Define your first road →</a></p>
         </div>`;
       return;
     }

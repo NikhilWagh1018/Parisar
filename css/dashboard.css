@@ -242,32 +242,3 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .road-row  { grid-template-columns: 1fr 1fr; }
 }
-/* ── Get-Started empty state card (Fix #15) ── */
-.get-started-card {
-  display: flex; flex-direction: column; align-items: center;
-  text-align: center; padding: 40px 24px 36px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #f0f9ff 100%);
-  border: 2px dashed #a7f3d0; border-radius: 16px; margin: 8px 0;
-}
-.gs-icon  { font-size: 3rem; margin-bottom: 12px; }
-.gs-title { font-size: 1.25rem; font-weight: 700; color: var(--ink); margin: 0 0 10px; }
-.gs-body  { font-size: .9rem; color: var(--gray); line-height: 1.65; margin-bottom: 24px; }
-.gs-steps {
-  display: flex; flex-direction: column; gap: 10px;
-  align-items: flex-start; margin-bottom: 28px; width: 100%; max-width: 360px;
-}
-.gs-step  { display: flex; align-items: center; gap: 12px; font-size: .85rem; color: #374151; }
-.gs-num   {
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--green, #16a34a); color: #fff;
-  font-size: .78rem; font-weight: 700;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.gs-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: var(--green, #16a34a); color: #fff;
-  padding: 12px 26px; border-radius: 10px;
-  font-size: .9rem; font-weight: 700; text-decoration: none;
-  transition: background .18s;
-}
-.gs-btn:hover { background: #15803d; }

@@ -8,9 +8,9 @@ require_once __DIR__ . '/../config/auth_guard.php';
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
   <title>Road Setup — CycleAudit</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
-  <link rel="stylesheet" href="../css/segment.css" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
-  <link rel="stylesheet" href="../css/segment-dropdown.css" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/segment.css">
+  <link rel="stylesheet" href="../css/segment-dropdown.css">
 </head>
 <body>
 
@@ -295,8 +295,8 @@ require_once __DIR__ . '/../config/auth_guard.php';
   </div>
 </div>
 
-<script src="../js/segment.js" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>"></script>
-<script src="../js/segment-roads.js" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>"></script>
+<script src="../js/segment.js"></script>
+<script src="../js/segment-roads.js"></script>
 
 </body>
 </html>

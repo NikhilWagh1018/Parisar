@@ -40,13 +40,9 @@ class FormStateManager {
       this.clearDraft();
     });
 
-    // Warn on unsaved changes — fires from the FIRST keystroke (Fix #17).
-    // Previously gated on hasDraft(), which is only true after the 30-second
-    // auto-save fires. That left a silent window where navigating away right
-    // after typing would lose data without any warning.
-    // Now we guard on isDirty alone: any change to the form triggers the warn.
+    // Warn on unsaved changes
     window.addEventListener('beforeunload', (e) => {
-      if (this.isDirty) {
+      if (this.isDirty && this.hasDraft()) {
         e.preventDefault();
         e.returnValue = '';
       }
@@ -57,10 +53,6 @@ class FormStateManager {
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => this.saveDraft(), this.autoSaveInterval);
   }
-
-  // Maximum age of a draft before it is automatically discarded (24 hours).
-  // Prevents sensitive audit data lingering on shared or public devices.
-  static DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
   saveDraft() {
     if (!this.isDirty) return;
@@ -80,7 +72,7 @@ class FormStateManager {
       }
     }
 
-    // Save with timestamp so we can enforce expiry on load
+    // Save with timestamp
     const draft = {
       data,
       timestamp: new Date().toISOString(),
@@ -105,22 +97,7 @@ class FormStateManager {
   getDraft() {
     try {
       const stored = localStorage.getItem(this.storageKey);
-      if (!stored) return null;
-
-      const draft = JSON.parse(stored);
-
-      // Discard drafts older than DRAFT_MAX_AGE_MS (default 24 h).
-      // This prevents sensitive audit data lingering on shared devices.
-      if (draft && draft.timestamp) {
-        const age = Date.now() - new Date(draft.timestamp).getTime();
-        if (age > FormStateManager.DRAFT_MAX_AGE_MS) {
-          console.log('Draft expired — discarding');
-          localStorage.removeItem(this.storageKey);
-          return null;
-        }
-      }
-
-      return draft;
+      return stored ? JSON.parse(stored) : null;
     } catch (e) {
       console.error('Failed to retrieve draft:', e);
       return null;

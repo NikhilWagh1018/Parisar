@@ -104,9 +104,9 @@ $googleUrl = getGoogleAuthUrl();
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign In — CycleAudit</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
-  <link rel="stylesheet" href="../css/auth.css" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
-  <link rel="stylesheet" href="../css/login-inline.css" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/auth.css">
+  <link rel="stylesheet" href="../css/login-inline.css">
 </head>
 <body>
 
@@ -200,6 +200,6 @@ $googleUrl = getGoogleAuthUrl();
   </div>
 </div>
 
-<script src="../js/login.js" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>"></script>
+<script src="../js/login.js"></script>
 </body>
 </html>

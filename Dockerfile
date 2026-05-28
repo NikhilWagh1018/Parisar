@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     zip \
-    && a2enmod rewrite headers php8.1 \
+    && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
 RUN { \
@@ -26,7 +26,7 @@ RUN { \
     echo "error_log = /var/log/apache2/php_errors.log"; \
     echo "expose_php = Off"; \
     echo "max_execution_time = 60"; \
-    echo "memory_limit = 256M"; \
+    echo "memory_limit = 128M"; \
     echo "upload_max_filesize = 10M"; \
     echo "post_max_size = 12M"; \
     echo "session.cookie_httponly = 1"; \
@@ -38,13 +38,6 @@ RUN { \
     echo "opcache.memory_consumption = 64"; \
     echo "opcache.max_accelerated_files = 2000"; \
     } >> /etc/php/8.1/apache2/php.ini
-
-# Explicitly configure Apache to execute PHP files.
-# libapache2-mod-php8.1 should do this automatically, but we write
-# the handler config directly to guarantee it survives any caching.
-RUN echo '<FilesMatch "\.php$">\n    SetHandler application/x-httpd-php\n</FilesMatch>' \
-    > /etc/apache2/conf-available/php8.1-handler.conf \
-    && a2enconf php8.1-handler
 
 WORKDIR /var/www/html
 RUN rm -f /var/www/html/index.html

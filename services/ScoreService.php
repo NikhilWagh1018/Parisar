@@ -2,16 +2,9 @@
 declare(strict_types=1);
 
 /**
- * services/ScoreService.php
- * Main scoring orchestration logic.
- *
- * Performance fix (Round 3):
- *   calculateRoadScore() now loads ALL audit data for an entire road
- *   in exactly 3 queries (audits, obstruction sums, intersections)
- *   instead of 3 queries × N segments (N+1 problem).
- *
- *   calculateSegmentScoreDetailed() no longer re-runs queries that
- *   calculateSegmentScore() already ran — it reuses passed-in data.
+ * services/ScoreService.php (UPDATED)
+ * Refactored to use ScoreHelpers class
+ * Main scoring orchestration logic
  */
 
 require_once __DIR__ . '/../config/constants.php';
@@ -100,32 +93,63 @@ function ratingColour(string $rating): string
     return ScoreHelpers::conditionColor($rating);
 }
 
-// ══════════════════════════════════════════════════════════════
-//  INTERNAL PURE CALCULATION
-//  Takes already-fetched data arrays — no DB calls.
-//  Used by both the single-segment and batch road functions.
-// ══════════════════════════════════════════════════════════════
-
 /**
- * Compute score from pre-fetched data rows.
- * Zero DB queries — all data already loaded by the caller.
- *
- * @param array $audit   Row from segment_audits JOIN segments JOIN roads
- * @param array $obs     Aggregated obstruction sums {partial, total, slowed}
- * @param array $ints    Rows from intersections table for this audit
- * @return array         Score breakdown
+ * Calculate the full score breakdown for one segment audit.
+ * Now uses ScoreHelpers for helper functions
  */
-function _computeScoreFromData(array $audit, array $obs, array $ints): array
+function calculateSegmentScore(int $segmentAuditId, PDO $pdo): array
 {
+    $stmtAudit = $pdo->prepare(
+        'SELECT sa.buffer_zone,
+                sa.light_after_sunset,
+                sa.shade,
+                sa.surface_material,
+                sa.cycle_track_missing,
+                sa.missing_length,
+                s.length AS segment_length,
+                r.name   AS road_name
+         FROM   segment_audits sa
+         JOIN   segments s ON s.id = sa.segment_id
+         JOIN   roads    r ON r.id = s.road_id
+         WHERE  sa.id = ?
+         LIMIT  1'
+    );
+    $stmtAudit->execute([$segmentAuditId]);
+    $audit = $stmtAudit->fetch(PDO::FETCH_ASSOC);
+
+    if ($audit === false) {
+        throw new \InvalidArgumentException(
+            "ScoreService: segment_audit id={$segmentAuditId} not found."
+        );
+    }
+
+    $stmtObs = $pdo->prepare(
+        'SELECT COALESCE(SUM(partial_obstructions), 0) AS partial,
+                COALESCE(SUM(total_obstructions),   0) AS total,
+                COALESCE(SUM(cyclist_slowed),        0) AS slowed
+         FROM   obstructions
+         WHERE  audit_id = ?'
+    );
+    $stmtObs->execute([$segmentAuditId]);
+    $obs = $stmtObs->fetch(PDO::FETCH_ASSOC);
+
     $partialObs    = (float)($obs['partial'] ?? 0);
     $totalObs      = (float)($obs['total']   ?? 0);
     $cyclistSlowed = (float)($obs['slowed']  ?? 0);
+
+    $stmtInt = $pdo->prepare(
+        'SELECT off_ramp, on_ramp, markings, signage, traffic_calming
+         FROM   intersections
+         WHERE  audit_id = ?'
+    );
+    $stmtInt->execute([$segmentAuditId]);
+    $intersections = $stmtInt->fetchAll(PDO::FETCH_ASSOC);
 
     $missingRampCount   = 0;
     $missingSignCount   = 0;
     $absentCalmingCount = 0;
 
-    foreach ($ints as $i) {
+    foreach ($intersections as $i) {
         $offRamp = strtolower(trim($i['off_ramp'] ?? ''));
         $onRamp  = strtolower(trim($i['on_ramp']  ?? ''));
         if ($offRamp === 'no ramp' || $onRamp === 'no ramp') {
@@ -200,98 +224,28 @@ function _computeScoreFromData(array $audit, array $obs, array $ints): array
     ) / WEIGHT_TOTAL;
 
     $finalScore = round(max(0.0, min(100.0, $finalScore)), 2);
-    $condition  = ScoreHelpers::scoreToCondition($finalScore);
+    $condition = ScoreHelpers::scoreToCondition($finalScore);
 
     return [
-        'safety_score'     => round($safetyScore,     2),
-        'continuity_score' => round($continuityScore, 2),
-        'comfort_score'    => round($comfortScore,    2),
-        'final'            => $finalScore,
-        'condition'        => $condition,
-        'rating'           => $condition,
+        'safety_score'       => round($safetyScore,     2),
+        'continuity_score'   => round($continuityScore, 2),
+        'comfort_score'      => round($comfortScore,    2),
+        'final'              => $finalScore,
+        'condition'          => $condition,
+        'rating'             => $condition,
     ];
 }
 
-// ══════════════════════════════════════════════════════════════
-//  PUBLIC API
-// ══════════════════════════════════════════════════════════════
-
 /**
- * Calculate score for a single segment audit.
- * Runs exactly 3 DB queries regardless of road size.
- */
-function calculateSegmentScore(int $segmentAuditId, PDO $pdo): array
-{
-    $stmtAudit = $pdo->prepare(
-        'SELECT sa.buffer_zone,
-                sa.light_after_sunset,
-                sa.shade,
-                sa.surface_material,
-                sa.cycle_track_missing,
-                sa.missing_length,
-                s.length AS segment_length,
-                r.name   AS road_name
-         FROM   segment_audits sa
-         JOIN   segments s ON s.id = sa.segment_id
-         JOIN   roads    r ON r.id = s.road_id
-         WHERE  sa.id = ?
-         LIMIT  1'
-    );
-    $stmtAudit->execute([$segmentAuditId]);
-    $audit = $stmtAudit->fetch(PDO::FETCH_ASSOC);
-
-    if ($audit === false) {
-        throw new \InvalidArgumentException(
-            "ScoreService: segment_audit id={$segmentAuditId} not found."
-        );
-    }
-
-    $stmtObs = $pdo->prepare(
-        'SELECT COALESCE(SUM(partial_obstructions), 0) AS partial,
-                COALESCE(SUM(total_obstructions),   0) AS total,
-                COALESCE(SUM(cyclist_slowed),        0) AS slowed
-         FROM   obstructions
-         WHERE  audit_id = ?'
-    );
-    $stmtObs->execute([$segmentAuditId]);
-    $obs = $stmtObs->fetch(PDO::FETCH_ASSOC);
-
-    $stmtInt = $pdo->prepare(
-        'SELECT off_ramp, on_ramp, markings, signage, traffic_calming
-         FROM   intersections
-         WHERE  audit_id = ?'
-    );
-    $stmtInt->execute([$segmentAuditId]);
-    $ints = $stmtInt->fetchAll(PDO::FETCH_ASSOC);
-
-    return _computeScoreFromData($audit, $obs ?: [], $ints);
-}
-
-/**
- * Calculate length-weighted road score.
- *
- * FIXED (Round 3): Now uses exactly 3 batch queries for the entire road
- * instead of 3 queries × N segments (was N+1 problem).
- *
- * Query count: 1 (segments + audits) + 1 (obstruction sums) + 1 (intersections) = 3 total.
+ * Calculate length-weighted road score
  */
 function calculateRoadScore(int $roadId, PDO $pdo): ?array
 {
-    // ── Query 1: all segments with their latest audit data ─────
-    $stmtRows = $pdo->prepare(
+    $stmt = $pdo->prepare(
         'SELECT s.id      AS segment_id,
                 s.length,
-                sa.id     AS audit_id,
-                sa.buffer_zone,
-                sa.light_after_sunset,
-                sa.shade,
-                sa.surface_material,
-                sa.cycle_track_missing,
-                sa.missing_length,
-                s.length  AS segment_length,
-                r.name    AS road_name
+                sa.id     AS audit_id
          FROM   segments s
-         JOIN   roads r ON r.id = s.road_id
          JOIN   segment_audits sa
                 ON  sa.segment_id = s.id
                 AND sa.id = (
@@ -302,48 +256,13 @@ function calculateRoadScore(int $roadId, PDO $pdo): ?array
          WHERE  s.road_id = ?
          ORDER  BY s.segment_number ASC'
     );
-    $stmtRows->execute([$roadId]);
-    $rows = $stmtRows->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->execute([$roadId]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (empty($rows)) {
         return null;
     }
 
-    // Collect all audit IDs for the batch queries below
-    $auditIds = array_map(fn($r) => (int)$r['audit_id'], $rows);
-    $ph       = implode(',', array_fill(0, count($auditIds), '?'));
-
-    // ── Query 2: obstruction sums for ALL audits in one query ──
-    $stmtObs = $pdo->prepare(
-        "SELECT audit_id,
-                COALESCE(SUM(partial_obstructions), 0) AS partial,
-                COALESCE(SUM(total_obstructions),   0) AS total,
-                COALESCE(SUM(cyclist_slowed),        0) AS slowed
-         FROM   obstructions
-         WHERE  audit_id IN ({$ph})
-         GROUP  BY audit_id"
-    );
-    $stmtObs->execute($auditIds);
-    // Key by audit_id for O(1) lookup
-    $obsByAudit = [];
-    foreach ($stmtObs->fetchAll(PDO::FETCH_ASSOC) as $o) {
-        $obsByAudit[(int)$o['audit_id']] = $o;
-    }
-
-    // ── Query 3: intersections for ALL audits in one query ─────
-    $stmtInt = $pdo->prepare(
-        "SELECT audit_id, off_ramp, on_ramp, markings, signage, traffic_calming
-         FROM   intersections
-         WHERE  audit_id IN ({$ph})"
-    );
-    $stmtInt->execute($auditIds);
-    // Group by audit_id
-    $intsByAudit = [];
-    foreach ($stmtInt->fetchAll(PDO::FETCH_ASSOC) as $i) {
-        $intsByAudit[(int)$i['audit_id']][] = $i;
-    }
-
-    // ── Compute scores in PHP — zero additional queries ────────
     $totalLength        = 0.0;
     $weightedFinal      = 0.0;
     $weightedSafety     = 0.0;
@@ -351,11 +270,7 @@ function calculateRoadScore(int $roadId, PDO $pdo): ?array
     $weightedComfort    = 0.0;
 
     foreach ($rows as $row) {
-        $auditId = (int)$row['audit_id'];
-        $obs     = $obsByAudit[$auditId] ?? ['partial' => 0, 'total' => 0, 'slowed' => 0];
-        $ints    = $intsByAudit[$auditId] ?? [];
-
-        $seg = _computeScoreFromData($row, $obs, $ints);
+        $seg = calculateSegmentScore((int)$row['audit_id'], $pdo);
         $len = max(0.0, (float)$row['length']);
 
         $totalLength        += $len;
@@ -388,32 +303,23 @@ function calculateRoadScore(int $roadId, PDO $pdo): ?array
 }
 
 /**
- * Detailed breakdown with parameter-level scores.
- *
- * FIXED (Round 3): No longer re-fetches data that calculateSegmentScore()
- * already loaded. Reuses the same 3 queries, avoiding the previous 6-query
- * double-fetch pattern.
+ * Detailed breakdown with parameter-level scores
  */
 function calculateSegmentScoreDetailed(int $segmentAuditId, PDO $pdo): array
 {
-    // ── Fetch all data once ────────────────────────────────────
+    $base = calculateSegmentScore($segmentAuditId, $pdo);
+
     $stmtAudit = $pdo->prepare(
         'SELECT sa.buffer_zone, sa.light_after_sunset, sa.shade,
                 sa.surface_material, sa.cycle_track_missing, sa.missing_length,
                 s.length AS segment_length, r.name AS road_name
          FROM   segment_audits sa
          JOIN   segments s ON s.id = sa.segment_id
-         JOIN   roads    r ON r.id = s.road_id
+         JOIN   roads r ON r.id = s.road_id
          WHERE  sa.id = ? LIMIT 1'
     );
     $stmtAudit->execute([$segmentAuditId]);
     $audit = $stmtAudit->fetch(PDO::FETCH_ASSOC);
-
-    if ($audit === false) {
-        throw new \InvalidArgumentException(
-            "ScoreService: segment_audit id={$segmentAuditId} not found."
-        );
-    }
 
     $stmtObs = $pdo->prepare(
         'SELECT COALESCE(SUM(partial_obstructions), 0) AS partial,
@@ -422,25 +328,20 @@ function calculateSegmentScoreDetailed(int $segmentAuditId, PDO $pdo): array
          FROM   obstructions WHERE audit_id = ?'
     );
     $stmtObs->execute([$segmentAuditId]);
-    $obs = $stmtObs->fetch(PDO::FETCH_ASSOC) ?: ['partial' => 0, 'total' => 0, 'slowed' => 0];
+    $obs = $stmtObs->fetch(PDO::FETCH_ASSOC);
 
     $stmtInt = $pdo->prepare(
         'SELECT off_ramp, on_ramp, markings, signage, traffic_calming
          FROM   intersections WHERE audit_id = ?'
     );
     $stmtInt->execute([$segmentAuditId]);
-    $ints = $stmtInt->fetchAll(PDO::FETCH_ASSOC);
+    $intersections = $stmtInt->fetchAll(PDO::FETCH_ASSOC);
 
-    // ── Compute base score from already-fetched data ───────────
-    // Reuse _computeScoreFromData — no duplicate DB calls.
-    $base = _computeScoreFromData($audit, $obs, $ints);
-
-    // ── Build per-parameter breakdown ─────────────────────────
     $missingRampCount   = 0;
     $missingSignCount   = 0;
     $absentCalmingCount = 0;
 
-    foreach ($ints as $i) {
+    foreach ($intersections as $i) {
         $offRamp = strtolower(trim($i['off_ramp'] ?? ''));
         $onRamp  = strtolower(trim($i['on_ramp']  ?? ''));
         if ($offRamp === 'no ramp' || $onRamp === 'no ramp') $missingRampCount++;

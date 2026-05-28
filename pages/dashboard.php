@@ -21,8 +21,8 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — CycleAudit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
-<link rel="stylesheet" href="../css/dashboard.css" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/dashboard.css">
 </head>
 <body>
 
@@ -138,8 +138,8 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
         <a href="segment.php">+ Define new road</a>
       </div>
       <div id="roadsContainer">
-        <!-- Skeleton loading — replaced by JS on data arrival -->
-        <div id="roadsLoadingSkeleton" style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
+        <!-- Skeleton loading -->
+        <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
           <div class="skeleton" style="height:18px;width:60%"></div>
           <div class="skeleton" style="height:18px;width:80%"></div>
           <div class="skeleton" style="height:18px;width:50%"></div>
@@ -166,7 +166,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <!-- Toast -->
 <div class="toast-wrap" id="toastWrap"></div>
 
-<script nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';</script>
-<script src="../js/dashboard.js" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>"></script>
+<script>const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';</script>
+<script src="../js/dashboard.js"></script>
 </body>
 </html>

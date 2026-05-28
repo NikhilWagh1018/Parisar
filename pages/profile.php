@@ -17,8 +17,8 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Profile — CycleAudit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
-<link rel="stylesheet" href="../css/profile.css" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/profile.css">
 </head>
 <body>
 
@@ -232,7 +232,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
   </div><!-- /content -->
 </main>
 
-<script nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">const CSRF = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;</script>
-<script src="../js/profile.js" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>"></script>
+<script>const CSRF = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;</script>
+<script src="../js/profile.js"></script>
 </body>
 </html>

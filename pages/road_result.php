@@ -26,8 +26,8 @@ $roads = $stmtRoads->fetchAll(PDO::FETCH_ASSOC);
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Road Results — CycleAudit</title>
-<link rel="stylesheet" href="../css/view.css" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
-<link rel="stylesheet" href="../css/road-result.css" nonce="<?= htmlspecialchars($_CSP_NONCE ?? '') ?>">
+<link rel="stylesheet" href="../css/view.css">
+<link rel="stylesheet" href="../css/road-result.css">
 </head>
 <body>
 <div class="container">

@@ -67,27 +67,6 @@ define('SCORE_MODERATE', 40);
 // ── Pagination ────────────────────────────────────────────────
 define('PER_PAGE', 20);
 
-// ── Scoring: Group B roads ─────────────────────────────────────
-// These roads receive a fixed minimum penalty of 75 for the
-// "cyclist slowed" parameter, regardless of observed count.
-// Defined here (not hardcoded in ScoreHelpers) so Parisar staff
-// can update the list without touching scoring logic.
-//
-// All values must be UPPERCASE — ScoreHelpers compares with strtoupper().
-define('SCORE_GROUP_B_ROADS', [
-    'DP ROAD',
-    'SINHAGAD ROAD',
-    'SENAPATI BAPAT ROAD',
-    'KARVE ROAD',
-    'FERGUSSON COLLEGE ROAD',
-    'JANGALI MAHARAJ ROAD',
-    'SANGAMWADI ROAD',
-    'PMC ROAD',
-    'KHADKI ROAD',
-    'DECCAN COLLEGE ROAD',
-    'PASHAN ROAD',
-]);
-
 // ── File paths ────────────────────────────────────────────────
 define('ROOT_PATH',     dirname(__DIR__));
 define('SERVICES_PATH', ROOT_PATH . '/services');
