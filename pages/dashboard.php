@@ -138,8 +138,8 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
         <a href="segment.php">+ Define new road</a>
       </div>
       <div id="roadsContainer">
-        <!-- Skeleton loading -->
-        <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
+        <!-- Skeleton loading — replaced by JS on data arrival -->
+        <div id="roadsLoadingSkeleton" style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
           <div class="skeleton" style="height:18px;width:60%"></div>
           <div class="skeleton" style="height:18px;width:80%"></div>
           <div class="skeleton" style="height:18px;width:50%"></div>
