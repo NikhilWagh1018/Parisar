@@ -1,116 +1,69 @@
 <?php
 declare(strict_types=1);
 
-/**
- * services/ScoreService.php (UPDATED)
- * Refactored to use ScoreHelpers class
- * Main scoring orchestration logic
- */
+// ═══════════════════════════════════════════════════════════════
+//  services/ScoreService.php
+//  !! THE ONLY PLACE scoring logic may live !!
+//
+//  Implements the canonical Parisar scoring methodology:
+//
+//  SCORING CONVENTION
+//    Penalties:  0 = ideal, 100 = worst possible
+//    Category penalty = average of its parameter penalties
+//    Missing-track adjustment (per PDF):
+//      segCatPenalty = [100×missingLen + catPenalty×presentLen] / totalLen
+//    Weighted final penalty (per PDF):
+//      Safety×1, Comfort×1.25, Continuity×1.5  →  total weight = 3.75
+//    Final score (0–100, higher = better):
+//      finalScore = 100 − weightedPenalty
+//    Road score = length-weighted average of segment finalScores
+//
+//  RATING THRESHOLDS (constants.php)
+//    SCORE_GOOD     ≥ 80  →  "Good"
+//    SCORE_MODERATE ≥ 50  →  "Moderate"
+//    < 50           →  "Poor"
+//
+//  FIXES vs previous version
+//    1. Category weights (Safety 1 / Comfort 1.25 / Continuity 1.5) applied.
+//    2. Missing-track length penalty applied to all three categories before
+//       weighting, matching the PDF formula exactly.
+//    3. buffer_zone NULL/unknown → 50 penalty (was 0 — too generous).
+//    4. shade / light_after_sunset NULL → explicit handling.
+// ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/constants.php';
-require_once __DIR__ . '/ScoreHelpers.php';
 
-// ── Category weights (must match PDF) ─────────────────────────
+// Category weights (must sum to WEIGHT_TOTAL)
 const WEIGHT_SAFETY      = 1.0;
 const WEIGHT_COMFORT     = 1.25;
 const WEIGHT_CONTINUITY  = 1.5;
 const WEIGHT_TOTAL       = 3.75; // 1.0 + 1.25 + 1.5
 
-// ── Backward compatibility: Function wrappers ─────────────────
-
-function penaltyBufferZone(?string $bufferZone): float
-{
-    return ScoreHelpers::bufferZone($bufferZone);
-}
-
-function penaltyLight(?string $light): float
-{
-    return ScoreHelpers::lightAfterDark($light);
-}
-
-function penaltyTrafficCalming(int $absentCount): float
-{
-    return ScoreHelpers::trafficCalming($absentCount);
-}
-
-function penaltyPartialObstructions(float $count): float
-{
-    return ScoreHelpers::partialObstructions($count);
-}
-
-function penaltyMissingRamps(int $missingRampCount): float
-{
-    return ScoreHelpers::missingRamps($missingRampCount);
-}
-
-function penaltyMissingSignage(int $absentSignCount): float
-{
-    return ScoreHelpers::missingSignage($absentSignCount);
-}
-
-function penaltyTotalObstructions(float $count): float
-{
-    return ScoreHelpers::totalObstructions($count);
-}
-
-function penaltySurface(?string $material): float
-{
-    return ScoreHelpers::surface($material);
-}
-
-function penaltyCyclistSlowed(float $count, string $roadName = ''): float
-{
-    return ScoreHelpers::cyclistSlowed($count, $roadName);
-}
-
-function penaltyShade(?string $shade): float
-{
-    return ScoreHelpers::shade($shade);
-}
-
-function applyMissingLength(float $rawScore, float $missingLen, float $presentLen, float $totalLen): float
-{
-    return ScoreHelpers::applyMissingLength($rawScore, $missingLen, $presentLen, $totalLen);
-}
-
-function scoreToCondition(float $score): string
-{
-    return ScoreHelpers::scoreToCondition($score);
-}
-
-function penaltyToCondition(float $score): string
-{
-    return ScoreHelpers::scoreToCondition($score);
-}
-
-function conditionColour(string $condition): string
-{
-    return ScoreHelpers::conditionColor($condition);
-}
-
-function ratingColour(string $rating): string
-{
-    return ScoreHelpers::conditionColor($rating);
-}
-
 /**
  * Calculate the full score breakdown for one segment audit.
- * Now uses ScoreHelpers for helper functions
+ *
+ * @param  int $segmentAuditId  PK of segment_audits row
+ * @param  PDO $pdo
+ * @return array{
+ *   safety_penalty:     float,
+ *   continuity_penalty: float,
+ *   comfort_penalty:    float,
+ *   safety_score:       float,
+ *   continuity_score:   float,
+ *   comfort_score:      float,
+ *   final:              float,
+ *   rating:             string,
+ * }
  */
 function calculateSegmentScore(int $segmentAuditId, PDO $pdo): array
 {
+    // ── 1. Fetch the main audit row ───────────────────────────
     $stmtAudit = $pdo->prepare(
-        'SELECT sa.buffer_zone,
-                sa.light_after_sunset,
-                sa.shade,
-                sa.surface_material,
-                sa.cycle_track_missing,
-                sa.missing_length,
-                s.length AS segment_length,
-                r.name   AS road_name
+        'SELECT sa.buffer_zone, sa.light_after_sunset, sa.shade, sa.surface_material,
+                sa.cycle_track_missing, sa.missing_length,
+                s.length AS segment_length
          FROM   segment_audits sa
          JOIN   segments s ON s.id = sa.segment_id
-         JOIN   roads    r ON r.id = s.road_id
          WHERE  sa.id = ?
          LIMIT  1'
     );
@@ -123,6 +76,7 @@ function calculateSegmentScore(int $segmentAuditId, PDO $pdo): array
         );
     }
 
+    // ── 2. Aggregate obstruction counts ──────────────────────
     $stmtObs = $pdo->prepare(
         'SELECT COALESCE(SUM(partial_obstructions), 0) AS partial,
                 COALESCE(SUM(total_obstructions),   0) AS total,
@@ -133,118 +87,179 @@ function calculateSegmentScore(int $segmentAuditId, PDO $pdo): array
     $stmtObs->execute([$segmentAuditId]);
     $obs = $stmtObs->fetch(PDO::FETCH_ASSOC);
 
-    $partialObs    = (float)($obs['partial'] ?? 0);
-    $totalObs      = (float)($obs['total']   ?? 0);
-    $cyclistSlowed = (float)($obs['slowed']  ?? 0);
+    $partial = (float)$obs['partial'];
+    $totalO  = (float)$obs['total'];
+    $slowed  = (float)$obs['slowed'];
 
+    // ── 3. Fetch intersections ────────────────────────────────
     $stmtInt = $pdo->prepare(
-        'SELECT off_ramp, on_ramp, markings, signage, traffic_calming
+        'SELECT off_ramp, on_ramp, markings, signage
          FROM   intersections
          WHERE  audit_id = ?'
     );
     $stmtInt->execute([$segmentAuditId]);
     $intersections = $stmtInt->fetchAll(PDO::FETCH_ASSOC);
 
-    $missingRampCount   = 0;
-    $missingSignCount   = 0;
-    $absentCalmingCount = 0;
-
+    $noRampCount = 0;
+    $noSignCount = 0;
     foreach ($intersections as $i) {
-        $offRamp = strtolower(trim($i['off_ramp'] ?? ''));
-        $onRamp  = strtolower(trim($i['on_ramp']  ?? ''));
-        if ($offRamp === 'no ramp' || $onRamp === 'no ramp') {
-            $missingRampCount++;
+        if (($i['off_ramp'] ?? '') === 'No Ramp' || ($i['on_ramp'] ?? '') === 'No Ramp') {
+            $noRampCount++;
         }
-
-        $markings = strtolower(trim($i['markings'] ?? ''));
-        $signage  = strtolower(trim($i['signage']  ?? ''));
-        if ($markings === 'absent' || $signage === 'absent') {
-            $missingSignCount++;
-        }
-
-        $calming = strtolower(trim($i['traffic_calming'] ?? ''));
-        if ($calming === 'absent') {
-            $absentCalmingCount++;
+        if (($i['markings'] ?? '') === 'Absent' || ($i['signage'] ?? '') === 'Absent') {
+            $noSignCount++;
         }
     }
 
-    $totalLen = max(1.0, (float)($audit['segment_length'] ?? 500));
+    // ── 4. Missing-track fractions ────────────────────────────
+    //  PDF formula: segCatPenalty = [100×missingLen + catPenalty×presentLen] / totalLen
+    //  We store the proportions now and apply them after computing raw penalties.
+    $totalLen   = max(1.0, (float)($audit['segment_length'] ?? 500));
+    $missingLen = ($audit['cycle_track_missing'] === 'Yes')
+        ? max(0.0, (float)($audit['missing_length'] ?? 0))
+        : 0.0;
+    $presentLen = max(0.0, $totalLen - $missingLen);
 
-    $missingLen = 0.0;
-    if (($audit['cycle_track_missing'] ?? '') === 'Yes') {
-        $missingLen = max(0.0, (float)($audit['missing_length'] ?? 0));
-    }
-    $missingLen = min($missingLen, $totalLen);
-    $presentLen = $totalLen - $missingLen;
+    // If the entire segment is missing, every category gets 100 penalty.
     $allMissing = ($presentLen <= 0.0);
 
-    // SAFETY CATEGORY
+    // ── 5. Safety penalty ─────────────────────────────────────
     if ($allMissing) {
-        $safetyRaw = 100.0;
+        $safetyPenaltyRaw = 100.0;
     } else {
-        $safetyRaw = (
-            ScoreHelpers::bufferZone($audit['buffer_zone'] ?? null) +
-            ScoreHelpers::lightAfterDark($audit['light_after_sunset'] ?? null) +
-            ScoreHelpers::trafficCalming($absentCalmingCount) +
-            ScoreHelpers::partialObstructions($partialObs)
-        ) / 4.0;
-    }
-    $safetyScore = ScoreHelpers::applyMissingLength($safetyRaw, $missingLen, $presentLen, $totalLen);
+        $bufferPenalty = match($audit['buffer_zone'] ?? null) {
+            'Segregated', 'Buffer Zone' => 0.0,
+            'NA'                        => 0.0,   // no track — not applicable
+            'None'                      => 100.0, // track exists but unprotected
+            default                     => 50.0,  // NULL / unknown — moderate risk
+        };
 
-    // CONTINUITY CATEGORY
+        $lightPenalty = match($audit['light_after_sunset'] ?? null) {
+            'Yes'     => 0.0,
+            'Partial' => 50.0,
+            default   => 100.0,  // 'No' or NULL
+        };
+
+        // Traffic calming / ramp presence at intersections (safety perspective)
+        $rampSafetyPenalty = match (true) {
+            $noRampCount === 0 => 0.0,
+            $noRampCount === 1 => 50.0,
+            $noRampCount <= 3  => 75.0,
+            default            => 100.0,
+        };
+
+        $partialPenalty = match (true) {
+            $partial < 5   => 0.0,
+            $partial <= 10 => 50.0,
+            default        => 100.0,
+        };
+
+        $safetyPenaltyRaw = ($bufferPenalty + $lightPenalty + $rampSafetyPenalty + $partialPenalty) / 4.0;
+    }
+
+    // Apply missing-track adjustment (PDF formula)
+    $safetyPenalty = $allMissing
+        ? 100.0
+        : (100.0 * $missingLen + $safetyPenaltyRaw * $presentLen) / $totalLen;
+
+    // ── 6. Continuity penalty ─────────────────────────────────
     if ($allMissing) {
-        $continuityRaw = 100.0;
+        $continuityPenaltyRaw = 100.0;
     } else {
-        $continuityRaw = (
-            ScoreHelpers::missingRamps($missingRampCount) +
-            ScoreHelpers::missingSignage($missingSignCount) +
-            ScoreHelpers::totalObstructions($totalObs)
-        ) / 3.0;
-    }
-    $continuityScore = ScoreHelpers::applyMissingLength($continuityRaw, $missingLen, $presentLen, $totalLen);
+        // Ramp presence (continuity perspective — different thresholds from safety)
+        $rampContPenalty = match (true) {
+            $noRampCount === 0 => 0.0,
+            $noRampCount >= 5  => 100.0,
+            $noRampCount >= 3  => 50.0,
+            default            => 25.0,  // 1 or 2 missing
+        };
 
-    // COMFORT CATEGORY
+        $signPenalty = match (true) {
+            $noSignCount === 0 => 0.0,
+            $noSignCount === 1 => 50.0,
+            $noSignCount <= 3  => 75.0,
+            default            => 100.0,
+        };
+
+        $totalObsPenalty = match (true) {
+            $totalO < 5   => 0.0,
+            $totalO <= 10 => 50.0,
+            default       => 100.0,
+        };
+
+        $continuityPenaltyRaw = ($rampContPenalty + $signPenalty + $totalObsPenalty) / 3.0;
+    }
+
+    // Apply missing-track adjustment
+    $continuityPenalty = $allMissing
+        ? 100.0
+        : (100.0 * $missingLen + $continuityPenaltyRaw * $presentLen) / $totalLen;
+
+    // ── 7. Comfort penalty ────────────────────────────────────
     if ($allMissing) {
-        $comfortRaw = 100.0;
+        $comfortPenaltyRaw = 100.0;
     } else {
-        $roadName = $audit['road_name'] ?? '';
-        $comfortRaw = (
-            ScoreHelpers::surface($audit['surface_material'] ?? null) +
-            ScoreHelpers::cyclistSlowed($cyclistSlowed, $roadName) +
-            ScoreHelpers::shade($audit['shade'] ?? null)
-        ) / 3.0;
+        $surfacePenalty = ($audit['surface_material'] === 'Interlock Blocks') ? 100.0 : 0.0;
+
+        $slowedPenalty = match (true) {
+            $slowed < 5   => 0.0,
+            $slowed <= 10 => 50.0,
+            $slowed <= 20 => 75.0,
+            default       => 100.0,
+        };
+
+        $shadePenalty = match($audit['shade'] ?? null) {
+            'Yes'     => 0.0,
+            'Partial' => 50.0,
+            default   => 100.0,  // 'No' or NULL
+        };
+
+        $comfortPenaltyRaw = ($surfacePenalty + $slowedPenalty + $shadePenalty) / 3.0;
     }
-    $comfortScore = ScoreHelpers::applyMissingLength($comfortRaw, $missingLen, $presentLen, $totalLen);
 
-    // WEIGHTED FINAL SCORE
-    $finalScore = (
-        $safetyScore     * WEIGHT_SAFETY     +
-        $comfortScore    * WEIGHT_COMFORT     +
-        $continuityScore * WEIGHT_CONTINUITY
-    ) / WEIGHT_TOTAL;
+    // Apply missing-track adjustment
+    $comfortPenalty = $allMissing
+        ? 100.0
+        : (100.0 * $missingLen + $comfortPenaltyRaw * $presentLen) / $totalLen;
 
-    $finalScore = round(max(0.0, min(100.0, $finalScore)), 2);
-    $condition = ScoreHelpers::scoreToCondition($finalScore);
+    // ── 8. Weighted final penalty (PDF weights) ───────────────
+    $weightedPenalty =
+        ($safetyPenalty     * WEIGHT_SAFETY     +
+         $comfortPenalty    * WEIGHT_COMFORT     +
+         $continuityPenalty * WEIGHT_CONTINUITY)
+        / WEIGHT_TOTAL;
+
+    $finalScore = round(100.0 - $weightedPenalty, 1);
+
+    // ── 9. Rating ─────────────────────────────────────────────
+    $rating = match (true) {
+        $finalScore >= SCORE_GOOD     => 'Good',
+        $finalScore >= SCORE_MODERATE => 'Moderate',
+        default                       => 'Poor',
+    };
 
     return [
-        'safety_score'       => round($safetyScore,     2),
-        'continuity_score'   => round($continuityScore, 2),
-        'comfort_score'      => round($comfortScore,    2),
+        'safety_penalty'     => round($safetyPenalty,     1),
+        'continuity_penalty' => round($continuityPenalty, 1),
+        'comfort_penalty'    => round($comfortPenalty,    1),
+        'safety_score'       => round(100.0 - $safetyPenalty,     1),
+        'continuity_score'   => round(100.0 - $continuityPenalty, 1),
+        'comfort_score'      => round(100.0 - $comfortPenalty,    1),
         'final'              => $finalScore,
-        'condition'          => $condition,
-        'rating'             => $condition,
+        'rating'             => $rating,
     ];
 }
 
 /**
- * Calculate length-weighted road score
+ * Calculate weighted road score across all completed segments.
+ * Returns null if no segments have been audited yet.
  */
 function calculateRoadScore(int $roadId, PDO $pdo): ?array
 {
     $stmt = $pdo->prepare(
-        'SELECT s.id      AS segment_id,
+        'SELECT s.id   AS segment_id,
                 s.length,
-                sa.id     AS audit_id
+                sa.id  AS audit_id
          FROM   segments s
          JOIN   segment_audits sa
                 ON  sa.segment_id = s.id
@@ -263,219 +278,38 @@ function calculateRoadScore(int $roadId, PDO $pdo): ?array
         return null;
     }
 
-    $totalLength        = 0.0;
-    $weightedFinal      = 0.0;
-    $weightedSafety     = 0.0;
-    $weightedContinuity = 0.0;
-    $weightedComfort    = 0.0;
+    $totalWeighted = 0.0;
+    $totalLength   = 0.0;
 
     foreach ($rows as $row) {
-        $seg = calculateSegmentScore((int)$row['audit_id'], $pdo);
-        $len = max(0.0, (float)$row['length']);
-
-        $totalLength        += $len;
-        $weightedFinal      += $seg['final']            * $len;
-        $weightedSafety     += $seg['safety_score']     * $len;
-        $weightedContinuity += $seg['continuity_score'] * $len;
-        $weightedComfort    += $seg['comfort_score']    * $len;
+        $segScore       = calculateSegmentScore((int)$row['audit_id'], $pdo);
+        $len            = (float)$row['length'];
+        $totalWeighted += $segScore['final'] * $len;
+        $totalLength   += $len;
     }
 
-    if ($totalLength <= 0.0) {
+    if ($totalLength === 0.0) {
         return null;
     }
 
-    $roadScore      = round($weightedFinal      / $totalLength, 2);
-    $roadSafety     = round($weightedSafety     / $totalLength, 2);
-    $roadContinuity = round($weightedContinuity / $totalLength, 2);
-    $roadComfort    = round($weightedComfort    / $totalLength, 2);
+    $roadScore = round($totalWeighted / $totalLength, 1);
+    $rating    = match (true) {
+        $roadScore >= SCORE_GOOD     => 'Good',
+        $roadScore >= SCORE_MODERATE => 'Moderate',
+        default                      => 'Poor',
+    };
 
-    $condition = ScoreHelpers::scoreToCondition($roadScore);
-
-    return [
-        'score'            => $roadScore,
-        'condition'        => $condition,
-        'rating'           => $condition,
-        'safety_score'     => $roadSafety,
-        'continuity_score' => $roadContinuity,
-        'comfort_score'    => $roadComfort,
-        'segment_count'    => count($rows),
-    ];
+    return ['score' => $roadScore, 'rating' => $rating];
 }
 
 /**
- * Detailed breakdown with parameter-level scores
+ * Returns the hex colour associated with a rating string.
  */
-function calculateSegmentScoreDetailed(int $segmentAuditId, PDO $pdo): array
+function ratingColour(string $rating): string
 {
-    $base = calculateSegmentScore($segmentAuditId, $pdo);
-
-    $stmtAudit = $pdo->prepare(
-        'SELECT sa.buffer_zone, sa.light_after_sunset, sa.shade,
-                sa.surface_material, sa.cycle_track_missing, sa.missing_length,
-                s.length AS segment_length, r.name AS road_name
-         FROM   segment_audits sa
-         JOIN   segments s ON s.id = sa.segment_id
-         JOIN   roads r ON r.id = s.road_id
-         WHERE  sa.id = ? LIMIT 1'
-    );
-    $stmtAudit->execute([$segmentAuditId]);
-    $audit = $stmtAudit->fetch(PDO::FETCH_ASSOC);
-
-    $stmtObs = $pdo->prepare(
-        'SELECT COALESCE(SUM(partial_obstructions), 0) AS partial,
-                COALESCE(SUM(total_obstructions),   0) AS total,
-                COALESCE(SUM(cyclist_slowed),        0) AS slowed
-         FROM   obstructions WHERE audit_id = ?'
-    );
-    $stmtObs->execute([$segmentAuditId]);
-    $obs = $stmtObs->fetch(PDO::FETCH_ASSOC);
-
-    $stmtInt = $pdo->prepare(
-        'SELECT off_ramp, on_ramp, markings, signage, traffic_calming
-         FROM   intersections WHERE audit_id = ?'
-    );
-    $stmtInt->execute([$segmentAuditId]);
-    $intersections = $stmtInt->fetchAll(PDO::FETCH_ASSOC);
-
-    $missingRampCount   = 0;
-    $missingSignCount   = 0;
-    $absentCalmingCount = 0;
-
-    foreach ($intersections as $i) {
-        $offRamp = strtolower(trim($i['off_ramp'] ?? ''));
-        $onRamp  = strtolower(trim($i['on_ramp']  ?? ''));
-        if ($offRamp === 'no ramp' || $onRamp === 'no ramp') $missingRampCount++;
-
-        $markings = strtolower(trim($i['markings'] ?? ''));
-        $signage  = strtolower(trim($i['signage']  ?? ''));
-        if ($markings === 'absent' || $signage === 'absent') $missingSignCount++;
-
-        $calming = strtolower(trim($i['traffic_calming'] ?? ''));
-        if ($calming === 'absent') $absentCalmingCount++;
-    }
-
-    $params = [
-        'safety' => [
-            'buffer_zone'      => ScoreHelpers::bufferZone($audit['buffer_zone'] ?? null),
-            'light_after_dark' => ScoreHelpers::lightAfterDark($audit['light_after_sunset'] ?? null),
-            'traffic_calming'  => ScoreHelpers::trafficCalming($absentCalmingCount),
-            'partial_obs'      => ScoreHelpers::partialObstructions((float)($obs['partial'] ?? 0)),
-        ],
-        'continuity' => [
-            'missing_ramps'   => ScoreHelpers::missingRamps($missingRampCount),
-            'missing_signage' => ScoreHelpers::missingSignage($missingSignCount),
-            'total_obs'       => ScoreHelpers::totalObstructions((float)($obs['total'] ?? 0)),
-        ],
-        'comfort' => [
-            'surface'        => ScoreHelpers::surface($audit['surface_material'] ?? null),
-            'cyclist_slowed' => ScoreHelpers::cyclistSlowed((float)($obs['slowed'] ?? 0), $audit['road_name'] ?? ''),
-            'shade'          => ScoreHelpers::shade($audit['shade'] ?? null),
-        ],
-    ];
-
-    return array_merge($base, ['parameters' => $params]);
-}
-
-/**
- * Pure computation wrapper — no DB queries.
- * Used by unit tests and anywhere pre-fetched data is available.
- *
- * @param array $audit  Row from segment_audits JOIN segments JOIN roads
- * @param array $obs    Aggregated obstructions row (partial, total, slowed)
- * @param array $ints   Array of intersection rows (off_ramp, on_ramp, markings, signage, traffic_calming)
- */
-function _computeScoreFromData(array $audit, array $obs, array $ints): array
-{
-    $partialObs    = (float)($obs['partial'] ?? 0);
-    $totalObs      = (float)($obs['total']   ?? 0);
-    $cyclistSlowed = (float)($obs['slowed']  ?? 0);
-
-    $missingRampCount    = 0;
-    $missingSignCount    = 0;
-    $absentCalmingCount  = 0;
-
-    foreach ($ints as $i) {
-        $offRamp = strtolower(trim($i['off_ramp']  ?? ''));
-        $onRamp  = strtolower(trim($i['on_ramp']   ?? ''));
-        if ($offRamp === 'no ramp' || $onRamp === 'no ramp') {
-            $missingRampCount++;
-        }
-
-        $markings = strtolower(trim($i['markings'] ?? ''));
-        $signage  = strtolower(trim($i['signage']  ?? ''));
-        if ($markings === 'absent' || $signage === 'absent') {
-            $missingSignCount++;
-        }
-
-        $calming = strtolower(trim($i['traffic_calming'] ?? ''));
-        if ($calming === 'absent') {
-            $absentCalmingCount++;
-        }
-    }
-
-    $totalLen   = max(1.0, (float)($audit['segment_length'] ?? 500));
-    $missingLen = 0.0;
-    if ((($audit['cycle_track_missing'] ?? '') === 'Yes')) {
-        $missingLen = max(0.0, (float)($audit['missing_length'] ?? 0));
-    }
-    $missingLen  = min($missingLen, $totalLen);
-    $presentLen  = $totalLen - $missingLen;
-    $allMissing  = ($presentLen <= 0.0);
-
-    // SAFETY
-    if ($allMissing) {
-        $safetyRaw = 100.0;
-    } else {
-        $safetyRaw = (
-            ScoreHelpers::bufferZone($audit['buffer_zone'] ?? null) +
-            ScoreHelpers::lightAfterDark($audit['light_after_sunset'] ?? null) +
-            ScoreHelpers::trafficCalming($absentCalmingCount) +
-            ScoreHelpers::partialObstructions($partialObs)
-        ) / 4.0;
-    }
-    $safetyScore = ScoreHelpers::applyMissingLength($safetyRaw, $missingLen, $presentLen, $totalLen);
-
-    // CONTINUITY
-    if ($allMissing) {
-        $continuityRaw = 100.0;
-    } else {
-        $continuityRaw = (
-            ScoreHelpers::missingRamps($missingRampCount) +
-            ScoreHelpers::missingSignage($missingSignCount) +
-            ScoreHelpers::totalObstructions($totalObs)
-        ) / 3.0;
-    }
-    $continuityScore = ScoreHelpers::applyMissingLength($continuityRaw, $missingLen, $presentLen, $totalLen);
-
-    // COMFORT
-    if ($allMissing) {
-        $comfortRaw = 100.0;
-    } else {
-        $roadName   = $audit['road_name'] ?? '';
-        $comfortRaw = (
-            ScoreHelpers::surface($audit['surface_material'] ?? null) +
-            ScoreHelpers::cyclistSlowed($cyclistSlowed, $roadName) +
-            ScoreHelpers::shade($audit['shade'] ?? null)
-        ) / 3.0;
-    }
-    $comfortScore = ScoreHelpers::applyMissingLength($comfortRaw, $missingLen, $presentLen, $totalLen);
-
-    // WEIGHTED FINAL
-    $finalScore = (
-        $safetyScore    * WEIGHT_SAFETY +
-        $comfortScore   * WEIGHT_COMFORT +
-        $continuityScore * WEIGHT_CONTINUITY
-    ) / WEIGHT_TOTAL;
-
-    $finalScore = round(max(0.0, min(100.0, $finalScore)), 2);
-    $condition  = ScoreHelpers::scoreToCondition($finalScore);
-
-    return [
-        'safety_score'      => round($safetyScore,    2),
-        'continuity_score'  => round($continuityScore, 2),
-        'comfort_score'     => round($comfortScore,    2),
-        'final'             => $finalScore,
-        'condition'         => $condition,
-        'rating'            => $condition,
-    ];
+    return match ($rating) {
+        'Good'     => '#27ae60',
+        'Moderate' => '#f39c12',
+        default    => '#e74c3c',
+    };
 }
