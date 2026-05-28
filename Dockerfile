@@ -26,7 +26,7 @@ RUN { \
     echo "error_log = /var/log/apache2/php_errors.log"; \
     echo "expose_php = Off"; \
     echo "max_execution_time = 60"; \
-    echo "memory_limit = 128M"; \
+    echo "memory_limit = 256M"; \
     echo "upload_max_filesize = 10M"; \
     echo "post_max_size = 12M"; \
     echo "session.cookie_httponly = 1"; \
