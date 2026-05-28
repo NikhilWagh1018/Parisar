@@ -144,7 +144,7 @@ try {
     $surfaceIssues  = json_encode(array_values(array_filter((array)($_POST['surface_issues']  ?? []))));
     $overheadIssues = json_encode(array_values(array_filter((array)($_POST['overhead_issues'] ?? []))));
     $footpathRating = json_encode(array_values(array_filter((array)($_POST['footpath_rating'] ?? []))));
-    $dims = json_decode($dims, true) ?? [];
+    $dims = json_decode($dims ?? '', true) ?? [];
     $dims     = [
     'minWidth'         => 30,
     'obstructionFree'  => 30,
