@@ -449,15 +449,10 @@
   min-height: 16px;
 }
 
-/* Reset button — full width, red, same size as submit */
 .btn-reset {
-    display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important;
-    width: 100% !important; padding: 14px 20px !important;
-    background: #dc2626 !important; color: #fff !important;
-    border: none !important; border-radius: 8px !important;
-    font-size: 1rem !important; font-weight: 600 !important;
-    cursor: pointer !important; transition: background 0.2s !important;
-    font-family: inherit !important;
-    box-sizing: border-box !important; height: 100% !important; min-height: 52px !important;
+    margin-top:24px; background:#dc2626 !important; color:#fff !important;
+    padding:12px 22px !important; border:none !important; border-radius:6px !important;
+    font-size:15px !important; font-weight:600 !important; cursor:pointer !important; width:100% !important;
+    box-sizing:border-box !important;
 }
-.btn-reset:hover { background: #b91c1c !important; }
+.btn-reset:hover { background:#b91c1c !important; }
