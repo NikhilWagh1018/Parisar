@@ -152,10 +152,10 @@ try {
     'disabledFriendly' => 15,
     'comfort'          => 5,
 ];
-$score = 0;
+$footpathScore = 0;
 foreach ($dims as $key => $weight) {
     if (!in_array($key, array_keys($dims), true)) {
-        $score += $weight;
+        $footpathScore += $weight;
     }
 }
 
