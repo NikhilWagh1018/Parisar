@@ -21,6 +21,7 @@ ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
 require_once __DIR__ . '/../../config/auth_guard.php';
+require_once __DIR__ . '/../../services/IdGenerator.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
@@ -174,7 +175,7 @@ try {
                  $CURRENT_USER_ID, $sessionId, $auditId]
             ));
 
-            $auditPublicId = 'SA-' . str_pad((string)$auditId, 4, '0', STR_PAD_LEFT);
+            $auditPublicId = generatePublicId('SA', $auditId);
 
             // Delete old obstructions and intersections so they
             // can be re-inserted cleanly from the edited form data.
@@ -196,7 +197,7 @@ try {
         $auditId = (int)$pdo->lastInsertId();
 
         // Generate public_id
-        $auditPublicId = 'SA-' . str_pad((string)$auditId, 4, '0', STR_PAD_LEFT);
+        $auditPublicId = generatePublicId('SA', $auditId);
         $pdo->prepare('UPDATE segment_audits SET public_id = ? WHERE id = ?')
             ->execute([$auditPublicId, $auditId]);
 
@@ -242,7 +243,7 @@ try {
 
                 // Generate public_id for obstruction
                 $obsId       = (int)$pdo->lastInsertId();
-                $obsPublicId = 'OBS-' . str_pad((string)$obsId, 4, '0', STR_PAD_LEFT);
+                $obsPublicId = generatePublicId('OBS', $obsId);
                 $pdo->prepare('UPDATE obstructions SET public_id = ? WHERE id = ?')
                     ->execute([$obsPublicId, $obsId]);
             }
@@ -308,7 +309,7 @@ try {
 
             // Generate public_id for intersection
             $intId       = (int)$pdo->lastInsertId();
-            $intPublicId = 'INT-' . str_pad((string)$intId, 4, '0', STR_PAD_LEFT);
+            $intPublicId = generatePublicId('INT', $intId);
             $pdo->prepare('UPDATE intersections SET public_id = ? WHERE id = ?')
                 ->execute([$intPublicId, $intId]);
         }

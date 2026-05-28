@@ -17,6 +17,7 @@ set_exception_handler(function (Throwable $e) {
 });
 
 require_once __DIR__ . '/../../../config/auth_guard.php';
+require_once __DIR__ . '/../../../services/IdGenerator.php';
 require_once __DIR__ . '/../../../config/db.php';
 require_once __DIR__ . '/../../../config/permissions.php';
 require_once __DIR__ . '/../../../helpers/Validator.php';
@@ -101,7 +102,7 @@ try {
         $stmt->execute([$tempPublicId, $roadId, $segNum, $startL ?: null, $endL ?: null, $startD, $endD, $length]);
 
         $segId       = (int)$pdo->lastInsertId();
-        $segPublicId = 'SEG-' . str_pad((string)$segId, 4, '0', STR_PAD_LEFT);
+        $segPublicId = generatePublicId('SEG', $segId);
         $pdo->prepare('UPDATE segments SET public_id = ? WHERE id = ?')->execute([$segPublicId, $segId]);
 
         $saved++;

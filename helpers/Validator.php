@@ -179,6 +179,28 @@ class Validator
     }
 
     /**
+     * Field, when present and non-empty, must be a valid e-mail address.
+     * Uses PHP's FILTER_VALIDATE_EMAIL — covers the vast majority of
+     * real-world addresses without being overly permissive.
+     *
+     * Usage:
+     *   ->email('email')
+     */
+    public function email(string ...$fields): self
+    {
+        foreach ($fields as $field) {
+            $val = $this->data[$field] ?? null;
+            if ($val === null || trim((string)$val) === '') {
+                continue; // let required() handle empty checks
+            }
+            if (filter_var(trim((string)$val), FILTER_VALIDATE_EMAIL) === false) {
+                $this->errors[] = "Field '{$field}' must be a valid email address.";
+            }
+        }
+        return $this;
+    }
+
+    /**
      * Add a custom error message directly (e.g. from a business-logic check).
      */
     public function addError(string $message): self
