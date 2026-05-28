@@ -39,6 +39,13 @@ RUN { \
     echo "opcache.max_accelerated_files = 2000"; \
     } >> /etc/php/8.1/apache2/php.ini
 
+# Explicitly configure Apache to execute PHP files.
+# libapache2-mod-php8.1 should do this automatically, but we write
+# the handler config directly to guarantee it survives any caching.
+RUN echo '<FilesMatch "\.php$">\n    SetHandler application/x-httpd-php\n</FilesMatch>' \
+    > /etc/apache2/conf-available/php8.1-handler.conf \
+    && a2enconf php8.1-handler
+
 WORKDIR /var/www/html
 RUN rm -f /var/www/html/index.html
 COPY . .
