@@ -242,3 +242,15 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .road-row  { grid-template-columns: 1fr 1fr; }
 }
+
+/* Reset button — full width, red, same size as submit */
+.btn-reset {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 14px 20px;
+    background: #dc2626; color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: background var(--T);
+    font-family: inherit;
+}
+.btn-reset:hover { background: #b91c1c; }
