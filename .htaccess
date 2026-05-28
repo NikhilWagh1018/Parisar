@@ -29,3 +29,10 @@ RewriteRule ^ index.html [L]
 <IfModule mod_autoindex.c>
     Options -Indexes
 </IfModule>
+
+# Cache static assets
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js|png|jpg|woff2)">
+        Header set Cache-Control "max-age=31536000, public"
+    </FilesMatch>
+</IfModule>
