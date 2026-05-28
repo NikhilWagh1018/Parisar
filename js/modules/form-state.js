@@ -54,6 +54,10 @@ class FormStateManager {
     this.timer = setTimeout(() => this.saveDraft(), this.autoSaveInterval);
   }
 
+  // Maximum age of a draft before it is automatically discarded (24 hours).
+  // Prevents sensitive audit data lingering on shared or public devices.
+  static DRAFT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
   saveDraft() {
     if (!this.isDirty) return;
 
@@ -72,7 +76,7 @@ class FormStateManager {
       }
     }
 
-    // Save with timestamp
+    // Save with timestamp so we can enforce expiry on load
     const draft = {
       data,
       timestamp: new Date().toISOString(),
@@ -97,7 +101,22 @@ class FormStateManager {
   getDraft() {
     try {
       const stored = localStorage.getItem(this.storageKey);
-      return stored ? JSON.parse(stored) : null;
+      if (!stored) return null;
+
+      const draft = JSON.parse(stored);
+
+      // Discard drafts older than DRAFT_MAX_AGE_MS (default 24 h).
+      // This prevents sensitive audit data lingering on shared devices.
+      if (draft && draft.timestamp) {
+        const age = Date.now() - new Date(draft.timestamp).getTime();
+        if (age > FormStateManager.DRAFT_MAX_AGE_MS) {
+          console.log('Draft expired — discarding');
+          localStorage.removeItem(this.storageKey);
+          return null;
+        }
+      }
+
+      return draft;
     } catch (e) {
       console.error('Failed to retrieve draft:', e);
       return null;

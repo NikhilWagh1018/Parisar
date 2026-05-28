@@ -116,16 +116,17 @@ class ScoreHelpers
 
     /**
      * P9. Cyclist Slowed Down
-     * Two scoring groups based on road name
+     * Two scoring groups based on road name.
+     *
+     * Group B roads are defined in config/constants.php → SCORE_GROUP_B_ROADS.
+     * Adding a new road no longer requires touching this file.
      */
     public static function cyclistSlowed(float $count, string $roadName = ''): float
     {
-        // Group B roads with fixed 75 minimum
-        static $groupB = [
-            'DP ROAD', 'SINHAGAD ROAD', 'SENAPATI BAPAT ROAD', 'KARVE ROAD',
-            'FERGUSSON COLLEGE ROAD', 'JANGALI MAHARAJ ROAD', 'SANGAMWADI ROAD',
-            'PMC ROAD', 'KHADKI ROAD', 'DECCAN COLLEGE ROAD', 'PASHAN ROAD',
-        ];
+        // Load Group B list from constants (defined in config/constants.php).
+        // Falls back to an empty array if the constant isn't loaded yet
+        // (e.g. in isolated unit-test contexts that don't load constants.php).
+        $groupB = defined('SCORE_GROUP_B_ROADS') ? SCORE_GROUP_B_ROADS : [];
 
         $road     = strtoupper(trim($roadName));
         $isGroupB = in_array($road, $groupB, true);
