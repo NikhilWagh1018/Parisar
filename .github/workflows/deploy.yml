@@ -55,6 +55,8 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Deploy to Railway
-        run: railway up --detach --service Parisar
+        # --source . uploads the checked-out commit so Railway builds
+        # the Docker image from the exact code that passed CI.
+        run: railway up --detach --service Parisar --source .
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
