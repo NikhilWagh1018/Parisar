@@ -1018,6 +1018,31 @@ const FormStateManager = (() => {
   return { save, restore, clear };
 })();
 
+
+// ── Dirty-form guard ────────────────────────────────────────────────────────
+// Warns before navigating away with unsaved (unsubmitted) form changes.
+// FormStateManager.clear is monkey-patched here so both submit-success and
+// reset automatically clear the flag without modifying those call sites.
+(function () {
+  let _dirty = false;
+
+  const _form = document.getElementById('auditForm');
+  if (_form) {
+    _form.addEventListener('input',  function () { _dirty = true; }, true);
+    _form.addEventListener('change', function () { _dirty = true; }, true);
+  }
+
+  const _origClear = FormStateManager.clear.bind(FormStateManager);
+  FormStateManager.clear = function () { _origClear(); _dirty = false; };
+
+  window.addEventListener('beforeunload', function (e) {
+    if (_dirty) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+})();
+
 // Hook: clear on successful submit
 const _origSubmit = submitFullAudit;
 submitFullAudit = async function() {
