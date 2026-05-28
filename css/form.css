@@ -370,7 +370,7 @@
       padding:11px 22px; font-size:14px; font-weight:600;
       cursor:pointer; width:100%; transition:background 0.15s;
     }
-    .btn-reset:hover { background:#fff0f0; }
+    
 
     /* section anchor offset */
     .section-anchor { scroll-margin-top:80px; }
@@ -458,5 +458,6 @@
     font-size: 1rem !important; font-weight: 600 !important;
     cursor: pointer !important; transition: background 0.2s !important;
     font-family: inherit !important;
+    box-sizing: border-box !important; height: 100% !important; min-height: 52px !important;
 }
 .btn-reset:hover { background: #b91c1c !important; }
