@@ -1,5 +1,5 @@
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  js/form.js  â€”  Segment Audit Form Logic
+//  js/form.js  —  Segment Audit Form Logic
 //  Reads segment_id + session_id from URL params.
 //  Submits to api/segments/submit.php with X-CSRF-Token header.
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -112,7 +112,7 @@ function renderList(type, filter) {
 //  NUMERIC COUNTER ARCHITECTURE  (single source of truth)
 //
 //  Design principles:
-//  â€¢ ONE oninput handler does ALL sanitisation â€” no keydown tricks,
+//  â€¢ ONE oninput handler does ALL sanitisation — no keydown tricks,
 //    no onfocus hacks, no competing listeners.
 //  â€¢ The field is NEVER mutated during editing except to strip
 //    non-digit characters.  Leading-zero removal is NOT deferred;
@@ -120,7 +120,7 @@ function renderList(type, filter) {
 //    (i.e. the string starts with 0 AND has more digits after it).
 //  â€¢ Caret position is restored after every sanitisation so typing
 //    feels native on desktop AND mobile / Android virtual keyboards
-//    (which send key="Unidentified" â€” breaking any keydown approach).
+//    (which send key="Unidentified" — breaking any keydown approach).
 //  â€¢ blur is the only place a missing value is snapped to "0".
 //  â€¢ +/- buttons call adjustCounter which normalises via the same
 //    numeric read used at submit time.
@@ -128,15 +128,15 @@ function renderList(type, filter) {
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  NUMERIC COUNTER ARCHITECTURE  v3 â€” blank-display / zero-store
+//  NUMERIC COUNTER ARCHITECTURE  v3 — blank-display / zero-store
 //
 //  Display contract:
-//  â€¢ Fields are VISUALLY BLANK by default â€” value="" in HTML
+//  â€¢ Fields are VISUALLY BLANK by default — value="" in HTML
 //  â€¢ Blank display = numeric value 0 (converted at submit/button)
 //  â€¢ Typing is uncontrolled mid-edit: only non-digits are stripped.
 //  â€¢ Leading zeros are collapsed on blur, never during typing.
 //
-//  Event model â€” ONE handler per concern, zero overlap:
+//  Event model — ONE handler per concern, zero overlap:
 //    oninput  â†’ counterInput   strips non-digit chars only
 //    onblur   â†’ counterBlur    collapses leading zeros, blank stays blank
 //    onclick  â†’ adjustCounter  +/- buttons, blank-aware
@@ -147,14 +147,14 @@ function renderList(type, filter) {
 //    â€¢ PHP backend: (int)$_POST[field] coerces "" to 0
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-// â”€â”€ Safe integer read â€” blank/invalid treated as 0 â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
+// â”€â”€ Safe integer read — blank/invalid treated as 0 ————————————
 function _numVal(el) {
   if (!el) return 0;
   const n = parseInt(el.value, 10);
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
-// â”€â”€ +/- button handler â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
+// â”€â”€ +/- button handler ——————————————————————————————————————————————
 // blank + (+) â†’ "1"     "1" + (-) â†’ blank (0 shown as blank)
 function adjustCounter(id, delta) {
   const el = document.getElementById(id);
@@ -163,8 +163,8 @@ function adjustCounter(id, delta) {
   el.value = next === 0 ? '' : String(next);
 }
 
-// â”€â”€ oninput: strip non-digits ONLY â€” never reformat mid-type â€”â€”â€”â€”â€”
-// "034" is intentionally NOT collapsed here â€” the user might still
+// â”€â”€ oninput: strip non-digits ONLY — never reformat mid-type —————
+// "034" is intentionally NOT collapsed here — the user might still
 // be typing.  Collapse happens on blur only.
 function counterInput(id) {
   const el = document.getElementById(id);
@@ -183,7 +183,7 @@ function counterInput(id) {
   }
 }
 
-// â”€â”€ onblur: collapse leading zeros; blank stays blank â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
+// â”€â”€ onblur: collapse leading zeros; blank stays blank ——————————
 // "034" â†’ "34"   "007" â†’ "7"   "0" â†’ blank   "" â†’ blank
 function counterBlur(id) {
   const el = document.getElementById(id);
@@ -192,7 +192,7 @@ function counterBlur(id) {
   el.value = (Number.isFinite(n) && n > 0) ? String(n) : '';
 }
 
-// â”€â”€ Template: counter row with blank-default input â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
+// â”€â”€ Template: counter row with blank-default input —————————————
 function makeCounter(id, labelText) {
   return `
     <div class="counter-row">
@@ -266,7 +266,7 @@ function missingLengthInput(el) {
 function missingLengthBlur(el) {
   // Remove trailing dot  ("5." â†’ "5")
   if (el.value.endsWith('.')) el.value = el.value.slice(0, -1);
-  // Empty is fine for this optional field â€” don't snap to 0
+  // Empty is fine for this optional field — don't snap to 0
 }
 
 // â”€â”€ Missing Length toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -380,7 +380,7 @@ function addIntersection() {
         <div class="int-badge">${intersections.length}</div>
         <span class="int-title">Intersection ${intersections.length}</span>
         <span class="int-subtitle" id="intSubtitle_${uid}">
-          â€” click to collapse
+          — click to collapse
         </span>
       </div>
       <span class="int-chevron">â–¾</span>
@@ -400,8 +400,8 @@ function toggleIntersection(uid) {
   header.classList.toggle('open', !isOpen);
   const sub = document.getElementById('intSubtitle_' + uid);
   if (sub) sub.textContent = isOpen
-    ? 'â€” click to expand'
-    : 'â€” click to collapse';
+    ? '— click to expand'
+    : '— click to collapse';
 }
 
 function removeIntersection(uid) {
@@ -464,7 +464,7 @@ async function submitFullAudit() {
     if (result.success) {
         FormStateManager.clear();
       alert('Audit saved successfully!');
-      // Back to segment.php â€” segment.js picks up ?status=done
+      // Back to segment.php — segment.js picks up ?status=done
       const roadId = getRoadId();
       window.location.href =
         `segment.php?segment_id=${segmentId}&status=done` +
@@ -632,7 +632,7 @@ async function doReset() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Show a brief success toast
-    showResetToast('âœ… Form cleared â€” all data has been reset.');
+    showResetToast('… Form cleared — all data has been reset.');
 
   } catch (err) {
     console.error('doReset error:', err);
@@ -736,7 +736,7 @@ async function prefillFormIfEditMode() {
       'background:#fff8e1;border:1px solid #f6c90e;border-radius:8px;' +
       'padding:10px 16px;margin-bottom:16px;font-size:13px;color:#7a5c00;';
     banner.innerHTML =
-      'âœï¸ <strong>Edit mode</strong> â€” your previous answers have been loaded. ' +
+      'âœï¸ <strong>Edit mode</strong> — your previous answers have been loaded. ' +
       'Review, correct anything, then re-submit.';
     heading.insertAdjacentElement('afterend', banner);
   }
@@ -844,7 +844,7 @@ async function prefillFormIfEditMode() {
       : label.querySelector('input[type="radio"]');
   }
 
-  // Snapshot on mousedown â€” earliest possible moment
+  // Snapshot on mousedown — earliest possible moment
   document.addEventListener('mousedown', e => {
     const radio = getRadio(e.target);
     if (radio && !radio._snapDone) {
@@ -856,7 +856,7 @@ async function prefillFormIfEditMode() {
     }
   }, true);
 
-  // Act on click â€” use capture so we run before any other handler
+  // Act on click — use capture so we run before any other handler
   document.addEventListener('click', e => {
     const radio = getRadio(e.target);
     if (!radio) return;
@@ -904,14 +904,14 @@ const FormStateManager = (() => {
       if (el.name) data[el.name] = el.value;
     });
 
-    // Radio buttons â€” save the checked one
+    // Radio buttons — save the checked one
     const radios = {};
     form.querySelectorAll('input[type="radio"]').forEach(el => {
       if (el.name && el.checked) radios[el.name] = el.value;
     });
     data.__radios = radios;
 
-    // Checkboxes â€” save array of checked values per name
+    // Checkboxes — save array of checked values per name
     const checks = {};
     form.querySelectorAll('input[type="checkbox"]').forEach(el => {
       if (!el.name) return;
@@ -1006,7 +1006,7 @@ const FormStateManager = (() => {
     div.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);' +
       'background:#1a1a2e;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;' +
       'z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.3);display:flex;gap:12px;align-items:center;';
-    div.innerHTML = 'ðŸ”„ Draft restored from your last session. ' +
+    div.innerHTML = '💾 Draft restored from your last session. ' +
       '<button onclick="FormStateManager.clear();document.getElementById(\'fsm-banner\').remove();location.reload();" ' +
       'style="background:transparent;border:1px solid #fff;color:#fff;padding:2px 10px;border-radius:4px;cursor:pointer;font-size:12px;">Discard</button>';
     document.body.appendChild(div);
@@ -1053,7 +1053,7 @@ const _origSubmit = submitFullAudit;
 submitFullAudit = async function() {
   await _origSubmit.apply(this, arguments);
   // Only clear if submit succeeded (check for success toast or no error alert)
-  // We patch via the response â€” override happens inside submitFullAudit already,
+  // We patch via the response — override happens inside submitFullAudit already,
   // so we attach a one-time listener on the form's custom success event instead.
 };
 
