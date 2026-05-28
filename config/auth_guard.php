@@ -24,11 +24,13 @@ enforceSessionTimeout();
 
 // ── Content-Security-Policy ────────────────────────────────────
 // Allow Google's CDN for profile pictures on all protected pages.
+ = base64_encode(random_bytes(16));
+['csp_nonce'] = ;
 header(
     "Content-Security-Policy: " .
     "default-src 'self'; " .
-    "script-src 'self' 'unsafe-inline'; " .
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
+    "script-src 'self' 'nonce-{}'; " .
+    "style-src 'self' 'nonce-{}' https://fonts.googleapis.com; " .
     "font-src 'self' https://fonts.gstatic.com; " .
     "img-src 'self' data: https://lh3.googleusercontent.com https://*.googleusercontent.com; " .
     "connect-src 'self';"
