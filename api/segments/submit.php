@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  api/segments/submit.php
-//  POST (multipart/form-data) — full segment audit submission.
+//  POST (multipart/form-data) â€” full segment audit submission.
 //
 //  CHANGES IN THIS VERSION:
-//    • Uses helpers/Validator.php for all input validation
+//    â€¢ Uses helpers/Validator.php for all input validation
 //      (replaces the manual required-field loops and int casts)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 header('Content-Type: application/json');
 set_exception_handler(function (Throwable $e) {
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// ── CSRF verification ──────────────────────────────────────────
+// â”€â”€ CSRF verification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
 if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
     http_response_code(403);
@@ -39,7 +39,7 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
     exit;
 }
 
-// ── Input validation via Validator ────────────────────────────
+// â”€â”€ Input validation via Validator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $v = Validator::make($_POST)
     ->required('session_id', 'segment_id')
     ->integer('session_id', 'segment_id')
@@ -59,7 +59,7 @@ if ($v->fails()) {
     exit;
 }
 
-// ── Validated, safe values ────────────────────────────────────
+// â”€â”€ Validated, safe values â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $sessionId = (int)$_POST['session_id'];
 $segmentId = (int)$_POST['segment_id'];
 $editMode  = !empty($_POST['edit_mode']) && $_POST['edit_mode'] === '1';
@@ -67,7 +67,7 @@ $editMode  = !empty($_POST['edit_mode']) && $_POST['edit_mode'] === '1';
 try {
     $pdo->beginTransaction();
 
-    // ── 1. Lock segment — prevent duplicate submissions ────────
+    // â”€â”€ 1. Lock segment â€” prevent duplicate submissions â”€â”€â”€â”€â”€â”€â”€â”€
     $stmtSeg = $pdo->prepare(
         'SELECT s.status, s.road_id, r.creator_id
          FROM   segments s
@@ -92,7 +92,7 @@ try {
         exit;
     }
 
-    // ── 2. Verify session ownership ────────────────────────────
+    // â”€â”€ 2. Verify session ownership â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     $stmtSess = $pdo->prepare(
         'SELECT id, road_id FROM audit_sessions
          WHERE  id = ? AND user_id = ? AND status = \'active\'
@@ -116,7 +116,7 @@ try {
         exit;
     }
 
-    // ── 3. INSERT or UPDATE segment_audit ────────────────────
+    // â”€â”€ 3. INSERT or UPDATE segment_audit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     $mainFields = [
         'start_landmark', 'end_landmark', 'gps_start', 'gps_end',
         'cycle_track_missing', 'missing_length', 'cyclist_use', 'better_surface',
@@ -147,7 +147,7 @@ try {
     $footpathScore  = min(100, count(json_decode($footpathRating, true) ?? []) * 20);
 
     if ($editMode) {
-        // ── EDIT: update the most-recent audit row ─────────────
+        // â”€â”€ EDIT: update the most-recent audit row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $stmtExisting = $pdo->prepare(
             'SELECT id FROM segment_audits WHERE segment_id = ? ORDER BY id DESC LIMIT 1'
         );
@@ -155,7 +155,7 @@ try {
         $existingAudit = $stmtExisting->fetch(PDO::FETCH_ASSOC);
 
         if (!$existingAudit) {
-            // Fallback: no prior record — treat as a fresh insert
+            // Fallback: no prior record â€” treat as a fresh insert
             $editMode = false;
         } else {
             $auditId = (int)$existingAudit['id'];
@@ -184,7 +184,7 @@ try {
     }
 
     if (!$editMode) {
-        // ── FRESH INSERT ───────────────────────────────────────
+        // â”€â”€ FRESH INSERT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $placeholders = implode(',', array_fill(0, count($mainFields), '?'));
         $columns      = implode(',', $mainFields);
 
@@ -207,7 +207,7 @@ try {
         )->execute([$surfaceIssues, $overheadIssues, $footpathRating, $footpathScore, $auditId]);
     }
 
-    // ── 4. INSERT obstructions ─────────────────────────────────
+    // â”€â”€ 4. INSERT obstructions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     $obsCategories = [
         'fixed'   => [
             'Trees', 'Poles', 'CCTV', 'TrafficSignal', 'SignBoard',
@@ -249,10 +249,34 @@ try {
         }
     }
 
-    // ── 5. INSERT intersections ────────────────────────────────
+    // â”€â”€ 5. INSERT intersections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     $intersections = json_decode($_POST['intersections'] ?? '[]', true);
     if (is_array($intersections) && !empty($intersections)) {
         $intStmt = $pdo->prepare(
+
+    // Allowlist validation for intersection enum fields
+    $intAllowlists = [
+        'off_ramp'        => ['Ramp Present', 'No Ramp'],
+        'on_ramp'         => ['Ramp Present', 'No Ramp'],
+        'markings'        => ['Present', 'Absent'],
+        'signage'         => ['Present', 'Absent'],
+        'traffic_calming' => ['Present', 'Absent'],
+    ];
+    if (is_array($intersections)) {
+        foreach ($intersections as $idx => $i) {
+            foreach ($intAllowlists as $field => $allowed) {
+                $val = $i[$field] ?? null;
+                if ($val !== null && $val !== '' && !in_array($val, $allowed, true)) {
+                    http_response_code(422);
+                    echo json_encode([
+                        'success' => false,
+                        'error'   => "Invalid value for intersection field '{$field}'.",
+                    ]);
+                    exit;
+                }
+            }
+        }
+    }
             'INSERT INTO intersections
                (audit_id, intersection_num, gps_coords, landmark_name,
                 off_ramp, on_ramp, markings, signage,
@@ -283,19 +307,19 @@ try {
         }
     }
 
-    // ── 6. Mark segment completed ──────────────────────────────
+    // â”€â”€ 6. Mark segment completed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     $pdo->prepare(
         'UPDATE segments SET status = \'completed\', completed_at = NOW() WHERE id = ?'
     )->execute([$segmentId]);
 
-    // ── 7. Log activity ────────────────────────────────────────
+    // â”€â”€ 7. Log activity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     ActivityLogger::log($pdo, $editMode ? ActivityLogger::SEGMENT_EDITED : ActivityLogger::SEGMENT_SUBMITTED, $CURRENT_USER_ID, [
         'audit_id'   => $auditId,
         'segment_id' => $segmentId,
         'session_id' => $sessionId,
     ]);
 
-    // ── 8. COMMIT ──────────────────────────────────────────────
+    // â”€â”€ 8. COMMIT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     $pdo->commit();
 
     echo json_encode([
