@@ -97,7 +97,13 @@ class FormStateManager {
   getDraft() {
     try {
       const stored = localStorage.getItem(this.storageKey);
-      return stored ? JSON.parse(stored) : null;
+      if (!stored) return null;
+      const draft = JSON.parse(stored);
+      if (draft && draft.timestamp) {
+        const age = Date.now() - new Date(draft.timestamp).getTime();
+        if (age > 24 * 60 * 60 * 1000) { localStorage.removeItem(this.storageKey); return null; }
+      }
+      return draft;
     } catch (e) {
       console.error('Failed to retrieve draft:', e);
       return null;
