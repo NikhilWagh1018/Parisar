@@ -451,36 +451,12 @@
 
 /* Reset button — full width, red, same size as submit */
 .btn-reset {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; padding: 14px 20px;
-    background: #dc2626; color: #fff;
-    border: none; border-radius: 8px;
-    font-size: 1rem; font-weight: 600;
-    cursor: pointer; transition: background 0.2s;
-    font-family: inherit;
+    display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important;
+    width: 100% !important; padding: 14px 20px !important;
+    background: #dc2626 !important; color: #fff !important;
+    border: none !important; border-radius: 8px !important;
+    font-size: 1rem !important; font-weight: 600 !important;
+    cursor: pointer !important; transition: background 0.2s !important;
+    font-family: inherit !important;
 }
-.btn-reset:hover { background: #b91c1c; }
-
-/* Reset button — full width, red, same size as submit */
-.btn-reset {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; padding: 14px 20px;
-    background: #dc2626; color: #fff;
-    border: none; border-radius: 8px;
-    font-size: 1rem; font-weight: 600;
-    cursor: pointer; transition: background 0.2s;
-    font-family: inherit;
-}
-.btn-reset:hover { background: #b91c1c; }
-
-/* Reset button — full width, red, same size as submit */
-.btn-reset {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; padding: 14px 20px;
-    background: #dc2626; color: #fff;
-    border: none; border-radius: 8px;
-    font-size: 1rem; font-weight: 600;
-    cursor: pointer; transition: background 0.2s;
-    font-family: inherit;
-}
-.btn-reset:hover { background: #b91c1c; }
+.btn-reset:hover { background: #b91c1c !important; }
