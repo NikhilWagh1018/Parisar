@@ -294,9 +294,7 @@ function buildIntersectionBody(uid) {
     <div class="int-gps-row">
       <div>
         <label>GPS Coordinates</label>
-        <input type="text" id="${p}gps"  name="${p}gps"
-               <div class="gps-input-row">
-               placeholder="e.g. 18.5204, 73.8567">
+        <div class="gps-input-row"><input type="text" id="${p}gps" name="${p}gps" placeholder="e.g. 18.5204, 73.8567">
                  <button type="button" class="gps-btn" onclick="fillGPS('${p}gps')"
                          title="Auto-fill from device location">
                    <span class="gps-btn-icon">GPS</span>
