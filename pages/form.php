@@ -74,9 +74,9 @@ if ($segNum > 0) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf" id="csrf-meta" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
   <title><?php echo htmlspecialchars($htmlTitle, ENT_QUOTES, 'UTF-8'); ?></title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/form.css">
-  <link rel="stylesheet" href="../css/form-overlay.css">
+  <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/form.css">
+  <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/form-overlay.css">
 </head>
 <body>
 
@@ -553,7 +553,7 @@ if ($segNum > 0) {
   </div><!-- /.container -->
 </form>
 
-<script src="../js/form.js"></script>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/form.js"></script>
 
 </body>
 </html>

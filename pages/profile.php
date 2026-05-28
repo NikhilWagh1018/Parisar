@@ -17,8 +17,8 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Profile — CycleAudit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/profile.css">
+<link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/profile.css">
 </head>
 <body>
 
@@ -232,7 +232,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
   </div><!-- /content -->
 </main>
 
-<script>const CSRF = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;</script>
-<script src="../js/profile.js"></script>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;</script>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/profile.js"></script>
 </body>
 </html>

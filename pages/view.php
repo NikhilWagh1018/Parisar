@@ -58,8 +58,8 @@ $footpathRating = json_decode((string)($row['footpath_rating'] ?? '[]'), true) ?
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Segment <?= (int)$row['segment_number'] ?> — <?= htmlspecialchars($row['road_name']) ?></title>
-<link rel="stylesheet" href="../css/view.css">
-<link rel="stylesheet" href="../css/view-inline.css">
+<link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/view.css">
+<link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/view-inline.css">
 </head>
 <body>
 <div class="container">
