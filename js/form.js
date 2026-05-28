@@ -222,7 +222,7 @@ function toggleObstruction(type, label) {
     block.id        = 'block_' + id;
     block.innerHTML = `
       <div class="item-block-header">
-        <span class="item-pin">ðŸ“</span>
+        <span class="item-pin">📍</span>
         <strong>${label}</strong>
       </div>
       <div class="item-block-counters">
