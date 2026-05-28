@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     zip \
-    && a2enmod rewrite headers \
+    && a2enmod rewrite headers php8.1 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN { \
