@@ -9,7 +9,6 @@ body{font-family:'DM Sans',sans-serif;background:#f0f0e8;color:var(--ink);font-s
 .pb-bar p{font-size:.8rem;color:rgba(255,255,255,.7)}
 .pb-btn{background:var(--gl);color:#fff;border:none;padding:8px 20px;border-radius:7px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:7px}
 .pb-btn:hover{background:#6eaf30}
-@media print{.pb-bar{display:none}.page{box-shadow:none;margin:0;padding:20px 28px}}
 
 /* page */
 .page{max-width:900px;margin:0 auto;background:#fff;padding:40px 48px;box-shadow:0 8px 32px rgba(0,0,0,.12)}
@@ -33,11 +32,11 @@ body{font-family:'DM Sans',sans-serif;background:#f0f0e8;color:var(--ink);font-s
 
 /* score hero */
 .sc-hero{display:grid;grid-template-columns:190px 1fr;gap:18px;margin-bottom:4px}
-.sc-left{background:<?= $rbg ?>;border:2px solid <?= $rc ?>;border-radius:13px;padding:20px;text-align:center}
+.sc-left{border-radius:13px;padding:20px;text-align:center}
 .sc-icon{font-size:2.2rem;margin-bottom:5px}
-.sc-num{font-family:'Playfair Display',serif;font-size:3rem;font-weight:800;color:<?= $rc ?>;line-height:1}
+.sc-num{font-family:'Playfair Display',serif;font-size:3rem;font-weight:800;line-height:1}
 .sc-max{font-size:.72rem;color:var(--gray);margin-top:2px}
-.sc-badge{display:inline-block;margin-top:7px;background:<?= $rc ?>;color:#fff;font-size:.68rem;font-weight:700;padding:3px 12px;border-radius:100px;text-transform:uppercase}
+.sc-badge{display:inline-block;margin-top:7px;color:#fff;font-size:.68rem;font-weight:700;padding:3px 12px;border-radius:100px;text-transform:uppercase}
 .sc-right{background:var(--cream);border-radius:13px;padding:18px;display:flex;flex-direction:column;justify-content:space-between}
 .sc-rt{font-size:.67rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gray);margin-bottom:11px}
 .dim-r{display:flex;align-items:center;gap:9px;margin-bottom:8px}
@@ -69,7 +68,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0f0e8;color:var(--ink);font-s
 .dc-x{font-size:.65rem;color:var(--gray)}
 .dc-its{margin-top:7px;display:flex;flex-direction:column;gap:3px}
 .dc-it{font-size:.7rem;color:var(--gray);padding-left:10px;position:relative}
-.dc-it::before{content:'•';position:absolute;left:0;color:var(--g);font-weight:900}
+.dc-it::before{content:'›';position:absolute;left:0;color:var(--g);font-weight:900}
 
 /* obs */
 .obs-l{display:flex;flex-direction:column;gap:5px}
@@ -103,3 +102,46 @@ body{font-family:'DM Sans',sans-serif;background:#f0f0e8;color:var(--ink);font-s
 
 .pb{page-break-before:always;padding-top:14px}
 .no-data{text-align:center;padding:32px;color:var(--gray);font-size:.88rem;background:var(--cream);border-radius:10px;border:1px dashed var(--bd)}
+
+/* ── Print media rules ───────────────────────────────────────
+   Issue 27: these were missing — added for correct print output
+   ──────────────────────────────────────────────────────────── */
+@media print {
+    /* Hide screen-only UI */
+    .pb-bar          { display: none !important; }
+    .pb-btn          { display: none !important; }
+
+    /* Reset page for print */
+    body             { background: #fff !important; font-size: 9pt; }
+    .page            { box-shadow: none; margin: 0; padding: 20px 28px;
+                       max-width: 100%; }
+
+    /* Force black text for ink saving on light-coloured elements */
+    .hdr-meta span,
+    .gray,
+    .sc-sum,
+    .dc-x,
+    .sd-f,
+    .rf-s,
+    .rf-r            { color: #333 !important; }
+
+    /* Ensure backgrounds print (score colours, table headers) */
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Keep segment detail cards together — don't split across pages */
+    .sd              { break-inside: avoid; page-break-inside: avoid; }
+    .sec             { break-inside: avoid; page-break-inside: avoid; }
+    .dg              { break-inside: avoid; page-break-inside: avoid; }
+
+    /* New page before each major section when report is long */
+    .pb              { page-break-before: always; }
+
+    /* Don't break table rows */
+    .st tr           { break-inside: avoid; page-break-inside: avoid; }
+
+    /* Remove link underlines */
+    a                { text-decoration: none; color: inherit; }
+
+    /* Page margins */
+    @page            { margin: 15mm 12mm; }
+}
