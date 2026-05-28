@@ -413,10 +413,17 @@ function removeIntersection(uid) {
 
 // â”€â”€ Footpath score â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function updateFootpathScore() {
-  const checked = document.querySelectorAll(
-    'input[name="footpath_rating[]"]:checked').length;
-  document.getElementById('footpathScore').textContent =
-    (checked * 20) + '%';
+  const weights = {
+    minWidth: 30, obstructionFree: 30,
+    continuous: 20, disabledFriendly: 15, comfort: 5
+  };
+  const checked = new Set(
+    [...document.querySelectorAll('input[name="footpath_rating[]"]:checked')]
+    .map(el => el.value)
+  );
+  const score = Object.entries(weights)
+    .reduce((sum, [key, w]) => sum + (checked.has(key) ? 0 : w), 0);
+  document.getElementById('footpathScore').textContent = score + '%';
 }
 
 // â”€â”€ Form submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
