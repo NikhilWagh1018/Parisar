@@ -23,7 +23,7 @@ require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../../services/ScoreService.php';
-require_once __DIR__ . '/../../vendor/autoload.php';
+// vendor/autoload.php is already loaded via config/constants.php → no need to re-require.
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;

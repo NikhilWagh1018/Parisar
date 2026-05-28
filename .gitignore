@@ -1,6 +1,9 @@
 # Debug files - never expose these
 debug/
 
+# Application logs — written at runtime, must never be committed
+logs/
+
 # Local environment overrides (if you ever add one)
 .env
 .env.local

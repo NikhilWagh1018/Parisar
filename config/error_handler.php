@@ -29,7 +29,12 @@ function registerErrorHandlers(): void
 
     // ── Uncaught exceptions ───────────────────────────────────
     set_exception_handler(function (Throwable $e): void {
+        // Generate a short reference ID so the user can quote it in a bug report
+        // and we can find the matching log entry — without exposing any internals.
+        $ref = strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
+
         appLog('exception', $e->getMessage(), [
+            'ref'   => $ref,
             'class' => get_class($e),
             'file'  => $e->getFile(),
             'line'  => $e->getLine(),
@@ -50,10 +55,17 @@ function registerErrorHandlers(): void
             if (!headers_sent()) {
                 header('Content-Type: application/json');
             }
-            echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
+            // NEVER expose getMessage() — it leaks table names, file paths, and logic.
+            // The ref code lets us find the full details in logs/app.log.
+            echo json_encode([
+                'success' => false,
+                'error'   => 'An unexpected server error occurred. Please try again.',
+                'ref'     => $ref,
+            ]);
         } else {
             echo '<!DOCTYPE html><html><body><h2>Something went wrong.</h2>'
-               . '<p>Our team has been notified. Please try again shortly.</p></body></html>';
+               . '<p>Our team has been notified. Reference: <code>' . htmlspecialchars($ref) . '</code></p>'
+               . '<p>Please try again shortly.</p></body></html>';
         }
         exit(1);
     });
@@ -80,11 +92,12 @@ function registerErrorHandlers(): void
                 http_response_code(500);
                 header('Content-Type: application/json');
             }
+            // NEVER expose error message, file, or line to the client.
+            $ref = strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
             echo json_encode([
                 'success' => false,
-                'error'   => 'Fatal server error: ' . $error['message'],
-                'file'    => basename($error['file']),
-                'line'    => $error['line'],
+                'error'   => 'A fatal server error occurred. Please try again.',
+                'ref'     => $ref,
             ]);
         }
     });
