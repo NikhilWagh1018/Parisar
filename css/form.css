@@ -448,3 +448,15 @@
   margin-top: 4px;
   min-height: 16px;
 }
+
+/* Reset button — full width, red, same size as submit */
+.btn-reset {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 14px 20px;
+    background: #dc2626; color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 1rem; font-weight: 600;
+    cursor: pointer; transition: background 0.2s;
+    font-family: inherit;
+}
+.btn-reset:hover { background: #b91c1c; }
