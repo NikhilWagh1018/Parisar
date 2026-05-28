@@ -122,7 +122,7 @@ function renderList(type, filter) {
 //    feels native on desktop AND mobile / Android virtual keyboards
 //    (which send key="Unidentified" â€” breaking any keydown approach).
 //  â€¢ blur is the only place a missing value is snapped to "0".
-//  â€¢ +/âˆ’ buttons call adjustCounter which normalises via the same
+//  â€¢ +/- buttons call adjustCounter which normalises via the same
 //    numeric read used at submit time.
 //  â€¢ No global state, no WeakMap, no closures per-field needed.
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -139,7 +139,7 @@ function renderList(type, filter) {
 //  Event model â€” ONE handler per concern, zero overlap:
 //    oninput  â†’ counterInput   strips non-digit chars only
 //    onblur   â†’ counterBlur    collapses leading zeros, blank stays blank
-//    onclick  â†’ adjustCounter  +/âˆ’ buttons, blank-aware
+//    onclick  â†’ adjustCounter  +/- buttons, blank-aware
 //
 //  Blank-to-zero happens ONLY at:
 //    â€¢ adjustCounter: reads blank as 0 before applying delta
@@ -154,8 +154,8 @@ function _numVal(el) {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
-// â”€â”€ +/âˆ’ button handler â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
-// blank + (+) â†’ "1"     "1" + (âˆ’) â†’ blank (0 shown as blank)
+// â”€â”€ +/- button handler â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
+// blank + (+) â†’ "1"     "1" + (-) â†’ blank (0 shown as blank)
 function adjustCounter(id, delta) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -198,7 +198,7 @@ function makeCounter(id, labelText) {
     <div class="counter-row">
       <span class="counter-label">${labelText}</span>
       <div class="counter-ctrl">
-        <button type="button" onclick="adjustCounter('${id}',-1)">âˆ’</button>
+        <button type="button" onclick="adjustCounter('${id}',-1)">-</button>
         <input type="text" inputmode="numeric" pattern="[0-9]*"
                id="${id}" name="${id}" value=""
                placeholder="0"
