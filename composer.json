@@ -11,13 +11,6 @@
     "require-dev": {
         "phpunit/phpunit": "^10.0"
     },
-    "autoload": {
-        "files": [
-            "services/ScoreService.php",
-            "helpers/Validator.php",
-            "repositories/SegmentRepository.php"
-        ]
-    },
     "autoload-dev": {
         "classmap": [
             "tests/"
