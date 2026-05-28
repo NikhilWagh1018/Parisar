@@ -295,7 +295,14 @@ function buildIntersectionBody(uid) {
       <div>
         <label>GPS Coordinates</label>
         <input type="text" id="${p}gps"  name="${p}gps"
+               <div class="gps-input-row">
                placeholder="e.g. 18.5204, 73.8567">
+                 <button type="button" class="gps-btn" onclick="fillGPS('${p}gps')"
+                         title="Auto-fill from device location">
+                   <span class="gps-btn-icon">GPS</span>
+                 </button>
+               </div>
+               <div class="gps-error" id="${p}gps-error"></div>
       </div>
       <div>
         <label>Landmark Name</label>
@@ -469,6 +476,47 @@ async function submitFullAudit() {
 }
 
 // â”€â”€ Validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+
+// ═══════════════════════════════════════════════════════
+//  GPS Auto-fill
+// ═══════════════════════════════════════════════════════
+function fillGPS(inputId) {
+  const input   = document.getElementById(inputId);
+  const errorEl = document.getElementById(inputId + '-error');
+  const btn     = input?.closest('.gps-input-row')?.querySelector('.gps-btn');
+  if (!input) return;
+  if (errorEl) errorEl.textContent = '';
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+    if (errorEl) errorEl.textContent = 'GPS requires HTTPS. Enter coordinates manually.';
+    return;
+  }
+  if (!navigator.geolocation) {
+    if (errorEl) errorEl.textContent = 'Geolocation not supported by this browser.';
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.querySelector('.gps-btn-icon').textContent = '...'; }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      input.value = lat + ', ' + lng;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      if (btn) { btn.disabled = false; btn.querySelector('.gps-btn-icon').textContent = 'GPS'; }
+    },
+    (err) => {
+      const msgs = {
+        1: 'Location access denied. Allow location in browser settings.',
+        2: 'Location unavailable. Enter coordinates manually.',
+        3: 'Location request timed out. Try again.'
+      };
+      if (errorEl) errorEl.textContent = msgs[err.code] || 'Could not get location.';
+      if (btn) { btn.disabled = false; btn.querySelector('.gps-btn-icon').textContent = 'GPS'; }
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
 function validateForm() {
   let ok = true;
   ['startLandmark','endLandmark','gpsStart','gpsEnd'].forEach(id => {
