@@ -144,7 +144,20 @@ try {
     $surfaceIssues  = json_encode(array_values(array_filter((array)($_POST['surface_issues']  ?? []))));
     $overheadIssues = json_encode(array_values(array_filter((array)($_POST['overhead_issues'] ?? []))));
     $footpathRating = json_encode(array_values(array_filter((array)($_POST['footpath_rating'] ?? []))));
-    $footpathScore  = min(100, count(json_decode($footpathRating, true) ?? []) * 20);
+    \  = json_decode(\, true) ?? [];
+\      = [
+    'minWidth'         => 30,
+    'obstructionFree'  => 30,
+    'continuous'       => 20,
+    'disabledFriendly' => 15,
+    'comfort'          => 5,
+];
+\ = 0;
+foreach (\ as \ => \) {
+    if (!in_array(\, \, true)) {
+        \ += \;
+    }
+}
 
     if ($editMode) {
         // â”€â”€ EDIT: update the most-recent audit row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
