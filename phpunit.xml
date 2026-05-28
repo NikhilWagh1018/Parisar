@@ -2,13 +2,14 @@
 <!-- phpunit.xml — PHPUnit 10 configuration for Parisar CycleAudit -->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         bootstrap="tests/bootstrap.php"
          colors="true"
          stopOnFailure="false">
 
     <testsuites>
         <testsuite name="Unit">
             <file>tests/ScoreServiceTest.php</file>
+            <file>tests/ScoringEngineTest.php</file>
             <file>tests/ValidatorTest.php</file>
         </testsuite>
         <testsuite name="Integration">
@@ -16,7 +17,6 @@
         </testsuite>
     </testsuites>
 
-    <!-- Tell PHPUnit which source files to measure (not vendor/) -->
     <source>
         <include>
             <directory>services</directory>
