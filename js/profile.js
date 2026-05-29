@@ -1,4 +1,4 @@
-/* js/profile.js */
+ js/profile.js — extracted from pages/profile.php */
 
 const API  = '../api/user/profile.php';
 
