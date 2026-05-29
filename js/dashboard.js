@@ -50,31 +50,29 @@ async function loadDashboard() {
       return `
         <div class="road-row">
           <div class="road-name-col">
-            <strong>${escHtml(road.road_name)}</strong>
-            <span>${road.road_public_id}</span>
+            <div>
+              <strong>${escHtml(road.road_name)}</strong>
+              <span>${road.road_public_id}</span>
+            </div>
+            <span class="sess-badge ${sessClass}">${sessLabel}</span>
+          </div>
+          <div class="road-meta">
+            ${road.last_activity ? `<span>${formatDate(road.last_activity)}</span>` : '<span>No activity</span>'}
+            ${road.total_length ? `<div class="dot"></div><span>${road.total_length} m</span>` : ''}
           </div>
           <div class="prog-wrap">
-            <div class="prog-track">
-              <div class="prog-fill" data-w="${pct}%"></div>
+            <div class="prog-row">
+              <div class="prog-bar prog-track">
+                <div class="prog-fill" data-w="${pct}%"></div>
+              </div>
+              <span class="prog-lbl">${done}/${total} segments</span>
             </div>
-            <div class="prog-lbl">${done}/${total} segments</div>
           </div>
-          <div>
-            <span class="sess-badge ${sessClass}">${sessLabel}</span>
-            ${road.last_activity
-              ? `<div style="font-size:.68rem;color:var(--grl);margin-top:3px">${formatDate(road.last_activity)}</div>`
-              : ''}
-          </div>
-          <div style="font-size:.8rem;color:var(--gray)">
-            ${road.total_length ? road.total_length + ' m' : '—'}
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <a class="action-btn btn-audit" href="segment.php?road_id=${road.road_id}">
-              ✏️ Audit
-            </a>
+          <div class="road-actions">
+            <a class="action-btn btn-audit" href="segment.php?road_id=${road.road_id}">✏️ Audit</a>
             ${road.session_id
               ? `<a class="action-btn btn-report" href="report.php?session_id=${road.session_id}">📄 Report</a>`
-              : ''}
+              : '<a class="action-btn btn-report" style="opacity:.4;pointer-events:none">📄 Report</a>'}
             <button class="action-btn btn-delete" onclick="promptDelete(${road.road_id}, '${escHtml(road.road_name)}')">🗑</button>
           </div>
         </div>`;
