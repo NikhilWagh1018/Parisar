@@ -878,19 +878,175 @@ input::placeholder { color: var(--gray-light); }
   justify-content: center;
 }
 
-/* ── Responsive ─────────────────────────────────────────────── */
+/* ── Responsive (Mobile — Myntra/Blinkit style) ──────────────── */
 @media (max-width: 640px) {
-  header { padding: 0 16px; height: 56px; }
-  .step span { display: none; }
-  .container { margin: 16px auto; padding: 0 12px; }
-  .card { padding: 18px 16px; }
-  .form-row { grid-template-columns: 1fr; }
-  .gps-row  { grid-template-columns: 1fr; }
-  .method-grid { grid-template-columns: 1fr; }
-  .segment-item-fields { grid-template-columns: 1fr 1fr; }
-  .road-header { flex-direction: column; }
-  .modal-actions { flex-direction: column; }
-  .btn-row { flex-wrap: wrap; }
+
+  /* ── Header: sticky with step indicator ── */
+  header {
+    padding: 0 12px; height: 52px;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-logo { gap: 6px; }
+  .logo-dot { width: 26px; height: 26px; font-size: .75rem; }
+
+  /* Step indicator — compact pills (Blinkit-style progress) */
+  .step-indicator { gap: 4px; }
+  .step-num { width: 22px; height: 22px; font-size: .7rem; }
+  .step span { font-size: .65rem; display: none; }
+  .step-sep { font-size: .75rem; opacity: .35; }
+  .step.active .step-num {
+    background: var(--green); color: #fff;
+    box-shadow: 0 0 0 3px rgba(74,140,42,.2);
+  }
+
+  /* ── Container ── */
+  .container { margin: 12px auto; padding: 0 12px; max-width: 100%; }
+
+  /* ── Cards — clean white with green border accent ── */
+  .card {
+    padding: 14px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 6px rgba(0,0,0,.05);
+    margin-bottom: 10px;
+  }
+  .card-title { margin-bottom: 12px; gap: 8px; }
+  .card-title .icon { width: 28px; height: 28px; border-radius: 7px; }
+  .card-title .title { font-size: .88rem; }
+  .card-title .subtitle { font-size: .69rem; }
+
+  /* ── Forms: full width, Myntra input style ── */
+  .form-group { margin-bottom: 14px; }
+  .form-group label {
+    font-size: .75rem; font-weight: 600;
+    margin-bottom: 5px; display: block;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: .88rem; padding: 11px 12px;
+    border-radius: 9px;
+    border: 1.5px solid var(--border);
+    width: 100%;
+    background: #fff;
+    -webkit-appearance: none;
+  }
+  .form-group input:focus,
+  .form-group select:focus {
+    border-color: var(--green); outline: none;
+    box-shadow: 0 0 0 3px rgba(74,140,42,.1);
+  }
+
+  .form-row { grid-template-columns: 1fr; gap: 0; }
+  .gps-row  { grid-template-columns: 1fr; gap: 0; }
+
+  /* GPS icon button */
+  .gps-input-wrap { position: relative; }
+  .gps-icon {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    width: 30px; height: 30px; border-radius: 7px;
+    background: var(--green-pale); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem;
+  }
+
+  /* ── Segment method selector — Blinkit category chips ── */
+  .method-grid { grid-template-columns: 1fr; gap: 8px; }
+  .method-option {
+    padding: 12px 14px; border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    cursor: pointer;
+  }
+  .method-option.selected {
+    border-color: var(--green);
+    background: var(--green-pale);
+  }
+  .method-label { font-size: .85rem; font-weight: 600; gap: 8px; }
+  .method-desc  { font-size: .72rem; margin-top: 2px; color: var(--gray); }
+
+  /* ── Preview box — compact meta chip row ── */
+  .preview-box {
+    border-radius: 10px; padding: 10px 12px;
+    background: var(--green-pale);
+    border: 1px solid #c8e8a8;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .preview-row { font-size: .78rem; }
+  .preview-row strong { font-size: .85rem; }
+
+  /* ── Button rows — Myntra full-width CTA ── */
+  .btn-row {
+    flex-wrap: wrap; gap: 8px;
+  }
+  .btn-row .btn { flex: 1; min-width: 120px; text-align: center; }
+  .btn {
+    padding: 11px 16px; font-size: .84rem; border-radius: 9px;
+    font-weight: 700;
+  }
+  .btn-primary {
+    background: var(--green); color: #fff;
+    border: none; width: 100%;
+  }
+  .btn-primary:active { background: var(--green-dark); }
+  .btn-outline {
+    border: 1.5px solid var(--border);
+    background: transparent; color: var(--ink-soft);
+  }
+  .btn-outline:active { background: var(--green-pale); }
+
+  /* ── Road header ── */
+  .road-header {
+    flex-direction: column; align-items: flex-start;
+    gap: 8px; margin-bottom: 12px;
+  }
+  .road-header h2 { font-size: .95rem; }
+  .road-header .pill { font-size: .68rem; padding: 3px 9px; }
+
+  /* ── Segment list cards — Zomato row style ── */
+  .seg-list-card {
+    grid-template-columns: 36px 1fr;
+    grid-template-rows: auto auto;
+    gap: 6px 10px;
+    padding: 10px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    margin-bottom: 7px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  }
+  .seg-num {
+    width: 36px; height: 36px;
+    border-radius: 9px; font-size: .8rem;
+  }
+  .seg-list-name { font-size: .84rem; }
+  .seg-list-meta { font-size: .7rem; }
+  .status-col { grid-column: 2; align-items: flex-start; flex-direction: row; gap: 6px; }
+  .seg-actions {
+    grid-column: 1 / -1; flex-direction: row;
+    justify-content: flex-end; gap: 6px;
+  }
+  .seg-actions .btn {
+    min-width: auto; flex: 1;
+    padding: 8px 10px; font-size: .76rem;
+    border-radius: 8px; text-align: center;
+  }
+  .status-chip { font-size: .65rem; padding: 3px 8px; }
+
+  /* ── Divider ── */
+  .divider { margin: 16px 0; }
+
+  /* ── Modals ── */
+  .modal-actions { flex-direction: column; gap: 8px; }
+  .modal-actions .btn { width: 100%; }
+  .modal-box { padding: 20px 16px; border-radius: 16px; }
+
+  /* ── Toast ── */
+  .toast {
+    bottom: 16px; right: 12px; left: 12px;
+    max-width: 100%; text-align: center;
+    border-radius: 10px;
+  }
 }
 /* ══════════════════════════════════════════════════════════════
    Segment List Cards  (displaySegments in segment.js)
@@ -1054,10 +1210,10 @@ input::placeholder { color: var(--gray-light); }
   text-align: center;
 }
 
-/* Responsive: stack on narrow screens */
+/* Segment list cards narrow — handled in 640px block above */
 @media (max-width: 680px) {
   .seg-list-card {
-    grid-template-columns: 40px 1fr;
+    grid-template-columns: 36px 1fr;
     grid-template-rows: auto auto;
   }
   .status-col  { grid-column: 2; align-items: flex-start; }

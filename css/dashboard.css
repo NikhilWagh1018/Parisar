@@ -260,11 +260,12 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 .sb-overlay   { display: none; }
 
 @media (max-width: 768px) {
+    /* ── Sidebar slide-in ── */
     aside {
         transform: translateX(-100%);
         transition: transform 0.25s ease;
         z-index: 1000;
-        box-shadow: 4px 0 16px rgba(0,0,0,0.25);
+        box-shadow: 4px 0 24px rgba(0,0,0,0.28);
     }
     aside.open { transform: translateX(0); }
     .sb-overlay {
@@ -273,139 +274,220 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
     }
     .sb-overlay.show { display: block; }
 
-    /* Topbar */
+    /* ── Topbar ── */
     main { margin-left: 0 !important; }
     .topbar {
-        padding: 0 12px; gap: 8px; height: 56px;
+        padding: 0 12px; gap: 10px; height: 56px;
         position: sticky; top: 0; z-index: 50;
+        background: #fff;
+        border-bottom: 1px solid var(--bd);
         display: flex; align-items: center; justify-content: flex-start;
     }
     .sb-hamburger {
         display: flex; align-items: center; justify-content: center;
-        width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0;
+        width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
         background: var(--gd); color: #fff;
-        border: none; cursor: pointer; font-size: 20px;
+        border: none; cursor: pointer; font-size: 18px;
     }
     .topbar-left { flex: 1; min-width: 0; margin-right: auto; }
-    .topbar-left h1 { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .topbar-left p  { font-size: .68rem; }
-    .btn-new { padding: 8px 12px; font-size: .78rem; white-space: nowrap; flex-shrink: 0; }
+    .topbar-left h1 {
+        font-size: .92rem; font-weight: 700;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .topbar-left p { font-size: .67rem; color: var(--grl); }
+    .btn-new {
+        padding: 8px 11px; font-size: .75rem; font-weight: 700;
+        white-space: nowrap; flex-shrink: 0; border-radius: 8px;
+    }
     .btn-new svg { display: none; }
 
-    /* Content */
-    .content { padding: 12px; }
+    /* ── Content area ── */
+    .content { padding: 12px 12px 80px; }
 
-    /* Stat cards - 2x2 compact */
+    /* ── Stat cards — Blinkit-style 2×2 compact ── */
     .stat-grid {
         grid-template-columns: 1fr 1fr;
-        gap: 8px; margin-bottom: 12px;
+        gap: 8px; margin-bottom: 14px;
     }
-    .stat-card { padding: 12px; gap: 8px; border-radius: 10px; }
+    .stat-card {
+        padding: 12px 10px; gap: 8px;
+        border-radius: 12px;
+        border: 1px solid var(--bd);
+        box-shadow: 0 1px 4px rgba(61,122,31,.06);
+    }
     .stat-icon { width: 34px; height: 34px; font-size: 1rem; border-radius: 8px; }
-    .stat-val  { font-size: 1.4rem; }
-    .stat-lbl  { font-size: .65rem; }
+    .stat-val  { font-size: 1.35rem; font-weight: 800; }
+    .stat-lbl  { font-size: .63rem; }
 
-    /* Road cards - Swiggy-style */
-    .card { padding: 14px; border-radius: 12px; margin-bottom: 12px; }
-    .card-head { margin-bottom: 10px; }
-    .card-head h3 { font-size: .85rem; }
-
-    .road-row {
-        background: #fff;
-        border: 0.5px solid rgba(0,0,0,.08);
-        border-radius: 10px;
-        padding: 12px;
+    /* ── Section card wrapper ── */
+    .card {
+        padding: 14px 12px; border-radius: 14px;
         margin-bottom: 10px;
+        border: 1px solid var(--bd);
+        box-shadow: 0 1px 6px rgba(61,122,31,.05);
+    }
+    .card-head { margin-bottom: 10px; }
+    .card-head h3 { font-size: .83rem; font-weight: 700; }
+    .card-head a  { font-size: .72rem; }
+
+    /* ── Road card — Zomato/Swiggy restaurant-card style ── */
+    .road-row {
         display: flex !important;
         flex-direction: column;
         gap: 0;
-        border-bottom: none !important;
         grid-template-columns: unset;
+        background: #fff;
+        border: 1px solid rgba(61,122,31,.13);
+        border-bottom: none !important;
+        border-radius: 12px;
+        padding: 12px 12px 10px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 5px rgba(0,0,0,.05);
+        transition: box-shadow .18s ease;
     }
     .road-row:last-child { margin-bottom: 0; }
+    .road-row:active { box-shadow: 0 2px 10px rgba(61,122,31,.12); }
 
+    /* Name row: road name left, badge right */
     .road-name-col {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }
-    .road-name-col strong { font-size: .9rem; line-height: 1.2; }
-    .road-name-col span   { font-size: .68rem; margin-top: 2px; display: block; }
+    .road-name-col strong {
+        font-size: .88rem; font-weight: 700;
+        line-height: 1.25; color: var(--ink);
+        flex: 1; min-width: 0;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .road-name-col span {
+        font-size: .67rem; color: var(--grl);
+        margin-top: 2px; display: block;
+    }
 
+    /* Status badge — top-right, like Zomato's "Open" tag */
     .sess-badge {
-        font-size: .68rem; padding: 3px 9px; border-radius: 20px;
-        white-space: nowrap; flex-shrink: 0; margin-left: 8px; margin-top: 1px;
+        font-size: .65rem; font-weight: 700;
+        padding: 3px 8px; border-radius: 20px;
+        white-space: nowrap; flex-shrink: 0;
+        margin-left: 8px; margin-top: 1px;
     }
 
+    /* Meta row — one line with dot separators */
     .road-meta {
-        display: flex; align-items: center; gap: 6px;
-        flex-wrap: wrap; margin-bottom: 8px;
+        display: flex; align-items: center; gap: 5px;
+        flex-wrap: wrap; margin-bottom: 9px;
     }
-    .road-meta span { font-size: .7rem; color: var(--grl); }
+    .road-meta span { font-size: .69rem; color: var(--grl); }
     .road-meta .dot {
-        width: 3px; height: 3px; background: #ccc;
-        border-radius: 50%; flex-shrink: 0;
+        width: 3px; height: 3px; background: var(--grl);
+        border-radius: 50%; flex-shrink: 0; opacity: .5;
     }
 
-    /* Progress bar - single clean block */
-    .prog-wrap { margin-bottom: 10px; }
+    /* ── PROGRESS BAR FIX (nuclear, absolute positioning) ── */
+    .prog-wrap { margin-bottom: 9px; }
     .prog-row  { display: flex; align-items: center; gap: 8px; }
-    .prog-track,
-    .prog-bar  { flex: 1; min-width: 0; height: 5px !important;
-                 background: #e8f0da !important; border-radius: 99px !important;
-                 overflow: hidden !important; display: block !important; }
-    .prog-fill { height: 5px !important; background: var(--gl) !important;
-                 border-radius: 99px; display: block !important; min-width: 0; }
-    .prog-lbl  { font-size: .68rem; color: var(--grl);
-                 white-space: nowrap; flex-shrink: 0; }
 
-    /* Action buttons */
+    /* Track: explicit block with height — no flex ambiguity */
+    .prog-bar.prog-track {
+        flex: 1;
+        min-width: 0;
+        display: block !important;
+        width: 100%;
+        height: 6px !important;
+        background: #e8f0da !important;
+        border-radius: 99px !important;
+        overflow: hidden !important;
+        position: relative !important;
+    }
+
+    /* Fill: absolute so height:100% resolves against explicit 6px parent */
+    .prog-fill {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        height: 6px !important;
+        background: var(--gl) !important;
+        border-radius: 99px !important;
+        display: block !important;
+        min-width: 2px;
+        transition: width .6s ease;
+    }
+
+    .prog-lbl {
+        font-size: .67rem; color: var(--grl);
+        white-space: nowrap; flex-shrink: 0;
+    }
+
+    /* ── Action buttons — Myntra full-width CTAs ── */
     .road-actions { display: flex; gap: 6px; align-items: center; }
+
+    /* Audit + Report: equal-width flex pills */
     .action-btn {
-        font-size: .75rem; font-weight: 600;
-        padding: 7px 10px; border-radius: 8px;
-        display: inline-flex; align-items: center;
-        justify-content: center; gap: 4px;
+        font-size: .74rem; font-weight: 700;
+        padding: 8px 10px; border-radius: 8px;
+        display: flex !important;
+        align-items: center; justify-content: center; gap: 4px;
+        border: 1.5px solid;
     }
-    .btn-audit  { flex: 1; }
-    .btn-report { flex: 1; }
+    .btn-audit  { flex: 1; color: var(--g); border-color: var(--g); background: transparent; }
+    .btn-audit:active  { background: var(--gp); }
+    .btn-report { flex: 1; color: #6d28d9; border-color: #c4b5fd; background: transparent; }
+    .btn-report:active { background: #ede9fe; }
+
+    /* Delete: compact square icon button */
     .btn-delete {
-        width: 34px; height: 34px; min-width: 34px; padding: 0; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-        border-radius: 8px; font-size: .82rem;
+        width: 36px; height: 36px; min-width: 36px; padding: 0;
+        flex-shrink: 0; display: flex;
+        align-items: center; justify-content: center;
+        border-radius: 8px; font-size: .85rem;
+        color: #dc2626; border-color: #fca5a5;
     }
+    .btn-delete:active { background: #fee2e2; }
+
+    /* ── Toast: bottom-left on mobile ── */
+    .toast-wrap { bottom: 16px; right: 16px; left: 16px; }
+    .toast { max-width: 100%; text-align: center; }
 }
 
+/* ── Desktop restore — mobile overrides must not bleed up ── */
 @media (min-width: 769px) {
-    /* Restore desktop road-row grid — mobile styles must not bleed up */
+    .sb-hamburger { display: none !important; }
     .road-row {
-        display: grid;
+        display: grid !important;
         grid-template-columns: 1fr 120px 160px 120px auto;
         align-items: center;
         gap: 12px;
         padding: 14px 0;
-        border-bottom: 1px solid #f0f4e8;
-        background: none;
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
-        border-top: none;
-        margin-bottom: 0;
+        border-bottom: 1px solid #f0f4e8 !important;
+        background: none !important;
+        border-radius: 0 !important;
+        border-left: none !important; border-right: none !important;
+        border-top: none !important;
+        margin-bottom: 0 !important;
+        box-shadow: none !important;
     }
-    .road-row:last-child { border-bottom: none; }
-    .road-name-col { display: block; margin-bottom: 0; }
-    .road-name-col span { display: inline; font-size: .72rem; }
-    .road-meta { display: none; }
-    .prog-row { display: block; }
-    .prog-track { height: 6px; }
-    .prog-lbl { font-size: .7rem; margin-top: 4px; }
-    .road-actions { display: flex; gap: 6px; }
-    .btn-audit, .btn-report { flex: none; padding: 6px 12px; font-size: .75rem; }
-    .btn-delete { width: auto; height: auto; padding: 6px 12px; font-size: .75rem; }
-    .sess-badge { font-size: .7rem; padding: 3px 10px; margin-left: 0; margin-top: 0; }
-}
-
-@media (min-width: 769px) {
-    .sb-hamburger { display: none !important; }
+    .road-row:last-child { border-bottom: none !important; }
+    .road-name-col { display: block !important; margin-bottom: 0 !important; }
+    .road-name-col strong { white-space: normal; overflow: visible; text-overflow: clip; }
+    .road-name-col span { display: inline !important; font-size: .72rem !important; }
+    .road-meta { display: none !important; }
+    .prog-row { display: block !important; }
+    .prog-bar.prog-track {
+        display: block !important; position: relative !important;
+        height: 6px !important; background: #e8f0da !important;
+        overflow: hidden !important; border-radius: 99px !important;
+    }
+    .prog-fill {
+        position: absolute !important; top: 0 !important; left: 0 !important;
+        height: 6px !important; background: var(--gl) !important;
+        border-radius: 99px !important;
+    }
+    .prog-lbl { font-size: .7rem; margin-top: 4px; display: block !important; }
+    .road-actions { display: flex !important; gap: 6px !important; }
+    .action-btn { display: inline-flex !important; }
+    .btn-audit, .btn-report { flex: none !important; padding: 6px 12px !important; font-size: .75rem !important; }
+    .btn-delete { width: auto !important; height: auto !important; padding: 6px 12px !important; font-size: .75rem !important; }
+    .sess-badge { font-size: .7rem !important; padding: 3px 10px !important; margin-left: 0 !important; margin-top: 0 !important; }
 }

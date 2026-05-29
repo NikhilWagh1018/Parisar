@@ -301,3 +301,161 @@ body {
   .dim-breakdown-grid   { grid-template-columns:1fr 1fr 1fr; }
   .seg-card, .dim-breakdown-card { break-inside:avoid; }
 }
+/* ═══════════════════════════════════════════════════════════════
+   Mobile — report.css  (Zomato/Swiggy card patterns)
+   All mobile-only: desktop is untouched above.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  body { padding: 0 0 40px; font-size: 13px; }
+
+  /* ── Toolbar: sticky action strip ── */
+  .toolbar {
+    padding: 10px 12px; flex-wrap: wrap; gap: 6px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .toolbar-title {
+    font-size: .78rem; font-weight: 700;
+    width: 100%; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .toolbar-btns { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
+  .tbtn {
+    padding: 7px 10px; font-size: .7rem; border-radius: 7px;
+    flex: 1; justify-content: center; text-align: center;
+  }
+  /* Hide "Back to Segments" on mobile — save space */
+  .tbtn-segments { display: none; }
+
+  /* ── Report wrapper ── */
+  .report {
+    margin: 8px 10px 20px;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+  }
+
+  /* ── Report header — compact dark card ── */
+  .rpt-header { padding: 20px 16px 18px; }
+  .rpt-header-top { flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .rpt-logo { display: none; } /* hide logo on small screens */
+  .rpt-org   { font-size: .6rem; margin-bottom: 4px; }
+  .rpt-title { font-size: 1.2rem; margin-bottom: 2px; }
+  .rpt-sub   { font-size: .75rem; margin-bottom: 12px; }
+
+  /* Meta: 2-column chip grid */
+  .rpt-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+  }
+  .rpt-meta-item .k { font-size: .57rem; }
+  .rpt-meta-item .v { font-size: .76rem; }
+
+  /* ── Score hero ── */
+  .score-hero {
+    padding: 18px 14px;
+    flex-direction: column;
+    gap: 16px; align-items: center;
+  }
+  .score-badge { width: 84px; height: 84px; }
+  .score-badge .num { font-size: 1.7rem; }
+  .score-rating { font-size: .85rem; }
+
+  /* Dimension cards: horizontal scroll row */
+  .dim-scores {
+    display: flex; flex-direction: row;
+    gap: 8px; width: 100%;
+    overflow-x: auto; padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .dim-card {
+    min-width: 90px; flex: 0 0 90px;
+    padding: 10px 8px;
+    border-radius: 10px;
+  }
+  .dim-val { font-size: 1.2rem; }
+  .dim-lbl { font-size: .58rem; }
+  .dim-icon { font-size: .95rem; }
+
+  /* ── Report body ── */
+  .rpt-body { padding: 16px 12px; }
+
+  .section-h { font-size: .62rem; margin: 22px 0 10px; }
+
+  /* ── Summary box ── */
+  .summary-box { font-size: .82rem; padding: 13px 14px; line-height: 1.65; }
+
+  /* ── Segments table → stacked cards ── */
+  .segs-table,
+  .segs-table thead,
+  .segs-table tbody,
+  .segs-table tr,
+  .segs-table th,
+  .segs-table td { display: block; }
+
+  .segs-table thead { display: none; } /* hide header row */
+
+  .segs-table tbody tr {
+    background: #fff;
+    border: 1px solid #e8f0da;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    position: relative;
+  }
+  .segs-table tbody tr:last-child { margin-bottom: 0; }
+
+  /* Fake labels via data-label (set via JS or rely on order) */
+  .segs-table td {
+    padding: 3px 0;
+    border-bottom: none;
+    font-size: .78rem;
+  }
+  .segs-table td:first-child {
+    font-weight: 700; font-size: .84rem; margin-bottom: 2px;
+  }
+  .segs-route { display: block; font-size: .7rem; color: #8a9580; }
+
+  .score-pill { font-size: .72rem; padding: 3px 10px; }
+  .pill-pending { font-size: .7rem; }
+
+  /* ── Dimension breakdown ── */
+  .dim-breakdown-grid {
+    grid-template-columns: 1fr;
+    gap: 8px; margin-top: 6px;
+  }
+  .dim-breakdown-card { padding: 12px 14px; border-radius: 10px; }
+  .dim-big-score { font-size: 1.5rem; }
+  .dim-factors { font-size: .7rem; }
+
+  /* ── Segment detail cards: single column ── */
+  .seg-cards { grid-template-columns: 1fr; gap: 10px; }
+  .seg-card { border-radius: 10px; }
+  .seg-card-header { padding: 10px 12px; }
+  .seg-card-title { font-size: .8rem; }
+  .seg-card-score .val { font-size: 1.15rem; }
+  .seg-card-dims { grid-template-columns: 1fr 1fr 1fr; }
+  .seg-dim-val  { font-size: .88rem; }
+  .seg-card-details { padding: 10px 12px; }
+  .detail-row { font-size: .74rem; }
+
+  /* ── Observations ── */
+  .obs-list li { font-size: .8rem; padding: 8px 10px; }
+
+  /* ── Critical box ── */
+  .critical-box { padding: 12px 14px; }
+  .critical-item { font-size: .8rem; }
+
+  /* ── Recommendations ── */
+  .rec-list li { font-size: .8rem; padding: 8px 12px; }
+
+  /* ── Footer ── */
+  .rpt-footer {
+    padding: 14px 12px;
+    flex-direction: column; gap: 6px; text-align: center;
+  }
+  .footer-left  { flex-direction: column; gap: 6px; }
+  .footer-left img { height: 22px; }
+  .footer-right { text-align: center; }
+}

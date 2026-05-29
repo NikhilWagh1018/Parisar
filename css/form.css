@@ -456,3 +456,127 @@
     box-sizing:border-box !important;
 }
 .btn-reset:hover { background:#b91c1c !important; }
+
+/* ═══════════════════════════════════════════════════════════════
+   Mobile — form.css  (Blinkit/Myntra audit form patterns)
+   All mobile-only: desktop styles above are untouched.
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  body { padding: 0 0 30px; font-size: 14px; }
+
+  /* ── Container ── */
+  .container {
+    margin: 10px auto;
+    border-radius: 14px;
+    padding: 16px 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  }
+
+  /* ── Heading ── */
+  h2 { font-size: 1.25rem; margin-bottom: 12px; }
+  h3 { font-size: 1rem; }
+
+  /* ── Inputs: full-width, taller tap targets ── */
+  input[type="text"],
+  input[type="number"],
+  textarea,
+  select {
+    padding: 11px 12px;
+    font-size: .88rem;
+    border-radius: 9px;
+    border: 1.5px solid #d6e4c8;
+    -webkit-appearance: none;
+    margin-top: 5px;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: #86B93B;
+    box-shadow: 0 0 0 3px rgba(134,185,59,.15);
+  }
+  label { font-size: .78rem; margin-top: 12px; }
+
+  /* ── Submit + Reset buttons — Myntra full-width CTA ── */
+  .btn,
+  .btn-reset {
+    padding: 13px 20px !important;
+    font-size: .9rem !important;
+    border-radius: 10px !important;
+    margin-top: 16px !important;
+    font-weight: 700 !important;
+  }
+  .btn { background: #86B93B; }
+  .btn:active { background: #6eaf30; }
+  .btn-reset { background: #dc2626 !important; }
+  .btn-reset:active { background: #b91c1c !important; }
+
+  /* ── Section nav chips — Blinkit category scroll ── */
+  .section-nav {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 0 8px;
+    margin: 0 -12px; padding-left: 12px;
+    scrollbar-width: none;
+  }
+  .section-nav::-webkit-scrollbar { display: none; }
+  .section-nav a {
+    white-space: nowrap; flex-shrink: 0;
+    padding: 6px 12px; font-size: .73rem;
+    border-radius: 20px;
+    border: 1.5px solid #c8e8a8;
+    background: #fff; color: #3d5a28;
+    font-weight: 600; text-decoration: none;
+  }
+  .section-nav a:active { background: #86B93B; color: #fff; }
+
+  /* ── Counter controls: tap-friendly ── */
+  .counter-row { gap: 10px; }
+  .counter-row .counter-label { font-size: .75rem; }
+  .counter-ctrl button { width: 34px; height: 34px; font-size: 18px; border-radius: 7px; }
+  .counter-ctrl input[type="text"] { width: 44px; height: 34px; font-size: .88rem; }
+
+  /* ── Intersection cards ── */
+  .intersection-card { border-radius: 10px; margin-bottom: 8px; }
+  .int-header { padding: 11px 12px; }
+  .int-badge  { font-size: .7rem; padding: 3px 8px; }
+  .int-title  { font-size: .84rem; }
+  .int-subtitle { font-size: .7rem; }
+  .int-body   { padding: 12px 12px 14px; }
+
+  /* GPS row + fields: single column */
+  .int-gps-row  { grid-template-columns: 1fr; gap: 10px; }
+  .int-fields   { grid-template-columns: 1fr; gap: 10px 0; }
+  .int-field label { font-size: .75rem; }
+
+  /* ── GPS input row ── */
+  .gps-input-row { gap: 5px; }
+  .gps-btn {
+    height: 40px; padding: 0 12px;
+    font-size: .78rem; border-radius: 8px;
+    border: 1.5px solid #d6e4c8;
+  }
+  .gps-btn:active { background: #e8f5d0; border-color: #86B93B; }
+
+  /* ── Add intersection button ── */
+  .btn-add-intersection {
+    padding: 9px 16px; font-size: .8rem;
+    border-radius: 9px; margin-top: 8px;
+    width: 100%; justify-content: center;
+  }
+
+  /* ── Remove button ── */
+  .btn-remove-int { font-size: .72rem; padding: 4px 10px; border-radius: 7px; }
+
+  /* ── Missing length box ── */
+  #missingLengthBox { font-size: .8rem; padding: 10px 12px; border-radius: 8px; }
+
+  /* ── Scroll-to-top button ── */
+  #scrollTopBtn {
+    bottom: 16px; right: 16px;
+    width: 40px; height: 40px; line-height: 40px;
+    font-size: 1rem; border-radius: 50%;
+  }
+
+  /* ── Options (radio/checkbox) ── */
+  .options label { font-size: .82rem; padding: 4px 0; }
+}
