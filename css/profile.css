@@ -1,4 +1,4 @@
- css/profile.css — extracted from pages/profile.php */
+* css/profile.css — extracted from pages/profile.php */
 
 :root {
   --g:#3d7a1f; --gm:#5a9e2f; --gl:#86B93B; --gp:#edf7d6; --gd:#1e3d0d;
@@ -145,13 +145,11 @@ main { margin-left:var(--sw); flex:1; display:flex; flex-direction:column; min-h
 
     /* ── Sidebar slide-in ── */
     aside {
-        position: fixed !important;
         transform: translateX(-100%);
         transition: transform 0.25s ease;
         z-index: 1000;
         box-shadow: 4px 0 24px rgba(0,0,0,0.28);
     }
-    main { margin-left: 0 !important; }
     aside.open { transform: translateX(0); }
     .sb-overlay {
         display: none;
