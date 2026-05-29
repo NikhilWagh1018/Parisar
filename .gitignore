@@ -18,3 +18,7 @@ Thumbs.db
 *.swp
 *.swo
 vendor/
+*.py
+*.ps1
+*.zip
+Parisar/
