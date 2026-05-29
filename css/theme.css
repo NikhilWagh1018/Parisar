@@ -1,0 +1,125 @@
+/* css/theme.css — Dark / Light theme variables
+   Add <link rel="stylesheet" href="../css/theme.css"> to ALL pages
+   Add class="light" to <body> on every page
+   ─────────────────────────────────────────── */
+
+/* ── Light mode (default) ── */
+body.light, :root {
+  --bg0: #ffffff;
+  --bg1: #f5f5f2;
+  --bg2: #eeede9;
+  --bg3: #e4e3de;
+  --txt1: #1a1a18;
+  --txt2: #555550;
+  --txt3: #8a8a84;
+  --bdr:  rgba(0,0,0,.07);
+  --bdr2: rgba(0,0,0,.12);
+  --tgreen: #2d5c10;
+  --tgreen-bg: #e9f5df;
+  --tgreen-txt: #1a4a09;
+  --tgreen-light: #c0dd97;
+  --tamber: #92600a;
+  --tamber-bg: #fef3cd;
+  --tblue: #1a44a8;
+  --tblue-bg: #eef2fb;
+  --tblue-bdr: #c2d0f5;
+  --tblue-txt: #0c3480;
+  --tdanger-bg: #fce8e8;
+  --tdanger-txt: #8b1a1a;
+  --tscore: #b87010;
+  --tseg-bg: #f0efe9;
+  --tcard-left: #3a6b1a;
+  --tradio-bg: #e9f5df;
+  --tinput-bg: #ffffff;
+  --tinput-bdr: rgba(0,0,0,.12);
+  --twarn-bg: #fff8e7;
+  --twarn-txt: #8a5c00;
+  --twarn-bdr: #f0c040;
+  --tsuccess-bg: #e9f5df;
+  --tsuccess-txt: #1a4a09;
+  --tsuccess-bdr: #3a6b1a;
+  --ttoggle-bg: #e0dfd9;
+  --ttoggle-knob: #ffffff;
+  --ttoggle-txt: #555550;
+}
+
+/* ── Dark mode ── */
+body.dark {
+  --bg0: #1c1c1a;
+  --bg1: #242422;
+  --bg2: #2c2c28;
+  --bg3: #343430;
+  --txt1: #f0efe8;
+  --txt2: #a8a8a0;
+  --txt3: #666660;
+  --bdr:  rgba(255,255,255,.06);
+  --bdr2: rgba(255,255,255,.11);
+  --tgreen: #5a9e2f;
+  --tgreen-bg: #1e3010;
+  --tgreen-txt: #a0d870;
+  --tgreen-light: #3b6d11;
+  --tamber: #e8a030;
+  --tamber-bg: #3a2800;
+  --tblue: #6090e0;
+  --tblue-bg: #0e1e40;
+  --tblue-bdr: #2a4a8a;
+  --tblue-txt: #90b8f8;
+  --tdanger-bg: #3a1010;
+  --tdanger-txt: #f09090;
+  --tscore: #e8a030;
+  --tseg-bg: #282826;
+  --tcard-left: #5a9e2f;
+  --tradio-bg: #1e3010;
+  --tinput-bg: #242422;
+  --tinput-bdr: rgba(255,255,255,.11);
+  --twarn-bg: #3a2800;
+  --twarn-txt: #e8a030;
+  --twarn-bdr: #e8a030;
+  --tsuccess-bg: #1e3010;
+  --tsuccess-txt: #a0d870;
+  --tsuccess-bdr: #5a9e2f;
+  --ttoggle-bg: #1e3010;
+  --ttoggle-knob: #a0d870;
+  --ttoggle-txt: #a0d870;
+}
+
+/* ── Dark mode body/bg overrides ── */
+body.dark {
+  background: var(--bg1);
+  color: var(--txt1);
+}
+body.dark .card,
+body.dark .stat-card,
+body.dark .modal-box,
+body.dark aside,
+body.dark .topbar,
+body.dark .sb-popup {
+  background: var(--bg0);
+  border-color: var(--bdr);
+  color: var(--txt1);
+}
+body.dark .topbar { border-bottom-color: var(--bdr); }
+body.dark .road-row { background: var(--bg0) !important; border-color: var(--bdr) !important; }
+body.dark .prog-track,
+body.dark .prog-bar.prog-track { background: var(--bg3) !important; }
+body.dark .skeleton {
+  background: linear-gradient(90deg, var(--bg2) 25%, var(--bg3) 50%, var(--bg2) 75%);
+  background-size: 200% 100%;
+}
+body.dark .nav-item { color: rgba(255,255,255,.55); }
+body.dark .nav-item:hover, body.dark .nav-item.active { background: rgba(255,255,255,.08); color: #fff; }
+body.dark .popup-item { color: var(--txt1); }
+body.dark .popup-item:hover { background: var(--tgreen-bg); color: var(--tgreen-txt); }
+body.dark .modal-overlay { background: rgba(0,0,0,.6); }
+
+/* ── Theme toggle button ── */
+.theme-toggle {
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 8px;
+  background: var(--ttoggle-bg); color: var(--ttoggle-txt);
+  border: 1px solid var(--bdr2);
+  cursor: pointer; font-size: 16px;
+  transition: background .2s ease, color .2s ease;
+  flex-shrink: 0;
+}
+.theme-toggle:hover { opacity: .85; }

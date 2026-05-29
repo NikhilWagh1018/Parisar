@@ -1,4 +1,4 @@
-/* js/dashboard.js — extracted from pages/dashboard.php */
+﻿/* js/dashboard.js — extracted from pages/dashboard.php */
 
 
 // ── Load dashboard data ───────────────────────────────────────
@@ -50,7 +50,7 @@ async function loadDashboard() {
       return `
         <div class="road-row">
           <div class="road-name-col">
-            <div>
+            <div class="road-name-info">
               <strong>${escHtml(road.road_name)}</strong>
               <span>${road.road_public_id}</span>
             </div>
@@ -59,13 +59,14 @@ async function loadDashboard() {
           <div class="road-meta">
             ${road.last_activity ? `<span>${formatDate(road.last_activity)}</span>` : '<span>No activity</span>'}
             ${road.total_length ? `<div class="dot"></div><span>${road.total_length} m</span>` : ''}
+            <div class="dot"></div>
+            <span>${done}/${total} segs</span>
           </div>
           <div class="prog-wrap">
             <div class="prog-row">
               <div class="prog-bar prog-track">
                 <div class="prog-fill" data-w="${pct}%"></div>
               </div>
-              <span class="prog-lbl">${done}/${total} segments</span>
             </div>
           </div>
           <div class="road-actions">
@@ -73,7 +74,7 @@ async function loadDashboard() {
             ${road.session_id
               ? `<a class="action-btn btn-report" href="report.php?session_id=${road.session_id}">📄 Report</a>`
               : '<a class="action-btn btn-report" style="opacity:.4;pointer-events:none">📄 Report</a>'}
-            <button class="action-btn btn-delete" onclick="promptDelete(${road.road_id}, '${escHtml(road.road_name)}')">🗑</button>
+            <button class="action-btn btn-delete" onclick="promptDelete(${road.road_id}, \`${escHtml(road.road_name)}\`)">🗑</button>
           </div>
         </div>`;
     }).join('');
