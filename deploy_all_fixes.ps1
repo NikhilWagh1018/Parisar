@@ -1,0 +1,95 @@
+# deploy_all_fixes.ps1 — Run from C:\xampp\htdocs\Parisar
+# Fixes: theme.css, theme.js, dashboard.js card template, dashboard.css report button
+
+Set-Location C:\xampp\htdocs\Parisar
+
+# ── STEP 1: Create css/theme.css ──────────────────────────────
+$b64 = 'LyogY3NzL3RoZW1lLmNzcyDigJQgRGFyayAvIExpZ2h0IHRoZW1lIHZhcmlhYmxlcwogICBBZGQgPGxpbmsgcmVsPSJzdHlsZXNoZWV0IiBocmVmPSIuLi9jc3MvdGhlbWUuY3NzIj4gdG8gQUxMIHBhZ2VzCiAgIEFkZCBjbGFzcz0ibGlnaHQiIHRvIDxib2R5PiBvbiBldmVyeSBwYWdlCiAgIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgCAqLwoKLyog4pSA4pSAIExpZ2h0IG1vZGUgKGRlZmF1bHQpIOKUgOKUgCAqLwpib2R5LmxpZ2h0LCA6cm9vdCB7CiAgLS1iZzA6ICNmZmZmZmY7CiAgLS1iZzE6ICNmNWY1ZjI7CiAgLS1iZzI6ICNlZWVkZTk7CiAgLS1iZzM6ICNlNGUzZGU7CiAgLS10eHQxOiAjMWExYTE4OwogIC0tdHh0MjogIzU1NTU1MDsKICAtLXR4dDM6ICM4YThhODQ7CiAgLS1iZHI6ICByZ2JhKDAsMCwwLC4wNyk7CiAgLS1iZHIyOiByZ2JhKDAsMCwwLC4xMik7CiAgLS10Z3JlZW46ICMyZDVjMTA7CiAgLS10Z3JlZW4tYmc6ICNlOWY1ZGY7CiAgLS10Z3JlZW4tdHh0OiAjMWE0YTA5OwogIC0tdGdyZWVuLWxpZ2h0OiAjYzBkZDk3OwogIC0tdGFtYmVyOiAjOTI2MDBhOwogIC0tdGFtYmVyLWJnOiAjZmVmM2NkOwogIC0tdGJsdWU6ICMxYTQ0YTg7CiAgLS10Ymx1ZS1iZzogI2VlZjJmYjsKICAtLXRibHVlLWJkcjogI2MyZDBmNTsKICAtLXRibHVlLXR4dDogIzBjMzQ4MDsKICAtLXRkYW5nZXItYmc6ICNmY2U4ZTg7CiAgLS10ZGFuZ2VyLXR4dDogIzhiMWExYTsKICAtLXRzY29yZTogI2I4NzAxMDsKICAtLXRzZWctYmc6ICNmMGVmZTk7CiAgLS10Y2FyZC1sZWZ0OiAjM2E2YjFhOwogIC0tdHJhZGlvLWJnOiAjZTlmNWRmOwogIC0tdGlucHV0LWJnOiAjZmZmZmZmOwogIC0tdGlucHV0LWJkcjogcmdiYSgwLDAsMCwuMTIpOwogIC0tdHdhcm4tYmc6ICNmZmY4ZTc7CiAgLS10d2Fybi10eHQ6ICM4YTVjMDA7CiAgLS10d2Fybi1iZHI6ICNmMGMwNDA7CiAgLS10c3VjY2Vzcy1iZzogI2U5ZjVkZjsKICAtLXRzdWNjZXNzLXR4dDogIzFhNGEwOTsKICAtLXRzdWNjZXNzLWJkcjogIzNhNmIxYTsKICAtLXR0b2dnbGUtYmc6ICNlMGRmZDk7CiAgLS10dG9nZ2xlLWtub2I6ICNmZmZmZmY7CiAgLS10dG9nZ2xlLXR4dDogIzU1NTU1MDsKfQoKLyog4pSA4pSAIERhcmsgbW9kZSDilIDilIAgKi8KYm9keS5kYXJrIHsKICAtLWJnMDogIzFjMWMxYTsKICAtLWJnMTogIzI0MjQyMjsKICAtLWJnMjogIzJjMmMyODsKICAtLWJnMzogIzM0MzQzMDsKICAtLXR4dDE6ICNmMGVmZTg7CiAgLS10eHQyOiAjYThhOGEwOwogIC0tdHh0MzogIzY2NjY2MDsKICAtLWJkcjogIHJnYmEoMjU1LDI1NSwyNTUsLjA2KTsKICAtLWJkcjI6IHJnYmEoMjU1LDI1NSwyNTUsLjExKTsKICAtLXRncmVlbjogIzVhOWUyZjsKICAtLXRncmVlbi1iZzogIzFlMzAxMDsKICAtLXRncmVlbi10eHQ6ICNhMGQ4NzA7CiAgLS10Z3JlZW4tbGlnaHQ6ICMzYjZkMTE7CiAgLS10YW1iZXI6ICNlOGEwMzA7CiAgLS10YW1iZXItYmc6ICMzYTI4MDA7CiAgLS10Ymx1ZTogIzYwOTBlMDsKICAtLXRibHVlLWJnOiAjMGUxZTQwOwogIC0tdGJsdWUtYmRyOiAjMmE0YThhOwogIC0tdGJsdWUtdHh0OiAjOTBiOGY4OwogIC0tdGRhbmdlci1iZzogIzNhMTAxMDsKICAtLXRkYW5nZXItdHh0OiAjZjA5MDkwOwogIC0tdHNjb3JlOiAjZThhMDMwOwogIC0tdHNlZy1iZzogIzI4MjgyNjsKICAtLXRjYXJkLWxlZnQ6ICM1YTllMmY7CiAgLS10cmFkaW8tYmc6ICMxZTMwMTA7CiAgLS10aW5wdXQtYmc6ICMyNDI0MjI7CiAgLS10aW5wdXQtYmRyOiByZ2JhKDI1NSwyNTUsMjU1LC4xMSk7CiAgLS10d2Fybi1iZzogIzNhMjgwMDsKICAtLXR3YXJuLXR4dDogI2U4YTAzMDsKICAtLXR3YXJuLWJkcjogI2U4YTAzMDsKICAtLXRzdWNjZXNzLWJnOiAjMWUzMDEwOwogIC0tdHN1Y2Nlc3MtdHh0OiAjYTBkODcwOwogIC0tdHN1Y2Nlc3MtYmRyOiAjNWE5ZTJmOwogIC0tdHRvZ2dsZS1iZzogIzFlMzAxMDsKICAtLXR0b2dnbGUta25vYjogI2EwZDg3MDsKICAtLXR0b2dnbGUtdHh0OiAjYTBkODcwOwp9CgovKiDilIDilIAgRGFyayBtb2RlIGJvZHkvYmcgb3ZlcnJpZGVzIOKUgOKUgCAqLwpib2R5LmRhcmsgewogIGJhY2tncm91bmQ6IHZhcigtLWJnMSk7CiAgY29sb3I6IHZhcigtLXR4dDEpOwp9CmJvZHkuZGFyayAuY2FyZCwKYm9keS5kYXJrIC5zdGF0LWNhcmQsCmJvZHkuZGFyayAubW9kYWwtYm94LApib2R5LmRhcmsgYXNpZGUsCmJvZHkuZGFyayAudG9wYmFyLApib2R5LmRhcmsgLnNiLXBvcHVwIHsKICBiYWNrZ3JvdW5kOiB2YXIoLS1iZzApOwogIGJvcmRlci1jb2xvcjogdmFyKC0tYmRyKTsKICBjb2xvcjogdmFyKC0tdHh0MSk7Cn0KYm9keS5kYXJrIC50b3BiYXIgeyBib3JkZXItYm90dG9tLWNvbG9yOiB2YXIoLS1iZHIpOyB9CmJvZHkuZGFyayAucm9hZC1yb3cgeyBiYWNrZ3JvdW5kOiB2YXIoLS1iZzApICFpbXBvcnRhbnQ7IGJvcmRlci1jb2xvcjogdmFyKC0tYmRyKSAhaW1wb3J0YW50OyB9CmJvZHkuZGFyayAucHJvZy10cmFjaywKYm9keS5kYXJrIC5wcm9nLWJhci5wcm9nLXRyYWNrIHsgYmFja2dyb3VuZDogdmFyKC0tYmczKSAhaW1wb3J0YW50OyB9CmJvZHkuZGFyayAuc2tlbGV0b24gewogIGJhY2tncm91bmQ6IGxpbmVhci1ncmFkaWVudCg5MGRlZywgdmFyKC0tYmcyKSAyNSUsIHZhcigtLWJnMykgNTAlLCB2YXIoLS1iZzIpIDc1JSk7CiAgYmFja2dyb3VuZC1zaXplOiAyMDAlIDEwMCU7Cn0KYm9keS5kYXJrIC5uYXYtaXRlbSB7IGNvbG9yOiByZ2JhKDI1NSwyNTUsMjU1LC41NSk7IH0KYm9keS5kYXJrIC5uYXYtaXRlbTpob3ZlciwgYm9keS5kYXJrIC5uYXYtaXRlbS5hY3RpdmUgeyBiYWNrZ3JvdW5kOiByZ2JhKDI1NSwyNTUsMjU1LC4wOCk7IGNvbG9yOiAjZmZmOyB9CmJvZHkuZGFyayAucG9wdXAtaXRlbSB7IGNvbG9yOiB2YXIoLS10eHQxKTsgfQpib2R5LmRhcmsgLnBvcHVwLWl0ZW06aG92ZXIgeyBiYWNrZ3JvdW5kOiB2YXIoLS10Z3JlZW4tYmcpOyBjb2xvcjogdmFyKC0tdGdyZWVuLXR4dCk7IH0KYm9keS5kYXJrIC5tb2RhbC1vdmVybGF5IHsgYmFja2dyb3VuZDogcmdiYSgwLDAsMCwuNik7IH0KCi8qIOKUgOKUgCBUaGVtZSB0b2dnbGUgYnV0dG9uIOKUgOKUgCAqLwoudGhlbWUtdG9nZ2xlIHsKICBkaXNwbGF5OiBmbGV4OyBhbGlnbi1pdGVtczogY2VudGVyOyBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjsKICB3aWR0aDogMzRweDsgaGVpZ2h0OiAzNHB4OyBib3JkZXItcmFkaXVzOiA4cHg7CiAgYmFja2dyb3VuZDogdmFyKC0tdHRvZ2dsZS1iZyk7IGNvbG9yOiB2YXIoLS10dG9nZ2xlLXR4dCk7CiAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tYmRyMik7CiAgY3Vyc29yOiBwb2ludGVyOyBmb250LXNpemU6IDE2cHg7CiAgdHJhbnNpdGlvbjogYmFja2dyb3VuZCAuMnMgZWFzZSwgY29sb3IgLjJzIGVhc2U7CiAgZmxleC1zaHJpbms6IDA7Cn0KLnRoZW1lLXRvZ2dsZTpob3ZlciB7IG9wYWNpdHk6IC44NTsgfQo='
+$bytes = [System.Convert]::FromBase64String($b64)
+[System.IO.File]::WriteAllBytes((Join-Path $PSScriptRoot 'css\theme.css'), $bytes)
+Write-Host 'step1: css/theme.css written OK'
+
+# ── STEP 2: Create js/theme.js ───────────────────────────────
+$b64 = 'LyoganMvdGhlbWUuanMg4oCUIERhcmsvTGlnaHQgdGhlbWUgcGVyc2lzdGVuY2UKICAgQWRkIDxzY3JpcHQgc3JjPSIuLi9qcy90aGVtZS5qcyI+PC9zY3JpcHQ+IEJFRk9SRSA8L2JvZHk+IG9uIGFsbCBwYWdlcwogICDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIDilIAgKi8KCihmdW5jdGlvbigpIHsKICAvLyBBcHBseSBzYXZlZCB0aGVtZSBpbW1lZGlhdGVseSAoYmVmb3JlIHBhaW50KQogIHZhciBzYXZlZCA9IGxvY2FsU3RvcmFnZS5nZXRJdGVtKCdjYV90aGVtZScpIHx8ICdsaWdodCc7CiAgZG9jdW1lbnQuYm9keS5jbGFzc0xpc3QuYWRkKHNhdmVkKTsKfSkoKTsKCmZ1bmN0aW9uIHRvZ2dsZVRoZW1lKCkgewogIHZhciBib2R5ID0gZG9jdW1lbnQuYm9keTsKICB2YXIgaXNEYXJrID0gYm9keS5jbGFzc0xpc3QuY29udGFpbnMoJ2RhcmsnKTsKICBib2R5LmNsYXNzTGlzdC50b2dnbGUoJ2RhcmsnLCAhaXNEYXJrKTsKICBib2R5LmNsYXNzTGlzdC50b2dnbGUoJ2xpZ2h0JywgaXNEYXJrKTsKICBsb2NhbFN0b3JhZ2Uuc2V0SXRlbSgnY2FfdGhlbWUnLCBpc0RhcmsgPyAnbGlnaHQnIDogJ2RhcmsnKTsKICAvLyBVcGRhdGUgdG9nZ2xlIGJ1dHRvbiBpY29uCiAgdmFyIGJ0bnMgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcudGhlbWUtdG9nZ2xlJyk7CiAgYnRucy5mb3JFYWNoKGZ1bmN0aW9uKGJ0bikgewogICAgYnRuLnRleHRDb250ZW50ID0gaXNEYXJrID8gJ/CfjJknIDogJ+KYgO+4jyc7CiAgfSk7Cn0KCi8vIFNldCBjb3JyZWN0IGljb24gb24gcGFnZSBsb2FkCmRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ0RPTUNvbnRlbnRMb2FkZWQnLCBmdW5jdGlvbigpIHsKICB2YXIgaXNEYXJrID0gZG9jdW1lbnQuYm9keS5jbGFzc0xpc3QuY29udGFpbnMoJ2RhcmsnKTsKICB2YXIgYnRucyA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoJy50aGVtZS10b2dnbGUnKTsKICBidG5zLmZvckVhY2goZnVuY3Rpb24oYnRuKSB7CiAgICBidG4udGV4dENvbnRlbnQgPSBpc0RhcmsgPyAn4piA77iPJyA6ICfwn4yZJzsKICAgIGJ0bi5zZXRBdHRyaWJ1dGUoJ29uY2xpY2snLCAndG9nZ2xlVGhlbWUoKScpOwogICAgYnRuLnNldEF0dHJpYnV0ZSgnYXJpYS1sYWJlbCcsICdUb2dnbGUgdGhlbWUnKTsKICAgIGJ0bi5zZXRBdHRyaWJ1dGUoJ3RpdGxlJywgaXNEYXJrID8gJ1N3aXRjaCB0byBsaWdodCBtb2RlJyA6ICdTd2l0Y2ggdG8gZGFyayBtb2RlJyk7CiAgfSk7Cn0pOwo='
+$bytes = [System.Convert]::FromBase64String($b64)
+[System.IO.File]::WriteAllBytes((Join-Path $PSScriptRoot 'js\theme.js'), $bytes)
+Write-Host 'step2: js/theme.js written OK'
+
+# ── STEP 3: Patch dashboard.css (append report button blue) ──
+$b64 = 'CgovKiDilIDilIAgUmVwb3J0IGJ1dHRvbiDigJQgYmx1ZSBmaWxsZWQgKFByb3RvdHlwZSAyIHN0eWxlKSDilIDilIAgKi8KQG1lZGlhIChtYXgtd2lkdGg6IDc2OHB4KSB7CiAgICAuYnRuLXJlcG9ydCB7CiAgICAgICAgYmFja2dyb3VuZDogI2VlZjJmYiAhaW1wb3J0YW50OwogICAgICAgIGNvbG9yOiAjMGMzNDgwICFpbXBvcnRhbnQ7CiAgICAgICAgYm9yZGVyLWNvbG9yOiAjYzJkMGY1ICFpbXBvcnRhbnQ7CiAgICB9CiAgICAuYnRuLXJlcG9ydDphY3RpdmUgeyBiYWNrZ3JvdW5kOiAjZGNlNmY5ICFpbXBvcnRhbnQ7IH0KCiAgICAvKiByb2FkLW5hbWUtaW5mbzogbmFtZSArIElEIHN0YWNrZWQsIHRha2VzIGF2YWlsYWJsZSBzcGFjZSAqLwogICAgLnJvYWQtbmFtZS1pbmZvIHsgZmxleDogMTsgbWluLXdpZHRoOiAwOyB9CiAgICAucm9hZC1uYW1lLWluZm8gc3Ryb25nIHsKICAgICAgICBkaXNwbGF5OiBibG9jazsgZm9udC1zaXplOiAuODhyZW07IGZvbnQtd2VpZ2h0OiA3MDA7CiAgICAgICAgd2hpdGUtc3BhY2U6IG5vd3JhcDsgb3ZlcmZsb3c6IGhpZGRlbjsgdGV4dC1vdmVyZmxvdzogZWxsaXBzaXM7CiAgICB9CiAgICAucm9hZC1uYW1lLWluZm8gc3BhbiB7IGZvbnQtc2l6ZTogLjY3cmVtOyBjb2xvcjogdmFyKC0tZ3JsKTsgfQp9CkBtZWRpYSAobWluLXdpZHRoOiA3NjlweCkgewogICAgLnJvYWQtbmFtZS1pbmZvIHsgZGlzcGxheTogY29udGVudHM7IH0KfQo='
+$bytes = [System.Convert]::FromBase64String($b64)
+$patch = [System.Text.Encoding]::UTF8.GetString($bytes)
+$cssPath = Join-Path $PSScriptRoot 'css\dashboard.css'
+$existing = [System.IO.File]::ReadAllText($cssPath, [System.Text.Encoding]::UTF8)
+if ($existing.Contains('Report button')) {
+    Write-Host 'step3: dashboard.css patch already applied, skipping'
+} else {
+    [System.IO.File]::AppendAllText($cssPath, $patch, [System.Text.Encoding]::UTF8)
+    Write-Host 'step3: dashboard.css patched OK'
+}
+
+# ── STEP 4: Update dashboard.js card template ─────────────────
+$oldB64 = 'ICAgICAgcmV0dXJuIGAKICAgICAgICA8ZGl2IGNsYXNzPSJyb2FkLXJvdyI+CiAgICAgICAgICA8ZGl2IGNsYXNzPSJyb2FkLW5hbWUtY29sIj4KICAgICAgICAgICAgPGRpdj4KICAgICAgICAgICAgICA8c3Ryb25nPiR7ZXNjSHRtbChyb2FkLnJvYWRfbmFtZSl9PC9zdHJvbmc+CiAgICAgICAgICAgICAgPHNwYW4+JHtyb2FkLnJvYWRfcHVibGljX2lkfTwvc3Bhbj4KICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDxzcGFuIGNsYXNzPSJzZXNzLWJhZGdlICR7c2Vzc0NsYXNzfSI+JHtzZXNzTGFiZWx9PC9zcGFuPgogICAgICAgICAgPC9kaXY+CiAgICAgICAgICA8ZGl2IGNsYXNzPSJyb2FkLW1ldGEiPgogICAgICAgICAgICAke3JvYWQubGFzdF9hY3Rpdml0eSA/IGA8c3Bhbj4ke2Zvcm1hdERhdGUocm9hZC5sYXN0X2FjdGl2aXR5KX08L3NwYW4+YCA6ICc8c3Bhbj5ObyBhY3Rpdml0eTwvc3Bhbj4nfQogICAgICAgICAgICAke3JvYWQudG90YWxfbGVuZ3RoID8gYDxkaXYgY2xhc3M9ImRvdCI+PC9kaXY+PHNwYW4+JHtyb2FkLnRvdGFsX2xlbmd0aH0gbTwvc3Bhbj5gIDogJyd9CiAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDxkaXYgY2xhc3M9InByb2ctd3JhcCI+CiAgICAgICAgICAgIDxkaXYgY2xhc3M9InByb2ctcm93Ij4KICAgICAgICAgICAgICA8ZGl2IGNsYXNzPSJwcm9nLWJhciBwcm9nLXRyYWNrIj4KICAgICAgICAgICAgICAgIDxkaXYgY2xhc3M9InByb2ctZmlsbCIgZGF0YS13PSIke3BjdH0lIj48L2Rpdj4KICAgICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgICA8c3BhbiBjbGFzcz0icHJvZy1sYmwiPiR7ZG9uZX0vJHt0b3RhbH0gc2VnbWVudHM8L3NwYW4+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPC9kaXY+CiAgICAgICAgICA8ZGl2IGNsYXNzPSJyb2FkLWFjdGlvbnMiPgogICAgICAgICAgICA8YSBjbGFzcz0iYWN0aW9uLWJ0biBidG4tYXVkaXQiIGhyZWY9InNlZ21lbnQucGhwP3JvYWRfaWQ9JHtyb2FkLnJvYWRfaWR9Ij7inI/vuI8gQXVkaXQ8L2E+CiAgICAgICAgICAgICR7cm9hZC5zZXNzaW9uX2lkCiAgICAgICAgICAgICAgPyBgPGEgY2xhc3M9ImFjdGlvbi1idG4gYnRuLXJlcG9ydCIgaHJlZj0icmVwb3J0LnBocD9zZXNzaW9uX2lkPSR7cm9hZC5zZXNzaW9uX2lkfSI+8J+ThCBSZXBvcnQ8L2E+YAogICAgICAgICAgICAgIDogJzxhIGNsYXNzPSJhY3Rpb24tYnRuIGJ0bi1yZXBvcnQiIHN0eWxlPSJvcGFjaXR5Oi40O3BvaW50ZXItZXZlbnRzOm5vbmUiPvCfk4QgUmVwb3J0PC9hPid9CiAgICAgICAgICAgIDxidXR0b24gY2xhc3M9ImFjdGlvbi1idG4gYnRuLWRlbGV0ZSIgb25jbGljaz0icHJvbXB0RGVsZXRlKCR7cm9hZC5yb2FkX2lkfSwgJyR7ZXNjSHRtbChyb2FkLnJvYWRfbmFtZSl9JykiPvCfl5E8L2J1dHRvbj4KICAgICAgICAgIDwvZGl2PgogICAgICAgIDwvZGl2PmA7'
+$newB64 = 'ICAgICAgcmV0dXJuIGAKICAgICAgICA8ZGl2IGNsYXNzPSJyb2FkLXJvdyI+CiAgICAgICAgICA8ZGl2IGNsYXNzPSJyb2FkLW5hbWUtY29sIj4KICAgICAgICAgICAgPGRpdiBjbGFzcz0icm9hZC1uYW1lLWluZm8iPgogICAgICAgICAgICAgIDxzdHJvbmc+JHtlc2NIdG1sKHJvYWQucm9hZF9uYW1lKX08L3N0cm9uZz4KICAgICAgICAgICAgICA8c3Bhbj4ke3JvYWQucm9hZF9wdWJsaWNfaWR9PC9zcGFuPgogICAgICAgICAgICA8L2Rpdj4KICAgICAgICAgICAgPHNwYW4gY2xhc3M9InNlc3MtYmFkZ2UgJHtzZXNzQ2xhc3N9Ij4ke3Nlc3NMYWJlbH08L3NwYW4+CiAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDxkaXYgY2xhc3M9InJvYWQtbWV0YSI+CiAgICAgICAgICAgICR7cm9hZC5sYXN0X2FjdGl2aXR5ID8gYDxzcGFuPiR7Zm9ybWF0RGF0ZShyb2FkLmxhc3RfYWN0aXZpdHkpfTwvc3Bhbj5gIDogJzxzcGFuPk5vIGFjdGl2aXR5PC9zcGFuPid9CiAgICAgICAgICAgICR7cm9hZC50b3RhbF9sZW5ndGggPyBgPGRpdiBjbGFzcz0iZG90Ij48L2Rpdj48c3Bhbj4ke3JvYWQudG90YWxfbGVuZ3RofSBtPC9zcGFuPmAgOiAnJ30KICAgICAgICAgICAgPGRpdiBjbGFzcz0iZG90Ij48L2Rpdj4KICAgICAgICAgICAgPHNwYW4+JHtkb25lfS8ke3RvdGFsfSBzZWdzPC9zcGFuPgogICAgICAgICAgPC9kaXY+CiAgICAgICAgICA8ZGl2IGNsYXNzPSJwcm9nLXdyYXAiPgogICAgICAgICAgICA8ZGl2IGNsYXNzPSJwcm9nLXJvdyI+CiAgICAgICAgICAgICAgPGRpdiBjbGFzcz0icHJvZy1iYXIgcHJvZy10cmFjayI+CiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzPSJwcm9nLWZpbGwiIGRhdGEtdz0iJHtwY3R9JSI+PC9kaXY+CiAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgPC9kaXY+CiAgICAgICAgICA8ZGl2IGNsYXNzPSJyb2FkLWFjdGlvbnMiPgogICAgICAgICAgICA8YSBjbGFzcz0iYWN0aW9uLWJ0biBidG4tYXVkaXQiIGhyZWY9InNlZ21lbnQucGhwP3JvYWRfaWQ9JHtyb2FkLnJvYWRfaWR9Ij7inI/vuI8gQXVkaXQ8L2E+CiAgICAgICAgICAgICR7cm9hZC5zZXNzaW9uX2lkCiAgICAgICAgICAgICAgPyBgPGEgY2xhc3M9ImFjdGlvbi1idG4gYnRuLXJlcG9ydCIgaHJlZj0icmVwb3J0LnBocD9zZXNzaW9uX2lkPSR7cm9hZC5zZXNzaW9uX2lkfSI+8J+ThCBSZXBvcnQ8L2E+YAogICAgICAgICAgICAgIDogJzxhIGNsYXNzPSJhY3Rpb24tYnRuIGJ0bi1yZXBvcnQiIHN0eWxlPSJvcGFjaXR5Oi40O3BvaW50ZXItZXZlbnRzOm5vbmUiPvCfk4QgUmVwb3J0PC9hPid9CiAgICAgICAgICAgIDxidXR0b24gY2xhc3M9ImFjdGlvbi1idG4gYnRuLWRlbGV0ZSIgb25jbGljaz0icHJvbXB0RGVsZXRlKCR7cm9hZC5yb2FkX2lkfSwgXGAke2VzY0h0bWwocm9hZC5yb2FkX25hbWUpfVxgKSI+8J+XkTwvYnV0dG9uPgogICAgICAgICAgPC9kaXY+CiAgICAgICAgPC9kaXY+YDs='
+$oldCard = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($oldB64))
+$newCard = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($newB64))
+$jsPath = Join-Path $PSScriptRoot 'js\dashboard.js'
+$js = [System.IO.File]::ReadAllText($jsPath, [System.Text.Encoding]::UTF8)
+if ($js.Contains('road-name-info')) {
+    Write-Host 'step4: dashboard.js already updated, skipping'
+} else {
+    $js2 = $js.Replace($oldCard, $newCard)
+    if ($js2 -eq $js) {
+        Write-Host 'step4: WARNING - pattern not found in dashboard.js'
+    } else {
+        [System.IO.File]::WriteAllText($jsPath, $js2, [System.Text.Encoding]::UTF8)
+        Write-Host 'step4: dashboard.js updated OK'
+    }
+}
+
+# ── STEP 5: Add theme.css link to dashboard.php ──────────────
+$phpPath = Join-Path $PSScriptRoot 'pages\dashboard.php'
+$php = [System.IO.File]::ReadAllText($phpPath, [System.Text.Encoding]::UTF8)
+if ($php.Contains('theme.css')) {
+    Write-Host 'step5: theme.css already linked in dashboard.php'
+} else {
+    $php2 = $php.Replace('<meta charset="UTF-8">', '<meta charset="UTF-8">'+[char]10+'  <link rel="stylesheet" href="../css/theme.css">')
+    [System.IO.File]::WriteAllText($phpPath, $php2, [System.Text.Encoding]::UTF8)
+    Write-Host 'step5: theme.css linked in dashboard.php OK'
+}
+
+# ── STEP 6: Add body class="light" to dashboard.php ──────────
+$php = [System.IO.File]::ReadAllText($phpPath, [System.Text.Encoding]::UTF8)
+if ($php.Contains('body class=')) {
+    Write-Host 'step6: body class already set'
+} else {
+    $php2 = $php.Replace('<body>', '<body class="light">')
+    [System.IO.File]::WriteAllText($phpPath, $php2, [System.Text.Encoding]::UTF8)
+    Write-Host 'step6: body class=light added to dashboard.php OK'
+}
+
+# ── STEP 7: Add theme.js script to dashboard.php ─────────────
+$php = [System.IO.File]::ReadAllText($phpPath, [System.Text.Encoding]::UTF8)
+if ($php.Contains('theme.js')) {
+    Write-Host 'step7: theme.js already linked'
+} else {
+    $php2 = $php.Replace('</body>', '  <script src="../js/theme.js"></script>'+[char]10+'</body>')
+    [System.IO.File]::WriteAllText($phpPath, $php2, [System.Text.Encoding]::UTF8)
+    Write-Host 'step7: theme.js linked in dashboard.php OK'
+}
+
+# ── STEP 8: Add theme toggle button to topbar ─────────────────
+$php = [System.IO.File]::ReadAllText($phpPath, [System.Text.Encoding]::UTF8)
+if ($php.Contains('theme-toggle')) {
+    Write-Host 'step8: theme toggle button already present'
+} else {
+    $php2 = $php.Replace('<a href="segment.php" class="btn-new">', '<button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">moon</button>'+[char]10+'    <a href="segment.php" class="btn-new">')
+    [System.IO.File]::WriteAllText($phpPath, $php2, [System.Text.Encoding]::UTF8)
+    Write-Host 'step8: theme toggle button added to topbar OK'
+}
+
+Write-Host ''
+Write-Host 'All steps done. Now run:'
+Write-Host 'git add css/theme.css js/theme.js js/dashboard.js css/dashboard.css pages/dashboard.php'
+Write-Host 'git commit -m "feat: dark/light theme, blue report btn, road card meta row"'
+Write-Host 'git push'

@@ -1,0 +1,8 @@
+﻿f = open('pages/dashboard.php', 'rb')
+c = f.read().decode('utf-8')
+f.close()
+print("First 5 chars:", repr(c[:5]))
+print("First line:", c.splitlines()[0])
+print("Second line:", c.splitlines()[1])
+print("theme.css count:", c.count('theme.css'))
+print("body class count:", c.count('body class'))
