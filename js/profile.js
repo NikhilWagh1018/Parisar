@@ -1,4 +1,4 @@
-* js/profile.js — extracted from pages/profile.php */
+/* js/profile.js — extracted from pages/profile.php */
 
 const API  = '../api/user/profile.php';
 
@@ -25,7 +25,7 @@ function showAlert(zone, type, msg) {
 
 // ── Load profile from API ──────────────────────────────────────
 async function loadProfile() {
-  const res  = await fetch(API, { credentials: 'include', headers: { 'Accept': 'application/json' } });
+  const res  = await fetch(API, { headers: { 'Accept': 'application/json' } });
   const data = await res.json();
   if (!data.success) return;
 
