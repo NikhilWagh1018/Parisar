@@ -278,6 +278,7 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
     .topbar {
         padding: 0 12px; gap: 8px; height: 56px;
         position: sticky; top: 0; z-index: 50;
+        display: flex; align-items: center; justify-content: flex-start;
     }
     .sb-hamburger {
         display: flex; align-items: center; justify-content: center;
@@ -285,7 +286,7 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
         background: var(--gd); color: #fff;
         border: none; cursor: pointer; font-size: 20px;
     }
-    .topbar-left { flex: 1; min-width: 0; }
+    .topbar-left { flex: 1; min-width: 0; margin-right: auto; }
     .topbar-left h1 { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .topbar-left p  { font-size: .68rem; }
     .btn-new { padding: 8px 12px; font-size: .78rem; white-space: nowrap; flex-shrink: 0; }
@@ -318,18 +319,18 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
     .road-name-col strong { font-size: .92rem; }
     .road-name-col span   { font-size: .7rem; }
 
-    .prog-wrap { order: 2; }
+    .prog-wrap { order: 1; margin-bottom: 2px; }
     .prog-track { height: 5px; }
     .prog-lbl   { font-size: .67rem; }
 
     .road-meta {
         display: flex; align-items: center; gap: 8px;
-        flex-wrap: wrap; order: 3;
+        flex-wrap: wrap; order: 2;
     }
     .sess-badge { font-size: .67rem; padding: 2px 8px; }
 
     .road-actions {
-        display: flex; gap: 6px; order: 4; flex-wrap: wrap;
+        display: flex; gap: 6px; order: 3; flex-wrap: wrap;
     }
     .action-btn { padding: 7px 14px; font-size: .75rem; }
 }
