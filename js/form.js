@@ -632,7 +632,7 @@ async function doReset() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Show a brief success toast
-    showResetToast('… Form cleared — all data has been reset.');
+    showResetToast('🔄 Form cleared — all data has been reset.');
 
   } catch (err) {
     console.error('doReset error:', err);

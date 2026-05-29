@@ -94,44 +94,35 @@ $roads = $stmtRoads->fetchAll(PDO::FETCH_ASSOC);
         <div class="seg-num-badge">SEG <?= (int)$seg['segment_number'] ?></div>
         <div>
           <div class="seg-route">
-            <?= htmlspecialchars($seg['start_label'] ?? '') ?>
-            →
+            <?= htmlspecialchars($seg['start_label'] ?? '') ?> →
             <?= htmlspecialchars($seg['end_label']   ?? '') ?>
           </div>
           <div class="seg-len"><?= (float)$seg['length'] ?> m</div>
-        </div>
-
-        <?php if ($score): ?>
-        <div>
-          <div style="font-size:.78rem;color:#9aaa88;margin-bottom:3px">
-            Safety / Cont. / Comfort
+          <?php if ($score): ?>
+          <div class="seg-row-scores">
+            <span style="font-size:.72rem;color:#9aaa88">S <?= $score['safety_score'] ?></span>
+            <span style="font-size:.72rem;color:#9aaa88">·</span>
+            <span style="font-size:.72rem;color:#9aaa88">C <?= $score['continuity_score'] ?></span>
+            <span style="font-size:.72rem;color:#9aaa88">·</span>
+            <span style="font-size:.72rem;color:#9aaa88">K <?= $score['comfort_score'] ?></span>
           </div>
-          <div style="font-size:.78rem;font-weight:600">
-            <?= $score['safety_score'] ?> /
-            <?= $score['continuity_score'] ?> /
-            <?= $score['comfort_score'] ?>
-          </div>
+          <?php endif; ?>
         </div>
-        <div>
+        <div style="text-align:right">
+          <?php if ($score): ?>
           <span class="score-pill"
                 style="background:<?= $col ?>22;color:<?= $col ?>">
-            <?= $score['final'] ?> / 100
+            <?= $score['final'] ?>/100
           </span>
-          <div class="prog-mini">
+          <div class="prog-mini" style="margin-top:4px">
             <div class="prog-mini-fill"
                  style="width:<?= (100 - $score['final']) ?>%;background:<?= $col ?>"></div>
           </div>
-        </div>
-        <?php else: ?>
-        <div></div>
-        <div><span class="pending-badge">⏳ Pending</span></div>
-        <?php endif; ?>
-
-        <div>
-          <?php if ($score): ?>
-          <a href="view.php?segment_id=<?= (int)$seg['id'] ?>" class="view-link">
+          <a href="view.php?segment_id=<?= (int)$seg['id'] ?>" class="view-link" style="display:block;margin-top:4px">
             View →
           </a>
+          <?php else: ?>
+          <span class="pending-badge">⏳ Pending</span>
           <?php endif; ?>
         </div>
       </div>

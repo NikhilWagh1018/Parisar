@@ -72,7 +72,7 @@ async function loadDashboard() {
           <div class="road-actions">
             <a class="action-btn btn-audit" href="segment.php?road_id=${road.road_id}">✏️ Audit</a>
             ${road.session_id
-              ? `<a class="action-btn btn-report" href="report.php?session_id=${road.session_id}">📄 Report</a>`
+              ? `<a class="action-btn btn-report" href="report.php?session_id=${road.session_id}"><span>📄</span> Report</a>`
               : '<a class="action-btn btn-report" style="opacity:.4;pointer-events:none">📄 Report</a>'}
             <button class="action-btn btn-delete" onclick="promptDelete(${road.road_id}, \`${escHtml(road.road_name)}\`)">🗑</button>
           </div>

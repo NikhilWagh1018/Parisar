@@ -535,3 +535,20 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 @media (min-width: 769px) {
     .road-name-info { display: contents; }
 }
+
+/* Report button matches Audit button style */
+.btn-report {
+    background: var(--tblue-bg, #eef2fb) !important;
+    color: var(--tblue-txt, #0c3480) !important;
+    border-color: var(--tblue-bdr, #c2d0f5) !important;
+    font-weight: 600;
+}
+.btn-report:hover {
+    background: var(--tblue, #1a44a8) !important;
+    color: #fff !important;
+}
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}

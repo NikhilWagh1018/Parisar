@@ -1,13 +1,21 @@
 /* road-result.css — extracted from road_result.php */
 
-  h1{font-family:'Segoe UI',sans-serif;color:#2d5a18;margin-bottom:20px;font-size:1.6rem}
+  .container{max-width:900px;margin:0 auto;padding:16px}
+h1{font-family:'Segoe UI',sans-serif;color:#2d5a18;margin-bottom:20px;font-size:1.6rem}
   .road-section{margin-bottom:36px}
   .road-head{display:flex;align-items:center;justify-content:space-between;
     margin-bottom:14px;flex-wrap:wrap;gap:8px}
   .road-name{font-size:1.05rem;font-weight:800;color:#1e3d0d}
   .road-meta{font-size:.78rem;color:#9aaa88;margin-top:2px}
-  .seg-row{display:grid;grid-template-columns:80px 1fr 140px 120px auto;
-    align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0f4e8}
+  .seg-row{display:grid;grid-template-columns:64px 1fr auto;
+    align-items:start;gap:8px;padding:14px 0;border-bottom:1px solid #f0f4e8}
+.seg-row-scores{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}
+.seg-row-bottom{grid-column:1/-1;display:flex;align-items:center;
+    justify-content:space-between;flex-wrap:wrap;gap:8px}
+@media(min-width:600px){
+  .seg-row{grid-template-columns:64px 1fr 160px 130px auto}
+  .seg-row-bottom{display:contents}
+}
   .seg-row:last-child{border-bottom:none}
   .seg-num-badge{background:#f0f7e6;color:#3d7a1f;border-radius:8px;
     padding:4px 10px;font-size:.78rem;font-weight:700;text-align:center}
