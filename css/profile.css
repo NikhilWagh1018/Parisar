@@ -1,13 +1,5 @@
-/*css/profile.css — extracted from pages/profile.php */
+*css/profile.css — extracted from pages/profile.php */
 
-:root {
-  --g:#3d7a1f; --gm:#5a9e2f; --gl:#86B93B; --gp:#edf7d6; --gd:#1e3d0d;
-  --cream:#f7f4ee; --ink:#181f10; --gray:#5e6b54; --grl:#9aaa88;
-  --bd:rgba(61,122,31,.12); --sw:240px; --r:12px;
-  --T:.25s cubic-bezier(.4,0,.2,1);
-  --red:#dc2626; --red-pale:#fee2e2;
-  --amber:#d97706; --amber-pale:#fef3c7;
-}
 *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
 body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--ink); display:flex; min-height:100vh; }
 
