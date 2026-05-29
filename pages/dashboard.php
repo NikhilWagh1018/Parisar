@@ -169,7 +169,6 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';</script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/dashboard.js"></script>
-<button class="sb-hamburger" id="sb-toggle" aria-label="Menu">&#9776;</button>
 <div class="sb-overlay" id="sb-overlay"></div>
 <script>
 const tog = document.getElementById("sb-toggle");
