@@ -351,10 +351,12 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
     /* Progress bar - single clean block */
     .prog-wrap { margin-bottom: 10px; }
     .prog-row  { display: flex; align-items: center; gap: 8px; }
-    .prog-bar  { flex: 1; min-width: 0; height: 5px;
-                 background: #e8f0da; border-radius: 99px; overflow: hidden; }
-    .prog-fill { height: 5px; background: var(--gl);
-                 border-radius: 99px; display: block; min-width: 0; }
+    .prog-track,
+    .prog-bar  { flex: 1; min-width: 0; height: 5px !important;
+                 background: #e8f0da !important; border-radius: 99px !important;
+                 overflow: hidden !important; display: block !important; }
+    .prog-fill { height: 5px !important; background: var(--gl) !important;
+                 border-radius: 99px; display: block !important; min-width: 0; }
     .prog-lbl  { font-size: .68rem; color: var(--grl);
                  white-space: nowrap; flex-shrink: 0; }
 
