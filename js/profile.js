@@ -58,7 +58,7 @@ async function loadProfile() {
   if (u.auth_provider === 'google') {
     const note = '<div style="font-size:.84rem;color:var(--gray);padding:8px 0">Your account uses Google Sign-In. Email and password changes are managed through Google.</div>';
     document.getElementById('card-email').innerHTML    = '<div class="card-title">Email & Password</div>' + note;
-    document.getElementById('card-password').innerHTML = '';
+    const pwCard = document.getElementById('card-password'); pwCard.innerHTML = ''; pwCard.style.display = 'none';
   }
 }
 loadProfile();
