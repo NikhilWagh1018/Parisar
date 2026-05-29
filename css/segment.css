@@ -978,12 +978,12 @@ input::placeholder { color: var(--gray-light); }
 
   /* ── Button rows — Myntra full-width CTA ── */
   .btn-row {
-    flex-wrap: wrap; gap: 8px;
+    flex-direction: column; gap: 8px;
   }
-  .btn-row .btn { flex: 1; min-width: 120px; text-align: center; }
+  .btn-row .btn { flex: none; width: 100%; text-align: center; justify-content: center; }
   .btn {
-    padding: 11px 16px; font-size: .84rem; border-radius: 9px;
-    font-weight: 700;
+    padding: 13px 16px; font-size: .85rem; border-radius: 12px;
+    font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .btn-primary {
     background: var(--green); color: #fff;
@@ -1006,32 +1006,45 @@ input::placeholder { color: var(--gray-light); }
 
   /* ── Segment list cards — Zomato row style ── */
   .seg-list-card {
-    grid-template-columns: 36px 1fr;
+    grid-template-columns: 36px minmax(0, 1fr);
     grid-template-rows: auto auto;
     gap: 6px 10px;
-    padding: 10px 10px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    margin-bottom: 7px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    padding: 12px 11px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    border-left: 3px solid #c8e8a8;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 5px rgba(0,0,0,.04);
+  }
+  .seg-list-card.seg-done {
+    border-left-color: var(--green) !important;
   }
   .seg-num {
     width: 36px; height: 36px;
     border-radius: 9px; font-size: .8rem;
   }
-  .seg-list-name { font-size: .84rem; }
+  .seg-list-name { font-size: .85rem; font-weight: 700; }
   .seg-list-meta { font-size: .7rem; }
-  .status-col { grid-column: 2; align-items: flex-start; flex-direction: row; gap: 6px; }
+  .status-col {
+    grid-column: 2; align-items: flex-start;
+    flex-direction: row; gap: 5px; flex-wrap: wrap;
+  }
   .seg-actions {
     grid-column: 1 / -1; flex-direction: row;
-    justify-content: flex-end; gap: 6px;
+    justify-content: stretch; gap: 7px;
   }
   .seg-actions .btn {
     min-width: auto; flex: 1;
-    padding: 8px 10px; font-size: .76rem;
-    border-radius: 8px; text-align: center;
+    padding: 9px 8px; font-size: .76rem; font-weight: 700;
+    border-radius: 20px; text-align: center;
   }
-  .status-chip { font-size: .65rem; padding: 3px 8px; }
+  .seg-actions .btn-warning {
+    background: #fffbeb; border: 1.5px solid #fbbf24; color: #92400e;
+  }
+  .seg-actions .btn-secondary {
+    background: #f9fafb; border: 1.5px solid var(--border); color: var(--ink-soft);
+  }
+  .status-chip { font-size: .65rem; padding: 3px 9px; }
 
   /* ── Divider ── */
   .divider { margin: 16px 0; }
@@ -1084,9 +1097,9 @@ input::placeholder { color: var(--gray-light); }
 /* Individual segment card */
 .seg-list-card {
   display: grid;
-  grid-template-columns: 44px 1fr auto auto;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 16px 14px;
   border-radius: var(--radius);
   border: 1.5px solid var(--border);
@@ -1213,9 +1226,10 @@ input::placeholder { color: var(--gray-light); }
 /* Segment list cards narrow — handled in 640px block above */
 @media (max-width: 680px) {
   .seg-list-card {
-    grid-template-columns: 36px 1fr;
+    grid-template-columns: 36px minmax(0, 1fr);
     grid-template-rows: auto auto;
   }
   .status-col  { grid-column: 2; align-items: flex-start; }
-  .seg-actions { grid-column: 1 / -1; flex-direction: row; justify-content: flex-end; }
+  .seg-actions { grid-column: 1 / -1; flex-direction: row; justify-content: stretch; }
+  .seg-actions .btn { flex: 1; }
 }

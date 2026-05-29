@@ -322,7 +322,7 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
         box-shadow: 0 1px 4px rgba(61,122,31,.1);
     }
     .stat-val  { font-size: 1.45rem; font-weight: 800; letter-spacing: -.02em; }
-    .stat-lbl  { font-size: .64rem; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+    .stat-lbl  { font-size: .68rem; font-weight: 500; letter-spacing: .01em; text-transform: uppercase; color: var(--grl); }
 
     /* ── Section card wrapper ── */
     .card {
@@ -386,17 +386,17 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 
     /* Meta row — one line with dot separators */
     .road-meta {
-        display: flex; align-items: center; gap: 5px;
-        flex-wrap: wrap; margin-bottom: 9px;
+        display: flex; align-items: center; gap: 4px;
+        flex-wrap: nowrap; margin-bottom: 8px; overflow: hidden;
     }
-    .road-meta span { font-size: .69rem; color: var(--grl); }
+    .road-meta span { font-size: .7rem; color: var(--grl); white-space: nowrap; }
     .road-meta .dot {
         width: 3px; height: 3px; background: var(--grl);
-        border-radius: 50%; flex-shrink: 0; opacity: .5;
+        border-radius: 50%; flex-shrink: 0; opacity: .6;
     }
 
     /* ── PROGRESS BAR FIX (nuclear, absolute positioning) ── */
-    .prog-wrap { margin-bottom: 9px; }
+    .prog-wrap { margin-bottom: 10px; padding-top: 1px; }
     .prog-row  { display: flex; align-items: center; gap: 8px; }
 
     /* Track: explicit block with height — no flex ambiguity */
@@ -421,12 +421,13 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
         background: var(--gl) !important;
         border-radius: 99px !important;
         display: block !important;
-        min-width: 2px;
+        min-width: 2px !important;
+        min-height: 6px !important;
         transition: width .6s ease;
     }
 
     .prog-lbl {
-        font-size: .67rem; color: var(--grl);
+        font-size: .68rem; font-weight: 600; color: var(--gray);
         white-space: nowrap; flex-shrink: 0;
     }
 

@@ -201,25 +201,26 @@ main { margin-left:var(--sw); flex:1; display:flex; flex-direction:column; min-h
     .tabs {
         display: flex; gap: 0;
         border-bottom: 2px solid var(--bd);
-        margin-bottom: 14px; overflow-x: auto;
+        margin-bottom: 16px; overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         background: #fff;
         border-radius: 10px 10px 0 0;
         padding: 0 4px;
     }
     .tab-btn {
-        flex: 1; padding: 11px 10px 9px;
-        font-size: .8rem; font-weight: 600;
+        flex: 1; padding: 12px 10px 10px;
+        font-size: .82rem; font-weight: 600;
         white-space: nowrap; text-align: center;
         color: var(--gray);
-        border-bottom: 2px solid transparent;
+        border-bottom: 2.5px solid transparent;
         margin-bottom: -2px;
         transition: color .15s ease, border-color .15s ease;
+        background: none; border-top: none; border-left: none; border-right: none;
     }
     .tab-btn.active {
-        color: var(--g);
-        border-bottom-color: var(--g);
-        font-weight: 700;
+        color: var(--g) !important;
+        border-bottom-color: var(--g) !important;
+        font-weight: 700 !important;
     }
 
     /* ── Cards ── */
