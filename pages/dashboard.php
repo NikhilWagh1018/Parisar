@@ -110,7 +110,9 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 
 <!-- MAIN -->
 <main>
-  <div class="topbar">    <div class="topbar-left">
+  <div class="topbar">
+		<button class="sb-hamburger" id="sb-toggle" aria-label="Menu">&#9776;</button>
+		<div class="topbar-left">
       <h1><?= $greet ?>, <?= htmlspecialchars(explode(' ', $CURRENT_USER_NAME)[0]) ?>!</h1>
       <p>Here's your audit overview for today.</p>
     </div>
