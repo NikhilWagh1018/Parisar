@@ -736,7 +736,7 @@ async function prefillFormIfEditMode() {
       'background:#fff8e1;border:1px solid #f6c90e;border-radius:8px;' +
       'padding:10px 16px;margin-bottom:16px;font-size:13px;color:#7a5c00;';
     banner.innerHTML =
-      'âœï¸ <strong>Edit mode</strong> — your previous answers have been loaded. ' +
+      '✏️ <strong>Edit mode</strong> — your previous answers have been loaded. ' +
       'Review, correct anything, then re-submit.';
     heading.insertAdjacentElement('afterend', banner);
   }
