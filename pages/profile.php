@@ -1,4 +1,4 @@
-php
+?php
 declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
@@ -235,6 +235,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
 
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;</script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/profile.js"></script>
+<button class="sb-hamburger" id="sb-toggle" aria-label="Menu">&#9776;</button>
 <div class="sb-overlay" id="sb-overlay"></div>
 <script>
 const tog = document.getElementById("sb-toggle");
