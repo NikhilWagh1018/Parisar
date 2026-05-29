@@ -1,4 +1,4 @@
-<?php
+?php
 declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
@@ -72,6 +72,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
 <!-- ═══════════ MAIN ═══════════ -->
 <main>
   <div class="topbar">
+    <button class="sb-hamburger" id="sb-toggle" aria-label="Menu">&#9776;</button>
     <h1>My Profile</h1>
   </div>
 

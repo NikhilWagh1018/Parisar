@@ -1,4 +1,4 @@
-/* css/profile.css — extracted from pages/profile.php */
+* css/profile.css — extracted from pages/profile.php */
 
 :root {
   --g:#3d7a1f; --gm:#5a9e2f; --gl:#86B93B; --gp:#edf7d6; --gd:#1e3d0d;
@@ -176,7 +176,7 @@ main { margin-left:var(--sw); flex:1; display:flex; flex-direction:column; min-h
     .topbar h1 { font-size: .92rem; flex: 1; }
 
     /* ── Content ── */
-    .content { padding: 12px 12px 60px; max-width: 100%; }
+    .content { padding: 16px 16px 60px; max-width: 100%; margin: 0 auto; }
 
     /* ── Profile hero — Myntra user card ── */
     .profile-hero {
