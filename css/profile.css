@@ -1,4 +1,4 @@
-* css/profile.css — extracted from pages/profile.php */
+/* css/profile.css — extracted from pages/profile.php */
 
 :root {
   --g:#3d7a1f; --gm:#5a9e2f; --gl:#86B93B; --gp:#edf7d6; --gd:#1e3d0d;
@@ -176,26 +176,26 @@ main { margin-left:var(--sw); flex:1; display:flex; flex-direction:column; min-h
     .topbar h1 { font-size: .92rem; flex: 1; }
 
     /* ── Content ── */
-    .content { padding: 16px 14px 60px; max-width: 100%; }
+    .content { padding: 12px 12px 60px; max-width: 100%; }
 
     /* ── Profile hero — Myntra user card ── */
     .profile-hero {
         flex-direction: column; align-items: center; text-align: center;
-        padding: 28px 20px 24px;
+        padding: 22px 16px 20px;
         border-radius: 16px;
-        margin-bottom: 16px;
-        gap: 10px;
-        background: #fff;
+        margin-bottom: 14px;
+        gap: 12px;
+        background: linear-gradient(160deg, #f0f7e0 0%, #fff 60%);
         border: 1px solid rgba(61,122,31,.12);
-        box-shadow: 0 2px 12px rgba(61,122,31,.07);
+        box-shadow: 0 2px 12px rgba(61,122,31,.08);
     }
-    .avatar-lg { width: 80px; height: 80px; font-size: 1.7rem; }
+    .avatar-lg { width: 72px; height: 72px; font-size: 1.6rem; }
     .avatar-edit-btn { width: 24px; height: 24px; }
     .avatar-edit-btn svg { width: 10px; height: 10px; }
-    .hero-info h2 { font-size: 1.2rem; margin-top: 4px; }
-    .hero-info .hero-email { font-size: .8rem; margin-top: 2px; }
-    .hero-badges { justify-content: center; gap: 6px; margin-top: 8px; }
-    .badge { font-size: .7rem; padding: 4px 10px; }
+    .hero-info h2 { font-size: 1.15rem; }
+    .hero-info .hero-email { font-size: .8rem; }
+    .hero-badges { justify-content: center; gap: 6px; }
+    .badge { font-size: .68rem; padding: 3px 8px; }
 
     /* ── Tabs — full-width pill tabs (Myntra style) ── */
     .tabs {
@@ -225,8 +225,8 @@ main { margin-left:var(--sw); flex:1; display:flex; flex-direction:column; min-h
 
     /* ── Cards ── */
     .card {
-        padding: 18px 16px; border-radius: 12px;
-        margin-bottom: 12px;
+        padding: 14px 12px; border-radius: 12px;
+        margin-bottom: 10px;
         border: 1px solid var(--bd);
         box-shadow: 0 1px 5px rgba(61,122,31,.05);
     }
@@ -236,7 +236,7 @@ main { margin-left:var(--sw); flex:1; display:flex; flex-direction:column; min-h
     /* ── Form — full width inputs ── */
     .form-grid { grid-template-columns: 1fr; gap: 12px; }
     .form-grid.one-col { gap: 12px; }
-    .field label { font-size: .75rem; font-weight: 600; color: var(--gray); letter-spacing: 0; text-transform: none; }
+    .field label { font-size: .72rem; }
     .field input,
     .field select,
     .field textarea {
