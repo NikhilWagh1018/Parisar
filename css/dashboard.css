@@ -277,12 +277,21 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
     .sb-overlay.show { display: block; }
     .sb-hamburger {
         display: flex; align-items: center; justify-content: center;
-        position: fixed; top: 12px; left: 12px; z-index: 1001;
-        width: 38px; height: 38px; border-radius: 8px;
-        background: #2d5a27; color: #fff;
-        border: none; cursor: pointer; font-size: 20px;
+        width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+        background: var(--gd); color: #fff;
+        border: none; cursor: pointer; font-size: 18px;
     }
-    main, .main-content { margin-left: 0 !important; }
+    main { margin-left: 0 !important; }
+    .topbar { padding: 0 16px; gap: 10px; }
+    .topbar-left h1 { font-size: 1rem; }
+    .topbar-left p  { font-size: .72rem; }
+    .btn-new { padding: 8px 12px; font-size: .78rem; }
+    .content { padding: 16px; }
+    .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .stat-card { padding: 14px; gap: 10px; }
+    .stat-val  { font-size: 1.3rem; }
+    .road-row  { grid-template-columns: 1fr; gap: 8px; padding: 16px 0; }
+    .road-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 }
 
 @media (min-width: 769px) {
