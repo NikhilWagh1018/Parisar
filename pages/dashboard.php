@@ -19,7 +19,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <head>
 <meta charset="UTF-8">
   <link rel="stylesheet" href="../css/theme.css">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Dashboard — CycleAudit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
