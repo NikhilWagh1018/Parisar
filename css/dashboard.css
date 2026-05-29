@@ -1,4 +1,4 @@
-dashboard.css — extracted from pages/dashboard.php */
+shboard.css — extracted from pages/dashboard.php */
 
 :root {
   --g:#3d7a1f; --gm:#5a9e2f; --gl:#86B93B; --gp:#edf7d6; --gd:#1e3d0d;
@@ -257,7 +257,6 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 .btn-reset:hover { background: #b91c1c; }
 
 /* ===== Mobile ===== */
-.sb-hamburger { display: none; }
 .sb-overlay   { display: none; }
 
 @media (max-width: 768px) {
@@ -278,15 +277,15 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
     /* ── Topbar ── */
     main { margin-left: 0 !important; }
     .topbar {
-        padding: 0 10px;
-        gap: 6px;
+        padding: 0 12px;
+        gap: 8px;
         height: 56px;
         position: sticky; top: 0; z-index: 50;
         background: #fff;
         border-bottom: 1px solid var(--bd);
         display: flex; align-items: center;
         box-sizing: border-box;
-        max-width: 100vw;
+        width: 100%;
     }
     .sb-hamburger {
         flex-shrink: 0;
@@ -504,8 +503,7 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 
 /* ── Desktop restore — mobile overrides must not bleed up ── */
 @media (min-width: 769px) {
-    .sb-hamburger { display: none !important; }
-    .road-row {
+        .road-row {
         display: grid !important;
         grid-template-columns: 1fr 120px 160px 120px auto;
         align-items: center;
