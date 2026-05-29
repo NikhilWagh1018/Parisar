@@ -1,4 +1,4 @@
- css/dashboard.css — extracted from pages/dashboard.php */
+* css/dashboard.css — extracted from pages/dashboard.php */
 
 :root {
   --g:#3d7a1f; --gm:#5a9e2f; --gl:#86B93B; --gp:#edf7d6; --gd:#1e3d0d;
@@ -7,7 +7,6 @@
   --T:.25s cubic-bezier(.4,0,.2,1);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { overflow-x: hidden; max-width: 100%; }
 body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); display: flex; min-height: 100vh; }
 
 /* ── Sidebar ── */
@@ -324,7 +323,7 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
     .btn-new svg { display: none; }
 
     /* ── Content area ── */
-    .content { padding: 12px 12px 80px; box-sizing: border-box; width: 100%; max-width: 100%; overflow-x: hidden; }
+    .content { padding: 12px 12px 80px; }
 
     /* ── Stat cards — Blinkit-style 2×2 compact ── */
     .stat-grid {
