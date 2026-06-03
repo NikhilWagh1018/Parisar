@@ -1,60 +1,31 @@
 name: CI / CD
-
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-
 jobs:
-  # ── Job 1: Lint + Test ──────────────────────────────────────
   test:
     name: PHP Lint & PHPUnit
     runs-on: ubuntu-22.04
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up PHP 8.1
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
           extensions: pdo, pdo_sqlite, mbstring, xml
           coverage: none
-
       - name: Cache Composer dependencies
         uses: actions/cache@v4
         with:
           path: vendor
           key: composer-${{ hashFiles('composer.lock') }}
           restore-keys: composer-
-
       - name: Install Composer dependencies (with dev)
         run: composer install --no-interaction --prefer-dist
-
       - name: PHP syntax lint (all .php files)
-        run: find . -name "*.php" -not -path "./vendor/*" \
-               | xargs -n1 php -l
-
+        run: find . -name "*.php" -not -path "./vendor/*" | xargs -n1 php -l
       - name: Run PHPUnit
         run: php vendor/bin/phpunit --testdox --colors=always
-
-  # ── Job 2: Deploy to Railway (main branch only) ────────────
-  deploy:
-    name: Deploy to Railway
-    runs-on: ubuntu-22.04
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy to Railway
-        run: railway up --detach --service Parisar
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
