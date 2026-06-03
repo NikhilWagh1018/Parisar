@@ -66,4 +66,5 @@ STOPSIGNAL SIGWINCH
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 USER root
 RUN chmod +x /docker-entrypoint.sh
+RUN echo 'ServerName localhost' >> /etc/apache2/apache2.conf
 CMD ["/docker-entrypoint.sh"]
