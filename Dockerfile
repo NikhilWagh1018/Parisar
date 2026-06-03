@@ -62,5 +62,8 @@ RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf 
 
 EXPOSE 80
 STOPSIGNAL SIGWINCH
-USER www-data
-CMD ["apache2ctl", "-D", "FOREGROUND"]
+
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+USER root
+RUN chmod +x /docker-entrypoint.sh
+CMD ["/docker-entrypoint.sh"]
