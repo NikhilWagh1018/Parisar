@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 PORT="${PORT:-80}"
 echo "Starting Apache on port $PORT"
 sed -i "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf
