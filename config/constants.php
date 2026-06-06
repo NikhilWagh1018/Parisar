@@ -39,6 +39,7 @@ define('DB_PASS', _env('MYSQLPASSWORD', _env('DB_PASS',     '')));
 
 // ── Application ───────────────────────────────────────────────
 define('BASE_URL',  _env('BASE_URL', 'http://localhost/Parisar'));
+define('GOOGLE_REDIRECT_URI', _env('GOOGLE_REDIRECT_URI', 'http://localhost/Parisar/auth/google_callback.php'));
 define('APP_NAME',  'CycleAudit');
 define('APP_ORG',   'Parisar');
 
