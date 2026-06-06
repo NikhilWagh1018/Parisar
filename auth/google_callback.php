@@ -26,7 +26,7 @@ if (
     || !hash_equals($_SESSION['oauth_state'], $state)
 ) {
     session_regenerate_id(true);
-    header('Location: login.php?error=state_mismatch&debug=session_' . (empty(\$_SESSION['oauth_state']) ? 'empty' : 'present') . '_state_' . substr(\$state,0,8));
+    header('Location: login.php?error=state_mismatch');
     exit;
 }
 unset($_SESSION['oauth_state']);
