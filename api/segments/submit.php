@@ -274,8 +274,8 @@ foreach ($dims as $key => $weight) {
         );
     // Allowlist validation for intersection enum fields
     $intAllowlists = [
-        'off_ramp'        => ['Ramp Present', 'No Ramp'],
-        'on_ramp'         => ['Ramp Present', 'No Ramp'],
+        'off_ramp'        => ['Comfortable', 'Uncomfortable', 'No Ramp'],
+        'on_ramp'         => ['Comfortable', 'Uncomfortable', 'No Ramp'],
         'markings'        => ['Present', 'Absent'],
         'signage'         => ['Present', 'Absent'],
         'traffic_calming' => ['Present', 'Absent'],
