@@ -184,7 +184,7 @@ if ($segNum > 0) {
             <label>GPS Start Point <span class="required-star">*</span></label>
             <div class="gps-input-row">
               <input type="text" id="gpsStart" name="gps_start"
-                     oninput="clearError('wrap-gpsStart'); validateGPSField('gpsStart','wrap-gpsStart')"
+                     oninput="clearError(this.id)"
                      placeholder="e.g. 18.5204, 73.8567">
               <button type="button" class="gps-btn" onclick="fillGPS('gpsStart')" title="Use my current location">
                 <span class="gps-btn-icon">GPS</span>
@@ -196,7 +196,7 @@ if ($segNum > 0) {
             <label>GPS End Point <span class="required-star">*</span></label>
             <div class="gps-input-row">
               <input type="text" id="gpsEnd" name="gps_end"
-                     oninput="clearError('wrap-gpsEnd'); validateGPSField('gpsEnd','wrap-gpsEnd')"
+                     oninput="clearError(this.id)"
                      placeholder="e.g. 18.5214, 73.8577">
               <button type="button" class="gps-btn" onclick="fillGPS('gpsEnd')" title="Use my current location">
                 <span class="gps-btn-icon">GPS</span>
