@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once __DIR__ . '/../config/auth_guard.php';
 require_once __DIR__ . '/../config/db.php';
@@ -62,8 +62,8 @@ if ($segNum > 0) {
     $pageTitle    = 'Full Segment Audit';
     $pageSubtitle = 'Fill in all details for this segment. Required fields are marked with *';
     $topbarTitle  = 'Full Segment Audit';
-    $topbarSub    = "CycleAudit · Parisar";
-    $htmlTitle    = "Segment Audit Form — CycleAudit";
+    $topbarSub    = "CycleAudit Â· Parisar";
+    $htmlTitle    = "Segment Audit Form â€” CycleAudit";
     $breadcrumb   = 'Road Audit';
 }
 ?>
@@ -82,7 +82,7 @@ if ($segNum > 0) {
 
 <!-- Top bar -->
 <div class="form-topbar">
-  <div class="form-topbar-logo">🚲</div>
+  <div class="form-topbar-logo">ðŸš²</div>
   <div class="form-topbar-title">
     <?php echo htmlspecialchars($topbarTitle, ENT_QUOTES, 'UTF-8'); ?>
     <span><?php echo htmlspecialchars($topbarSub, ENT_QUOTES, 'UTF-8'); ?></span>
@@ -94,7 +94,7 @@ if ($segNum > 0) {
 
 <form id="auditForm" onsubmit="event.preventDefault(); submitFullAudit();">
 
-  <!-- Hidden fields — populated by form.js from URL params -->
+  <!-- Hidden fields â€” populated by form.js from URL params -->
   <input type="hidden" name="segment_id" id="segment_id">
   <input type="hidden" name="session_id" id="session_id">
   <input type="hidden" name="road_id"    id="road_id"    value="<?php echo $roadIdForForm; ?>">
@@ -102,7 +102,7 @@ if ($segNum > 0) {
   <!-- Confirm / Reset overlay -->
   <div class="confirm-overlay" id="confirmOverlay">
     <div class="confirm-box">
-      <div class="confirm-icon">🔄</div>
+      <div class="confirm-icon">ðŸ”„</div>
       <h4>Reset the Form?</h4>
       <p>All entered data will be permanently cleared.</p>
       <div class="confirm-btns">
@@ -115,7 +115,7 @@ if ($segNum > 0) {
   <!-- Scroll-to-top -->
   <button type="button" id="scrollTopBtn"
           onclick="window.scrollTo({top:0,behavior:'smooth'})"
-          title="Back to top">↑</button>
+          title="Back to top">â†‘</button>
 
   <div class="container">
 
@@ -123,9 +123,9 @@ if ($segNum > 0) {
       <?php if ($segNum > 0 && $totalSegments > 0): ?>
       <div class="seg-breadcrumb">
         <span><?php echo $breadcrumb; ?></span>
-        <span class="seg-breadcrumb-sep">›</span>
+        <span class="seg-breadcrumb-sep">â€º</span>
         <span>Segment <?php echo $segNum; ?></span>
-        <span class="seg-breadcrumb-sep">›</span>
+        <span class="seg-breadcrumb-sep">â€º</span>
         <span class="seg-breadcrumb-active">Audit Form</span>
       </div>
       <?php endif; ?>
@@ -136,23 +136,23 @@ if ($segNum > 0) {
 
     <!-- Section nav -->
     <nav class="section-nav">
-      <a href="#sec-landmarks">📍 Landmarks</a>
-      <a href="#sec-fixed">🏗 Fixed Obs.</a>
-      <a href="#sec-movable">🔄 Movable Obs.</a>
-      <a href="#sec-parked">🚗 Parked Vehicles</a>
-      <a href="#sec-surface">🛣 Track Surface</a>
-      <a href="#sec-intersections">🔀 Intersections</a>
-      <a href="#sec-footpath">🚶 Footpath Rating</a>
-      <a href="#sec-additional">ℹ️ Additional Info</a>
-      <a href="#sec-dimensions">📐 Dimensions</a>
+      <a href="#sec-landmarks">ðŸ“ Landmarks</a>
+      <a href="#sec-fixed">ðŸ— Fixed Obs.</a>
+      <a href="#sec-movable">ðŸ”„ Movable Obs.</a>
+      <a href="#sec-parked">ðŸš— Parked Vehicles</a>
+      <a href="#sec-surface">ðŸ›£ Track Surface</a>
+      <a href="#sec-intersections">ðŸ”€ Intersections</a>
+      <a href="#sec-footpath">ðŸš¶ Footpath Rating</a>
+      <a href="#sec-additional">â„¹ï¸ Additional Info</a>
+      <a href="#sec-dimensions">ðŸ“ Dimensions</a>
     </nav>
 
-    <!-- ══════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          1. LANDMARKS & GPS
-    ══════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="section-card">
       <div class="section-card-header" id="sec-landmarks">
-        <div class="section-card-icon icon-green">📍</div>
+        <div class="section-card-icon icon-green">ðŸ“</div>
         <div>
           <div class="section-card-title section-anchor">Landmarks &amp; GPS</div>
           <div class="section-card-subtitle">Define the start and end points of this segment</div>
@@ -178,28 +178,38 @@ if ($segNum > 0) {
         <div class="field-row" style="margin-top:14px">
           <div class="field-group req-field" id="wrap-gpsStart">
             <label>GPS Start Point <span class="required-star">*</span></label>
-            <input type="text" id="gpsStart" name="gps_start"
-                   oninput="clearError('wrap-gpsStart')"
-                   placeholder="e.g. 18.5204, 73.8567">
-            <span class="error-msg">This field is required</span>
+            <div class="gps-input-row">
+              <input type="text" id="gpsStart" name="gps_start"
+                     oninput="clearError('wrap-gpsStart'); validateGPSField('gpsStart','wrap-gpsStart')"
+                     placeholder="e.g. 18.5204, 73.8567">
+              <button type="button" class="gps-btn" onclick="fillGPS('gpsStart')" title="Use my current location">
+                <span class="gps-btn-icon">GPS</span>
+              </button>
+            </div>
+            <span class="error-msg" id="gpsStart-error">Enter valid coordinates (e.g. 18.5204, 73.8567)</span>
           </div>
           <div class="field-group req-field" id="wrap-gpsEnd">
             <label>GPS End Point <span class="required-star">*</span></label>
-            <input type="text" id="gpsEnd" name="gps_end"
-                   oninput="clearError('wrap-gpsEnd')"
-                   placeholder="e.g. 18.5214, 73.8577">
-            <span class="error-msg">This field is required</span>
+            <div class="gps-input-row">
+              <input type="text" id="gpsEnd" name="gps_end"
+                     oninput="clearError('wrap-gpsEnd'); validateGPSField('gpsEnd','wrap-gpsEnd')"
+                     placeholder="e.g. 18.5214, 73.8577">
+              <button type="button" class="gps-btn" onclick="fillGPS('gpsEnd')" title="Use my current location">
+                <span class="gps-btn-icon">GPS</span>
+              </button>
+            </div>
+            <span class="error-msg" id="gpsEnd-error">Enter valid coordinates (e.g. 18.5214, 73.8577)</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          2. FIXED OBSTRUCTIONS
-    ══════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="section-card">
       <div class="section-card-header" id="sec-fixed">
-        <div class="section-card-icon icon-orange">🏗</div>
+        <div class="section-card-icon icon-orange">ðŸ—</div>
         <div>
           <div class="section-card-title section-anchor">Fixed Obstructions</div>
           <div class="section-card-subtitle">Permanent structures blocking the cycle track</div>
@@ -210,7 +220,7 @@ if ($segNum > 0) {
           <label class="field-label">Search Fixed Obstructions</label>
           <div class="search-wrapper" id="fixedWrapper">
             <input type="text"
-                   placeholder="Click to see options or type to search…"
+                   placeholder="Click to see options or type to searchâ€¦"
                    oninput="filterList('fixed',this)"
                    onfocus="openDropdown('fixed')"
                    autocomplete="off">
@@ -222,12 +232,12 @@ if ($segNum > 0) {
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          3. MOVABLE OBSTRUCTIONS
-    ══════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="section-card">
       <div class="section-card-header" id="sec-movable">
-        <div class="section-card-icon icon-yellow">🔄</div>
+        <div class="section-card-icon icon-yellow">ðŸ”„</div>
         <div>
           <div class="section-card-title section-anchor">Movable Obstructions</div>
           <div class="section-card-subtitle">Temporary or removable items on the track</div>
@@ -238,7 +248,7 @@ if ($segNum > 0) {
           <label class="field-label">Search Movable Obstructions</label>
           <div class="search-wrapper" id="movableWrapper">
             <input type="text"
-                   placeholder="Click to see options or type to search…"
+                   placeholder="Click to see options or type to searchâ€¦"
                    oninput="filterList('movable',this)"
                    onfocus="openDropdown('movable')"
                    autocomplete="off">
@@ -250,12 +260,12 @@ if ($segNum > 0) {
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          4. PARKED VEHICLES
-    ══════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="section-card">
       <div class="section-card-header" id="sec-parked">
-        <div class="section-card-icon icon-red">🚗</div>
+        <div class="section-card-icon icon-red">ðŸš—</div>
         <div>
           <div class="section-card-title section-anchor">Parked Vehicles</div>
           <div class="section-card-subtitle">Reason for vehicles parked on the cycle track</div>
@@ -266,7 +276,7 @@ if ($segNum > 0) {
           <label class="field-label">Search Parked Vehicle Reasons</label>
           <div class="search-wrapper" id="parkedWrapper">
             <input type="text"
-                   placeholder="Click to see options or type to search…"
+                   placeholder="Click to see options or type to searchâ€¦"
                    oninput="filterList('parked',this)"
                    onfocus="openDropdown('parked')"
                    autocomplete="off">
@@ -278,12 +288,12 @@ if ($segNum > 0) {
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          5. TRACK SURFACE & OVERHEAD
-    ══════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="section-card">
       <div class="section-card-header" id="sec-surface">
-        <div class="section-card-icon icon-teal">🛣</div>
+        <div class="section-card-icon icon-teal">ðŸ›£</div>
         <div>
           <div class="section-card-title section-anchor">Track Surface &amp; Overhead Obstructions</div>
           <div class="section-card-subtitle">Condition of the cycle track surface</div>
@@ -300,7 +310,7 @@ if ($segNum > 0) {
                           onchange="toggleMissingLength(this)"> No</label>
           </div>
           <div id="missingLengthBox">
-            <label>⚠ Missing Length (m)</label>
+            <label>âš  Missing Length (m)</label>
             <input type="text" inputmode="decimal" id="missingLength" name="missing_length"
                    placeholder="Enter missing cycle track length in meters"
                    oninput="missingLengthInput(this)" onblur="missingLengthBlur(this)">
@@ -343,12 +353,12 @@ if ($segNum > 0) {
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          6. INTERSECTIONS
-    ══════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="section-card">
       <div class="section-card-header" id="sec-intersections">
-        <div class="section-card-icon icon-blue">🔀</div>
+        <div class="section-card-icon icon-blue">ðŸ”€</div>
         <div>
           <div class="section-card-title section-anchor">Intersections</div>
           <div class="section-card-subtitle">Junctions and crossings within this segment</div>
@@ -357,16 +367,16 @@ if ($segNum > 0) {
       <div class="section-card-body">
         <div id="intersectionsContainer"></div>
         <button type="button" class="btn-add-intersection"
-                onclick="addIntersection()">＋ Add Intersection</button>
+                onclick="addIntersection()">ï¼‹ Add Intersection</button>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          7. FOOTPATH RATING
-    ══════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="section-card">
       <div class="section-card-header" id="sec-footpath">
-        <div class="section-card-icon icon-green">🚶</div>
+        <div class="section-card-icon icon-green">ðŸš¶</div>
         <div>
           <div class="section-card-title section-anchor">
             Footpath Rating
@@ -389,10 +399,10 @@ if ($segNum > 0) {
               Obstruction free</label>
             <label><input type="checkbox" name="footpath_rating[]" value="disabledFriendly"
                           onchange="updateFootpathScore()">
-              Disabled friendly — access ramps with tactile tiles</label>
+              Disabled friendly â€” access ramps with tactile tiles</label>
             <label><input type="checkbox" name="footpath_rating[]" value="comfort"
                           onchange="updateFootpathScore()">
-              Comfort — tree shade with seating spaces</label>
+              Comfort â€” tree shade with seating spaces</label>
           </div>
         </div>
 
@@ -436,7 +446,7 @@ if ($segNum > 0) {
           <div style="margin-top:8px">
             <div class="counter-row" style="padding:0">
               <div class="counter-ctrl">
-                <button type="button" onclick="adjustCounter('signageCount',-1)">−</button>
+                <button type="button" onclick="adjustCounter('signageCount',-1)">âˆ’</button>
                 <input type="text" inputmode="numeric" pattern="[0-9]*"
                        id="signageCount" name="signage_count"
                        value="" placeholder="0"
@@ -451,12 +461,12 @@ if ($segNum > 0) {
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          8. ADDITIONAL INFORMATION
-    ══════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="section-card">
       <div class="section-card-header" id="sec-additional">
-        <div class="section-card-icon icon-purple">ℹ️</div>
+        <div class="section-card-icon icon-purple">â„¹ï¸</div>
         <div>
           <div class="section-card-title section-anchor">Additional Information</div>
           <div class="section-card-subtitle">Environment and infrastructure details</div>
@@ -509,12 +519,12 @@ if ($segNum > 0) {
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
          9. DIMENSIONS & COMMENTS
-    ══════════════════════════════════════ -->
+    â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
     <div class="section-card">
       <div class="section-card-header" id="sec-dimensions">
-        <div class="section-card-icon icon-gray">📐</div>
+        <div class="section-card-icon icon-gray">ðŸ“</div>
         <div>
           <div class="section-card-title section-anchor">Segment Dimensions &amp; Comments</div>
           <div class="section-card-subtitle">Physical measurements and surveyor notes</div>
@@ -536,7 +546,7 @@ if ($segNum > 0) {
         <div class="field-group" style="margin-top:14px">
           <label class="field-label">Surveyor's Comments</label>
           <textarea name="comments"
-                    placeholder="Enter any observations, issues, or notes about this segment…"
+                    placeholder="Enter any observations, issues, or notes about this segmentâ€¦"
                     rows="4"></textarea>
         </div>
       </div>
@@ -544,9 +554,9 @@ if ($segNum > 0) {
 
     <!-- Submit & Reset -->
     <div class="form-actions">
-      <button type="submit" class="btn">✓ Submit Full Audit</button>
+      <button type="submit" class="btn">âœ“ Submit Full Audit</button>
       <button type="button" class="btn-reset" onclick="resetForm()">
-        🔄 Reset / Clear Form
+        ðŸ”„ Reset / Clear Form
       </button>
     </div>
 
