@@ -1,10 +1,9 @@
 <?php
+declare(strict_types=1);
 function isValidGPS($val) {
     if (trim($val) === '') return true;
     return (bool) preg_match('/^-?[0-9]{1,3}[.][0-9]+[,][ ]*-?[0-9]{1,3}[.][0-9]+$/', trim($val));
 }
-
-declare(strict_types=1);
 require_once __DIR__ . '/../config/auth_guard.php';
 require_once __DIR__ . '/../config/db.php';
 
