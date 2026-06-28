@@ -1068,3 +1068,47 @@ doReset = async function() {
 setTimeout(() => {
   if (!editMode) FormStateManager.restore();
 }, 100);
+
+
+// GPS field validation
+(function () {
+  var GPS_REGEX = /^-?[0-9]{1,3}[.][0-9]+[,][ ]*-?[0-9]{1,3}[.][0-9]+$/;
+  var GPS_FIELDS = ['gps_start', 'gps_end'];
+  var allowedKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','-','.',' ',','];
+  GPS_FIELDS.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('keydown', function (e) {
+      if (allowedKeys.indexOf(e.key) !== -1) return;
+      if (e.key >= '0' && e.key <= '9') return;
+      if (e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+    });
+    el.addEventListener('input', function () {
+      var cleaned = el.value.replace(/[^0-9.,\s-]/g, '');
+      if (cleaned !== el.value) el.value = cleaned;
+      validateGPS(el);
+    });
+    el.addEventListener('blur', function () { validateGPS(el); });
+  });
+  function validateGPS(el) {
+    var val = el.value.trim();
+    var errId = el.id + '_error';
+    var errEl = document.getElementById(errId);
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.id = errId;
+      errEl.style.cssText = 'color:#c0392b;font-size:0.78rem;margin-top:4px;';
+      el.parentNode.appendChild(errEl);
+    }
+    if (val === '') { errEl.textContent = ''; el.style.borderColor = ''; return; }
+    if (!GPS_REGEX.test(val)) {
+      errEl.textContent = 'Enter coordinates like 18.5204, 73.8567';
+      el.style.borderColor = '#c0392b';
+    } else {
+      errEl.textContent = '';
+      el.style.borderColor = '#27ae60';
+    }
+  }
+})();
+// end GPS validation
