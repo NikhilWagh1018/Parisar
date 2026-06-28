@@ -1070,7 +1070,7 @@ setTimeout(() => {
 }, 100);
 
 
-// GPS field validation
+document.addEventListener("DOMContentLoaded", function() {
 (function () {
   var GPS_REGEX = /^-?[0-9]{1,3}[.][0-9]+[,][ ]*-?[0-9]{1,3}[.][0-9]+$/;
   var GPS_FIELDS = ['gpsStart', 'gpsEnd'];
@@ -1111,4 +1111,4 @@ setTimeout(() => {
     }
   }
 })();
-// end GPS validation
+});
