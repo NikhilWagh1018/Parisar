@@ -1070,7 +1070,6 @@ setTimeout(() => {
 }, 100);
 
 
-window.addEventListener("load", function() {
 (function () {
   var GPS_REGEX = /^-?[0-9]{1,3}[.][0-9]+[,][ ]*-?[0-9]{1,3}[.][0-9]+$/;
   var GPS_FIELDS = ['gpsStart', 'gpsEnd'];
