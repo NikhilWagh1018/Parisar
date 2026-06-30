@@ -17,11 +17,13 @@ async function loadDashboard() {
       return;
     }
 
-    // ── Stats ──────────────────────────────────────────────────
-    document.getElementById('st-roads').textContent  = data.stats.total_roads;
-    document.getElementById('st-segs').textContent   = data.stats.total_segments;
-    document.getElementById('st-done').textContent   = data.stats.completed_segments;
-    document.getElementById('st-active').textContent = data.stats.active_sessions;
+    // ── Stats (not rendered for admins — "My Activity" grid removed) ──
+    if (document.getElementById('statGrid')) {
+      document.getElementById('st-roads').textContent  = data.stats.total_roads;
+      document.getElementById('st-segs').textContent   = data.stats.total_segments;
+      document.getElementById('st-done').textContent   = data.stats.completed_segments;
+      document.getElementById('st-active').textContent = data.stats.active_sessions;
+    }
 
     // ── Roads table ────────────────────────────────────────────
     const container = document.getElementById('roadsContainer');

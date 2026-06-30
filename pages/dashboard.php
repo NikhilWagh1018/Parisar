@@ -127,10 +127,12 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <p>Here's your audit overview for today.</p>
     </div>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">moon</button>
+    <?php if ($CURRENT_USER_ROLE !== 'admin'): ?>
     <a href="segment.php" class="btn-new">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       New Road Audit
     </a>
+    <?php endif; ?>
   </div>
 
   <div class="content">
@@ -183,10 +185,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     </section>
     <?php endif; ?>
 
-    <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
-    <h2 style="font-size:1.05rem;font-weight:800;color:var(--ink);margin-bottom:14px">My Activity</h2>
-    <?php endif; ?>
-
+    <?php if ($CURRENT_USER_ROLE !== 'admin'): ?>
     <!-- Stat cards — populated by JS -->
     <div class="stat-grid" id="statGrid">
       <div class="stat-card"><div class="stat-icon" style="background:#edf7d6">🛣️</div><div><div class="stat-val" id="st-roads">—</div><div class="stat-lbl">Roads</div></div></div>
@@ -194,6 +193,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <div class="stat-card"><div class="stat-icon" style="background:#dcfce7">✅</div><div><div class="stat-val" id="st-done">—</div><div class="stat-lbl">Completed</div></div></div>
       <div class="stat-card"><div class="stat-icon" style="background:#fef9c3">⚡</div><div><div class="stat-val" id="st-active">—</div><div class="stat-lbl">Active Sessions</div></div></div>
     </div>
+    <?php endif; ?>
 
     <!-- Roads table -->
     <div class="card">
