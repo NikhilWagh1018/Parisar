@@ -23,7 +23,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <title>Dashboard — CycleAudit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/dashboard.css">
+<link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/dashboard.css?v=<?= filemtime(__DIR__ . '/../css/dashboard.css') ?>">
 </head>
 <body class="light">
 
@@ -133,6 +133,58 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 
   <div class="content">
 
+    <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
+    <!-- ════════════════ ADMIN OVERVIEW ════════════════ -->
+    <section class="admin-overview" id="adminOverview">
+      <div class="admin-overview-head">
+        <h2>Program Overview</h2>
+        <span class="admin-badge">Admin</span>
+      </div>
+
+      <!-- Org-wide KPI strip -->
+      <div class="stat-grid" id="adminStatGrid">
+        <div class="stat-card"><div class="stat-icon" style="background:#edf7d6">🛣️</div><div><div class="stat-val" id="ao-roads">—</div><div class="stat-lbl">Total Roads</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#dbeafe">📍</div><div><div class="stat-val" id="ao-segs">—</div><div class="stat-lbl">Total Segments</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#dcfce7">✅</div><div><div class="stat-val" id="ao-done">—</div><div class="stat-lbl">Completion Rate</div></div></div>
+        <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">👥</div><div><div class="stat-val" id="ao-surveyors">—</div><div class="stat-lbl">Surveyors</div></div></div>
+      </div>
+
+      <div class="admin-overview-grid">
+        <!-- Pending verification queue -->
+        <div class="card">
+          <div class="card-head">
+            <h3>⏳ Pending Verification</h3>
+            <a href="admin.php">Verify Roads →</a>
+          </div>
+          <div id="pendingQueueContainer">
+            <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
+              <div class="skeleton" style="height:18px;width:70%"></div>
+              <div class="skeleton" style="height:18px;width:55%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent activity feed -->
+        <div class="card">
+          <div class="card-head">
+            <h3>🕒 Recent Activity</h3>
+          </div>
+          <div id="recentActivityContainer">
+            <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
+              <div class="skeleton" style="height:18px;width:80%"></div>
+              <div class="skeleton" style="height:18px;width:60%"></div>
+              <div class="skeleton" style="height:18px;width:70%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <?php endif; ?>
+
+    <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
+    <h2 style="font-size:1.05rem;font-weight:800;color:var(--ink);margin-bottom:14px">My Activity</h2>
+    <?php endif; ?>
+
     <!-- Stat cards — populated by JS -->
     <div class="stat-grid" id="statGrid">
       <div class="stat-card"><div class="stat-icon" style="background:#edf7d6">🛣️</div><div><div class="stat-val" id="st-roads">—</div><div class="stat-lbl">Roads</div></div></div>
@@ -144,7 +196,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     <!-- Roads table -->
     <div class="card">
       <div class="card-head">
-        <h3>🛣️ Your Roads</h3>
+        <h3>🛣️ <?= $CURRENT_USER_ROLE === 'admin' ? 'My Roads' : 'Your Roads' ?></h3>
         <a href="segment.php">+ Define new road</a>
       </div>
       <div id="roadsContainer">
@@ -177,7 +229,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';</script>
-<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/dashboard.js"></script>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/dashboard.js?v=<?= filemtime(__DIR__ . '/../js/dashboard.js') ?>"></script>
 <div class="sb-overlay" id="sb-overlay"></div>
 <script>
 const tog = document.getElementById("sb-toggle");

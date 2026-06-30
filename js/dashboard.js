@@ -170,9 +170,87 @@ document.addEventListener('click', e => {
 
 // ── Boot ──────────────────────────────────────────────────────
 loadDashboard();
+if (document.getElementById('adminOverview')) {
+  loadAdminOverview();
+}
 
 // Show toast if returning from a successful audit
 if (new URLSearchParams(location.search).get('audit') === 'done') {
   showToast('✅ Audit submitted successfully!', 'success');
   history.replaceState(null, '', location.pathname);
+}
+
+// ── Admin overview (org-wide stats / pending queue / activity) ──
+async function loadAdminOverview() {
+  try {
+    const res  = await fetch('../api/admin/dashboard_overview.php', {
+      headers: { 'Accept': 'application/json', 'X-CSRF-Token': CSRF }
+    });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch { return; } // fail quietly — admin section is supplementary
+
+    if (!data.success) return;
+
+    const s = data.org_stats;
+    const pct = s.total_segments > 0
+      ? Math.round((s.completed_segments / s.total_segments) * 100)
+      : 0;
+
+    document.getElementById('ao-roads').textContent      = s.total_roads;
+    document.getElementById('ao-segs').textContent       = s.total_segments;
+    document.getElementById('ao-done').textContent       = pct + '%';
+    document.getElementById('ao-surveyors').textContent  = s.total_surveyors;
+
+    // ── Pending verification queue ──
+    const pendingEl = document.getElementById('pendingQueueContainer');
+    if (data.pending_queue.length === 0) {
+      pendingEl.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">✅</div>
+          <p>Nothing pending — all roads verified.</p>
+        </div>`;
+    } else {
+      pendingEl.innerHTML = data.pending_queue.map(p => `
+        <div class="pending-row">
+          <div class="road-name-info">
+            <strong>${escHtml(p.canonical_name)}</strong>
+            <span>${p.member_count} ${p.member_count === 1 ? 'entry' : 'entries'}</span>
+          </div>
+          <a href="admin.php" class="btn-link">Review →</a>
+        </div>
+      `).join('');
+      if (data.org_stats.pending_roads > data.pending_queue.length) {
+        pendingEl.innerHTML += `<p class="pending-more">+${data.org_stats.pending_roads - data.pending_queue.length} more — see Verify Roads</p>`;
+      }
+    }
+
+    // ── Recent activity feed ──
+    const activityEl = document.getElementById('recentActivityContainer');
+    if (data.recent_activity.length === 0) {
+      activityEl.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🕒</div>
+          <p>No recent activity yet.</p>
+        </div>`;
+    } else {
+      activityEl.innerHTML = data.recent_activity.map(a => {
+        const verb = a.action === 'segment_edited' ? 'edited' : 'submitted';
+        const what = a.road_name
+          ? `segment ${a.segment_number ?? ''} on <strong>${escHtml(a.road_name)}</strong>`
+          : 'a segment';
+        return `
+          <div class="activity-row">
+            <span class="activity-text">
+              <strong>${escHtml(a.user_name || 'Someone')}</strong> ${verb} ${what}
+            </span>
+            <span class="activity-time">${formatDate(a.created_at)}</span>
+          </div>`;
+      }).join('');
+    }
+
+  } catch {
+    // fail quietly — admin section is supplementary, not critical path
+  }
 }
