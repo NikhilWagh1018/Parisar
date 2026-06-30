@@ -1,0 +1,138 @@
+diff --git a/pages/admin.php b/pages/admin.php
+index 2e703c2..21f8514 100644
+--- a/pages/admin.php
++++ b/pages/admin.php
+@@ -133,6 +133,9 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+       Loading roads…
+     </div>
+     <div id="errorMsg" class="card" style="display:none;text-align:center;padding:30px;color:#dc2626;"></div>
++    <div class="filter-bar">
++      <label><input type="checkbox" id="showFlaggedCheck"> Show flagged groups</label>
++    </div>
+     <div id="groupsContainer"></div>
+   </div>
+ </main>
+@@ -163,7 +166,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+       escapeHtml(fmtDate(member.created_at)) + '</div>';
+     return row;
+   }
+-  function toggleGroup(id, input) {
++  function toggleGroup(id, input, action) {
+     input.disabled = true;
+     fetch('../api/admin/roads.php', {
+       method: 'POST',
+@@ -172,7 +175,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+         'X-CSRF-Token': CSRF,
+         'X-Requested-With': 'XMLHttpRequest'
+       },
+-      body: JSON.stringify({ id: id })
++      body: JSON.stringify({ id: id, action: action })
+     })
+       .then(function (r) { return r.json(); })
+       .then(function (data) {
+@@ -190,6 +193,31 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+         alert('Network error \u2014 could not update road.');
+       });
+   }
++  function toggleFlag(id, btn) {
++    btn.disabled = true;
++    fetch('../api/admin/roads.php', {
++      method: 'POST',
++      headers: {
++        'Content-Type': 'application/json',
++        'X-CSRF-Token': CSRF,
++        'X-Requested-With': 'XMLHttpRequest'
++      },
++      body: JSON.stringify({ id: id, action: 'flag' })
++    })
++      .then(function (r) { return r.json(); })
++      .then(function (data) {
++        btn.disabled = false;
++        if (!data.success) {
++          alert(data.error || 'Could not update flag. Please try again.');
++          return;
++        }
++        loadRoads();
++      })
++      .catch(function () {
++        btn.disabled = false;
++        alert('Network error \u2014 could not update flag.');
++      });
++  }
+   function buildGroup(group) {
+     var card = document.createElement('div');
+     card.className = 'card grp-card';
+@@ -211,22 +239,36 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+     left.appendChild(countEl);
+     var right = document.createElement('div');
+     right.className = 'grp-head-right';
++    if (group.is_flagged) {
++      var flagBadge = document.createElement('span');
++      flagBadge.className = 'badge badge-flagged';
++      flagBadge.textContent = 'Flagged';
++      right.appendChild(flagBadge);
++    }
+     var badge = document.createElement('span');
+     badge.className = 'badge ' + (group.is_verified ? 'badge-visible' : 'badge-hidden');
+     badge.textContent = group.is_verified ? 'Visible on public site' : 'Hidden from public site';
++    var flagBtn = document.createElement('button');
++    flagBtn.className = 'flag-btn' + (group.is_flagged ? ' is-flagged' : '');
++    flagBtn.textContent = group.is_flagged ? 'Unflag' : 'Flag as illegitimate';
++    flagBtn.addEventListener('click', function (e) {
++      e.stopPropagation();
++      toggleFlag(group.id, flagBtn);
++    });
+     var label = document.createElement('label');
+     label.className = 'toggle-switch';
+     var input = document.createElement('input');
+     input.type = 'checkbox';
+     input.checked = !!group.is_verified;
+     input.addEventListener('change', function () {
+-      toggleGroup(group.id, input);
++      toggleGroup(group.id, input, 'verify');
+     });
+     var slider = document.createElement('span');
+     slider.className = 'toggle-slider';
+     label.appendChild(input);
+     label.appendChild(slider);
+     right.appendChild(badge);
++    right.appendChild(flagBtn);
+     right.appendChild(label);
+     head.appendChild(left);
+     head.appendChild(right);
+@@ -243,10 +285,13 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+     card.appendChild(rowsWrap);
+     return card;
+   }
++  var showFlagged = false;
++  var allGroups = [];
+   function render(groups) {
+     var container = document.getElementById('groupsContainer');
+     container.innerHTML = '';
+-    groups.forEach(function (g) {
++    var visible = showFlagged ? groups : groups.filter(function (g) { return !g.is_flagged; });
++    visible.forEach(function (g) {
+       container.appendChild(buildGroup(g));
+     });
+   }
+@@ -262,7 +307,8 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+           document.getElementById('errorMsg').textContent = data.error || 'Could not load roads.';
+           return;
+         }
+-        render(data.road_groups);
++        allGroups = data.road_groups;
++        render(allGroups);
+       })
+       .catch(function () {
+         document.getElementById('loadingMsg').style.display = 'none';
+@@ -270,6 +316,10 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+         document.getElementById('errorMsg').textContent = 'Network error \u2014 could not load roads.';
+       });
+   }
++  document.getElementById('showFlaggedCheck').addEventListener('change', function (e) {
++    showFlagged = e.target.checked;
++    render(allGroups);
++  });
+   loadRoads();
+ })();
+ </script>
