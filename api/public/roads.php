@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  api/public/roads.php
-//  GET — returns distinct road names for the landing page,
-//  no auth required.
+//  GET — returns distinct, ADMIN-VERIFIED road names for the
+//  landing page, no auth required.
+//  MODIFIED: now filters to is_verified = 1 (see migrations/006).
+//  Deploy order matters: run migration 006 BEFORE pushing this file,
+//  or this query will fail with "Unknown column is_verified".
 // ═══════════════════════════════════════════════════════════════
 
 header('Content-Type: application/json');
@@ -26,13 +29,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 try {
     // GROUP BY TRIM(UPPER(name)) guards against duplicate-looking rows that
-    // differ only by case or stray whitespace (the DB has a case-insensitive
-    // unique constraint on name already, but this keeps the public list
-    // defensively deduped regardless of future schema changes).
+    // differ only by case or stray whitespace. is_verified = 1 hides
+    // surveyor-created junk/duplicate roads from the public landing page
+    // until an admin has explicitly confirmed them via pages/admin.php.
     $stmt = $pdo->query(
         "SELECT MIN(name) AS name
          FROM   roads
          WHERE  name IS NOT NULL AND TRIM(name) <> ''
+           AND  is_verified = 1
          GROUP BY TRIM(UPPER(name))
          ORDER BY MIN(name) ASC"
     );

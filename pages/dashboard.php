@@ -54,6 +54,13 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
       Segment View
     </a>
+    <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
+    <div class="nav-section">Admin</div>
+    <a class="nav-item" href="admin.php">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 1-1.5 3-9 3s-9-2-9-3 1.5-3 9-3 9 2 9 3z"/></svg>
+      Verify Roads
+    </a>
+    <?php endif; ?>
   </nav>
 
   <div class="sb-user">
