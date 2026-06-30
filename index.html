@@ -159,16 +159,8 @@
 </div></section>
 <section id="roads"><div class="mw">
   <div class="ey">Coverage</div><h2>Roads in the Audit Network</h2>
-  <p class="sub">These 19 roads across Pune are part of the PMC cycle track network and are covered by this auditing platform.</p>
-  <div class="rg">
-    <div class="rc">BANER ROAD</div><div class="rc">BIBVEWADI ROAD</div><div class="rc">DECCAN COLLEGE ROAD</div>
-    <div class="rc">DP ROAD</div><div class="rc">F.C. ROAD</div><div class="rc">GANGADHAM ROAD</div>
-    <div class="rc">J.M. ROAD</div><div class="rc">KARVE ROAD</div><div class="rc">KHADKI ROAD</div>
-    <div class="rc">PASHAN ROAD</div><div class="rc">PASHAN SUS ROAD</div><div class="rc">PMC ROAD</div>
-    <div class="rc">PRATHAMESH PARK ROAD</div><div class="rc">SANGAMWADI ROAD</div><div class="rc">S.B. ROAD</div>
-    <div class="rc">SINHAGAD ROAD</div><div class="rc">SPICER COLLEGE ROAD</div><div class="rc">SWAMI VIVEKANAD ROAD</div>
-    <div class="rc">COLLEGE ROAD</div>
-  </div>
+  <p class="sub">These <span id="roads-count">19</span> roads across Pune are part of the PMC cycle track network and are covered by this auditing platform.</p>
+  <div class="rg" id="roads-grid"></div>
 </div></section>
 <section id="cta"><div class="mw"><div class="cta-inner">
   <div class="ey" style="justify-content:center">Get Started</div>
@@ -206,6 +198,24 @@
       if (length   && s.total_length_km !== undefined) length.textContent   = s.total_length_km + 'km';
       if (segments && s.total_segments  !== undefined) segments.textContent = s.total_segments;
       if (good     && s.good_pct        !== undefined) good.textContent     = s.good_pct + '%';
+    })
+    .catch(function () {});
+
+  fetch('/api/public/roads.php')
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (!data.success || !Array.isArray(data.roads)) return;
+      var grid  = document.getElementById('roads-grid');
+      var count = document.getElementById('roads-count');
+      if (count) count.textContent = data.roads.length;
+      if (!grid) return;
+      grid.innerHTML = '';
+      data.roads.forEach(function (name) {
+        var div = document.createElement('div');
+        div.className = 'rc';
+        div.textContent = name.toUpperCase();
+        grid.appendChild(div);
+      });
     })
     .catch(function () {});
 })();
