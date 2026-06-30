@@ -1,0 +1,162 @@
+diff --git a/pages/admin.php b/pages/admin.php
+index b6441e5..5277969 100644
+--- a/pages/admin.php
++++ b/pages/admin.php
+@@ -31,6 +31,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+     gap: 12px; padding: 4px 0;
+   }
+   .grp-head-left { display: flex; align-items: center; gap: 10px; min-width: 0; cursor: pointer; flex: 1; }
++  .grp-check { flex-shrink: 0; width: 16px; height: 16px; cursor: pointer; }
+   .grp-name { font-weight: 600; }
+   .grp-count { font-size: 0.78rem; opacity: 0.65; flex-shrink: 0; }
+   .grp-head-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+@@ -49,7 +50,26 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+   .flag-btn:hover { background: rgba(220,38,38,0.08); }
+   .flag-btn.is-flagged { background: #dc2626; color: white; border-color: #dc2626; }
+   .flag-btn:disabled { opacity: 0.5; cursor: wait; }
+-  .filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 0.85rem; }
++  .filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; font-size: 0.85rem; }
++  .bulk-toolbar {
++    display: none; align-items: center; gap: 10px; flex-wrap: wrap;
++    padding: 10px 14px; border-radius: 10px; margin-bottom: 14px;
++    background: rgba(99,102,241,0.08); font-size: 0.85rem;
++  }
++  .bulk-toolbar.show { display: flex; }
++  .bulk-count { font-weight: 600; }
++  .bulk-btn {
++    font-size: 0.78rem; font-weight: 600; padding: 5px 12px; border-radius: 999px;
++    border: 1px solid rgba(127,127,127,0.3); background: transparent; cursor: pointer; transition: 0.15s;
++  }
++  .bulk-btn:hover { background: rgba(127,127,127,0.1); }
++  .bulk-btn.bulk-danger { border-color: rgba(220,38,38,0.35); color: #dc2626; }
++  .bulk-btn.bulk-danger:hover { background: rgba(220,38,38,0.08); }
++  .bulk-btn:disabled { opacity: 0.5; cursor: wait; }
++  .bulk-clear {
++    margin-left: auto; font-size: 0.78rem; opacity: 0.7; cursor: pointer;
++    background: none; border: none; text-decoration: underline; padding: 0;
++  }
+   .grp-rows {
+     margin-top: 12px; display: none; flex-direction: column; gap: 8px;
+   }
+@@ -149,8 +169,17 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+     </div>
+     <div id="errorMsg" class="card" style="display:none;text-align:center;padding:30px;color:#dc2626;"></div>
+     <div class="filter-bar">
++      <label><input type="checkbox" id="selectAllCheck"> Select all visible</label>
+       <label><input type="checkbox" id="showFlaggedCheck"> Show flagged groups</label>
+     </div>
++    <div class="bulk-toolbar" id="bulkToolbar">
++      <span class="bulk-count" id="bulkCount">0 selected</span>
++      <button class="bulk-btn" id="bulkVerifyBtn">Mark Visible</button>
++      <button class="bulk-btn" id="bulkHideBtn">Mark Hidden</button>
++      <button class="bulk-btn bulk-danger" id="bulkFlagBtn">Flag</button>
++      <button class="bulk-btn" id="bulkUnflagBtn">Unflag</button>
++      <button class="bulk-clear" id="bulkClearBtn">Clear selection</button>
++    </div>
+     <div id="groupsContainer"></div>
+   </div>
+ </main>
+@@ -250,6 +279,20 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+     var left = document.createElement('div');
+     left.className = 'grp-head-left';
+ 
++    var check = document.createElement('input');
++    check.type = 'checkbox';
++    check.className = 'grp-check';
++    check.checked = selectedIds.has(group.id);
++    check.addEventListener('click', function (e) {
++      e.stopPropagation();
++      if (check.checked) {
++        selectedIds.add(group.id);
++      } else {
++        selectedIds.delete(group.id);
++      }
++      updateBulkToolbar();
++    });
++
+     var chev = document.createElement('span');
+     chev.className = 'chev';
+     chev.innerHTML = '&#9656;';
+@@ -262,6 +305,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+     countEl.className = 'grp-count';
+     countEl.textContent = group.entry_count + (group.entry_count === 1 ? ' entry' : ' entries') + ' \u00b7 ' + group.total_segments + ' segments total';
+ 
++    left.appendChild(check);
+     left.appendChild(chev);
+     left.appendChild(nameEl);
+     left.appendChild(countEl);
+@@ -326,6 +370,45 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+ 
+   var showFlagged = false;
+   var allGroups = [];
++  var selectedIds = new Set();
++
++  function updateBulkToolbar() {
++    var toolbar = document.getElementById('bulkToolbar');
++    var count = selectedIds.size;
++    document.getElementById('bulkCount').textContent = count + (count === 1 ? ' selected' : ' selected');
++    toolbar.classList.toggle('show', count > 0);
++  }
++
++  function bulkAction(action, value) {
++    if (selectedIds.size === 0) return;
++    var ids = Array.from(selectedIds);
++    var btns = document.querySelectorAll('.bulk-btn');
++    btns.forEach(function (b) { b.disabled = true; });
++    fetch('../api/admin/roads.php', {
++      method: 'POST',
++      headers: {
++        'Content-Type': 'application/json',
++        'X-CSRF-Token': CSRF,
++        'X-Requested-With': 'XMLHttpRequest'
++      },
++      body: JSON.stringify({ ids: ids, action: action, value: value })
++    })
++      .then(function (r) { return r.json(); })
++      .then(function (data) {
++        btns.forEach(function (b) { b.disabled = false; });
++        if (!data.success) {
++          alert(data.error || 'Could not update selected roads. Please try again.');
++          return;
++        }
++        selectedIds.clear();
++        updateBulkToolbar();
++        loadRoads();
++      })
++      .catch(function () {
++        btns.forEach(function (b) { b.disabled = false; });
++        alert('Network error \u2014 could not update selected roads.');
++      });
++  }
+ 
+   function render(groups) {
+     var container = document.getElementById('groupsContainer');
+@@ -360,6 +443,28 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+ 
+   document.getElementById('showFlaggedCheck').addEventListener('change', function (e) {
+     showFlagged = e.target.checked;
++    document.getElementById('selectAllCheck').checked = false;
++    render(allGroups);
++  });
++
++  document.getElementById('selectAllCheck').addEventListener('change', function (e) {
++    var visible = showFlagged ? allGroups : allGroups.filter(function (g) { return !g.is_flagged; });
++    if (e.target.checked) {
++      visible.forEach(function (g) { selectedIds.add(g.id); });
++    } else {
++      visible.forEach(function (g) { selectedIds.delete(g.id); });
++    }
++    updateBulkToolbar();
++    render(allGroups);
++  });
++
++  document.getElementById('bulkVerifyBtn').addEventListener('click', function () { bulkAction('verify', true); });
++  document.getElementById('bulkHideBtn').addEventListener('click', function () { bulkAction('verify', false); });
++  document.getElementById('bulkFlagBtn').addEventListener('click', function () { bulkAction('flag', true); });
++  document.getElementById('bulkUnflagBtn').addEventListener('click', function () { bulkAction('flag', false); });
++  document.getElementById('bulkClearBtn').addEventListener('click', function () {
++    selectedIds.clear();
++    updateBulkToolbar();
+     render(allGroups);
+   });
+ 
