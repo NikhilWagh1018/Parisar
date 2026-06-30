@@ -1,0 +1,25 @@
+diff --git a/pages/admin.php b/pages/admin.php
+index 4a46c72..b6441e5 100644
+--- a/pages/admin.php
++++ b/pages/admin.php
+@@ -33,7 +33,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+   .grp-head-left { display: flex; align-items: center; gap: 10px; min-width: 0; cursor: pointer; flex: 1; }
+   .grp-name { font-weight: 600; }
+   .grp-count { font-size: 0.78rem; opacity: 0.65; flex-shrink: 0; }
+-  .grp-head-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
++  .grp-head-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+   .badge {
+     font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+     flex-shrink: 0; white-space: nowrap;
+@@ -81,6 +81,11 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+     font-size: 0.85rem; opacity: 0.75; margin-bottom: 18px; padding: 10px 14px;
+     border-radius: 8px; background: rgba(99,102,241,0.08);
+   }
++  @media (max-width: 600px) {
++    .grp-head { flex-wrap: wrap; }
++    .grp-head-left { flex: 1 1 100%; }
++    .grp-head-right { flex: 1 1 100%; justify-content: flex-start; margin-top: 6px; }
++  }
+ </style>
+ </head>
+ <body>
