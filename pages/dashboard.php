@@ -10,7 +10,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/auth_guard.php';
 require_once __DIR__ . '/../config/constants.php';
 
-$hour     = (int)date('H');
+$hour     = (int)(new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('H');
 $greet    = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
 $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 ?>
