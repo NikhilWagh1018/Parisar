@@ -48,10 +48,12 @@ function roadRenderDropdown(q) {
 
   let html = '';
 
-  // ── Pinned: Other / Custom — always at top ──
-  html += `<div class="road-dropdown-item pinned" onclick="roadSelectCustom()">
-    <span>✦</span> Other / Custom Road…
-  </div>`;
+  // ── Pinned: Other / Custom — admin only, always at top ──
+  if (window.IS_ADMIN) {
+    html += `<div class="road-dropdown-item pinned" onclick="roadSelectCustom()">
+      <span>✦</span> Other / Custom Road…
+    </div>`;
+  }
 
   if (filtered.length > 0) {
     html += `<div class="road-dropdown-section-label">Pune Cycle Track Roads</div>`;
@@ -65,13 +67,19 @@ function roadRenderDropdown(q) {
       </div>`;
     });
   } else if (raw.length > 0) {
-    // No match — offer to add as custom
-    html += `<div class="road-dropdown-empty">
-      No match for "<strong>${raw}</strong>"
-    </div>
-    <div class="road-dropdown-item pinned" onclick="roadSelectCustomFill('${raw}')">
-      <span>＋</span> Add "<strong>${raw}</strong>" as custom road
-    </div>`;
+    // No match
+    if (window.IS_ADMIN) {
+      html += `<div class="road-dropdown-empty">
+        No match for "<strong>${raw}</strong>"
+      </div>
+      <div class="road-dropdown-item pinned" onclick="roadSelectCustomFill('${raw}')">
+        <span>＋</span> Add "<strong>${raw}</strong>" as custom road
+      </div>`;
+    } else {
+      html += `<div class="road-dropdown-empty">
+        No match for "<strong>${raw}</strong>". Can't find your road? Ask an admin to add it.
+      </div>`;
+    }
   }
 
   dd.innerHTML = html;

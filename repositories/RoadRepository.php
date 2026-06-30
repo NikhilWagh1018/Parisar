@@ -126,6 +126,22 @@ class RoadRepository
     }
 
     /**
+     * Check whether a road_groups row matching this name (normalized,
+     * case/whitespace insensitive) already exists. Used to block
+     * non-admin users from introducing brand-new road names via
+     * api/roads/create.php — they may only attach to an existing group.
+     */
+    public function roadGroupExists(string $name): bool
+    {
+        $normalized = trim(strtoupper($name));
+        $stmt = $this->pdo->prepare(
+            'SELECT 1 FROM road_groups WHERE TRIM(UPPER(canonical_name)) = ? LIMIT 1'
+        );
+        $stmt->execute([$normalized]);
+        return $stmt->fetchColumn() !== false;
+    }
+
+    /**
      * Find the road_groups row matching this name (case/whitespace
      * insensitive), or create a new unverified group if none exists.
      * This is what lets a 12th surveyor creating "Karve Road" attach

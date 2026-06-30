@@ -68,8 +68,23 @@ if ($v->fails()) {
     exit;
 }
 
+$repo = new RoadRepository($pdo);
+
+// ── Restrict introduction of brand-new road names to admins ───
+// Regular users may only attach a new audit session to an EXISTING
+// road_group (matched by normalized name). This is the server-side
+// half of hiding "Other / Custom Road" from non-admins in the UI —
+// the UI gate alone wouldn't stop a direct POST to this endpoint.
+if ($CURRENT_USER_ROLE !== 'admin' && !$repo->roadGroupExists((string)$data['name'])) {
+    http_response_code(403);
+    echo json_encode([
+        'success' => false,
+        'error'   => 'That road isn\'t in the list yet. Only admins can add new roads — please ask an admin to add it first.',
+    ]);
+    exit;
+}
+
 try {
-    $repo   = new RoadRepository($pdo);
     $result = $repo->create($CURRENT_USER_ID, $data);
 
     echo json_encode([
