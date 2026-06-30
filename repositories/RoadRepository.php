@@ -96,14 +96,18 @@ class RoadRepository
      */
     public function create(int $creatorId, array $data): array
     {
+        $name      = strtoupper(strip_tags((string)$data['name']));
+        $roadGroupId = $this->findOrCreateRoadGroup($name);
+
         $this->pdo->prepare(
             'INSERT INTO roads
-               (creator_id, name, start_point, end_point, total_length,
+               (creator_id, name, road_group_id, start_point, end_point, total_length,
                 gps_start, gps_end, segment_method, segment_length)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         )->execute([
             $creatorId,
-            strtoupper(strip_tags((string)$data['name'])),
+            $name,
+            $roadGroupId,
             $data['start_point']    ?: null,
             $data['end_point']      ?: null,
             $data['total_length']   ?? null,
@@ -119,6 +123,46 @@ class RoadRepository
                   ->execute([$publicId, $roadId]);
 
         return ['road_id' => $roadId, 'public_id' => $publicId];
+    }
+
+    /**
+     * Find the road_groups row matching this name (case/whitespace
+     * insensitive), or create a new unverified group if none exists.
+     * This is what lets a 12th surveyor creating "Karve Road" attach
+     * automatically to the existing group, with zero admin steps,
+     * instead of spawning an invisible 12th duplicate that needs
+     * manual re-verification.
+     */
+    private function findOrCreateRoadGroup(string $name): int
+    {
+        $normalized = trim(strtoupper($name));
+
+        $stmt = $this->pdo->prepare(
+            'SELECT id FROM road_groups WHERE TRIM(UPPER(canonical_name)) = ? LIMIT 1'
+        );
+        $stmt->execute([$normalized]);
+        $existing = $stmt->fetchColumn();
+
+        if ($existing !== false) {
+            return (int)$existing;
+        }
+
+        // Race-safe-ish: rely on the UNIQUE KEY on canonical_name. If a
+        // concurrent request created the same group between our SELECT
+        // and this INSERT, fall back to re-selecting instead of erroring.
+        try {
+            $this->pdo->prepare(
+                'INSERT INTO road_groups (canonical_name, is_verified) VALUES (?, 0)'
+            )->execute([$name]);
+            return (int)$this->pdo->lastInsertId();
+        } catch (PDOException $e) {
+            $stmt->execute([$normalized]);
+            $retry = $stmt->fetchColumn();
+            if ($retry !== false) {
+                return (int)$retry;
+            }
+            throw $e;
+        }
     }
 
     /**

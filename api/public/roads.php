@@ -2,12 +2,12 @@
 declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
-//  api/public/roads.php
-//  GET — returns distinct, ADMIN-VERIFIED road names for the
-//  landing page, no auth required.
-//  MODIFIED: now filters to is_verified = 1 (see migrations/006).
-//  Deploy order matters: run migration 006 BEFORE pushing this file,
-//  or this query will fail with "Unknown column is_verified".
+//  api/public/roads.php  (v2 — road_groups based)
+//  GET — returns verified road names for the landing page.
+//  Now reads from road_groups, the canonical per-road record,
+//  instead of GROUP-BY-ing raw `roads` rows. One real road in,
+//  one name out — no dedup logic needed here anymore, since
+//  road_groups already represents the deduped truth.
 // ═══════════════════════════════════════════════════════════════
 
 header('Content-Type: application/json');
@@ -28,17 +28,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 try {
-    // GROUP BY TRIM(UPPER(name)) guards against duplicate-looking rows that
-    // differ only by case or stray whitespace. is_verified = 1 hides
-    // surveyor-created junk/duplicate roads from the public landing page
-    // until an admin has explicitly confirmed them via pages/admin.php.
     $stmt = $pdo->query(
-        "SELECT MIN(name) AS name
-         FROM   roads
-         WHERE  name IS NOT NULL AND TRIM(name) <> ''
-           AND  is_verified = 1
-         GROUP BY TRIM(UPPER(name))
-         ORDER BY MIN(name) ASC"
+        "SELECT canonical_name
+           FROM road_groups
+          WHERE is_verified = 1
+          ORDER BY canonical_name ASC"
     );
     $roads = $stmt->fetchAll(PDO::FETCH_COLUMN);
 

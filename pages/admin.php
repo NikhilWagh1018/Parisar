@@ -2,10 +2,11 @@
 declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
-//  pages/admin.php
-//  Road verification panel — admin-only. Lets a non-technical
-//  admin flag which surveyor-created roads should show publicly,
-//  without needing raw SQL access.
+//  pages/admin.php  (v2 — road_groups based)
+//  Road verification panel — admin-only. One toggle per real road
+//  (road_groups), with duplicate audit-session rows still visible
+//  underneath for transparency, but no longer requiring individual
+//  toggling.
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
@@ -27,13 +28,12 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   .grp-card { margin-bottom: 14px; }
   .grp-head {
     display: flex; align-items: center; justify-content: space-between;
-    cursor: pointer; gap: 12px;
+    gap: 12px; padding: 4px 0;
   }
-  .grp-head-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .grp-head-left { display: flex; align-items: center; gap: 10px; min-width: 0; cursor: pointer; flex: 1; }
   .grp-name { font-weight: 600; }
-  .grp-count {
-    font-size: 0.78rem; opacity: 0.65; flex-shrink: 0;
-  }
+  .grp-count { font-size: 0.78rem; opacity: 0.65; flex-shrink: 0; }
+  .grp-head-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
   .badge {
     font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 999px;
     flex-shrink: 0; white-space: nowrap;
@@ -65,8 +65,12 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   .toggle-switch input:checked + .toggle-slider { background-color: #16a34a; }
   .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
   .toggle-switch input:disabled + .toggle-slider { opacity: 0.5; cursor: wait; }
-  .chev { transition: transform 0.2s; flex-shrink: 0; opacity: 0.5; }
+  .chev { transition: transform 0.2s; flex-shrink: 0; opacity: 0.5; font-size: 0.8rem; }
   .chev.open { transform: rotate(90deg); }
+  .info-banner {
+    font-size: 0.85rem; opacity: 0.75; margin-bottom: 18px; padding: 10px 14px;
+    border-radius: 8px; background: rgba(99,102,241,0.08);
+  }
 </style>
 </head>
 <body class="light">
@@ -130,10 +134,9 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   </div>
 
   <div style="padding: 0 4px 4px;">
-    <p style="opacity:.7;font-size:.9rem;margin-bottom:18px;">
-      Roads start hidden from the public landing page until you verify them here.
-      Toggle a road on to make it (and every duplicate entry under the same name) visible publicly.
-    </p>
+    <div class="info-banner">
+      Each row below is one real road. The toggle verifies the road itself — not an individual audit entry — so flipping it on instantly makes that road visible publicly, regardless of how many surveyors independently audited it. Click a road name to see who created each underlying entry.
+    </div>
 
     <div id="loadingMsg" class="card" style="text-align:center;padding:30px;opacity:.6;">
       Loading roads…
@@ -154,10 +157,6 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     return div.innerHTML;
   }
 
-  function groupKey(name) {
-    return String(name).trim().toUpperCase();
-  }
-
   function fmtDate(iso) {
     try {
       var d = new Date(iso);
@@ -167,39 +166,18 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     }
   }
 
-  function buildRow(road) {
+  function buildMemberRow(member) {
     var row = document.createElement('div');
     row.className = 'road-row';
-
-    var meta = document.createElement('div');
-    meta.className = 'road-row-meta';
-    meta.innerHTML =
-      '#' + escapeHtml(road.id) + ' &middot; ' +
-      escapeHtml(road.creator_name || 'Unknown') + ' &middot; ' +
-      escapeHtml(road.segment_count) + ' segment' + (road.segment_count === 1 ? '' : 's') + ' &middot; ' +
-      escapeHtml(fmtDate(road.created_at));
-
-    var label = document.createElement('label');
-    label.className = 'toggle-switch';
-
-    var input = document.createElement('input');
-    input.type = 'checkbox';
-    input.checked = !!road.is_verified;
-    input.addEventListener('change', function () {
-      toggleRoad(road.id, input, row);
-    });
-
-    var slider = document.createElement('span');
-    slider.className = 'toggle-slider';
-
-    label.appendChild(input);
-    label.appendChild(slider);
-    row.appendChild(meta);
-    row.appendChild(label);
+    row.innerHTML =
+      '<div class="road-row-meta">#' + escapeHtml(member.id) + ' &middot; ' +
+      escapeHtml(member.creator_name || 'Unknown') + ' &middot; ' +
+      escapeHtml(member.segment_count) + ' segment' + (member.segment_count === 1 ? '' : 's') + ' &middot; ' +
+      escapeHtml(fmtDate(member.created_at)) + '</div>';
     return row;
   }
 
-  function toggleRoad(id, input, row) {
+  function toggleGroup(id, input) {
     input.disabled = true;
     fetch('../api/admin/roads.php', {
       method: 'POST',
@@ -223,14 +201,11 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       .catch(function () {
         input.disabled = false;
         input.checked = !input.checked;
-        alert('Network error — could not update road.');
+        alert('Network error \u2014 could not update road.');
       });
   }
 
-  function buildGroup(name, rows) {
-    var anyVerified = rows.some(function (r) { return r.is_verified; });
-    var totalSegments = rows.reduce(function (sum, r) { return sum + (r.segment_count || 0); }, 0);
-
+  function buildGroup(group) {
     var card = document.createElement('div');
     card.className = 'card grp-card';
 
@@ -246,30 +221,49 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 
     var nameEl = document.createElement('span');
     nameEl.className = 'grp-name';
-    nameEl.textContent = name;
+    nameEl.textContent = group.name;
 
     var countEl = document.createElement('span');
     countEl.className = 'grp-count';
-    countEl.textContent = rows.length + (rows.length === 1 ? ' entry' : ' entries') + ' · ' + totalSegments + ' segments total';
+    countEl.textContent = group.entry_count + (group.entry_count === 1 ? ' entry' : ' entries') + ' \u00b7 ' + group.total_segments + ' segments total';
 
     left.appendChild(chev);
     left.appendChild(nameEl);
     left.appendChild(countEl);
 
+    var right = document.createElement('div');
+    right.className = 'grp-head-right';
+
     var badge = document.createElement('span');
-    badge.className = 'badge ' + (anyVerified ? 'badge-visible' : 'badge-hidden');
-    badge.textContent = anyVerified ? 'Visible on public site' : 'Hidden from public site';
+    badge.className = 'badge ' + (group.is_verified ? 'badge-visible' : 'badge-hidden');
+    badge.textContent = group.is_verified ? 'Visible on public site' : 'Hidden from public site';
+
+    var label = document.createElement('label');
+    label.className = 'toggle-switch';
+    var input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = !!group.is_verified;
+    input.addEventListener('change', function () {
+      toggleGroup(group.id, input);
+    });
+    var slider = document.createElement('span');
+    slider.className = 'toggle-slider';
+    label.appendChild(input);
+    label.appendChild(slider);
+
+    right.appendChild(badge);
+    right.appendChild(label);
 
     head.appendChild(left);
-    head.appendChild(badge);
+    head.appendChild(right);
 
     var rowsWrap = document.createElement('div');
     rowsWrap.className = 'grp-rows';
-    rows.forEach(function (r) {
-      rowsWrap.appendChild(buildRow(r));
+    group.members.forEach(function (m) {
+      rowsWrap.appendChild(buildMemberRow(m));
     });
 
-    head.addEventListener('click', function () {
+    left.addEventListener('click', function () {
       var open = rowsWrap.classList.toggle('open');
       chev.classList.toggle('open', open);
     });
@@ -279,24 +273,11 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     return card;
   }
 
-  function render(roads) {
-    var groups = {};
-    var order = [];
-    roads.forEach(function (r) {
-      var key = groupKey(r.name);
-      if (!groups[key]) {
-        groups[key] = { displayName: r.name, rows: [] };
-        order.push(key);
-      }
-      groups[key].rows.push(r);
-    });
-    order.sort(function (a, b) { return a.localeCompare(b); });
-
+  function render(groups) {
     var container = document.getElementById('groupsContainer');
     container.innerHTML = '';
-    order.forEach(function (key) {
-      var g = groups[key];
-      container.appendChild(buildGroup(g.displayName, g.rows));
+    groups.forEach(function (g) {
+      container.appendChild(buildGroup(g));
     });
   }
 
@@ -312,12 +293,12 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
           document.getElementById('errorMsg').textContent = data.error || 'Could not load roads.';
           return;
         }
-        render(data.roads);
+        render(data.road_groups);
       })
       .catch(function () {
         document.getElementById('loadingMsg').style.display = 'none';
         document.getElementById('errorMsg').style.display = 'block';
-        document.getElementById('errorMsg').textContent = 'Network error — could not load roads.';
+        document.getElementById('errorMsg').textContent = 'Network error \u2014 could not load roads.';
       });
   }
 
