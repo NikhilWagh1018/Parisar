@@ -302,8 +302,8 @@ require_once __DIR__ . '/../config/auth_guard.php';
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
   window.IS_ADMIN = <?= $CURRENT_USER_ROLE === 'admin' ? 'true' : 'false' ?>;
 </script>
-<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/segment.js"></script>
-<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/segment-roads.js"></script>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/segment.js?v=<?= filemtime(__DIR__ . '/../js/segment.js') ?>"></script>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/segment-roads.js?v=<?= filemtime(__DIR__ . '/../js/segment-roads.js') ?>"></script>
 
 </body>
 </html>
