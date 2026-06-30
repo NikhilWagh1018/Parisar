@@ -22,3 +22,5 @@ vendor/
 *.ps1
 *.zip
 Parisar/
+
+parisar_backup.sql
