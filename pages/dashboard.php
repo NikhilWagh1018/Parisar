@@ -25,7 +25,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/dashboard.css?v=<?= filemtime(__DIR__ . '/../css/dashboard.css') ?>">
 </head>
-<body class="light">
+<body>
 
 <!-- SIDEBAR -->
 <aside>
@@ -126,7 +126,6 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <h1><?= $greet ?>, <?= htmlspecialchars(explode(' ', $CURRENT_USER_NAME)[0]) ?>!</h1>
       <p>Here's your audit overview for today.</p>
     </div>
-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">moon</button>
     <?php if ($CURRENT_USER_ROLE !== 'admin'): ?>
     <a href="segment.php" class="btn-new">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -242,6 +241,5 @@ function closeSb(){ aside.classList.remove("open"); ovl.classList.remove("show")
 tog.addEventListener("click", openSb);
 ovl.addEventListener("click", closeSb);
 </script>
-  <script src="../js/theme.js"></script>
 </body>
 </html>

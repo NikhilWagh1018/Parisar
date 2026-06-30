@@ -1,0 +1,192 @@
+diff --git a/css/theme.css b/css/theme.css
+index 77600fc..0566ed7 100644
+--- a/css/theme.css
++++ b/css/theme.css
+@@ -1,10 +1,8 @@
+-/* css/theme.css — Dark / Light theme variables
+-   Add <link rel="stylesheet" href="../css/theme.css"> to ALL pages
+-   Add class="light" to <body> on every page
++/* css/theme.css — color variables used across the dashboard/admin pages
++   Add <link rel="stylesheet" href="../css/theme.css"> to pages that need these vars
+    ─────────────────────────────────────────── */
+ 
+-/* ── Light mode (default) ── */
+-body.light, :root {
++:root {
+   --bg0: #ffffff;
+   --bg1: #f5f5f2;
+   --bg2: #eeede9;
+@@ -42,84 +40,3 @@ body.light, :root {
+   --ttoggle-knob: #ffffff;
+   --ttoggle-txt: #555550;
+ }
+-
+-/* ── Dark mode ── */
+-body.dark {
+-  --bg0: #1c1c1a;
+-  --bg1: #242422;
+-  --bg2: #2c2c28;
+-  --bg3: #343430;
+-  --txt1: #f0efe8;
+-  --txt2: #a8a8a0;
+-  --txt3: #666660;
+-  --bdr:  rgba(255,255,255,.06);
+-  --bdr2: rgba(255,255,255,.11);
+-  --tgreen: #5a9e2f;
+-  --tgreen-bg: #1e3010;
+-  --tgreen-txt: #a0d870;
+-  --tgreen-light: #3b6d11;
+-  --tamber: #e8a030;
+-  --tamber-bg: #3a2800;
+-  --tblue: #6090e0;
+-  --tblue-bg: #0e1e40;
+-  --tblue-bdr: #2a4a8a;
+-  --tblue-txt: #90b8f8;
+-  --tdanger-bg: #3a1010;
+-  --tdanger-txt: #f09090;
+-  --tscore: #e8a030;
+-  --tseg-bg: #282826;
+-  --tcard-left: #5a9e2f;
+-  --tradio-bg: #1e3010;
+-  --tinput-bg: #242422;
+-  --tinput-bdr: rgba(255,255,255,.11);
+-  --twarn-bg: #3a2800;
+-  --twarn-txt: #e8a030;
+-  --twarn-bdr: #e8a030;
+-  --tsuccess-bg: #1e3010;
+-  --tsuccess-txt: #a0d870;
+-  --tsuccess-bdr: #5a9e2f;
+-  --ttoggle-bg: #1e3010;
+-  --ttoggle-knob: #a0d870;
+-  --ttoggle-txt: #a0d870;
+-}
+-
+-/* ── Dark mode body/bg overrides ── */
+-body.dark {
+-  background: var(--bg1);
+-  color: var(--txt1);
+-}
+-body.dark .card,
+-body.dark .stat-card,
+-body.dark .modal-box,
+-body.dark aside,
+-body.dark .topbar,
+-body.dark .sb-popup {
+-  background: var(--bg0);
+-  border-color: var(--bdr);
+-  color: var(--txt1);
+-}
+-body.dark .topbar { border-bottom-color: var(--bdr); }
+-body.dark .road-row { background: var(--bg0) !important; border-color: var(--bdr) !important; }
+-body.dark .prog-track,
+-body.dark .prog-bar.prog-track { background: var(--bg3) !important; }
+-body.dark .skeleton {
+-  background: linear-gradient(90deg, var(--bg2) 25%, var(--bg3) 50%, var(--bg2) 75%);
+-  background-size: 200% 100%;
+-}
+-body.dark .nav-item { color: rgba(255,255,255,.55); }
+-body.dark .nav-item:hover, body.dark .nav-item.active { background: rgba(255,255,255,.08); color: #fff; }
+-body.dark .popup-item { color: var(--txt1); }
+-body.dark .popup-item:hover { background: var(--tgreen-bg); color: var(--tgreen-txt); }
+-body.dark .modal-overlay { background: rgba(0,0,0,.6); }
+-
+-/* ── Theme toggle button ── */
+-.theme-toggle {
+-  display: flex; align-items: center; justify-content: center;
+-  width: 34px; height: 34px; border-radius: 8px;
+-  background: var(--ttoggle-bg); color: var(--ttoggle-txt);
+-  border: 1px solid var(--bdr2);
+-  cursor: pointer; font-size: 16px;
+-  transition: background .2s ease, color .2s ease;
+-  flex-shrink: 0;
+-}
+-.theme-toggle:hover { opacity: .85; }
+diff --git a/js/theme.js b/js/theme.js
+deleted file mode 100644
+index 1a619dc..0000000
+--- a/js/theme.js
++++ /dev/null
+@@ -1,34 +0,0 @@
+-/* js/theme.js — Dark/Light theme persistence
+-   Add <script src="../js/theme.js"></script> BEFORE </body> on all pages
+-   ─────────────────────────────────────────── */
+-
+-(function() {
+-  // Apply saved theme immediately (before paint)
+-  var saved = localStorage.getItem('ca_theme') || 'light';
+-  document.body.classList.add(saved);
+-})();
+-
+-function toggleTheme() {
+-  var body = document.body;
+-  var isDark = body.classList.contains('dark');
+-  body.classList.toggle('dark', !isDark);
+-  body.classList.toggle('light', isDark);
+-  localStorage.setItem('ca_theme', isDark ? 'light' : 'dark');
+-  // Update toggle button icon
+-  var btns = document.querySelectorAll('.theme-toggle');
+-  btns.forEach(function(btn) {
+-    btn.textContent = isDark ? '🌙' : '☀️';
+-  });
+-}
+-
+-// Set correct icon on page load
+-document.addEventListener('DOMContentLoaded', function() {
+-  var isDark = document.body.classList.contains('dark');
+-  var btns = document.querySelectorAll('.theme-toggle');
+-  btns.forEach(function(btn) {
+-    btn.textContent = isDark ? '☀️' : '🌙';
+-    btn.setAttribute('onclick', 'toggleTheme()');
+-    btn.setAttribute('aria-label', 'Toggle theme');
+-    btn.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+-  });
+-});
+diff --git a/pages/admin.php b/pages/admin.php
+index bffc226..f7a3b18 100644
+--- a/pages/admin.php
++++ b/pages/admin.php
+@@ -73,7 +73,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+   }
+ </style>
+ </head>
+-<body class="light">
++<body>
+ 
+ <aside>
+   <div class="sb-brand">
+@@ -301,6 +301,5 @@ function closeSb2(){ aside2.classList.remove("open"); ovl2.classList.remove("sho
+ tog2.addEventListener("click", openSb2);
+ ovl2.addEventListener("click", closeSb2);
+ </script>
+-  <script src="../js/theme.js"></script>
+ </body>
+ </html>
+diff --git a/pages/dashboard.php b/pages/dashboard.php
+index 1012c91..a610801 100644
+--- a/pages/dashboard.php
++++ b/pages/dashboard.php
+@@ -25,7 +25,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+ <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+ <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/dashboard.css?v=<?= filemtime(__DIR__ . '/../css/dashboard.css') ?>">
+ </head>
+-<body class="light">
++<body>
+ 
+ <!-- SIDEBAR -->
+ <aside>
+@@ -126,7 +126,6 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+       <h1><?= $greet ?>, <?= htmlspecialchars(explode(' ', $CURRENT_USER_NAME)[0]) ?>!</h1>
+       <p>Here's your audit overview for today.</p>
+     </div>
+-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">moon</button>
+     <?php if ($CURRENT_USER_ROLE !== 'admin'): ?>
+     <a href="segment.php" class="btn-new">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+@@ -242,6 +241,5 @@ function closeSb(){ aside.classList.remove("open"); ovl.classList.remove("show")
+ tog.addEventListener("click", openSb);
+ ovl.addEventListener("click", closeSb);
+ </script>
+-  <script src="../js/theme.js"></script>
+ </body>
+ </html>
+\ No newline at end of file

@@ -73,7 +73,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   }
 </style>
 </head>
-<body class="light">
+<body>
 
 <aside>
   <div class="sb-brand">
@@ -301,6 +301,5 @@ function closeSb2(){ aside2.classList.remove("open"); ovl2.classList.remove("sho
 tog2.addEventListener("click", openSb2);
 ovl2.addEventListener("click", closeSb2);
 </script>
-  <script src="../js/theme.js"></script>
 </body>
 </html>

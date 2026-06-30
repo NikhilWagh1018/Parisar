@@ -1,0 +1,146 @@
+diff --git a/api/roads/create.php b/api/roads/create.php
+index 8263501..528ffa1 100644
+--- a/api/roads/create.php
++++ b/api/roads/create.php
+@@ -68,8 +68,23 @@ if ($v->fails()) {
+     exit;
+ }
+ 
++$repo = new RoadRepository($pdo);
++
++// ── Restrict introduction of brand-new road names to admins ───
++// Regular users may only attach a new audit session to an EXISTING
++// road_group (matched by normalized name). This is the server-side
++// half of hiding "Other / Custom Road" from non-admins in the UI —
++// the UI gate alone wouldn't stop a direct POST to this endpoint.
++if ($CURRENT_USER_ROLE !== 'admin' && !$repo->roadGroupExists((string)$data['name'])) {
++    http_response_code(403);
++    echo json_encode([
++        'success' => false,
++        'error'   => 'That road isn\'t in the list yet. Only admins can add new roads — please ask an admin to add it first.',
++    ]);
++    exit;
++}
++
+ try {
+-    $repo   = new RoadRepository($pdo);
+     $result = $repo->create($CURRENT_USER_ID, $data);
+ 
+     echo json_encode([
+diff --git a/js/segment-roads.js b/js/segment-roads.js
+index f1fb3c4..8b222ae 100644
+--- a/js/segment-roads.js
++++ b/js/segment-roads.js
+@@ -48,10 +48,12 @@ function roadRenderDropdown(q) {
+ 
+   let html = '';
+ 
+-  // ── Pinned: Other / Custom — always at top ──
+-  html += `<div class="road-dropdown-item pinned" onclick="roadSelectCustom()">
+-    <span>✦</span> Other / Custom Road…
+-  </div>`;
++  // ── Pinned: Other / Custom — admin only, always at top ──
++  if (window.IS_ADMIN) {
++    html += `<div class="road-dropdown-item pinned" onclick="roadSelectCustom()">
++      <span>✦</span> Other / Custom Road…
++    </div>`;
++  }
+ 
+   if (filtered.length > 0) {
+     html += `<div class="road-dropdown-section-label">Pune Cycle Track Roads</div>`;
+@@ -65,13 +67,19 @@ function roadRenderDropdown(q) {
+       </div>`;
+     });
+   } else if (raw.length > 0) {
+-    // No match — offer to add as custom
+-    html += `<div class="road-dropdown-empty">
+-      No match for "<strong>${raw}</strong>"
+-    </div>
+-    <div class="road-dropdown-item pinned" onclick="roadSelectCustomFill('${raw}')">
+-      <span>＋</span> Add "<strong>${raw}</strong>" as custom road
+-    </div>`;
++    // No match
++    if (window.IS_ADMIN) {
++      html += `<div class="road-dropdown-empty">
++        No match for "<strong>${raw}</strong>"
++      </div>
++      <div class="road-dropdown-item pinned" onclick="roadSelectCustomFill('${raw}')">
++        <span>＋</span> Add "<strong>${raw}</strong>" as custom road
++      </div>`;
++    } else {
++      html += `<div class="road-dropdown-empty">
++        No match for "<strong>${raw}</strong>". Can't find your road? Ask an admin to add it.
++      </div>`;
++    }
+   }
+ 
+   dd.innerHTML = html;
+diff --git a/pages/segment.php b/pages/segment.php
+index 29ea4fb..60bbcec 100644
+--- a/pages/segment.php
++++ b/pages/segment.php
+@@ -68,7 +68,9 @@ require_once __DIR__ . '/../config/auth_guard.php';
+           <option>SINHAGAD ROAD</option>
+           <option>SPICER COLLEGE ROAD</option>
+           <option>SWAMI VIVEKANAD ROAD</option>
++          <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
+           <option value="__custom__">Other / Custom Road</option>
++          <?php endif; ?>
+         </select>
+ 
+         <!-- Visible searchable UI -->
+@@ -84,7 +86,8 @@ require_once __DIR__ . '/../config/auth_guard.php';
+ 
+         <div class="field-error" id="err-roadName">Please select or enter a road name.</div>
+ 
+-        <!-- Custom road entry (shown when Other is chosen) -->
++        <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
++        <!-- Custom road entry (shown when Other is chosen) — admin only -->
+         <div class="custom-road-wrap" id="customRoadWrap">
+           <div class="form-group">
+             <input type="text" id="customRoadName"
+@@ -94,6 +97,7 @@ require_once __DIR__ . '/../config/auth_guard.php';
+             <div class="road-hint" id="customRoadHint">Min 3 characters. Use official road name if possible.</div>
+           </div>
+         </div>
++        <?php endif; ?>
+       </div>
+ 
+       <div class="form-row">
+@@ -295,6 +299,9 @@ require_once __DIR__ . '/../config/auth_guard.php';
+   </div>
+ </div>
+ 
++<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
++  window.IS_ADMIN = <?= $CURRENT_USER_ROLE === 'admin' ? 'true' : 'false' ?>;
++</script>
+ <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/segment.js"></script>
+ <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/segment-roads.js"></script>
+ 
+diff --git a/repositories/RoadRepository.php b/repositories/RoadRepository.php
+index bb62605..3a99389 100644
+--- a/repositories/RoadRepository.php
++++ b/repositories/RoadRepository.php
+@@ -125,6 +125,22 @@ class RoadRepository
+         return ['road_id' => $roadId, 'public_id' => $publicId];
+     }
+ 
++    /**
++     * Check whether a road_groups row matching this name (normalized,
++     * case/whitespace insensitive) already exists. Used to block
++     * non-admin users from introducing brand-new road names via
++     * api/roads/create.php — they may only attach to an existing group.
++     */
++    public function roadGroupExists(string $name): bool
++    {
++        $normalized = trim(strtoupper($name));
++        $stmt = $this->pdo->prepare(
++            'SELECT 1 FROM road_groups WHERE TRIM(UPPER(canonical_name)) = ? LIMIT 1'
++        );
++        $stmt->execute([$normalized]);
++        return $stmt->fetchColumn() !== false;
++    }
++
+     /**
+      * Find the road_groups row matching this name (case/whitespace
+      * insensitive), or create a new unverified group if none exists.
