@@ -16,6 +16,7 @@ set_exception_handler(function (Throwable $e) {
 });
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../services/ScoreService.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
@@ -28,9 +29,22 @@ try {
     $totalLengthM  = (float)$pdo->query('SELECT COALESCE(SUM(total_length), 0) FROM roads')->fetchColumn();
     $totalLengthKm = round($totalLengthM / 1000);
     $totalSegments = (int)$pdo->query('SELECT COUNT(*) FROM segments')->fetchColumn();
-    $goodSegments  = (int)$pdo->query(
-        'SELECT COUNT(*) FROM segment_audits WHERE final_score <= 20 AND final_score IS NOT NULL'
-    )->fetchColumn();
+
+    // final_score is not persisted anywhere — it's computed on demand by
+    // ScoreService::calculateSegmentScore(). Pull every audited segment's
+    // id and tally how many score <= 20 ("Good", per ScoreHelpers::scoreToCondition).
+    // This endpoint is cached 1 hour (see header above), so the per-row
+    // computation cost here is fine.
+    $auditIds = $pdo->query('SELECT id FROM segment_audits')->fetchAll(PDO::FETCH_COLUMN);
+
+    $goodSegments = 0;
+    foreach ($auditIds as $auditId) {
+        $result = calculateSegmentScore((int)$auditId, $pdo);
+        if ($result['final'] <= 20) {
+            $goodSegments++;
+        }
+    }
+
     $goodPct = $totalSegments > 0 ? round(($goodSegments / $totalSegments) * 100) : 0;
 
     echo json_encode([
@@ -42,7 +56,7 @@ try {
             'good_pct'        => $goodPct,
         ],
     ]);
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     error_log('api/public/stats.php error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'Server error.']);
