@@ -194,10 +194,11 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     </div>
     <?php endif; ?>
 
+    <?php if ($CURRENT_USER_ROLE !== 'admin'): ?>
     <!-- Roads table -->
     <div class="card">
       <div class="card-head">
-        <h3>🛣️ <?= $CURRENT_USER_ROLE === 'admin' ? 'My Roads' : 'Your Roads' ?></h3>
+        <h3>🛣️ Your Roads</h3>
         <a href="segment.php">+ Define new road</a>
       </div>
       <div id="roadsContainer">
@@ -209,6 +210,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
         </div>
       </div>
     </div>
+    <?php endif; ?>
 
   </div>
 </main>

@@ -25,8 +25,9 @@ async function loadDashboard() {
       document.getElementById('st-active').textContent = data.stats.active_sessions;
     }
 
-    // ── Roads table ────────────────────────────────────────────
+    // ── Roads table (not rendered for admins — "My Roads" card removed) ──
     const container = document.getElementById('roadsContainer');
+    if (!container) return;
 
     if (data.roads.length === 0) {
       container.innerHTML = `
