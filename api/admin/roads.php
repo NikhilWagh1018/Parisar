@@ -23,7 +23,7 @@ require_once __DIR__ . '/../../config/admin_guard.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $groupStmt = $pdo->query(
-        'SELECT id, canonical_name, is_verified, created_at
+        'SELECT id, canonical_name, is_verified, is_flagged, created_at
            FROM road_groups
           ORDER BY canonical_name ASC'
     );
@@ -61,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'id'             => (int)$group['id'],
             'name'           => $group['canonical_name'],
             'is_verified'    => (bool)$group['is_verified'],
+            'is_flagged'     => (bool)$group['is_flagged'],
             'created_at'     => $group['created_at'],
             'entry_count'    => count($members),
             'total_segments' => $totalSegments,
@@ -81,8 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $body = json_decode(file_get_contents('php://input'), true);
-    $id   = isset($body['id']) ? (int)$body['id'] : 0;
+    $body   = json_decode(file_get_contents('php://input'), true);
+    $id     = isset($body['id']) ? (int)$body['id'] : 0;
+    $action = isset($body['action']) && $body['action'] === 'flag' ? 'flag' : 'verify';
 
     if ($id <= 0) {
         http_response_code(400);
@@ -90,13 +92,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $stmt = $pdo->prepare('SELECT is_verified FROM road_groups WHERE id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT is_verified, is_flagged FROM road_groups WHERE id = ? LIMIT 1');
     $stmt->execute([$id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$row) {
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Road group not found.']);
+        exit;
+    }
+
+    if ($action === 'flag') {
+        $newValue = $row['is_flagged'] ? 0 : 1;
+        $upd = $pdo->prepare('UPDATE road_groups SET is_flagged = ? WHERE id = ?');
+        $upd->execute([$newValue, $id]);
+        echo json_encode(['success' => true, 'id' => $id, 'is_flagged' => (bool)$newValue]);
         exit;
     }
 
