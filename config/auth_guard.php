@@ -67,19 +67,57 @@ if (empty($_SESSION['csrf_token'])) {
 // ── Convenience variables available in every protected file ───
 $CURRENT_USER_ID   = (int)$_SESSION['user_id'];
 $CURRENT_USER_NAME = (string)($_SESSION['user_name']       ?? '');
-$CURRENT_USER_ROLE = (string)($_SESSION['user_role']       ?? 'surveyor');
 $CURRENT_USER_AUTH = (string)($_SESSION['auth_provider']   ?? 'local');
+
+// Always verify role + active status fresh from the DB on every request —
+// don't trust the session cache for these. This makes role changes
+// (promote/demote) and account deactivation take effect immediately,
+// instead of waiting for the affected user to log out and back in.
+$stmt = $pdo->prepare('SELECT role, is_active, profile_picture FROM users WHERE id = ? LIMIT 1');
+$stmt->execute([$CURRENT_USER_ID]);
+$freshUser = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$freshUser || (int)$freshUser['is_active'] === 0) {
+    // Account deactivated (or deleted) since this session began — force logout.
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(
+            session_name(), '', time() - 42000,
+            $params['path'], $params['domain'], $params['secure'], $params['httponly']
+        );
+    }
+    session_destroy();
+
+    $wantsJson = (
+        str_contains($_SERVER['HTTP_ACCEPT']         ?? '', 'application/json')
+        || strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest'
+        || str_contains($_SERVER['CONTENT_TYPE']     ?? '', 'application/json')
+    );
+
+    if ($wantsJson) {
+        header('Content-Type: application/json');
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Your account has been deactivated. Please contact an admin.']);
+    } else {
+        $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_FILENAME']));
+        $docRoot   = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '/');
+        $relPath   = ltrim(str_replace($docRoot, '', $scriptDir), '/');
+        $depth     = ($relPath !== '') ? count(explode('/', $relPath)) : 0;
+        $prefix    = $depth > 0 ? str_repeat('../', $depth) : './';
+        header("Location: {$prefix}auth/login.php?deactivated=1");
+    }
+    exit;
+}
+
+$CURRENT_USER_ROLE     = (string)$freshUser['role'];
+$_SESSION['user_role'] = $CURRENT_USER_ROLE; // keep session cache in sync
 
 // Belt-and-suspenders: if the session profile_picture is missing, always
 // re-fetch it from the DB (covers local users whose Google pic was linked,
 // session loss after session_regenerate_id, etc.) and restore for next request.
 $CURRENT_USER_PIC = $_SESSION['profile_picture'] ?? null;
-if ($CURRENT_USER_PIC === null) {
-    $stmt = $pdo->prepare('SELECT profile_picture FROM users WHERE id = ? LIMIT 1');
-    $stmt->execute([$CURRENT_USER_ID]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($row && !empty($row['profile_picture'])) {
-        $CURRENT_USER_PIC            = $row['profile_picture'];
-        $_SESSION['profile_picture'] = $CURRENT_USER_PIC; // restore for next request
-    }
+if ($CURRENT_USER_PIC === null && !empty($freshUser['profile_picture'])) {
+    $CURRENT_USER_PIC            = $freshUser['profile_picture'];
+    $_SESSION['profile_picture'] = $CURRENT_USER_PIC; // restore for next request
 }

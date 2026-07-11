@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// ============================================================
 //  pages/admin_surveyors.php
-//  Surveyor list panel Ã¢â‚¬â€ admin-only. Shows every surveyor account
+//  Surveyor list panel — admin-only. Shows every surveyor account
 //  with roads-created / segments-audited / last-active stats.
-// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// ============================================================
 
 require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../config/constants.php';
@@ -18,7 +18,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <meta charset="UTF-8">
   <link rel="stylesheet" href="../css/theme.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Surveyors Ã¢â‚¬â€ CycleAudit</title>
+<title>Users — CycleAudit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/dashboard.css">
@@ -70,7 +70,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     </a>
     <a class="nav-item active" href="admin_surveyors.php">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Surveyors
+      Users
     </a>
   </nav>
 
@@ -150,15 +150,15 @@ document.addEventListener('click', e => {
     <button id="sb-toggle" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
     </button>
-    <h2>Surveyors</h2>
+    <h2>Users</h2>
   </div>
 
   <div style="padding: 0 4px 4px;">
     <div class="card">
-      <input type="text" id="survSearch" class="surv-search" placeholder="Search by name or emailÃ¢â‚¬Â¦">
+      <input type="text" id="survSearch" class="surv-search" placeholder="Search by name or email…">
       <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;margin-left:16px;"><input type="checkbox" id="showInactive"> Show inactive</label>
 
-      <div id="loadingMsg" style="text-align:center;padding:30px;opacity:.6;">Loading surveyorsÃ¢â‚¬Â¦</div>
+      <div id="loadingMsg" style="text-align:center;padding:30px;opacity:.6;">Loading surveyors…</div>
       <div id="errorMsg" style="display:none;text-align:center;padding:30px;color:#dc2626;"></div>
       <div id="tableWrap" style="display:none;overflow-x:auto;">
         <table class="surv-table">
@@ -216,7 +216,7 @@ document.addEventListener('click', e => {
         '<div><div class="surv-name">' + escapeHtml(s.name) + '</div>' +
         '<div class="surv-email">' + escapeHtml(s.email) + '</div></div>' +
       '</div></td>' +
-      '<td>' + (s.organisation ? escapeHtml(s.organisation) : '<span class="surv-muted">Ã¢â‚¬â€</span>') + '</td>' +
+      '<td>' + (s.organisation ? escapeHtml(s.organisation) : '<span class="surv-muted">—</span>') + '</td>' +
       '<td class="surv-stat">' + s.roads_created + '</td>' +
       '<td class="surv-stat">' + s.segments_audited + '</td>' +
       '<td>' + fmtDate(s.last_audit_at || s.last_login) + '</td>' +
@@ -281,7 +281,7 @@ document.addEventListener('click', e => {
     })
     .catch(function () {
       document.getElementById('loadingMsg').style.display = 'none';
-      document.getElementById('errorMsg').textContent = 'Network error Ã¢â‚¬â€ could not load surveyors.';
+      document.getElementById('errorMsg').textContent = 'Network error — could not load surveyors.';
       document.getElementById('errorMsg').style.display = 'block';
     });
 })();

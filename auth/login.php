@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  auth/login.php â€” CycleAudit Login
+//  auth/login.php — CycleAudit Login
 //  Supports: local email/password + Google OAuth
 //  Schema: parisar_db â†’ users table
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
                 }
             } else {
-                // Wrong password or unknown email â€” record the failure
+                // Wrong password or unknown email — record the failure
                 recordFailedAttempt($pdo, $clientIp);
                 $remaining = remainingAttempts($pdo, $clientIp);
 
