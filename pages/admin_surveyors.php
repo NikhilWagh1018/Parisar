@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-// ═══════════════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 //  pages/admin_surveyors.php
-//  Surveyor list panel — admin-only. Shows every surveyor account
+//  Surveyor list panel Ã¢â‚¬â€ admin-only. Shows every surveyor account
 //  with roads-created / segments-audited / last-active stats.
-// ═══════════════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 
 require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../config/constants.php';
@@ -18,7 +18,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <meta charset="UTF-8">
   <link rel="stylesheet" href="../css/theme.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Surveyors — CycleAudit</title>
+<title>Surveyors Ã¢â‚¬â€ CycleAudit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/dashboard.css">
@@ -101,9 +101,10 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 
   <div style="padding: 0 4px 4px;">
     <div class="card">
-      <input type="text" id="survSearch" class="surv-search" placeholder="Search by name or email…">
+      <input type="text" id="survSearch" class="surv-search" placeholder="Search by name or emailÃ¢â‚¬Â¦">
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;margin-left:16px;"><input type="checkbox" id="showInactive"> Show inactive</label>
 
-      <div id="loadingMsg" style="text-align:center;padding:30px;opacity:.6;">Loading surveyors…</div>
+      <div id="loadingMsg" style="text-align:center;padding:30px;opacity:.6;">Loading surveyorsÃ¢â‚¬Â¦</div>
       <div id="errorMsg" style="display:none;text-align:center;padding:30px;color:#dc2626;"></div>
       <div id="tableWrap" style="display:none;overflow-x:auto;">
         <table class="surv-table">
@@ -115,6 +116,8 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
               <th>Segments Audited</th>
               <th>Last Active</th>
               <th>Joined</th>
+              <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="survTbody"></tbody>
@@ -159,11 +162,13 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
         '<div><div class="surv-name">' + escapeHtml(s.name) + '</div>' +
         '<div class="surv-email">' + escapeHtml(s.email) + '</div></div>' +
       '</div></td>' +
-      '<td>' + (s.organisation ? escapeHtml(s.organisation) : '<span class="surv-muted">—</span>') + '</td>' +
+      '<td>' + (s.organisation ? escapeHtml(s.organisation) : '<span class="surv-muted">Ã¢â‚¬â€</span>') + '</td>' +
       '<td class="surv-stat">' + s.roads_created + '</td>' +
       '<td class="surv-stat">' + s.segments_audited + '</td>' +
       '<td>' + fmtDate(s.last_audit_at || s.last_login) + '</td>' +
-      '<td>' + fmtDate(s.created_at) + '</td>';
+      '<td>' + fmtDate(s.created_at) + '</td>' +
+      '<td>' + (s.is_active ? '<span style="color:#16a34a;font-weight:600;">Active</span>' : '<span style="color:#9ca3af;font-weight:600;">Inactive</span>') + '</td>' +
+      '<td><button class="toggle-status-btn" data-id="' + s.id + '" data-active="' + s.is_active + '">' + (s.is_active ? 'Deactivate' : 'Reactivate') + '</button></td>';
     return tr;
   }
 
@@ -176,14 +181,36 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 
   function applyFilter() {
     var q = document.getElementById('survSearch').value.trim().toLowerCase();
-    if (!q) { render(allSurveyors); return; }
+    var showInactive = document.getElementById('showInactive').checked;
     render(allSurveyors.filter(function (s) {
+      if (!showInactive && !s.is_active) return false;
       return (s.name || '').toLowerCase().indexOf(q) !== -1 ||
              (s.email || '').toLowerCase().indexOf(q) !== -1;
     }));
   }
 
   document.getElementById('survSearch').addEventListener('input', applyFilter);
+  document.getElementById('showInactive').addEventListener('change', applyFilter);
+
+  document.getElementById('survTbody').addEventListener('click', function (e) {
+    if (!e.target.classList.contains('toggle-status-btn')) return;
+    var id = parseInt(e.target.dataset.id, 10);
+    var newActive = e.target.dataset.active !== 'true';
+    if (!confirm(newActive ? 'Reactivate this surveyor?' : 'Deactivate this surveyor? They will no longer be able to log in.')) return;
+    fetch('../api/admin/surveyors.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ id: id, is_active: newActive })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (!data.success) { alert(data.error || 'Update failed.'); return; }
+      var s = allSurveyors.find(function (x) { return x.id === id; });
+      if (s) s.is_active = newActive;
+      applyFilter();
+    })
+    .catch(function () { alert('Network error.'); });
+  });
 
   fetch('../api/admin/surveyors.php', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     .then(function (r) { return r.json(); })
@@ -200,7 +227,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     })
     .catch(function () {
       document.getElementById('loadingMsg').style.display = 'none';
-      document.getElementById('errorMsg').textContent = 'Network error — could not load surveyors.';
+      document.getElementById('errorMsg').textContent = 'Network error Ã¢â‚¬â€ could not load surveyors.';
       document.getElementById('errorMsg').style.display = 'block';
     });
 })();

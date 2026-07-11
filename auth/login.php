@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-// ═══════════════════════════════════════════════════════════════
-//  auth/login.php — CycleAudit Login
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  auth/login.php â€” CycleAudit Login
 //  Supports: local email/password + Google OAuth
-//  Schema: parisar_db → users table
-// ═══════════════════════════════════════════════════════════════
+//  Schema: parisar_db â†’ users table
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 require_once __DIR__ . '/../config/constants.php';
 
 startSecureSession();
 
-// Already logged in → dashboard
+// Already logged in â†’ dashboard
 if (isset($_SESSION['user_id'])) {
     header('Location: ../pages/dashboard.php');
     exit;
@@ -24,7 +24,7 @@ require_once __DIR__ . '/../config/rate_limit.php';
 $error     = '';
 $clientIp  = getClientIp();
 
-// ── Handle POST (local login) ──────────────────────────────────
+// â”€â”€ Handle POST (local login) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim(filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL) ?? '');
     $password = $_POST['password'] ?? '';
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please fill in all fields.';
     } else {
 
-        // ── Rate limit check ───────────────────────────────────
+        // â”€â”€ Rate limit check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $rl = checkLoginRateLimit($pdo, $clientIp);
         if (!$rl['allowed']) {
             $error = $rl['message'];
@@ -46,7 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Google accounts don't count as a brute-force attempt
                 $error = 'This account uses Google Sign-In. Please click "Continue with Google" below.';
             } elseif ($user && password_verify($password, (string)$user['password'])) {
-                // ── Successful local login ─────────────────────
+                if (isset($user['is_active']) && (int)$user['is_active'] === 0) {
+                    $error = 'This account has been deactivated. Please contact an administrator.';
+                } else {
+                // â”€â”€ Successful local login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                 clearLoginAttempts($pdo, $clientIp);
 
                 session_regenerate_id(true);
@@ -68,8 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 header('Location: ../pages/dashboard.php');
                 exit;
+                }
             } else {
-                // Wrong password or unknown email — record the failure
+                // Wrong password or unknown email â€” record the failure
                 recordFailedAttempt($pdo, $clientIp);
                 $remaining = remainingAttempts($pdo, $clientIp);
 
@@ -82,13 +86,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ── Map OAuth error codes → readable messages ──────────────────
+// â”€â”€ Map OAuth error codes â†’ readable messages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $oauthErrors = [
     'state_mismatch'     => 'Security check failed. Please try signing in again.',
     'no_code'            => 'Google sign-in was cancelled. Please try again.',
     'token_failed'       => 'Could not connect to Google. Please try again.',
     'userinfo_failed'    => 'Could not retrieve account info from Google. Please try again.',
     'email_not_verified' => 'Your Google email address is not verified. Please verify it with Google first.',
+    'account_disabled'   => 'This account has been deactivated. Please contact an administrator.',
 ];
 $oauthKey = $_GET['error'] ?? '';
 if ($oauthKey !== '' && isset($oauthErrors[$oauthKey])) {
@@ -102,7 +107,7 @@ $googleUrl = getGoogleAuthUrl();
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In — CycleAudit</title>
+  <title>Sign In â€” CycleAudit</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/auth.css">
@@ -124,15 +129,15 @@ $googleUrl = getGoogleAuthUrl();
 
   <div class="feature-pills">
     <div class="pill">
-      <div class="pill-icon">🗺️</div>
+      <div class="pill-icon">ðŸ—ºï¸</div>
       <div class="pill-text"><strong>Segment Mapping</strong><span>Define and audit road segments precisely</span></div>
     </div>
     <div class="pill">
-      <div class="pill-icon">📊</div>
+      <div class="pill-icon">ðŸ“Š</div>
       <div class="pill-text"><strong>Live Scoring</strong><span>Safety, Continuity &amp; Comfort scores</span></div>
     </div>
     <div class="pill">
-      <div class="pill-icon">📄</div>
+      <div class="pill-icon">ðŸ“„</div>
       <div class="pill-text"><strong>PDF Reports</strong><span>Export professional audit reports</span></div>
     </div>
   </div>
@@ -150,7 +155,7 @@ $googleUrl = getGoogleAuthUrl();
     <p class="form-subtitle">Don't have an account? <a href="register.php">Register here</a></p>
 
     <?php if ($error !== ''): ?>
-    <div class="alert alert-error">⚠️ <?= htmlspecialchars($error) ?></div>
+    <div class="alert alert-error">âš ï¸ <?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
 
     <!-- Google Sign-In -->
@@ -171,7 +176,7 @@ $googleUrl = getGoogleAuthUrl();
       <div class="form-group">
         <label for="email">Email Address</label>
         <div class="input-icon-wrap">
-          <span class="icon">✉️</span>
+          <span class="icon">âœ‰ï¸</span>
           <input type="email" id="email" name="email"
                  value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
                  placeholder="you@example.com" autocomplete="email">
@@ -181,7 +186,7 @@ $googleUrl = getGoogleAuthUrl();
       <div class="form-group">
         <label for="password">Password</label>
         <div class="input-icon-wrap">
-          <span class="icon">🔒</span>
+          <span class="icon">ðŸ”’</span>
           <input type="password" id="password" name="password"
                  placeholder="Enter your password" autocomplete="current-password">
           <button type="button" class="toggle-pass" onclick="togglePass('password', this)">Show</button>
@@ -196,7 +201,7 @@ $googleUrl = getGoogleAuthUrl();
       </button>
     </form>
 
-    <div class="back-link"><a href="../index.html">← Back to Home</a></div>
+    <div class="back-link"><a href="../index.html">â† Back to Home</a></div>
   </div>
 </div>
 
