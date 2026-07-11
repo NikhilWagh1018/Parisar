@@ -73,9 +73,11 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     font-size: 0.7rem; font-weight: 700; padding: 4px 11px; border-radius: 999px;
     flex-shrink: 0; white-space: nowrap; letter-spacing: .01em;
   }
-  .badge-visible { background: var(--tsuccess-bg); color: var(--tsuccess-txt); }
-  .badge-hidden  { background: var(--tseg-bg); color: var(--gray); }
   .badge-flagged { background: var(--tdanger-bg); color: var(--tdanger-txt); }
+
+  .status-text { font-size: 0.78rem; font-weight: 600; flex-shrink: 0; }
+  .status-text.st-visible { color: var(--tsuccess-txt); }
+  .status-text.st-hidden  { color: var(--grl); }
 
   .flag-btn {
     font-size: 0.72rem; font-weight: 600; padding: 5px 12px; border-radius: 999px;
@@ -394,17 +396,6 @@ document.addEventListener('click', e => {
     var right = document.createElement('div');
     right.className = 'grp-head-right';
 
-    if (group.is_flagged) {
-      var flagBadge = document.createElement('span');
-      flagBadge.className = 'badge badge-flagged';
-      flagBadge.textContent = 'Flagged';
-      right.appendChild(flagBadge);
-    }
-
-    var badge = document.createElement('span');
-    badge.className = 'badge ' + (group.is_verified ? 'badge-visible' : 'badge-hidden');
-    badge.textContent = group.is_verified ? 'Visible on public site' : 'Hidden from public site';
-
     var flagBtn = document.createElement('button');
     flagBtn.className = 'flag-btn' + (group.is_flagged ? ' is-flagged' : '');
     flagBtn.textContent = group.is_flagged ? 'Unflag' : 'Flag as illegitimate';
@@ -413,22 +404,36 @@ document.addEventListener('click', e => {
       toggleFlag(group.id, flagBtn);
     });
 
-    var label = document.createElement('label');
-    label.className = 'toggle-switch';
-    var input = document.createElement('input');
-    input.type = 'checkbox';
-    input.checked = !!group.is_verified;
-    input.addEventListener('change', function () {
-      toggleGroup(group.id, input, 'verify');
-    });
-    var slider = document.createElement('span');
-    slider.className = 'toggle-slider';
-    label.appendChild(input);
-    label.appendChild(slider);
+    if (group.is_flagged) {
+      // Flagged groups are forced hidden and the toggle can't be used until
+      // unflagged, so we skip it entirely rather than show a dead control.
+      var flagBadge = document.createElement('span');
+      flagBadge.className = 'badge badge-flagged';
+      flagBadge.textContent = 'Flagged';
+      right.appendChild(flagBadge);
+      right.appendChild(flagBtn);
+    } else {
+      var statusText = document.createElement('span');
+      statusText.className = 'status-text ' + (group.is_verified ? 'st-visible' : 'st-hidden');
+      statusText.textContent = group.is_verified ? 'Visible' : 'Hidden';
 
-    right.appendChild(badge);
-    right.appendChild(flagBtn);
-    right.appendChild(label);
+      var label = document.createElement('label');
+      label.className = 'toggle-switch';
+      var input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = !!group.is_verified;
+      input.addEventListener('change', function () {
+        toggleGroup(group.id, input, 'verify');
+      });
+      var slider = document.createElement('span');
+      slider.className = 'toggle-slider';
+      label.appendChild(input);
+      label.appendChild(slider);
+
+      right.appendChild(statusText);
+      right.appendChild(flagBtn);
+      right.appendChild(label);
+    }
 
     head.appendChild(left);
     head.appendChild(right);
