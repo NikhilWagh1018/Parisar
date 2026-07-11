@@ -74,6 +74,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     </a>
   </nav>
 
+  <div class="sb-user">
   <button class="sb-user-btn" id="sbUserBtn" onclick="toggleUserMenu()">
     <div class="sb-avatar" id="sbAvatar">
       <?php if ($CURRENT_USER_PIC): ?>
@@ -117,6 +118,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
         Sign Out
       </a>
     </div>
+  </div>
   </div>
 </aside>
 
