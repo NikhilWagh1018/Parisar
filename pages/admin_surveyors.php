@@ -166,6 +166,7 @@ document.addEventListener('click', e => {
             <tr>
               <th>Name</th>
               <th>Organisation</th>
+              <th>Role</th>
               <th>Roads Created</th>
               <th>Segments Audited</th>
               <th>Last Active</th>
@@ -210,6 +211,13 @@ document.addEventListener('click', e => {
 
   function buildRow(s) {
     var tr = document.createElement('tr');
+    var roleBadge = s.role === 'admin'
+      ? '<span class="admin-badge">Admin</span>'
+      : '<span style="color:#6b7280;font-size:.78rem;">Surveyor</span>';
+    var roleBtn = s.is_current_user
+      ? ''
+      : ' <button class="toggle-role-btn" data-id="' + s.id + '" data-role="' + s.role + '">' +
+        (s.role === 'admin' ? 'Demote' : 'Promote') + '</button>';
     tr.innerHTML =
       '<td><div class="surv-name-cell">' +
         '<div class="surv-avatar">' + escapeHtml(initials(s.name)) + '</div>' +
@@ -217,12 +225,13 @@ document.addEventListener('click', e => {
         '<div class="surv-email">' + escapeHtml(s.email) + '</div></div>' +
       '</div></td>' +
       '<td>' + (s.organisation ? escapeHtml(s.organisation) : '<span class="surv-muted">—</span>') + '</td>' +
+      '<td>' + roleBadge + '</td>' +
       '<td class="surv-stat">' + s.roads_created + '</td>' +
       '<td class="surv-stat">' + s.segments_audited + '</td>' +
       '<td>' + fmtDate(s.last_audit_at || s.last_login) + '</td>' +
       '<td>' + fmtDate(s.created_at) + '</td>' +
       '<td>' + (s.is_active ? '<span style="color:#16a34a;font-weight:600;">Active</span>' : '<span style="color:#9ca3af;font-weight:600;">Inactive</span>') + '</td>' +
-      '<td><button class="toggle-status-btn" data-id="' + s.id + '" data-active="' + s.is_active + '">' + (s.is_active ? 'Deactivate' : 'Reactivate') + '</button></td>';
+      '<td style="white-space:nowrap;"><button class="toggle-status-btn" data-id="' + s.id + '" data-active="' + s.is_active + '">' + (s.is_active ? 'Deactivate' : 'Reactivate') + '</button>' + roleBtn + '</td>';
     return tr;
   }
 
@@ -247,23 +256,48 @@ document.addEventListener('click', e => {
   document.getElementById('showInactive').addEventListener('change', applyFilter);
 
   document.getElementById('survTbody').addEventListener('click', function (e) {
-    if (!e.target.classList.contains('toggle-status-btn')) return;
-    var id = parseInt(e.target.dataset.id, 10);
-    var newActive = e.target.dataset.active !== 'true';
-    if (!confirm(newActive ? 'Reactivate this surveyor?' : 'Deactivate this surveyor? They will no longer be able to log in.')) return;
-    fetch('../api/admin/surveyors.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-      body: JSON.stringify({ id: id, is_active: newActive })
-    })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      if (!data.success) { alert(data.error || 'Update failed.'); return; }
-      var s = allSurveyors.find(function (x) { return x.id === id; });
-      if (s) s.is_active = newActive;
-      applyFilter();
-    })
-    .catch(function () { alert('Network error.'); });
+    if (e.target.classList.contains('toggle-status-btn')) {
+      var id = parseInt(e.target.dataset.id, 10);
+      var newActive = e.target.dataset.active !== 'true';
+      if (!confirm(newActive ? 'Reactivate this user?' : 'Deactivate this user? They will no longer be able to log in.')) return;
+      fetch('../api/admin/surveyors.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ id: id, is_active: newActive })
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.success) { alert(data.error || 'Update failed.'); return; }
+        var s = allSurveyors.find(function (x) { return x.id === id; });
+        if (s) s.is_active = newActive;
+        applyFilter();
+      })
+      .catch(function () { alert('Network error.'); });
+      return;
+    }
+
+    if (e.target.classList.contains('toggle-role-btn')) {
+      var rid = parseInt(e.target.dataset.id, 10);
+      var currentRole = e.target.dataset.role;
+      var newRole = currentRole === 'admin' ? 'surveyor' : 'admin';
+      var confirmMsg = newRole === 'admin'
+        ? 'Promote this user to Admin? They will get full admin access.'
+        : 'Demote this user to Surveyor? They will lose admin access.';
+      if (!confirm(confirmMsg)) return;
+      fetch('../api/admin/surveyors.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ id: rid, role: newRole })
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.success) { alert(data.error || 'Update failed.'); return; }
+        var s = allSurveyors.find(function (x) { return x.id === rid; });
+        if (s) s.role = newRole;
+        applyFilter();
+      })
+      .catch(function () { alert('Network error.'); });
+    }
   });
 
   fetch('../api/admin/surveyors.php', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -277,7 +311,7 @@ document.addEventListener('click', e => {
       }
       allSurveyors = data.surveyors;
       document.getElementById('tableWrap').style.display = 'block';
-      render(allSurveyors);
+      applyFilter();
     })
     .catch(function () {
       document.getElementById('loadingMsg').style.display = 'none';
