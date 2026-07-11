@@ -134,7 +134,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     </a>
   </nav>
 
-  <div class="sb-user">
+  <button class="sb-user-btn" id="sbUserBtn" onclick="toggleUserMenu()">
     <div class="sb-avatar" id="sbAvatar">
       <?php if ($CURRENT_USER_PIC): ?>
         <img src="<?= htmlspecialchars($CURRENT_USER_PIC) ?>" alt="">
@@ -146,8 +146,57 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <div style="font-weight:600;font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= htmlspecialchars($CURRENT_USER_NAME) ?></div>
       <div style="font-size:.72rem;opacity:.6"><?= htmlspecialchars($CURRENT_USER_ROLE) ?></div>
     </div>
+  </button>
+
+  <div class="sb-popup" id="sbPopup">
+    <div class="popup-header">
+      <div class="popup-avatar" id="popupAv">
+        <?php if ($CURRENT_USER_PIC): ?>
+          <img src="<?= htmlspecialchars($CURRENT_USER_PIC) ?>" alt="">
+        <?php else: ?>
+          <?= $initials ?>
+        <?php endif; ?>
+      </div>
+      <div style="min-width:0">
+        <div class="popup-uname"><?= htmlspecialchars($CURRENT_USER_NAME) ?></div>
+        <div class="popup-urole"><?= htmlspecialchars($CURRENT_USER_ROLE) ?></div>
+      </div>
+    </div>
+    <div class="popup-menu">
+      <a class="popup-item" href="profile.php">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        My Profile
+      </a>
+      <a class="popup-item" href="profile.php#tab-account">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Change Password
+      </a>
+      <div class="popup-divider"></div>
+      <a class="popup-item danger" href="../auth/logout.php">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </a>
+    </div>
   </div>
 </aside>
+
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+function toggleUserMenu() {
+  const popup = document.getElementById('sbPopup');
+  const btn   = document.getElementById('sbUserBtn');
+  const open  = popup.classList.toggle('show');
+  btn.classList.toggle('open', open);
+}
+document.addEventListener('click', e => {
+  const popup = document.getElementById('sbPopup');
+  if (!popup.classList.contains('show')) return;
+  if (!document.getElementById('sbUserBtn').contains(e.target) &&
+      !popup.contains(e.target)) {
+    popup.classList.remove('show');
+    document.getElementById('sbUserBtn').classList.remove('open');
+  }
+});
+</script>
 
 <div class="sb-overlay" id="sb-overlay"></div>
 
