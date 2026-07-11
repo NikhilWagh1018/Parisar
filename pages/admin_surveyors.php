@@ -43,8 +43,14 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   .surv-search {
     width: 100%; max-width: 320px; padding: 9px 12px; border-radius: 8px;
     border: 1px solid rgba(127,127,127,0.25); background: transparent; font-size: 0.85rem;
-    margin-bottom: 16px; font-family: inherit;
+    font-family: inherit;
   }
+  .surv-role-filter {
+    padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(127,127,127,0.25);
+    background: transparent; font-size: 0.85rem; font-family: inherit;
+  }
+  .surv-filterbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .surv-filtercount { margin-left: auto; font-size: 0.8rem; opacity: 0.6; }
   .surv-empty { text-align: center; padding: 30px; opacity: 0.6; }
 </style>
 </head>
@@ -155,8 +161,16 @@ document.addEventListener('click', e => {
 
   <div style="padding: 0 4px 4px;">
     <div class="card">
-      <input type="text" id="survSearch" class="surv-search" placeholder="Search by name or email…">
-      <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;margin-left:16px;"><input type="checkbox" id="showInactive"> Show inactive</label>
+      <div class="surv-filterbar">
+        <input type="text" id="survSearch" class="surv-search" placeholder="Search by name or email…">
+        <select id="roleFilter" class="surv-role-filter">
+          <option value="all">All roles</option>
+          <option value="admin">Admins only</option>
+          <option value="surveyor">Surveyors only</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><input type="checkbox" id="showInactive"> Show inactive</label>
+        <span id="filterCount" class="surv-filtercount"></span>
+      </div>
 
       <div id="loadingMsg" style="text-align:center;padding:30px;opacity:.6;">Loading surveyors…</div>
       <div id="errorMsg" style="display:none;text-align:center;padding:30px;color:#dc2626;"></div>
@@ -245,15 +259,21 @@ document.addEventListener('click', e => {
   function applyFilter() {
     var q = document.getElementById('survSearch').value.trim().toLowerCase();
     var showInactive = document.getElementById('showInactive').checked;
-    render(allSurveyors.filter(function (s) {
+    var roleFilter = document.getElementById('roleFilter').value;
+    var filtered = allSurveyors.filter(function (s) {
       if (!showInactive && !s.is_active) return false;
+      if (roleFilter !== 'all' && s.role !== roleFilter) return false;
       return (s.name || '').toLowerCase().indexOf(q) !== -1 ||
              (s.email || '').toLowerCase().indexOf(q) !== -1;
-    }));
+    });
+    render(filtered);
+    document.getElementById('filterCount').textContent =
+      'Showing ' + filtered.length + ' of ' + allSurveyors.length + ' users';
   }
 
   document.getElementById('survSearch').addEventListener('input', applyFilter);
   document.getElementById('showInactive').addEventListener('change', applyFilter);
+  document.getElementById('roleFilter').addEventListener('change', applyFilter);
 
   document.getElementById('survTbody').addEventListener('click', function (e) {
     if (e.target.classList.contains('toggle-status-btn')) {
