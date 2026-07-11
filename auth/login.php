@@ -129,15 +129,15 @@ $googleUrl = getGoogleAuthUrl();
 
   <div class="feature-pills">
     <div class="pill">
-      <div class="pill-icon">ðŸ—ºï¸</div>
+      <div class="pill-icon">🗺️</div>
       <div class="pill-text"><strong>Segment Mapping</strong><span>Define and audit road segments precisely</span></div>
     </div>
     <div class="pill">
-      <div class="pill-icon">ðŸ“Š</div>
+      <div class="pill-icon">📊</div>
       <div class="pill-text"><strong>Live Scoring</strong><span>Safety, Continuity &amp; Comfort scores</span></div>
     </div>
     <div class="pill">
-      <div class="pill-icon">ðŸ“„</div>
+      <div class="pill-icon">📄</div>
       <div class="pill-text"><strong>PDF Reports</strong><span>Export professional audit reports</span></div>
     </div>
   </div>
@@ -155,7 +155,7 @@ $googleUrl = getGoogleAuthUrl();
     <p class="form-subtitle">Don't have an account? <a href="register.php">Register here</a></p>
 
     <?php if ($error !== ''): ?>
-    <div class="alert alert-error">âš ï¸ <?= htmlspecialchars($error) ?></div>
+    <div class="alert alert-error">⚠️ <?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
 
     <!-- Google Sign-In -->
@@ -176,7 +176,7 @@ $googleUrl = getGoogleAuthUrl();
       <div class="form-group">
         <label for="email">Email Address</label>
         <div class="input-icon-wrap">
-          <span class="icon">âœ‰ï¸</span>
+          <span class="icon">✉️</span>
           <input type="email" id="email" name="email"
                  value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
                  placeholder="you@example.com" autocomplete="email">
@@ -186,7 +186,7 @@ $googleUrl = getGoogleAuthUrl();
       <div class="form-group">
         <label for="password">Password</label>
         <div class="input-icon-wrap">
-          <span class="icon">ðŸ”’</span>
+          <span class="icon">🔒</span>
           <input type="password" id="password" name="password"
                  placeholder="Enter your password" autocomplete="current-password">
           <button type="button" class="toggle-pass" onclick="togglePass('password', this)">Show</button>

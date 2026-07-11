@@ -147,6 +147,9 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <div style="font-weight:600;font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= htmlspecialchars($CURRENT_USER_NAME) ?></div>
       <div style="font-size:.72rem;opacity:.6"><?= htmlspecialchars($CURRENT_USER_ROLE) ?></div>
     </div>
+    <svg class="sb-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <polyline points="18 15 12 9 6 15"/>
+    </svg>
   </button>
 
   <div class="sb-popup" id="sbPopup">
