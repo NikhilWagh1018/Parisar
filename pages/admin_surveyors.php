@@ -168,7 +168,7 @@ document.addEventListener('click', e => {
           <option value="admin">Admins only</option>
           <option value="surveyor">Surveyors only</option>
         </select>
-        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><input type="checkbox" id="showInactive"> Show inactive</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><input type="checkbox" id="showInactive"> Show inactive only</label>
         <span id="filterCount" class="surv-filtercount"></span>
       </div>
 
@@ -261,7 +261,7 @@ document.addEventListener('click', e => {
     var showInactive = document.getElementById('showInactive').checked;
     var roleFilter = document.getElementById('roleFilter').value;
     var filtered = allSurveyors.filter(function (s) {
-      if (!showInactive && !s.is_active) return false;
+      if (showInactive ? s.is_active : !s.is_active) return false;
       if (roleFilter !== 'all' && s.role !== roleFilter) return false;
       return (s.name || '').toLowerCase().indexOf(q) !== -1 ||
              (s.email || '').toLowerCase().indexOf(q) !== -1;
