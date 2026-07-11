@@ -107,7 +107,7 @@ $googleUrl = getGoogleAuthUrl();
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In â€” CycleAudit</title>
+  <title>Sign In — CycleAudit</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/auth.css">
@@ -201,7 +201,7 @@ $googleUrl = getGoogleAuthUrl();
       </button>
     </form>
 
-    <div class="back-link"><a href="../index.html">â† Back to Home</a></div>
+    <div class="back-link"><a href="../index.html">← Back to Home</a></div>
   </div>
 </div>
 
