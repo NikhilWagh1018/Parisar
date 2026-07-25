@@ -300,7 +300,26 @@ function renderBreakdownList(containerId, items, getFields, emptyIcon, emptyText
   }).join('');
 }
 
-// Renders a dependency-free SVG bar chart for the 30-day audit trend.
+// Builds a smoothed SVG path through a set of {x,y} points using the
+// quadratic-bezier-through-midpoints technique. Chosen over Catmull-Rom
+// because it never overshoots below/above neighboring points — important
+// here since most values sit at (or near) zero.
+function buildSmoothPath(points) {
+  if (points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0].x},${points[0].y}`;
+  let path = `M ${points[0].x},${points[0].y}`;
+  for (let i = 1; i < points.length - 1; i++) {
+    const midX = (points[i].x + points[i + 1].x) / 2;
+    const midY = (points[i].y + points[i + 1].y) / 2;
+    path += ` Q ${points[i].x},${points[i].y} ${midX},${midY}`;
+  }
+  const last = points[points.length - 1];
+  path += ` Q ${last.x},${last.y} ${last.x},${last.y}`;
+  return path;
+}
+
+// Renders a dependency-free SVG gradient area chart for the 30-day audit
+// trend, with an animated draw-in and per-day hover tooltips.
 function renderTrendChart(days) {
   const el = document.getElementById('trendContainer');
   if (!days || days.length === 0 || days.every(d => d.total === 0)) {
@@ -308,36 +327,89 @@ function renderTrendChart(days) {
     return;
   }
 
-  const W = 700, H = 130, padBottom = 16, padTop = 6;
+  const W = 700, H = 130, padBottom = 16, padTop = 14;
   const max = Math.max(...days.map(d => d.total), 1);
-  const barW = W / days.length;
   const scaleY = (H - padBottom - padTop) / max;
+  const step = days.length > 1 ? W / (days.length - 1) : 0;
+  const baseline = H - padBottom;
 
-  let bars = '';
-  days.forEach((d, i) => {
-    const barH = d.total > 0 ? Math.max(d.total * scaleY, 2) : 0;
-    const x = i * barW + barW * 0.15;
-    const y = H - padBottom - barH;
-    const w = barW * 0.7;
-    const label = new Date(d.date + 'T00:00:00')
-      .toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    bars += `<rect class="trend-bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${barH.toFixed(1)}" rx="2"><title>${label}: ${d.total} audit${d.total === 1 ? '' : 's'}</title></rect>`;
-  });
+  const points = days.map((d, i) => ({
+    x: i * step,
+    y: baseline - d.total * scaleY,
+    date: d.date,
+    total: d.total,
+  }));
+
+  const linePath = buildSmoothPath(points);
+  const areaPath = `${linePath} L ${points[points.length - 1].x},${baseline} L ${points[0].x},${baseline} Z`;
 
   // Show ~6 evenly-spaced date labels along the x-axis
   const labelStep = Math.ceil(days.length / 6);
   let labels = '';
-  days.forEach((d, i) => {
+  points.forEach((p, i) => {
     if (i % labelStep !== 0) return;
-    const x = i * barW + barW * 0.5;
-    const label = new Date(d.date + 'T00:00:00')
+    const label = new Date(p.date + 'T00:00:00')
       .toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    labels += `<text class="trend-axis-label" x="${x.toFixed(1)}" y="${H - 2}" text-anchor="middle">${label}</text>`;
+    labels += `<text class="trend-axis-label" x="${p.x.toFixed(1)}" y="${H - 2}" text-anchor="middle">${label}</text>`;
+  });
+
+  let dots = '';
+  points.forEach((p, i) => {
+    const leftPct = (points.length > 1 ? (p.x / W) * 100 : 50).toFixed(2);
+    const topPct = ((p.y / H) * 100).toFixed(2);
+    dots += `<div class="trend-dot" data-i="${i}" style="left:${leftPct}%;top:${topPct}%"></div>`;
   });
 
   el.innerHTML = `
     <svg class="trend-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-      ${bars}
+      <defs>
+        <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop class="trend-gradient-start" offset="0%"></stop>
+          <stop class="trend-gradient-end" offset="100%"></stop>
+        </linearGradient>
+      </defs>
+      <path class="trend-area" d="${areaPath}" fill="url(#trendGradient)"></path>
+      <path class="trend-line" d="${linePath}" fill="none" vector-effect="non-scaling-stroke"></path>
       ${labels}
-    </svg>`;
+    </svg>
+    <div class="trend-dots-layer">${dots}</div>
+    <div class="trend-tooltip"></div>`;
+
+  // Animate the line drawing in via stroke-dasharray/dashoffset.
+  const lineEl = el.querySelector('.trend-line');
+  const areaEl = el.querySelector('.trend-area');
+  if (lineEl) {
+    const len = lineEl.getTotalLength();
+    lineEl.style.strokeDasharray = `${len}`;
+    lineEl.style.strokeDashoffset = `${len}`;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        lineEl.style.strokeDashoffset = '0';
+        if (areaEl) areaEl.classList.add('is-visible');
+      });
+    });
+  }
+
+  // Wire up hover tooltips on the overlay dots (plain HTML divs, not SVG
+  // circles, so they stay perfectly round regardless of the non-uniform
+  // viewBox scaling from preserveAspectRatio="none").
+  const tooltip = el.querySelector('.trend-tooltip');
+  el.querySelectorAll('.trend-dot').forEach((dotEl) => {
+    const p = points[parseInt(dotEl.dataset.i, 10)];
+    const label = new Date(p.date + 'T00:00:00')
+      .toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const show = () => {
+      tooltip.textContent = `${label}: ${p.total} audit${p.total === 1 ? '' : 's'}`;
+      tooltip.style.left = dotEl.style.left;
+      tooltip.style.top = dotEl.style.top;
+      tooltip.classList.add('is-visible');
+      dotEl.classList.add('is-active');
+    };
+    const hide = () => {
+      tooltip.classList.remove('is-visible');
+      dotEl.classList.remove('is-active');
+    };
+    dotEl.addEventListener('mouseenter', show);
+    dotEl.addEventListener('mouseleave', hide);
+  });
 }
