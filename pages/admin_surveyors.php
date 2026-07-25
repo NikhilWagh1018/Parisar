@@ -173,8 +173,11 @@ document.addEventListener('click', e => {
           <option value="surveyor">Surveyors only</option>
         </select>
         <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><input type="checkbox" id="showInactive"> Show inactive only</label>
+        <button class="action-btn" id="exportCsvBtn" type="button">Export CSV</button>
+        <button class="action-btn" id="exportExcelBtn" type="button">Export Excel</button>
         <span id="filterCount" class="surv-filtercount"></span>
       </div>
+      <div id="exportMsg" style="font-size:0.78rem;color:var(--gray);margin:-8px 0 12px;display:none;"></div>
 
       <div id="loadingMsg" style="text-align:center;padding:30px;opacity:.6;">Loading surveyors…</div>
       <div id="errorMsg" style="display:none;text-align:center;padding:30px;color:#dc2626;"></div>
@@ -201,6 +204,7 @@ document.addEventListener('click', e => {
   </div>
 </main>
 
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';</script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 (function () {
   'use strict';
@@ -260,6 +264,8 @@ document.addEventListener('click', e => {
     list.forEach(function (s) { tbody.appendChild(buildRow(s)); });
   }
 
+  var lastFiltered = [];
+
   function applyFilter() {
     var q = document.getElementById('survSearch').value.trim().toLowerCase();
     var showInactive = document.getElementById('showInactive').checked;
@@ -270,6 +276,7 @@ document.addEventListener('click', e => {
       return (s.name || '').toLowerCase().indexOf(q) !== -1 ||
              (s.email || '').toLowerCase().indexOf(q) !== -1;
     });
+    lastFiltered = filtered;
     render(filtered);
     document.getElementById('filterCount').textContent =
       'Showing ' + filtered.length + ' of ' + allSurveyors.length + ' users';
@@ -342,6 +349,106 @@ document.addEventListener('click', e => {
       document.getElementById('errorMsg').textContent = 'Network error — could not load surveyors.';
       document.getElementById('errorMsg').style.display = 'block';
     });
+
+  // ── Export (CSV + Excel) ─────────────────────────────────────
+  // Both formats export exactly `lastFiltered` — whatever the
+  // search box, role dropdown, and "show inactive only" checkbox
+  // currently show — never the full unfiltered `allSurveyors`.
+  var exportCsvBtn = document.getElementById('exportCsvBtn');
+  var exportExcelBtn = document.getElementById('exportExcelBtn');
+  var exportMsg = document.getElementById('exportMsg');
+
+  function exportRows() {
+    return lastFiltered.map(function (s) {
+      return {
+        name: s.name,
+        email: s.email,
+        organisation: s.organisation || '',
+        role: s.role,
+        roads_created: s.roads_created,
+        segments_audited: s.segments_audited,
+        last_active: s.last_audit_at || s.last_login || '',
+        created_at: s.created_at,
+        is_active: !!s.is_active
+      };
+    });
+  }
+
+  function csvEscape(v) {
+    v = v === null || v === undefined ? '' : String(v);
+    if (/[",\n\r]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"';
+    return v;
+  }
+
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function showExportMsg(text, isErr) {
+    exportMsg.textContent = text;
+    exportMsg.style.display = text ? 'block' : 'none';
+    exportMsg.style.color = isErr ? '#dc2626' : 'inherit';
+  }
+
+  exportCsvBtn.addEventListener('click', function () {
+    var rows = exportRows();
+    if (rows.length === 0) {
+      showExportMsg('Nothing to export — no users match the current filters.', true);
+      return;
+    }
+    var headers = ['Name', 'Email', 'Organisation', 'Role', 'Roads Created', 'Segments Audited', 'Last Active', 'Joined', 'Status'];
+    var lines = [headers.map(csvEscape).join(',')];
+    rows.forEach(function (r) {
+      lines.push([
+        r.name, r.email, r.organisation, r.role, r.roads_created,
+        r.segments_audited, r.last_active, r.created_at,
+        r.is_active ? 'Active' : 'Inactive'
+      ].map(csvEscape).join(','));
+    });
+    var blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, 'CycleAudit-Users-' + new Date().toISOString().slice(0, 10) + '.csv');
+    showExportMsg('');
+  });
+
+  exportExcelBtn.addEventListener('click', function () {
+    var rows = exportRows();
+    if (rows.length === 0) {
+      showExportMsg('Nothing to export — no users match the current filters.', true);
+      return;
+    }
+    exportExcelBtn.disabled = true;
+    showExportMsg('Generating Excel file…');
+    fetch('../api/admin/export-users.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': CSRF,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ rows: rows })
+    })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'Export failed.'); });
+        return r.blob();
+      })
+      .then(function (blob) {
+        downloadBlob(blob, 'CycleAudit-Users-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+        showExportMsg('');
+      })
+      .catch(function (e) {
+        showExportMsg(e.message || 'Network error — could not export.', true);
+      })
+      .finally(function () {
+        exportExcelBtn.disabled = false;
+      });
+  });
 })();
 </script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">

@@ -327,8 +327,11 @@ document.addEventListener('click', e => {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="roadsSearchInput" placeholder="Search roads…" autocomplete="off">
       </div>
+      <button class="action-btn" id="exportCsvBtn" type="button">Export CSV</button>
+      <button class="action-btn" id="exportExcelBtn" type="button">Export Excel</button>
       <span class="roads-count" id="roadsCountLbl"></span>
     </div>
+    <div id="exportMsg" style="font-size:0.78rem;color:var(--gray);margin:-8px 0 12px;display:none;"></div>
 
     <div id="loadingMsg" class="card loading-state">
       <span class="spinner"></span> Loading roads…
@@ -568,6 +571,7 @@ document.addEventListener('click', e => {
   }
 
   var allGroups = [];
+  var lastVisible = [];
   var searchInput = document.getElementById('roadsSearchInput');
   var roadsCountLbl = document.getElementById('roadsCountLbl');
   var emptyMsgText = document.getElementById('emptyMsgText');
@@ -584,6 +588,7 @@ document.addEventListener('click', e => {
     var visible = query
       ? groups.filter(function (g) { return g.name.toUpperCase().indexOf(query) !== -1; })
       : groups;
+    lastVisible = visible;
 
     container.innerHTML = '';
     emptyMsg.style.display = visible.length === 0 ? 'block' : 'none';
@@ -699,6 +704,99 @@ document.addEventListener('click', e => {
   }
 
   loadRoads();
+
+  // ── Export (CSV + Excel) ─────────────────────────────────────
+  // Both formats export exactly `lastVisible` — the road groups
+  // currently shown after the on-page search filter — never the
+  // full unfiltered `allGroups`.
+  var exportCsvBtn = document.getElementById('exportCsvBtn');
+  var exportExcelBtn = document.getElementById('exportExcelBtn');
+  var exportMsg = document.getElementById('exportMsg');
+
+  function exportRows() {
+    return lastVisible.map(function (g) {
+      return {
+        name: g.name,
+        entry_count: g.entry_count,
+        total_segments: g.total_segments,
+        is_verified: !!g.is_verified,
+        created_at: g.created_at
+      };
+    });
+  }
+
+  function csvEscape(v) {
+    v = v === null || v === undefined ? '' : String(v);
+    if (/[",\n\r]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"';
+    return v;
+  }
+
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function showExportMsg(text, isErr) {
+    exportMsg.textContent = text;
+    exportMsg.style.display = text ? 'block' : 'none';
+    exportMsg.style.color = isErr ? 'var(--tdanger-txt)' : 'var(--gray)';
+  }
+
+  exportCsvBtn.addEventListener('click', function () {
+    var rows = exportRows();
+    if (rows.length === 0) {
+      showExportMsg('Nothing to export — no roads match the current search.', true);
+      return;
+    }
+    var headers = ['Road Name', 'Entries', 'Total Segments', 'Verified', 'Created At'];
+    var lines = [headers.map(csvEscape).join(',')];
+    rows.forEach(function (r) {
+      lines.push([r.name, r.entry_count, r.total_segments, r.is_verified ? 'Yes' : 'No', r.created_at]
+        .map(csvEscape).join(','));
+    });
+    var blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, 'CycleAudit-Roads-' + new Date().toISOString().slice(0, 10) + '.csv');
+    showExportMsg('');
+  });
+
+  exportExcelBtn.addEventListener('click', function () {
+    var rows = exportRows();
+    if (rows.length === 0) {
+      showExportMsg('Nothing to export — no roads match the current search.', true);
+      return;
+    }
+    exportExcelBtn.disabled = true;
+    showExportMsg('Generating Excel file…');
+    fetch('../api/admin/export-roads.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': CSRF,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ rows: rows })
+    })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'Export failed.'); });
+        return r.blob();
+      })
+      .then(function (blob) {
+        downloadBlob(blob, 'CycleAudit-Roads-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+        showExportMsg('');
+      })
+      .catch(function (e) {
+        showExportMsg(e.message || 'Network error — could not export.', true);
+      })
+      .finally(function () {
+        exportExcelBtn.disabled = false;
+      });
+  });
 })();
 </script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
