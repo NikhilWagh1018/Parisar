@@ -80,6 +80,60 @@ $pendingTotalStmt = $pdo->query(
 );
 $pendingTotal = (int)$pendingTotalStmt->fetchColumn();
 
+// ── Audits over time (last 30 days, zero-filled) ─────────────────
+$overTimeStmt = $pdo->query(
+    "SELECT DATE(audited_at) AS d, COUNT(*) AS total
+       FROM segment_audits
+      WHERE audited_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
+      GROUP BY DATE(audited_at)"
+);
+$overTimeRows = [];
+foreach ($overTimeStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    $overTimeRows[$row['d']] = (int)$row['total'];
+}
+$auditsOverTime = [];
+for ($i = 29; $i >= 0; $i--) {
+    $day = date('Y-m-d', strtotime("-{$i} days"));
+    $auditsOverTime[] = ['date' => $day, 'total' => $overTimeRows[$day] ?? 0];
+}
+
+// ── Audits by surveyor (top 8) ────────────────────────────────────
+$bySurveyorStmt = $pdo->query(
+    'SELECT
+        u.id,
+        u.name,
+        u.organisation,
+        COUNT(*) AS total
+     FROM segment_audits sa
+     JOIN users u ON u.id = sa.surveyor_id
+    GROUP BY u.id, u.name, u.organisation
+    ORDER BY total DESC, u.name ASC
+    LIMIT 8'
+);
+$bySurveyor = $bySurveyorStmt->fetchAll(PDO::FETCH_ASSOC);
+foreach ($bySurveyor as &$sv) {
+    $sv['id']    = (int)$sv['id'];
+    $sv['total'] = (int)$sv['total'];
+}
+unset($sv);
+
+// ── Audits by organisation (top 8) ────────────────────────────────
+$byOrgStmt = $pdo->query(
+    "SELECT
+        COALESCE(NULLIF(TRIM(u.organisation), ''), 'Unspecified') AS organisation,
+        COUNT(*) AS total
+     FROM segment_audits sa
+     JOIN users u ON u.id = sa.surveyor_id
+    GROUP BY organisation
+    ORDER BY total DESC, organisation ASC
+    LIMIT 8"
+);
+$byOrganisation = $byOrgStmt->fetchAll(PDO::FETCH_ASSOC);
+foreach ($byOrganisation as &$og) {
+    $og['total'] = (int)$og['total'];
+}
+unset($og);
+
 // ── Recent activity feed ────────────────────────────────────────
 // Currently only segment_submitted / segment_edited are logged in
 // practice (see helpers/ActivityLogger.php for the full action
@@ -122,4 +176,7 @@ echo json_encode([
     ],
     'pending_queue'   => $pendingQueue,
     'recent_activity' => $recentActivity,
+    'audits_over_time'=> $auditsOverTime,
+    'by_surveyor'     => $bySurveyor,
+    'by_organisation' => $byOrganisation,
 ]);

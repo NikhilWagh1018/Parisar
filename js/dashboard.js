@@ -230,7 +230,114 @@ async function loadAdminOverview() {
       }).join('');
     }
 
+    // ── Pending verification queue ──
+    const pendingEl = document.getElementById('pendingQueueContainer');
+    if (data.pending_queue.length === 0) {
+      pendingEl.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">✅</div>
+          <p>Nothing waiting on verification.</p>
+        </div>`;
+    } else {
+      pendingEl.innerHTML = data.pending_queue.map(p => `
+        <div class="pending-row">
+          <div class="road-name-info">
+            <strong>${escHtml(p.canonical_name)}</strong>
+            <span>${p.member_count} road${p.member_count === 1 ? '' : 's'} · added ${formatDate(p.created_at)}</span>
+          </div>
+          <a class="btn-link" href="admin.php">Review →</a>
+        </div>`).join('');
+      if (s.pending_roads > data.pending_queue.length) {
+        pendingEl.innerHTML += `
+          <div class="pending-more">+ ${s.pending_roads - data.pending_queue.length} more waiting</div>`;
+      }
+    }
+
+    // ── By surveyor / by organisation breakdowns ──
+    renderBreakdownList('bySurveyorContainer', data.by_surveyor, sv => ({
+      title: sv.name,
+      subtitle: sv.organisation || 'Unspecified',
+      count: sv.total
+    }), '🏆', 'No audits recorded yet.');
+
+    renderBreakdownList('byOrgContainer', data.by_organisation, og => ({
+      title: og.organisation,
+      subtitle: null,
+      count: og.total
+    }), '🏢', 'No audits recorded yet.');
+
+    // ── Audits-over-time trend chart ──
+    renderTrendChart(data.audits_over_time);
+
   } catch {
     // fail quietly — admin section is supplementary, not critical path
   }
+}
+
+// Renders a ranked list (used for by-surveyor / by-organisation cards).
+// getFields(item) -> { title, subtitle|null, count }
+function renderBreakdownList(containerId, items, getFields, emptyIcon, emptyText) {
+  const el = document.getElementById(containerId);
+  if (!items || items.length === 0) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">${emptyIcon}</div>
+        <p>${escHtml(emptyText)}</p>
+      </div>`;
+    return;
+  }
+  el.innerHTML = items.map((item, i) => {
+    const f = getFields(item);
+    return `
+      <div class="breakdown-row">
+        <div class="breakdown-rank">${i + 1}</div>
+        <div class="breakdown-info">
+          <strong>${escHtml(f.title)}</strong>
+          ${f.subtitle ? `<span>${escHtml(f.subtitle)}</span>` : ''}
+        </div>
+        <div class="breakdown-count">${f.count}</div>
+      </div>`;
+  }).join('');
+}
+
+// Renders a dependency-free SVG bar chart for the 30-day audit trend.
+function renderTrendChart(days) {
+  const el = document.getElementById('trendContainer');
+  if (!days || days.length === 0 || days.every(d => d.total === 0)) {
+    el.innerHTML = `<div class="trend-empty">No audits recorded in the last 30 days.</div>`;
+    return;
+  }
+
+  const W = 700, H = 130, padBottom = 16, padTop = 6;
+  const max = Math.max(...days.map(d => d.total), 1);
+  const barW = W / days.length;
+  const scaleY = (H - padBottom - padTop) / max;
+
+  let bars = '';
+  days.forEach((d, i) => {
+    const barH = d.total > 0 ? Math.max(d.total * scaleY, 2) : 0;
+    const x = i * barW + barW * 0.15;
+    const y = H - padBottom - barH;
+    const w = barW * 0.7;
+    const label = new Date(d.date + 'T00:00:00')
+      .toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    bars += `<rect class="trend-bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${barH.toFixed(1)}" rx="2"><title>${label}: ${d.total} audit${d.total === 1 ? '' : 's'}</title></rect>`;
+  });
+
+  // Show ~6 evenly-spaced date labels along the x-axis
+  const labelStep = Math.ceil(days.length / 6);
+  let labels = '';
+  days.forEach((d, i) => {
+    if (i % labelStep !== 0) return;
+    const x = i * barW + barW * 0.5;
+    const label = new Date(d.date + 'T00:00:00')
+      .toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    labels += `<text class="trend-axis-label" x="${x.toFixed(1)}" y="${H - 2}" text-anchor="middle">${label}</text>`;
+  });
+
+  el.innerHTML = `
+    <svg class="trend-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      ${bars}
+      ${labels}
+    </svg>`;
 }

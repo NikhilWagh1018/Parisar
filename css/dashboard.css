@@ -241,6 +241,40 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 .activity-text { font-size: .85rem; color: var(--ink); line-height: 1.5; }
 .activity-time { font-size: .72rem; color: var(--grl); white-space: nowrap; }
 
+/* ── Admin overview: 2-col analytics grid ── */
+.admin-overview-grid-2col { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) {
+  .admin-overview-grid-2col { grid-template-columns: 1fr; }
+}
+
+/* ── Breakdown rows (by surveyor / by organisation) ── */
+.breakdown-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid #f0f4e8;
+}
+.breakdown-row:last-child { border-bottom: none; }
+.breakdown-rank {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--gp);
+  color: var(--gd); font-size: .7rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.breakdown-info { flex: 1; min-width: 0; }
+.breakdown-info strong {
+  display: block; font-size: .85rem; font-weight: 700; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.breakdown-info span { font-size: .72rem; color: var(--grl); }
+.breakdown-count {
+  font-size: .85rem; font-weight: 800; color: var(--g); flex-shrink: 0;
+}
+
+/* ── Trend chart (dependency-free SVG bars) ── */
+.trend-chart { width: 100%; height: 130px; display: block; overflow: visible; }
+.trend-bar { fill: var(--gl); transition: fill .15s ease; }
+.trend-bar:hover { fill: var(--g); }
+.trend-axis-label { font-size: 9px; fill: var(--grl); font-family: 'DM Sans', sans-serif; }
+.trend-empty { text-align: center; padding: 40px 20px; color: var(--grl); font-size: .85rem; }
+
 /* ── Toast ── */
 .toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
 .toast {
