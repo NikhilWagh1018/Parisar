@@ -1,4 +1,4 @@
-﻿/* js/dashboard.js — extracted from pages/dashboard.php */
+/* js/dashboard.js — extracted from pages/dashboard.php */
 
 
 // ── Load dashboard data ───────────────────────────────────────
