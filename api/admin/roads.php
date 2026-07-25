@@ -126,6 +126,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // ── Delete path: { action: 'delete', id } — only when the group ──
+    // has zero member `roads` rows, so a real surveyor's audit data
+    // can never be silently destroyed through this button.
+    if (isset($body['action']) && $body['action'] === 'delete') {
+        $id = isset($body['id']) ? (int)$body['id'] : 0;
+        if ($id <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Invalid road group id.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('SELECT canonical_name FROM road_groups WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $group = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$group) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Road group not found.']);
+            exit;
+        }
+
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM roads WHERE road_group_id = ?');
+        $countStmt->execute([$id]);
+        if ((int)$countStmt->fetchColumn() > 0) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'error' => 'Can\'t delete a road with audit entries under it.']);
+            exit;
+        }
+
+        $del = $pdo->prepare('DELETE FROM road_groups WHERE id = ?');
+        try {
+            $del->execute([$id]);
+        } catch (PDOException $e) {
+            // road_groups isn't defined in any tracked migration, so we can't
+            // be certain audit_log (or anything else) doesn't have a strict
+            // FK back to it. Fail honestly instead of a raw 500.
+            if ($e->getCode() === '23000') {
+                http_response_code(409);
+                echo json_encode([
+                    'success' => false,
+                    'error'   => 'Can\'t delete — this road has related history in the database. Try flagging it instead.',
+                ]);
+                exit;
+            }
+            throw $e;
+        }
+
+        try {
+            logAudit($pdo, $CURRENT_USER_ID, $CURRENT_USER_NAME, 'delete', $id, $group['canonical_name']);
+        } catch (PDOException $e) {
+            error_log('api/admin/roads.php: delete succeeded but audit log write failed: ' . $e->getMessage());
+        }
+
+        echo json_encode(['success' => true, 'id' => $id]);
+        exit;
+    }
+
     // ── Bulk path: { ids: [1,2,3], action: 'verify'|'flag', value: true|false } ──
     if (isset($body['ids']) && is_array($body['ids'])) {
         $ids = array_values(array_unique(array_filter(array_map('intval', $body['ids']), fn($v) => $v > 0)));

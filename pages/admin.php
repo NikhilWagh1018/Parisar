@@ -60,6 +60,11 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     margin-left: auto; font-size: 0.78rem; color: var(--gray); cursor: pointer;
     background: none; border: none; text-decoration: underline; padding: 0;
   }
+  .grp-delete-btn {
+    font-size: 0.78rem; color: #8b1a1a; cursor: pointer;
+    background: none; border: none; text-decoration: underline; padding: 0; flex-shrink: 0;
+  }
+  .grp-delete-btn:disabled { opacity: 0.5; cursor: wait; }
 
   .grp-card { padding: 16px 18px; margin-bottom: 12px; }
   .grp-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
@@ -349,6 +354,33 @@ document.addEventListener('click', e => {
       });
   }
 
+  function deleteGroup(id, name, btn) {
+    if (!confirm('Delete "' + name + '"? This can\'t be undone.')) return;
+    btn.disabled = true;
+    fetch('../api/admin/roads.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': CSRF,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ id: id, action: 'delete' })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        btn.disabled = false;
+        if (!data.success) {
+          alert(data.error || 'Could not delete road. Please try again.');
+          return;
+        }
+        loadRoads();
+      })
+      .catch(function () {
+        btn.disabled = false;
+        alert('Network error \u2014 could not delete road.');
+      });
+  }
+
   function toggleFlag(id, btn) {
     btn.disabled = true;
     fetch('../api/admin/roads.php', {
@@ -456,6 +488,17 @@ document.addEventListener('click', e => {
       right.appendChild(statusText);
       right.appendChild(flagBtn);
       right.appendChild(label);
+    }
+
+    if (group.entry_count === 0) {
+      var deleteBtn = document.createElement('button');
+      deleteBtn.className = 'grp-delete-btn';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        deleteGroup(group.id, group.name, deleteBtn);
+      });
+      right.appendChild(deleteBtn);
     }
 
     head.appendChild(left);
