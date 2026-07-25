@@ -216,10 +216,7 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
   padding: 3px 10px; border-radius: 20px; letter-spacing: .03em;
 }
 .admin-overview-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
-}
-@media (max-width: 900px) {
-  .admin-overview-grid { grid-template-columns: 1fr; }
+  display: grid; grid-template-columns: 1fr; gap: 18px;
 }
 
 .pending-row, .activity-row {

@@ -161,20 +161,6 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       </div>
 
       <div class="admin-overview-grid">
-        <!-- Pending verification queue -->
-        <div class="card">
-          <div class="card-head">
-            <h3>⏳ Pending Verification</h3>
-            <a href="admin.php">View Roads →</a>
-          </div>
-          <div id="pendingQueueContainer">
-            <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
-              <div class="skeleton" style="height:18px;width:70%"></div>
-              <div class="skeleton" style="height:18px;width:55%"></div>
-            </div>
-          </div>
-        </div>
-
         <!-- Recent activity feed -->
         <div class="card">
           <div class="card-head">

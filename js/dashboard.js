@@ -206,29 +206,6 @@ async function loadAdminOverview() {
     document.getElementById('ao-done').textContent       = pct + '%';
     document.getElementById('ao-surveyors').textContent  = s.total_surveyors;
 
-    // ── Pending verification queue ──
-    const pendingEl = document.getElementById('pendingQueueContainer');
-    if (data.pending_queue.length === 0) {
-      pendingEl.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">✅</div>
-          <p>Nothing pending — all roads verified.</p>
-        </div>`;
-    } else {
-      pendingEl.innerHTML = data.pending_queue.map(p => `
-        <div class="pending-row">
-          <div class="road-name-info">
-            <strong>${escHtml(p.canonical_name)}</strong>
-            <span>${p.member_count} ${p.member_count === 1 ? 'entry' : 'entries'}</span>
-          </div>
-          <a href="admin.php" class="btn-link">Review →</a>
-        </div>
-      `).join('');
-      if (data.org_stats.pending_roads > data.pending_queue.length) {
-        pendingEl.innerHTML += `<p class="pending-more">+${data.org_stats.pending_roads - data.pending_queue.length} more — see Verify Roads</p>`;
-      }
-    }
-
     // ── Recent activity feed ──
     const activityEl = document.getElementById('recentActivityContainer');
     if (data.recent_activity.length === 0) {
