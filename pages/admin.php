@@ -327,7 +327,6 @@ document.addEventListener('click', e => {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="roadsSearchInput" placeholder="Search roads…" autocomplete="off">
       </div>
-      <button class="action-btn" id="exportCsvBtn" type="button">Export CSV</button>
       <button class="action-btn" id="exportExcelBtn" type="button">Export Excel</button>
       <span class="roads-count" id="roadsCountLbl"></span>
     </div>
@@ -709,7 +708,6 @@ document.addEventListener('click', e => {
   // Both formats export exactly `lastVisible` — the road groups
   // currently shown after the on-page search filter — never the
   // full unfiltered `allGroups`.
-  var exportCsvBtn = document.getElementById('exportCsvBtn');
   var exportExcelBtn = document.getElementById('exportExcelBtn');
   var exportMsg = document.getElementById('exportMsg');
 
@@ -723,12 +721,6 @@ document.addEventListener('click', e => {
         created_at: g.created_at
       };
     });
-  }
-
-  function csvEscape(v) {
-    v = v === null || v === undefined ? '' : String(v);
-    if (/[",\n\r]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"';
-    return v;
   }
 
   function downloadBlob(blob, filename) {
@@ -747,23 +739,6 @@ document.addEventListener('click', e => {
     exportMsg.style.display = text ? 'block' : 'none';
     exportMsg.style.color = isErr ? 'var(--tdanger-txt)' : 'var(--gray)';
   }
-
-  exportCsvBtn.addEventListener('click', function () {
-    var rows = exportRows();
-    if (rows.length === 0) {
-      showExportMsg('Nothing to export — no roads match the current search.', true);
-      return;
-    }
-    var headers = ['Road Name', 'Entries', 'Total Segments', 'Verified', 'Created At'];
-    var lines = [headers.map(csvEscape).join(',')];
-    rows.forEach(function (r) {
-      lines.push([r.name, r.entry_count, r.total_segments, r.is_verified ? 'Yes' : 'No', r.created_at]
-        .map(csvEscape).join(','));
-    });
-    var blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
-    downloadBlob(blob, 'CycleAudit-Roads-' + new Date().toISOString().slice(0, 10) + '.csv');
-    showExportMsg('');
-  });
 
   exportExcelBtn.addEventListener('click', function () {
     var rows = exportRows();

@@ -173,7 +173,6 @@ document.addEventListener('click', e => {
           <option value="surveyor">Surveyors only</option>
         </select>
         <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><input type="checkbox" id="showInactive"> Show inactive only</label>
-        <button class="action-btn" id="exportCsvBtn" type="button">Export CSV</button>
         <button class="action-btn" id="exportExcelBtn" type="button">Export Excel</button>
         <span id="filterCount" class="surv-filtercount"></span>
       </div>
@@ -354,7 +353,6 @@ document.addEventListener('click', e => {
   // Both formats export exactly `lastFiltered` — whatever the
   // search box, role dropdown, and "show inactive only" checkbox
   // currently show — never the full unfiltered `allSurveyors`.
-  var exportCsvBtn = document.getElementById('exportCsvBtn');
   var exportExcelBtn = document.getElementById('exportExcelBtn');
   var exportMsg = document.getElementById('exportMsg');
 
@@ -374,12 +372,6 @@ document.addEventListener('click', e => {
     });
   }
 
-  function csvEscape(v) {
-    v = v === null || v === undefined ? '' : String(v);
-    if (/[",\n\r]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"';
-    return v;
-  }
-
   function downloadBlob(blob, filename) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -396,26 +388,6 @@ document.addEventListener('click', e => {
     exportMsg.style.display = text ? 'block' : 'none';
     exportMsg.style.color = isErr ? '#dc2626' : 'inherit';
   }
-
-  exportCsvBtn.addEventListener('click', function () {
-    var rows = exportRows();
-    if (rows.length === 0) {
-      showExportMsg('Nothing to export — no users match the current filters.', true);
-      return;
-    }
-    var headers = ['Name', 'Email', 'Organisation', 'Role', 'Roads Created', 'Segments Audited', 'Last Active', 'Joined', 'Status'];
-    var lines = [headers.map(csvEscape).join(',')];
-    rows.forEach(function (r) {
-      lines.push([
-        r.name, r.email, r.organisation, r.role, r.roads_created,
-        r.segments_audited, r.last_active, r.created_at,
-        r.is_active ? 'Active' : 'Inactive'
-      ].map(csvEscape).join(','));
-    });
-    var blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
-    downloadBlob(blob, 'CycleAudit-Users-' + new Date().toISOString().slice(0, 10) + '.csv');
-    showExportMsg('');
-  });
 
   exportExcelBtn.addEventListener('click', function () {
     var rows = exportRows();
