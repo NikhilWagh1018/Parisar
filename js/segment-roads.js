@@ -4,13 +4,25 @@
 //  Searchable Road Dropdown
 // ═══════════════════════════════════════════════════════
 
-const ROAD_LIST = [
-  'BANER ROAD','BIBVEWADI ROAD','DECCAN COLLEGE ROAD','DP ROAD',
-  'F.C. ROAD','GANGADHAM ROAD','J.M. ROAD','KARVE ROAD','KHADKI ROAD',
-  'PASHAN ROAD','PASHAN SUS ROAD','PMC ROAD','PRATHAMESH PARK ROAD',
-  'SANGAMWADI ROAD','S.B. ROAD','SINHAGAD ROAD','SPICER COLLEGE ROAD',
-  'SWAMI VIVEKANAD ROAD'
-];
+let ROAD_LIST = [];
+let _rdListLoaded = false;
+
+function loadRoadList() {
+  fetch('../api/roads/groups.php', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.success) {
+        ROAD_LIST = data.roads;
+      }
+      _rdListLoaded = true;
+      if (_rdOpen) roadRenderDropdown(document.getElementById('roadSearchInput').value);
+    })
+    .catch(function () {
+      _rdListLoaded = true;
+      if (_rdOpen) roadRenderDropdown(document.getElementById('roadSearchInput').value);
+    });
+}
+loadRoadList();
 
 let _rdHighlight = -1;
 let _rdOpen = false;
@@ -66,6 +78,8 @@ function roadRenderDropdown(q) {
         <span>🛣</span> <span>${label}</span>
       </div>`;
     });
+  } else if (!_rdListLoaded) {
+    html += `<div class="road-dropdown-empty">Loading roads…</div>`;
   } else if (raw.length > 0) {
     // No match
     if (window.IS_ADMIN) {

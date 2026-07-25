@@ -120,6 +120,22 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   .road-row-meta b { color: var(--ink); font-weight: 600; }
   .road-row-dot { opacity: .4; }
 
+  .add-road-form {
+    display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 12px 16px; border-radius: var(--r); margin-bottom: 16px;
+    background: var(--gp); border: 1px solid var(--bd); font-size: 0.85rem;
+  }
+  .add-road-form.show { display: flex; }
+  .add-road-form input {
+    flex: 1 1 260px; min-width: 200px; padding: 8px 12px; border-radius: 8px;
+    border: 1px solid var(--bd); font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+    color: var(--ink); background: #fff;
+  }
+  .add-road-form input:focus { outline: 2px solid var(--g); outline-offset: 1px; }
+  .add-road-msg { font-size: 0.78rem; font-weight: 600; }
+  .add-road-msg.err { color: #8b1a1a; }
+  .add-road-msg.ok { color: var(--tsuccess-txt); }
+
   .empty-state { text-align: center; padding: 40px 20px; color: var(--grl); font-size: 0.88rem; }
 
   @media (max-width: 600px) {
@@ -232,7 +248,8 @@ document.addEventListener('click', e => {
     <button id="sb-toggle" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
     </button>
-    <h2>Verify Roads</h2>
+    <div class="topbar-left"><h2>Verify Roads</h2></div>
+    <button id="addRoadBtn" class="btn-new">+ Add Road</button>
   </div>
 
   <div style="padding: 0 4px 4px;">
@@ -248,6 +265,12 @@ document.addEventListener('click', e => {
     <div class="toolbar-card">
       <label class="toolbar-check"><input type="checkbox" id="selectAllCheck"> Select all visible</label>
       <label class="toolbar-check"><input type="checkbox" id="showFlaggedCheck"> Show flagged groups</label>
+    </div>
+    <div class="add-road-form" id="addRoadForm">
+      <input type="text" id="addRoadInput" placeholder="Road name (e.g. KOTHRUD ROAD)" maxlength="255">
+      <button class="bulk-btn" id="addRoadSubmit" style="background:var(--g);color:#fff;border-color:var(--g);">Add</button>
+      <button class="bulk-clear" id="addRoadCancel">Cancel</button>
+      <span id="addRoadMsg" class="add-road-msg"></span>
     </div>
     <div class="bulk-toolbar" id="bulkToolbar">
       <span class="bulk-count" id="bulkCount">0 selected</span>
@@ -506,6 +529,71 @@ document.addEventListener('click', e => {
       container.appendChild(buildGroup(g));
     });
   }
+
+  var addRoadBtn = document.getElementById('addRoadBtn');
+  var addRoadForm = document.getElementById('addRoadForm');
+  var addRoadInput = document.getElementById('addRoadInput');
+  var addRoadSubmit = document.getElementById('addRoadSubmit');
+  var addRoadCancel = document.getElementById('addRoadCancel');
+  var addRoadMsg = document.getElementById('addRoadMsg');
+
+  addRoadBtn.addEventListener('click', function () {
+    addRoadForm.classList.toggle('show');
+    if (addRoadForm.classList.contains('show')) {
+      addRoadInput.focus();
+    }
+  });
+
+  addRoadCancel.addEventListener('click', function () {
+    addRoadForm.classList.remove('show');
+    addRoadInput.value = '';
+    addRoadMsg.textContent = '';
+    addRoadMsg.className = 'add-road-msg';
+  });
+
+  function submitAddRoad() {
+    var name = addRoadInput.value.trim();
+    addRoadMsg.className = 'add-road-msg';
+    if (name.length < 3) {
+      addRoadMsg.textContent = 'Min 3 characters.';
+      addRoadMsg.className = 'add-road-msg err';
+      return;
+    }
+    addRoadSubmit.disabled = true;
+    addRoadMsg.textContent = 'Adding\u2026';
+    fetch('../api/admin/roads.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': CSRF,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({ action: 'create', name: name })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        addRoadSubmit.disabled = false;
+        if (!data.success) {
+          addRoadMsg.textContent = data.error || 'Could not add road.';
+          addRoadMsg.className = 'add-road-msg err';
+          return;
+        }
+        addRoadMsg.textContent = 'Added "' + data.name + '".';
+        addRoadMsg.className = 'add-road-msg ok';
+        addRoadInput.value = '';
+        loadRoads();
+      })
+      .catch(function () {
+        addRoadSubmit.disabled = false;
+        addRoadMsg.textContent = 'Network error \u2014 could not add road.';
+        addRoadMsg.className = 'add-road-msg err';
+      });
+  }
+
+  addRoadSubmit.addEventListener('click', submitAddRoad);
+  addRoadInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') submitAddRoad();
+  });
 
   function loadRoads() {
     fetch('../api/admin/roads.php', {

@@ -93,7 +93,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $body = json_decode(file_get_contents('php://input'), true);
 
-    // â”€â”€ Bulk path: { ids: [1,2,3], action: 'verify'|'flag', value: true|false } â”€â”€
+    // ── Create path: { action: 'create', name: '...' } ──────────
+    if (isset($body['action']) && $body['action'] === 'create') {
+        $name = trim(strtoupper((string)($body['name'] ?? '')));
+
+        if (mb_strlen($name) < 3) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'error' => 'Road name must be at least 3 characters.']);
+            exit;
+        }
+        if (!preg_match('/^[A-Z0-9\s\.\-\/]+$/', $name)) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'error' => 'Road name contains invalid characters.']);
+            exit;
+        }
+
+        $dupStmt = $pdo->prepare('SELECT id FROM road_groups WHERE TRIM(UPPER(canonical_name)) = ? LIMIT 1');
+        $dupStmt->execute([$name]);
+        if ($dupStmt->fetchColumn() !== false) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'error' => 'A road with that name already exists.']);
+            exit;
+        }
+
+        $ins = $pdo->prepare('INSERT INTO road_groups (canonical_name, is_verified) VALUES (?, 0)');
+        $ins->execute([$name]);
+        $newId = (int)$pdo->lastInsertId();
+
+        logAudit($pdo, $CURRENT_USER_ID, $CURRENT_USER_NAME, 'create', $newId, $name);
+
+        echo json_encode(['success' => true, 'id' => $newId, 'name' => $name, 'is_verified' => false]);
+        exit;
+    }
+
+    // ── Bulk path: { ids: [1,2,3], action: 'verify'|'flag', value: true|false } ──
     if (isset($body['ids']) && is_array($body['ids'])) {
         $ids = array_values(array_unique(array_filter(array_map('intval', $body['ids']), fn($v) => $v > 0)));
         $bulkAction = isset($body['action']) && $body['action'] === 'flag' ? 'flag' : 'verify';
@@ -142,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // â”€â”€ Single path: { id, action: 'verify'|'flag' } â”€â”€
+    // ── Single path: { id, action: 'verify'|'flag' } ──
     $id     = isset($body['id']) ? (int)$body['id'] : 0;
     $action = isset($body['action']) && $body['action'] === 'flag' ? 'flag' : 'verify';
 
