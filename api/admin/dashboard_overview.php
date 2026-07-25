@@ -13,18 +13,7 @@ header('Content-Type: application/json');
 set_exception_handler(function (Throwable $e) {
     error_log('api/admin/dashboard_overview.php error: ' . $e->getMessage());
     http_response_code(500);
-    // TEMPORARY — Session 16 diagnostic. Remove this block once the
-    // 500 on this endpoint is diagnosed; admin-gated so low risk, but
-    // do not leave exception details exposed long-term.
-    echo json_encode([
-        'success' => false,
-        'error'   => 'Server error.',
-        'debug'   => [
-            'message' => $e->getMessage(),
-            'file'    => $e->getFile(),
-            'line'    => $e->getLine(),
-        ],
-    ]);
+    echo json_encode(['success' => false, 'error' => 'Server error.']);
     exit;
 });
 
@@ -93,10 +82,10 @@ $pendingTotal = (int)$pendingTotalStmt->fetchColumn();
 
 // ── Audits over time (last 30 days, zero-filled) ─────────────────
 $overTimeStmt = $pdo->query(
-    "SELECT DATE(audited_at) AS d, COUNT(*) AS total
+    "SELECT DATE(created_at) AS d, COUNT(*) AS total
        FROM segment_audits
-      WHERE audited_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
-      GROUP BY DATE(audited_at)"
+      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
+      GROUP BY DATE(created_at)"
 );
 $overTimeRows = [];
 foreach ($overTimeStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
