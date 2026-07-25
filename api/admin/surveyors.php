@@ -44,6 +44,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // ── CSRF verification ──────────────────────────────────────
+    $csrfHeader = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Invalid CSRF token.']);
+        exit;
+    }
+
     $body     = json_decode(file_get_contents('php://input'), true) ?? [];
     $targetId = filter_var($body['id'] ?? null, FILTER_VALIDATE_INT);
 

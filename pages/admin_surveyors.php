@@ -292,7 +292,7 @@ document.addEventListener('click', e => {
       if (!confirm(newActive ? 'Reactivate this user?' : 'Deactivate this user? They will no longer be able to log in.')) return;
       fetch('../api/admin/surveyors.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify({ id: id, is_active: newActive })
       })
       .then(function (r) { return r.json(); })
@@ -316,7 +316,7 @@ document.addEventListener('click', e => {
       if (!confirm(confirmMsg)) return;
       fetch('../api/admin/surveyors.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify({ id: rid, role: newRole })
       })
       .then(function (r) { return r.json(); })
