@@ -161,7 +161,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       </div>
 
       <!-- Audits over time (trend chart) -->
-      <div class="card" style="margin-bottom:18px;">
+      <div class="card">
         <div class="card-head">
           <h3>📈 Audits Over Time <span style="font-weight:500;color:var(--grl)">(last 30 days)</span></h3>
         </div>

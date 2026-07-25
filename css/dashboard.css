@@ -117,8 +117,8 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
   padding: 0 28px; height: 64px; display: flex; align-items: center;
   justify-content: space-between; position: sticky; top: 0; z-index: 50;
 }
-.topbar-left h1 { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 700; color: var(--ink); }
-.topbar-left p  { font-size: .78rem; color: var(--grl); margin-top: 1px; }
+.topbar-left h1 { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
+.topbar-left p  { font-size: .78rem; color: var(--grl); margin-top: 2px; }
 .btn-new {
   display: inline-flex; align-items: center; gap: 7px;
   background: var(--g); color: #fff; padding: 9px 16px;
@@ -136,9 +136,13 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 .stat-card {
   background: #fff; border-radius: var(--r); padding: 18px 20px;
   border: 1px solid var(--bd); display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 1px 3px rgba(61,122,31,.06);
+  transition: box-shadow var(--T);
 }
+.stat-card:hover { box-shadow: 0 4px 14px rgba(61,122,31,.12); }
 .stat-icon { width: 42px; height: 42px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+  display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06); }
 .stat-val { font-size: 1.6rem; font-weight: 800; line-height: 1; color: var(--ink); }
 .stat-lbl { font-size: .72rem; color: var(--grl); margin-top: 3px; }
 
@@ -146,9 +150,12 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 .card {
   background: #fff; border-radius: var(--r); padding: 20px;
   border: 1px solid var(--bd); margin-bottom: 18px;
+  box-shadow: 0 1px 3px rgba(61,122,31,.05);
+  transition: box-shadow var(--T);
 }
+.card:hover { box-shadow: 0 4px 16px rgba(61,122,31,.08); }
 .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.card-head h3 { font-size: .9rem; font-weight: 700; color: var(--ink); }
+.card-head h3 { font-size: .9rem; font-weight: 700; color: var(--ink); letter-spacing: -.005em; }
 .card-head a { font-size: .75rem; color: var(--g); text-decoration: none; font-weight: 600; }
 
 /* ── Road list ── */
@@ -212,7 +219,7 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
   font-size: 1.05rem; font-weight: 800; color: var(--ink);
 }
 .admin-badge {
-  background: #1e293b; color: #fff; font-size: .68rem; font-weight: 700;
+  background: var(--gd); color: #fff; font-size: .68rem; font-weight: 700;
   padding: 3px 10px; border-radius: 20px; letter-spacing: .03em;
 }
 .admin-overview-grid {
