@@ -68,7 +68,7 @@ if (!($userInfo['email_verified'] ?? false)) {
 
 $googleId       = (string)$userInfo['sub'];
 $email          = (string)filter_var($userInfo['email'], FILTER_SANITIZE_EMAIL);
-$name           = htmlspecialchars(strip_tags((string)($userInfo['name'] ?? '')), ENT_QUOTES, 'UTF-8');
+$name           = sanitizeOAuthName((string)($userInfo['name'] ?? ''), $email);
 $profilePicture = $userInfo['picture'] ?? null;
 
 // ── 5. Upsert user ─────────────────────────────────────────────
@@ -153,6 +153,41 @@ header('Location: ../pages/dashboard.php');
 exit;
 
 // ── Helpers ───────────────────────────────────────────────────
+
+/**
+ * Sanitizes a display name pulled from an external identity provider
+ * (Google) so it follows the same character rules enforced on manual
+ * signups in auth/register.php — letters, spaces, hyphens, apostrophes,
+ * and periods only. Manual signup validates and rejects bad input; OAuth
+ * signup has no form to reject on, so instead we clean the name and fall
+ * back to the email's local-part if nothing usable remains, rather than
+ * silently storing whatever punctuation/garbage the provider returns.
+ *
+ * @param string $rawName  Raw 'name' field from the provider's userinfo response.
+ * @param string $email    The account email, used for the fallback.
+ * @return string
+ */
+function sanitizeOAuthName(string $rawName, string $email): string
+{
+    $rawName = strip_tags($rawName);
+
+    // Drop anything outside the allowed character set, collapse repeated
+    // whitespace, then trim stray leading/trailing punctuation (this is
+    // what catches cases like a Google profile name of ",Mithilesh").
+    $clean = preg_replace('/[^A-Za-z\s\'\-\.]/', '', $rawName) ?? '';
+    $clean = preg_replace('/\s+/', ' ', $clean) ?? '';
+    $clean = trim($clean, " \t\n\r\0\x0B'-.");
+
+    if ($clean === '' || mb_strlen($clean) < 2) {
+        // Fall back to the email's local-part, e.g. "jane.doe" -> "Jane Doe".
+        $local = explode('@', $email)[0] ?? '';
+        $local = preg_replace('/[^A-Za-z]+/', ' ', $local) ?? '';
+        $local = trim($local);
+        $clean = $local !== '' ? ucwords(strtolower($local)) : 'User';
+    }
+
+    return mb_substr($clean, 0, 80);
+}
 
 /**
  * POST request via cURL, returns decoded JSON array or null on failure.
