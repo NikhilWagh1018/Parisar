@@ -20,7 +20,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <meta charset="UTF-8">
   <link rel="stylesheet" href="../css/theme.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Verify Roads — CycleAudit</title>
+<title>Roads — CycleAudit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/dashboard.css">
@@ -33,33 +33,17 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   }
   .info-banner svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; color: var(--g); }
 
-  .toolbar-card {
-    background: #fff; border: 1px solid var(--bd); border-radius: var(--r);
-    padding: 12px 16px; margin-bottom: 16px;
-    display: flex; align-items: center; gap: 20px; flex-wrap: wrap; font-size: 0.85rem;
-  }
-  .toolbar-check { display: flex; align-items: center; gap: 7px; cursor: pointer; color: var(--gray); font-weight: 500; }
-  .toolbar-check input { accent-color: var(--g); width: 15px; height: 15px; cursor: pointer; }
-
-  .bulk-toolbar {
-    display: none; align-items: center; gap: 10px; flex-wrap: wrap;
-    padding: 12px 16px; border-radius: var(--r); margin-bottom: 16px;
-    background: var(--gp); border: 1px solid var(--bd); font-size: 0.85rem;
-  }
-  .bulk-toolbar.show { display: flex; }
-  .bulk-count { font-weight: 700; color: var(--gd); }
-  .bulk-btn {
+  .action-btn {
     font-size: 0.78rem; font-weight: 600; padding: 6px 14px; border-radius: 999px;
     border: 1px solid var(--bd); background: #fff; color: var(--ink); cursor: pointer; transition: var(--T);
   }
-  .bulk-btn:hover { background: #fff; border-color: var(--g); }
-  .bulk-btn.bulk-danger { border-color: rgba(139,26,26,.25); color: #8b1a1a; }
-  .bulk-btn.bulk-danger:hover { background: #fce8e8; border-color: #8b1a1a; }
-  .bulk-btn:disabled { opacity: 0.5; cursor: wait; }
-  .bulk-clear {
-    margin-left: auto; font-size: 0.78rem; color: var(--gray); cursor: pointer;
+  .action-btn:hover { border-color: var(--g); }
+  .action-btn:disabled { opacity: 0.5; cursor: wait; }
+  .text-link-btn {
+    font-size: 0.78rem; color: var(--gray); cursor: pointer;
     background: none; border: none; text-decoration: underline; padding: 0;
   }
+
   .grp-delete-btn {
     font-size: 0.78rem; color: #8b1a1a; cursor: pointer;
     background: none; border: none; text-decoration: underline; padding: 0; flex-shrink: 0;
@@ -69,43 +53,29 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   .grp-card { padding: 16px 18px; margin-bottom: 12px; }
   .grp-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
   .grp-head-left { display: flex; align-items: center; gap: 12px; min-width: 0; cursor: pointer; flex: 1; }
-  .grp-check { flex-shrink: 0; width: 16px; height: 16px; accent-color: var(--g); cursor: pointer; }
   .grp-name { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.02rem; color: var(--ink); }
   .grp-count { font-size: 0.76rem; color: var(--grl); flex-shrink: 0; }
   .grp-head-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
-  .badge {
-    font-size: 0.7rem; font-weight: 700; padding: 4px 11px; border-radius: 999px;
-    flex-shrink: 0; white-space: nowrap; letter-spacing: .01em;
+  .del-confirm {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   }
-  .badge-flagged { background: var(--tdanger-bg); color: var(--tdanger-txt); }
-
-  .status-text { font-size: 0.78rem; font-weight: 600; flex-shrink: 0; }
-  .status-text.st-visible { color: var(--tsuccess-txt); }
-  .status-text.st-hidden  { color: var(--grl); }
-
-  .flag-btn {
-    font-size: 0.72rem; font-weight: 600; padding: 5px 12px; border-radius: 999px;
-    border: 1px solid rgba(139,26,26,.28); background: transparent; color: #8b1a1a;
-    cursor: pointer; flex-shrink: 0; white-space: nowrap; transition: var(--T);
+  .del-confirm input {
+    padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(139,26,26,.35);
+    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink);
+    background: #fff; width: 160px;
   }
-  .flag-btn:hover { background: var(--tdanger-bg); }
-  .flag-btn.is-flagged { background: #8b1a1a; color: white; border-color: #8b1a1a; }
-  .flag-btn:disabled { opacity: 0.5; cursor: wait; }
-
-  .toggle-switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
-  .toggle-switch input { opacity: 0; width: 0; height: 0; }
-  .toggle-slider {
-    position: absolute; cursor: pointer; inset: 0; background-color: var(--ttoggle-bg);
-    transition: var(--T); border-radius: 999px;
+  .del-confirm input:focus { outline: 2px solid #8b1a1a; outline-offset: 1px; }
+  .del-confirm-btn {
+    font-size: 0.78rem; font-weight: 600; padding: 5px 12px; border-radius: 999px;
+    border: 1px solid #8b1a1a; background: #8b1a1a; color: #fff; cursor: pointer;
   }
-  .toggle-slider::before {
-    position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
-    background-color: white; transition: var(--T); border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,.15);
+  .del-confirm-btn:disabled { opacity: 0.5; cursor: wait; }
+  .del-cancel-btn {
+    font-size: 0.78rem; color: var(--gray); cursor: pointer;
+    background: none; border: none; text-decoration: underline; padding: 0;
   }
-  .toggle-switch input:checked + .toggle-slider { background-color: var(--g); }
-  .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
-  .toggle-switch input:disabled + .toggle-slider { opacity: 0.5; cursor: wait; }
+  .del-confirm-hint { font-size: 0.72rem; color: var(--grl); width: 100%; }
 
   .chev { display: inline-flex; flex-shrink: 0; color: var(--grl); transition: transform 0.2s; }
   .chev svg { width: 14px; height: 14px; }
@@ -169,7 +139,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     <div class="nav-section">Admin</div>
     <a class="nav-item active" href="admin.php">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 1-1.5 3-9 3s-9-2-9-3 1.5-3 9-3 9 2 9 3z"/></svg>
-      Verify Roads
+      Roads
     </a>
     <a class="nav-item" href="admin_surveyors.php">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -253,40 +223,28 @@ document.addEventListener('click', e => {
     <button id="sb-toggle" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
     </button>
-    <div class="topbar-left"><h2>Verify Roads</h2></div>
+    <div class="topbar-left"><h2>Roads</h2></div>
     <button id="addRoadBtn" class="btn-new">+ Add Road</button>
   </div>
 
   <div style="padding: 0 4px 4px;">
     <div class="info-banner">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      <span>Each row below is one real road. The toggle verifies the road itself — not an individual audit entry — so flipping it on instantly makes that road visible publicly, regardless of how many surveyors independently audited it. Click a road name to see who created each underlying entry.</span>
+      <span>Every road here is public. Click a road name to see who created each underlying entry. Deleting a road removes it and any audit entries under it — you'll be asked to type its name to confirm.</span>
     </div>
 
     <div id="loadingMsg" class="card" style="text-align:center;padding:36px;color:var(--grl);">
       Loading roads…
     </div>
     <div id="errorMsg" class="card" style="display:none;text-align:center;padding:36px;color:#8b1a1a;"></div>
-    <div class="toolbar-card">
-      <label class="toolbar-check"><input type="checkbox" id="selectAllCheck"> Select all visible</label>
-      <label class="toolbar-check"><input type="checkbox" id="showFlaggedCheck"> Show flagged groups</label>
-    </div>
     <div class="add-road-form" id="addRoadForm">
       <input type="text" id="addRoadInput" placeholder="Road name (e.g. KOTHRUD ROAD)" maxlength="255">
-      <button class="bulk-btn" id="addRoadSubmit" style="background:var(--g);color:#fff;border-color:var(--g);">Add</button>
-      <button class="bulk-clear" id="addRoadCancel">Cancel</button>
+      <button class="action-btn" id="addRoadSubmit" style="background:var(--g);color:#fff;border-color:var(--g);">Add</button>
+      <button class="text-link-btn" id="addRoadCancel">Cancel</button>
       <span id="addRoadMsg" class="add-road-msg"></span>
     </div>
-    <div class="bulk-toolbar" id="bulkToolbar">
-      <span class="bulk-count" id="bulkCount">0 selected</span>
-      <button class="bulk-btn" id="bulkVerifyBtn">Mark Visible</button>
-      <button class="bulk-btn" id="bulkHideBtn">Mark Hidden</button>
-      <button class="bulk-btn bulk-danger" id="bulkFlagBtn">Flag</button>
-      <button class="bulk-btn" id="bulkUnflagBtn">Unflag</button>
-      <button class="bulk-clear" id="bulkClearBtn">Clear selection</button>
-    </div>
     <div id="groupsContainer"></div>
-    <div id="emptyMsg" class="card empty-state" style="display:none;">No roads match this filter.</div>
+    <div id="emptyMsg" class="card empty-state" style="display:none;">No roads yet.</div>
   </div>
 </main>
 
@@ -326,8 +284,14 @@ document.addEventListener('click', e => {
     return row;
   }
 
-  function toggleGroup(id, input, action) {
-    input.disabled = true;
+  function submitDelete(id, name, confirmInput, confirmBtn, hint) {
+    var typed = confirmInput.value.trim();
+    if (typed.toUpperCase() !== name.toUpperCase()) {
+      hint.textContent = 'Doesn\u2019t match \u2014 type the road name exactly.';
+      return;
+    }
+    confirmBtn.disabled = true;
+    confirmInput.disabled = true;
     fetch('../api/admin/roads.php', {
       method: 'POST',
       headers: {
@@ -335,75 +299,22 @@ document.addEventListener('click', e => {
         'X-CSRF-Token': CSRF,
         'X-Requested-With': 'XMLHttpRequest'
       },
-      body: JSON.stringify({ id: id, action: action })
+      body: JSON.stringify({ id: id, action: 'delete', confirm_name: typed })
     })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        input.disabled = false;
         if (!data.success) {
-          input.checked = !input.checked;
-          alert(data.error || 'Could not update road. Please try again.');
+          confirmBtn.disabled = false;
+          confirmInput.disabled = false;
+          hint.textContent = data.error || 'Could not delete road. Please try again.';
           return;
         }
         loadRoads();
       })
       .catch(function () {
-        input.disabled = false;
-        input.checked = !input.checked;
-        alert('Network error \u2014 could not update road.');
-      });
-  }
-
-  function deleteGroup(id, name, btn) {
-    if (!confirm('Delete "' + name + '"? This can\'t be undone.')) return;
-    btn.disabled = true;
-    fetch('../api/admin/roads.php', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': CSRF,
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: JSON.stringify({ id: id, action: 'delete' })
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        btn.disabled = false;
-        if (!data.success) {
-          alert(data.error || 'Could not delete road. Please try again.');
-          return;
-        }
-        loadRoads();
-      })
-      .catch(function () {
-        btn.disabled = false;
-        alert('Network error \u2014 could not delete road.');
-      });
-  }
-
-  function toggleFlag(id, btn) {
-    btn.disabled = true;
-    fetch('../api/admin/roads.php', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': CSRF,
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: JSON.stringify({ id: id, action: 'flag' })
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        btn.disabled = false;
-        if (!data.success) {
-          alert(data.error || 'Could not update flag. Please try again.');
-          return;
-        }
-        loadRoads();
-      })
-      .catch(function () {
-        btn.disabled = false;
-        alert('Network error \u2014 could not update flag.');
+        confirmBtn.disabled = false;
+        confirmInput.disabled = false;
+        hint.textContent = 'Network error \u2014 could not delete road.';
       });
   }
 
@@ -417,20 +328,6 @@ document.addEventListener('click', e => {
     var left = document.createElement('div');
     left.className = 'grp-head-left';
 
-    var check = document.createElement('input');
-    check.type = 'checkbox';
-    check.className = 'grp-check';
-    check.checked = selectedIds.has(group.id);
-    check.addEventListener('click', function (e) {
-      e.stopPropagation();
-      if (check.checked) {
-        selectedIds.add(group.id);
-      } else {
-        selectedIds.delete(group.id);
-      }
-      updateBulkToolbar();
-    });
-
     var chev = document.createElement('span');
     chev.className = 'chev';
     chev.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>';
@@ -443,7 +340,6 @@ document.addEventListener('click', e => {
     countEl.className = 'grp-count';
     countEl.textContent = group.entry_count + (group.entry_count === 1 ? ' entry' : ' entries') + ' \u00b7 ' + group.total_segments + ' segments total';
 
-    left.appendChild(check);
     left.appendChild(chev);
     left.appendChild(nameEl);
     left.appendChild(countEl);
@@ -451,55 +347,71 @@ document.addEventListener('click', e => {
     var right = document.createElement('div');
     right.className = 'grp-head-right';
 
-    var flagBtn = document.createElement('button');
-    flagBtn.className = 'flag-btn' + (group.is_flagged ? ' is-flagged' : '');
-    flagBtn.textContent = group.is_flagged ? 'Unflag' : 'Flag as illegitimate';
-    flagBtn.addEventListener('click', function (e) {
+    // Default state: just a Delete link. Clicking it swaps this area for
+    // an inline type-to-confirm control instead of a browser confirm() —
+    // deletion here removes any real audit entries under the road too, so
+    // it needs a deliberate, hard-to-fat-finger step.
+    var deleteBtn = document.createElement('button');
+    deleteBtn.className = 'grp-delete-btn';
+    deleteBtn.textContent = 'Delete';
+
+    var confirmWrap = document.createElement('div');
+    confirmWrap.className = 'del-confirm';
+    confirmWrap.style.display = 'none';
+
+    var confirmInput = document.createElement('input');
+    confirmInput.type = 'text';
+    confirmInput.placeholder = 'Type "' + group.name + '"';
+    confirmInput.autocomplete = 'off';
+
+    var confirmBtn = document.createElement('button');
+    confirmBtn.className = 'del-confirm-btn';
+    confirmBtn.textContent = group.entry_count > 0 ? 'Delete ' + group.entry_count + ' \u00d7 entries' : 'Delete';
+
+    var confirmCancel = document.createElement('button');
+    confirmCancel.className = 'del-cancel-btn';
+    confirmCancel.textContent = 'Cancel';
+
+    var confirmHint = document.createElement('span');
+    confirmHint.className = 'del-confirm-hint';
+    confirmHint.textContent = group.entry_count > 0
+      ? 'This removes ' + group.entry_count + ' audit ' + (group.entry_count === 1 ? 'entry' : 'entries') + ' too. Cannot be undone.'
+      : 'Cannot be undone.';
+
+    confirmWrap.appendChild(confirmInput);
+    confirmWrap.appendChild(confirmBtn);
+    confirmWrap.appendChild(confirmCancel);
+    confirmWrap.appendChild(confirmHint);
+
+    deleteBtn.addEventListener('click', function (e) {
       e.stopPropagation();
-      toggleFlag(group.id, flagBtn);
+      deleteBtn.style.display = 'none';
+      confirmWrap.style.display = 'flex';
+      confirmInput.focus();
     });
 
-    if (group.is_flagged) {
-      // Flagged groups are forced hidden and the toggle can't be used until
-      // unflagged, so we skip it entirely rather than show a dead control.
-      var flagBadge = document.createElement('span');
-      flagBadge.className = 'badge badge-flagged';
-      flagBadge.textContent = 'Flagged';
-      right.appendChild(flagBadge);
-      right.appendChild(flagBtn);
-    } else {
-      var statusText = document.createElement('span');
-      statusText.className = 'status-text ' + (group.is_verified ? 'st-visible' : 'st-hidden');
-      statusText.textContent = group.is_verified ? 'Visible' : 'Hidden';
+    confirmCancel.addEventListener('click', function (e) {
+      e.stopPropagation();
+      confirmWrap.style.display = 'none';
+      deleteBtn.style.display = '';
+      confirmInput.value = '';
+      confirmHint.textContent = group.entry_count > 0
+        ? 'This removes ' + group.entry_count + ' audit ' + (group.entry_count === 1 ? 'entry' : 'entries') + ' too. Cannot be undone.'
+        : 'Cannot be undone.';
+    });
 
-      var label = document.createElement('label');
-      label.className = 'toggle-switch';
-      var input = document.createElement('input');
-      input.type = 'checkbox';
-      input.checked = !!group.is_verified;
-      input.addEventListener('change', function () {
-        toggleGroup(group.id, input, 'verify');
-      });
-      var slider = document.createElement('span');
-      slider.className = 'toggle-slider';
-      label.appendChild(input);
-      label.appendChild(slider);
+    confirmBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      submitDelete(group.id, group.name, confirmInput, confirmBtn, confirmHint);
+    });
+    confirmInput.addEventListener('keydown', function (e) {
+      e.stopPropagation();
+      if (e.key === 'Enter') submitDelete(group.id, group.name, confirmInput, confirmBtn, confirmHint);
+    });
+    confirmInput.addEventListener('click', function (e) { e.stopPropagation(); });
 
-      right.appendChild(statusText);
-      right.appendChild(flagBtn);
-      right.appendChild(label);
-    }
-
-    if (group.entry_count === 0) {
-      var deleteBtn = document.createElement('button');
-      deleteBtn.className = 'grp-delete-btn';
-      deleteBtn.textContent = 'Delete';
-      deleteBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        deleteGroup(group.id, group.name, deleteBtn);
-      });
-      right.appendChild(deleteBtn);
-    }
+    right.appendChild(deleteBtn);
+    right.appendChild(confirmWrap);
 
     head.appendChild(left);
     head.appendChild(right);
@@ -520,55 +432,14 @@ document.addEventListener('click', e => {
     return card;
   }
 
-  var showFlagged = false;
   var allGroups = [];
-  var selectedIds = new Set();
-
-  function updateBulkToolbar() {
-    var toolbar = document.getElementById('bulkToolbar');
-    var count = selectedIds.size;
-    document.getElementById('bulkCount').textContent = count + (count === 1 ? ' selected' : ' selected');
-    toolbar.classList.toggle('show', count > 0);
-  }
-
-  function bulkAction(action, value) {
-    if (selectedIds.size === 0) return;
-    var ids = Array.from(selectedIds);
-    var btns = document.querySelectorAll('.bulk-btn');
-    btns.forEach(function (b) { b.disabled = true; });
-    fetch('../api/admin/roads.php', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': CSRF,
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: JSON.stringify({ ids: ids, action: action, value: value })
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        btns.forEach(function (b) { b.disabled = false; });
-        if (!data.success) {
-          alert(data.error || 'Could not update selected roads. Please try again.');
-          return;
-        }
-        selectedIds.clear();
-        updateBulkToolbar();
-        loadRoads();
-      })
-      .catch(function () {
-        btns.forEach(function (b) { b.disabled = false; });
-        alert('Network error \u2014 could not update selected roads.');
-      });
-  }
 
   function render(groups) {
     var container = document.getElementById('groupsContainer');
     var emptyMsg = document.getElementById('emptyMsg');
     container.innerHTML = '';
-    var visible = showFlagged ? groups : groups.filter(function (g) { return !g.is_flagged; });
-    emptyMsg.style.display = visible.length === 0 ? 'block' : 'none';
-    visible.forEach(function (g) {
+    emptyMsg.style.display = groups.length === 0 ? 'block' : 'none';
+    groups.forEach(function (g) {
       container.appendChild(buildGroup(g));
     });
   }
@@ -659,33 +530,6 @@ document.addEventListener('click', e => {
         document.getElementById('errorMsg').textContent = 'Network error \u2014 could not load roads.';
       });
   }
-
-  document.getElementById('showFlaggedCheck').addEventListener('change', function (e) {
-    showFlagged = e.target.checked;
-    document.getElementById('selectAllCheck').checked = false;
-    render(allGroups);
-  });
-
-  document.getElementById('selectAllCheck').addEventListener('change', function (e) {
-    var visible = showFlagged ? allGroups : allGroups.filter(function (g) { return !g.is_flagged; });
-    if (e.target.checked) {
-      visible.forEach(function (g) { selectedIds.add(g.id); });
-    } else {
-      visible.forEach(function (g) { selectedIds.delete(g.id); });
-    }
-    updateBulkToolbar();
-    render(allGroups);
-  });
-
-  document.getElementById('bulkVerifyBtn').addEventListener('click', function () { bulkAction('verify', true); });
-  document.getElementById('bulkHideBtn').addEventListener('click', function () { bulkAction('verify', false); });
-  document.getElementById('bulkFlagBtn').addEventListener('click', function () { bulkAction('flag', true); });
-  document.getElementById('bulkUnflagBtn').addEventListener('click', function () { bulkAction('flag', false); });
-  document.getElementById('bulkClearBtn').addEventListener('click', function () {
-    selectedIds.clear();
-    updateBulkToolbar();
-    render(allGroups);
-  });
 
   loadRoads();
 })();
