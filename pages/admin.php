@@ -2,11 +2,11 @@
 declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
-//  pages/admin.php  (v2 — road_groups based)
-//  Road verification panel — admin-only. One toggle per real road
-//  (road_groups), with duplicate audit-session rows still visible
-//  underneath for transparency, but no longer requiring individual
-//  toggling.
+//  pages/admin.php  (v4 — UI polish pass)
+//  Roads admin page — admin-only. Add/Delete only (no verify/flag,
+//  removed in v3). This pass restyles the page: a search filter, a
+//  roads/segments summary line, badge-style counts, and a redesigned
+//  delete confirmation panel — no behavior or API contract changes.
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
@@ -25,13 +25,37 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/dashboard.css">
 <style nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+  .topbar-left p { margin-top: 2px; }
+
   .info-banner {
     display: flex; align-items: flex-start; gap: 10px;
-    font-size: 0.85rem; color: var(--gray); margin-bottom: 20px;
+    font-size: 0.85rem; color: var(--gray); margin-bottom: 18px;
     padding: 14px 16px; border-radius: var(--r);
     background: var(--gp); border: 1px solid var(--bd); line-height: 1.5;
   }
   .info-banner svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; color: var(--g); }
+
+  /* ── Toolbar row: search + add-road trigger live above the list ── */
+  .roads-toolbar {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .roads-search {
+    position: relative; flex: 1 1 260px; min-width: 180px;
+  }
+  .roads-search svg {
+    position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+    width: 15px; height: 15px; color: var(--grl); pointer-events: none;
+  }
+  .roads-search input {
+    width: 100%; padding: 9px 14px 9px 36px; border-radius: 999px;
+    border: 1px solid var(--bd); background: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; color: var(--ink); transition: var(--T);
+  }
+  .roads-search input:focus { outline: none; border-color: var(--g); box-shadow: 0 0 0 3px var(--gp); }
+  .roads-search input::placeholder { color: var(--grl); }
+  .roads-count {
+    font-size: 0.76rem; color: var(--grl); white-space: nowrap; padding: 0 2px;
+  }
 
   .action-btn {
     font-size: 0.78rem; font-weight: 600; padding: 6px 14px; border-radius: 999px;
@@ -44,42 +68,73 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     background: none; border: none; text-decoration: underline; padding: 0;
   }
 
-  .grp-delete-btn {
-    font-size: 0.78rem; color: #8b1a1a; cursor: pointer;
-    background: none; border: none; text-decoration: underline; padding: 0; flex-shrink: 0;
-  }
-  .grp-delete-btn:disabled { opacity: 0.5; cursor: wait; }
-
-  .grp-card { padding: 16px 18px; margin-bottom: 12px; }
+  /* ── Road group cards ── */
+  .grp-card { padding: 16px 18px; margin-bottom: 10px; transition: var(--T); }
+  .grp-card:hover { border-color: var(--gl); box-shadow: 0 2px 10px rgba(61,122,31,.08); }
   .grp-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
   .grp-head-left { display: flex; align-items: center; gap: 12px; min-width: 0; cursor: pointer; flex: 1; }
   .grp-name { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.02rem; color: var(--ink); }
-  .grp-count { font-size: 0.76rem; color: var(--grl); flex-shrink: 0; }
+  .grp-counts { display: flex; align-items: center; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+  .count-pill {
+    display: inline-flex; align-items: center; font-size: 0.7rem; font-weight: 700;
+    padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+    background: var(--gp); color: var(--gd);
+  }
+  .count-pill.alt { background: var(--tseg-bg); color: var(--gray); }
   .grp-head-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
-  .del-confirm {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  /* ── Delete affordance: icon + label pill, quiet until hovered ── */
+  .del-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.76rem; font-weight: 600; color: var(--tdanger-txt); cursor: pointer;
+    background: transparent; border: 1px solid transparent; border-radius: 999px;
+    padding: 6px 12px; flex-shrink: 0; transition: var(--T);
   }
-  .del-confirm input {
-    padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(139,26,26,.35);
-    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--ink);
-    background: #fff; width: 160px;
+  .del-btn:hover { background: var(--tdanger-bg); border-color: rgba(139,26,26,.2); }
+  .del-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .del-btn:disabled { opacity: 0.5; cursor: wait; }
+
+  /* ── Delete confirm panel: a self-contained danger card ── */
+  .del-panel {
+    display: none; width: 100%; margin-top: 12px; padding: 14px 16px;
+    border-radius: 10px; background: var(--tdanger-bg); border: 1px solid rgba(139,26,26,.18);
   }
-  .del-confirm input:focus { outline: 2px solid #8b1a1a; outline-offset: 1px; }
+  .del-panel.open { display: block; animation: delPanelIn .16s ease-out; }
+  @keyframes delPanelIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .del-panel-msg {
+    display: flex; align-items: flex-start; gap: 8px; font-size: 0.8rem;
+    color: var(--tdanger-txt); line-height: 1.5; margin-bottom: 10px;
+  }
+  .del-panel-msg svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
+  .del-panel-msg b { font-weight: 700; }
+  .del-panel-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .del-panel input {
+    flex: 1 1 200px; min-width: 160px; padding: 8px 12px; border-radius: 8px;
+    border: 1px solid rgba(139,26,26,.35);
+    font-family: 'DM Sans', sans-serif; font-size: 0.83rem; color: var(--ink);
+    background: #fff;
+  }
+  .del-panel input:focus { outline: none; border-color: var(--tdanger-txt); box-shadow: 0 0 0 3px rgba(139,26,26,.12); }
   .del-confirm-btn {
-    font-size: 0.78rem; font-weight: 600; padding: 5px 12px; border-radius: 999px;
-    border: 1px solid #8b1a1a; background: #8b1a1a; color: #fff; cursor: pointer;
+    font-size: 0.78rem; font-weight: 700; padding: 8px 16px; border-radius: 999px;
+    border: 1px solid var(--tdanger-txt); background: var(--tdanger-txt); color: #fff;
+    cursor: pointer; transition: var(--T); flex-shrink: 0; white-space: nowrap;
   }
-  .del-confirm-btn:disabled { opacity: 0.5; cursor: wait; }
+  .del-confirm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .del-confirm-btn:not(:disabled):hover { background: #6e1414; border-color: #6e1414; }
   .del-cancel-btn {
     font-size: 0.78rem; color: var(--gray); cursor: pointer;
-    background: none; border: none; text-decoration: underline; padding: 0;
+    background: none; border: none; text-decoration: underline; padding: 6px 4px;
   }
-  .del-confirm-hint { font-size: 0.72rem; color: var(--grl); width: 100%; }
+  .del-panel-hint { font-size: 0.74rem; color: var(--tdanger-txt); width: 100%; margin-top: 2px; }
+  .del-panel-hint.match { color: var(--tsuccess-txt); }
 
-  .chev { display: inline-flex; flex-shrink: 0; color: var(--grl); transition: transform 0.2s; }
+  .chev { display: inline-flex; flex-shrink: 0; color: var(--grl); transition: var(--T); }
   .chev svg { width: 14px; height: 14px; }
-  .chev.open { transform: rotate(90deg); }
+  .chev.open { transform: rotate(90deg); color: var(--g); }
 
   .grp-rows {
     margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--bd);
@@ -95,29 +150,49 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   .road-row-meta b { color: var(--ink); font-weight: 600; }
   .road-row-dot { opacity: .4; }
 
+  /* ── Add road form ── */
   .add-road-form {
     display: none; align-items: center; gap: 10px; flex-wrap: wrap;
     padding: 12px 16px; border-radius: var(--r); margin-bottom: 16px;
     background: var(--gp); border: 1px solid var(--bd); font-size: 0.85rem;
   }
-  .add-road-form.show { display: flex; }
+  .add-road-form.show { display: flex; animation: delPanelIn .16s ease-out; }
   .add-road-form input {
     flex: 1 1 260px; min-width: 200px; padding: 8px 12px; border-radius: 8px;
     border: 1px solid var(--bd); font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
     color: var(--ink); background: #fff;
   }
-  .add-road-form input:focus { outline: 2px solid var(--g); outline-offset: 1px; }
+  .add-road-form input:focus { outline: none; border-color: var(--g); box-shadow: 0 0 0 3px #fff; }
   .add-road-msg { font-size: 0.78rem; font-weight: 600; }
-  .add-road-msg.err { color: #8b1a1a; }
+  .add-road-msg.err { color: var(--tdanger-txt); }
   .add-road-msg.ok { color: var(--tsuccess-txt); }
 
-  .empty-state { text-align: center; padding: 40px 20px; color: var(--grl); font-size: 0.88rem; }
+  /* ── Empty / loading states ── */
+  .empty-state {
+    text-align: center; padding: 48px 20px; color: var(--grl); font-size: 0.88rem;
+  }
+  .empty-state svg { width: 34px; height: 34px; color: var(--grl); opacity: .6; margin-bottom: 10px; }
+  .empty-state p { margin-top: 4px; }
+  .empty-state .empty-sub { font-size: 0.78rem; margin-top: 2px; color: var(--grl); }
+  .loading-state {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 40px 20px; color: var(--grl); font-size: 0.86rem;
+  }
+  .spinner {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--bd); border-top-color: var(--g);
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
   @media (max-width: 600px) {
     .grp-head { flex-wrap: wrap; }
     .grp-head-left { flex: 1 1 100%; }
     .grp-head-right { flex: 1 1 100%; justify-content: flex-start; margin-top: 8px; }
-    .toolbar-card { gap: 12px; }
+    .grp-counts { flex-wrap: wrap; }
+    .roads-toolbar { flex-direction: column; align-items: stretch; }
+    .del-panel-row { flex-direction: column; align-items: stretch; }
+    .del-confirm-btn, .del-cancel-btn { width: 100%; text-align: center; }
   }
 </style>
 </head>
@@ -223,7 +298,10 @@ document.addEventListener('click', e => {
     <button id="sb-toggle" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
     </button>
-    <div class="topbar-left"><h2>Roads</h2></div>
+    <div class="topbar-left">
+      <h2>Roads</h2>
+      <p id="roadsSubtitle">&nbsp;</p>
+    </div>
     <button id="addRoadBtn" class="btn-new">+ Add Road</button>
   </div>
 
@@ -233,18 +311,31 @@ document.addEventListener('click', e => {
       <span>Every road here is public. Click a road name to see who created each underlying entry. Deleting a road removes it and any audit entries under it — you'll be asked to type its name to confirm.</span>
     </div>
 
-    <div id="loadingMsg" class="card" style="text-align:center;padding:36px;color:var(--grl);">
-      Loading roads…
-    </div>
-    <div id="errorMsg" class="card" style="display:none;text-align:center;padding:36px;color:#8b1a1a;"></div>
     <div class="add-road-form" id="addRoadForm">
       <input type="text" id="addRoadInput" placeholder="Road name (e.g. KOTHRUD ROAD)" maxlength="255">
       <button class="action-btn" id="addRoadSubmit" style="background:var(--g);color:#fff;border-color:var(--g);">Add</button>
       <button class="text-link-btn" id="addRoadCancel">Cancel</button>
       <span id="addRoadMsg" class="add-road-msg"></span>
     </div>
+
+    <div class="roads-toolbar">
+      <div class="roads-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="roadsSearchInput" placeholder="Search roads…" autocomplete="off">
+      </div>
+      <span class="roads-count" id="roadsCountLbl"></span>
+    </div>
+
+    <div id="loadingMsg" class="card loading-state">
+      <span class="spinner"></span> Loading roads…
+    </div>
+    <div id="errorMsg" class="card" style="display:none;text-align:center;padding:36px;color:var(--tdanger-txt);"></div>
     <div id="groupsContainer"></div>
-    <div id="emptyMsg" class="card empty-state" style="display:none;">No roads yet.</div>
+    <div id="emptyMsg" class="card empty-state" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16"/><path d="M6 19V9l6-5 6 5v10"/><path d="M10 19v-6h4v6"/></svg>
+      <p id="emptyMsgText">No roads yet.</p>
+      <div class="empty-sub" id="emptyMsgSub">Add the first road to get started.</div>
+    </div>
   </div>
 </main>
 
@@ -288,6 +379,7 @@ document.addEventListener('click', e => {
     var typed = confirmInput.value.trim();
     if (typed.toUpperCase() !== name.toUpperCase()) {
       hint.textContent = 'Doesn\u2019t match \u2014 type the road name exactly.';
+      hint.classList.remove('match');
       return;
     }
     confirmBtn.disabled = true;
@@ -307,6 +399,7 @@ document.addEventListener('click', e => {
           confirmBtn.disabled = false;
           confirmInput.disabled = false;
           hint.textContent = data.error || 'Could not delete road. Please try again.';
+          hint.classList.remove('match');
           return;
         }
         loadRoads();
@@ -315,8 +408,12 @@ document.addEventListener('click', e => {
         confirmBtn.disabled = false;
         confirmInput.disabled = false;
         hint.textContent = 'Network error \u2014 could not delete road.';
+        hint.classList.remove('match');
       });
   }
+
+  var TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+  var WARN_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>';
 
   function buildGroup(group) {
     var card = document.createElement('div');
@@ -336,68 +433,106 @@ document.addEventListener('click', e => {
     nameEl.className = 'grp-name';
     nameEl.textContent = group.name;
 
-    var countEl = document.createElement('span');
-    countEl.className = 'grp-count';
-    countEl.textContent = group.entry_count + (group.entry_count === 1 ? ' entry' : ' entries') + ' \u00b7 ' + group.total_segments + ' segments total';
+    var countsEl = document.createElement('span');
+    countsEl.className = 'grp-counts';
+    var entryPill = document.createElement('span');
+    entryPill.className = 'count-pill';
+    entryPill.textContent = group.entry_count + (group.entry_count === 1 ? ' entry' : ' entries');
+    var segPill = document.createElement('span');
+    segPill.className = 'count-pill alt';
+    segPill.textContent = group.total_segments + ' segments';
+    countsEl.appendChild(entryPill);
+    countsEl.appendChild(segPill);
 
     left.appendChild(chev);
     left.appendChild(nameEl);
-    left.appendChild(countEl);
+    left.appendChild(countsEl);
 
     var right = document.createElement('div');
     right.className = 'grp-head-right';
 
-    // Default state: just a Delete link. Clicking it swaps this area for
-    // an inline type-to-confirm control instead of a browser confirm() —
-    // deletion here removes any real audit entries under the road too, so
-    // it needs a deliberate, hard-to-fat-finger step.
+    // Default state: just a Delete affordance. Clicking it opens a danger
+    // panel below the row with a type-to-confirm control instead of a
+    // browser confirm() — deletion here removes any real audit entries
+    // under the road too, so it needs a deliberate, hard-to-fat-finger step.
     var deleteBtn = document.createElement('button');
-    deleteBtn.className = 'grp-delete-btn';
-    deleteBtn.textContent = 'Delete';
+    deleteBtn.className = 'del-btn';
+    deleteBtn.innerHTML = TRASH_ICON + '<span>Delete</span>';
+    deleteBtn.setAttribute('aria-label', 'Delete ' + group.name);
 
-    var confirmWrap = document.createElement('div');
-    confirmWrap.className = 'del-confirm';
-    confirmWrap.style.display = 'none';
+    right.appendChild(deleteBtn);
+    head.appendChild(left);
+    head.appendChild(right);
+
+    var panel = document.createElement('div');
+    panel.className = 'del-panel';
+
+    var panelMsg = document.createElement('div');
+    panelMsg.className = 'del-panel-msg';
+    panelMsg.innerHTML = WARN_ICON + '<span>' +
+      (group.entry_count > 0
+        ? 'This also removes <b>' + escapeHtml(group.entry_count) + ' audit ' + (group.entry_count === 1 ? 'entry' : 'entries') + '</b> under this road. '
+        : '') +
+      'This cannot be undone. Type <b>' + escapeHtml(group.name) + '</b> to confirm.</span>';
+
+    var panelRow = document.createElement('div');
+    panelRow.className = 'del-panel-row';
 
     var confirmInput = document.createElement('input');
     confirmInput.type = 'text';
-    confirmInput.placeholder = 'Type "' + group.name + '"';
+    confirmInput.placeholder = group.name;
     confirmInput.autocomplete = 'off';
 
     var confirmBtn = document.createElement('button');
     confirmBtn.className = 'del-confirm-btn';
-    confirmBtn.textContent = group.entry_count > 0 ? 'Delete ' + group.entry_count + ' \u00d7 entries' : 'Delete';
+    confirmBtn.textContent = group.entry_count > 0 ? 'Delete road + entries' : 'Delete road';
+    confirmBtn.disabled = true;
 
     var confirmCancel = document.createElement('button');
     confirmCancel.className = 'del-cancel-btn';
     confirmCancel.textContent = 'Cancel';
 
     var confirmHint = document.createElement('span');
-    confirmHint.className = 'del-confirm-hint';
-    confirmHint.textContent = group.entry_count > 0
-      ? 'This removes ' + group.entry_count + ' audit ' + (group.entry_count === 1 ? 'entry' : 'entries') + ' too. Cannot be undone.'
-      : 'Cannot be undone.';
+    confirmHint.className = 'del-panel-hint';
+    confirmHint.style.display = 'none';
 
-    confirmWrap.appendChild(confirmInput);
-    confirmWrap.appendChild(confirmBtn);
-    confirmWrap.appendChild(confirmCancel);
-    confirmWrap.appendChild(confirmHint);
+    panelRow.appendChild(confirmInput);
+    panelRow.appendChild(confirmBtn);
+    panelRow.appendChild(confirmCancel);
+    panel.appendChild(panelMsg);
+    panel.appendChild(panelRow);
+    panel.appendChild(confirmHint);
+
+    function resetPanel() {
+      panel.classList.remove('open');
+      confirmInput.value = '';
+      confirmBtn.disabled = true;
+      confirmInput.disabled = false;
+      confirmHint.style.display = 'none';
+      confirmHint.classList.remove('match');
+    }
 
     deleteBtn.addEventListener('click', function (e) {
       e.stopPropagation();
-      deleteBtn.style.display = 'none';
-      confirmWrap.style.display = 'flex';
-      confirmInput.focus();
+      var open = panel.classList.toggle('open');
+      if (open) { confirmInput.focus(); } else { resetPanel(); }
     });
 
     confirmCancel.addEventListener('click', function (e) {
       e.stopPropagation();
-      confirmWrap.style.display = 'none';
-      deleteBtn.style.display = '';
-      confirmInput.value = '';
-      confirmHint.textContent = group.entry_count > 0
-        ? 'This removes ' + group.entry_count + ' audit ' + (group.entry_count === 1 ? 'entry' : 'entries') + ' too. Cannot be undone.'
-        : 'Cannot be undone.';
+      resetPanel();
+    });
+
+    confirmInput.addEventListener('input', function () {
+      var matches = confirmInput.value.trim().toUpperCase() === group.name.toUpperCase();
+      confirmBtn.disabled = !matches;
+      if (confirmInput.value.trim().length === 0) {
+        confirmHint.style.display = 'none';
+      } else {
+        confirmHint.style.display = 'block';
+        confirmHint.classList.toggle('match', matches);
+        confirmHint.textContent = matches ? 'Ready to delete.' : 'Doesn\u2019t match yet.';
+      }
     });
 
     confirmBtn.addEventListener('click', function (e) {
@@ -406,15 +541,10 @@ document.addEventListener('click', e => {
     });
     confirmInput.addEventListener('keydown', function (e) {
       e.stopPropagation();
-      if (e.key === 'Enter') submitDelete(group.id, group.name, confirmInput, confirmBtn, confirmHint);
+      if (e.key === 'Enter' && !confirmBtn.disabled) submitDelete(group.id, group.name, confirmInput, confirmBtn, confirmHint);
+      if (e.key === 'Escape') resetPanel();
     });
     confirmInput.addEventListener('click', function (e) { e.stopPropagation(); });
-
-    right.appendChild(deleteBtn);
-    right.appendChild(confirmWrap);
-
-    head.appendChild(left);
-    head.appendChild(right);
 
     var rowsWrap = document.createElement('div');
     rowsWrap.className = 'grp-rows';
@@ -428,21 +558,50 @@ document.addEventListener('click', e => {
     });
 
     card.appendChild(head);
+    card.appendChild(panel);
     card.appendChild(rowsWrap);
     return card;
   }
 
   var allGroups = [];
+  var searchInput = document.getElementById('roadsSearchInput');
+  var roadsCountLbl = document.getElementById('roadsCountLbl');
+  var emptyMsgText = document.getElementById('emptyMsgText');
+  var emptyMsgSub = document.getElementById('emptyMsgSub');
+
+  function currentQuery() {
+    return searchInput.value.trim().toUpperCase();
+  }
 
   function render(groups) {
     var container = document.getElementById('groupsContainer');
     var emptyMsg = document.getElementById('emptyMsg');
+    var query = currentQuery();
+    var visible = query
+      ? groups.filter(function (g) { return g.name.toUpperCase().indexOf(query) !== -1; })
+      : groups;
+
     container.innerHTML = '';
-    emptyMsg.style.display = groups.length === 0 ? 'block' : 'none';
-    groups.forEach(function (g) {
+    emptyMsg.style.display = visible.length === 0 ? 'block' : 'none';
+    if (visible.length === 0) {
+      if (query) {
+        emptyMsgText.textContent = 'No roads match "' + searchInput.value.trim() + '".';
+        emptyMsgSub.textContent = 'Try a different search, or clear it to see all roads.';
+      } else {
+        emptyMsgText.textContent = 'No roads yet.';
+        emptyMsgSub.textContent = 'Add the first road to get started.';
+      }
+    }
+    visible.forEach(function (g) {
       container.appendChild(buildGroup(g));
     });
+
+    roadsCountLbl.textContent = query
+      ? visible.length + ' of ' + groups.length + (groups.length === 1 ? ' road' : ' roads')
+      : groups.length + (groups.length === 1 ? ' road' : ' roads');
   }
+
+  searchInput.addEventListener('input', function () { render(allGroups); });
 
   var addRoadBtn = document.getElementById('addRoadBtn');
   var addRoadForm = document.getElementById('addRoadForm');
@@ -522,6 +681,10 @@ document.addEventListener('click', e => {
           return;
         }
         allGroups = data.road_groups;
+        var totalSegments = allGroups.reduce(function (sum, g) { return sum + g.total_segments; }, 0);
+        document.getElementById('roadsSubtitle').textContent =
+          allGroups.length + (allGroups.length === 1 ? ' road' : ' roads') +
+          ' \u00b7 ' + totalSegments + ' segments audited';
         render(allGroups);
       })
       .catch(function () {
