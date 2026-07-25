@@ -1,8 +1,8 @@
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 //  js/form.js  —  Segment Audit Form Logic
 //  Reads segment_id + session_id from URL params.
 //  Submits to api/segments/submit.php with X-CSRF-Token header.
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 
 const urlParams  = new URLSearchParams(window.location.search);
 const segmentId  = urlParams.get('segment_id');
@@ -15,7 +15,7 @@ function getRoadId() {
   return el ? el.value : '';
 }
 
-// â”€â”€ Inject hidden fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Inject hidden fields ───────────────────────────────────────
 if (segmentId) {
   const h = document.getElementById('segment_id');
   if (h) h.value = segmentId;
@@ -38,13 +38,13 @@ if (sessionId) {
   hEdit.value = editMode ? '1' : '0';
 })();
 
-// â”€â”€ CSRF token â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── CSRF token ─────────────────────────────────────────────────
 function getCsrf() {
   const meta = document.querySelector('meta[name="csrf"]');
   return meta ? meta.content : (window.__CSRF__ || '');
 }
 
-// â”€â”€ Obstruction option lists â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Obstruction option lists ───────────────────────────────────
 const fixedOptions = [
   'Trees','Poles','CCTV','TrafficSignal','SignBoard',
   'TelephonePanel','ElectricalPanel','BusStand',
@@ -59,7 +59,7 @@ const parkedOptions = [
   'CommercialRetailShops','OnStreetVending','PublicSpace',
 ];
 
-// â”€â”€ Dropdown open / close â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Dropdown open / close ──────────────────────────────────────
 function openDropdown(type) {
   renderList(type, '');
   document.getElementById(type + 'List').classList.add('open');
@@ -108,54 +108,54 @@ function renderList(type, filter) {
   });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ════════════════════════════════════════════════════════════════
 //  NUMERIC COUNTER ARCHITECTURE  (single source of truth)
 //
 //  Design principles:
-//  â€¢ ONE oninput handler does ALL sanitisation — no keydown tricks,
+//  • ONE oninput handler does ALL sanitisation — no keydown tricks,
 //    no onfocus hacks, no competing listeners.
-//  â€¢ The field is NEVER mutated during editing except to strip
+//  • The field is NEVER mutated during editing except to strip
 //    non-digit characters.  Leading-zero removal is NOT deferred;
 //    it is done inline but only when the result is unambiguous
 //    (i.e. the string starts with 0 AND has more digits after it).
-//  â€¢ Caret position is restored after every sanitisation so typing
+//  • Caret position is restored after every sanitisation so typing
 //    feels native on desktop AND mobile / Android virtual keyboards
 //    (which send key="Unidentified" — breaking any keydown approach).
-//  â€¢ blur is the only place a missing value is snapped to "0".
-//  â€¢ +/- buttons call adjustCounter which normalises via the same
+//  • blur is the only place a missing value is snapped to "0".
+//  • +/- buttons call adjustCounter which normalises via the same
 //    numeric read used at submit time.
-//  â€¢ No global state, no WeakMap, no closures per-field needed.
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  • No global state, no WeakMap, no closures per-field needed.
+// ════════════════════════════════════════════════════════════════
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ══════════════════════════════════════════════════════════════════
 //  NUMERIC COUNTER ARCHITECTURE  v3 — blank-display / zero-store
 //
 //  Display contract:
-//  â€¢ Fields are VISUALLY BLANK by default — value="" in HTML
-//  â€¢ Blank display = numeric value 0 (converted at submit/button)
-//  â€¢ Typing is uncontrolled mid-edit: only non-digits are stripped.
-//  â€¢ Leading zeros are collapsed on blur, never during typing.
+//  • Fields are VISUALLY BLANK by default — value="" in HTML
+//  • Blank display = numeric value 0 (converted at submit/button)
+//  • Typing is uncontrolled mid-edit: only non-digits are stripped.
+//  • Leading zeros are collapsed on blur, never during typing.
 //
 //  Event model — ONE handler per concern, zero overlap:
-//    oninput  â†’ counterInput   strips non-digit chars only
-//    onblur   â†’ counterBlur    collapses leading zeros, blank stays blank
-//    onclick  â†’ adjustCounter  +/- buttons, blank-aware
+//    oninput  → counterInput   strips non-digit chars only
+//    onblur   → counterBlur    collapses leading zeros, blank stays blank
+//    onclick  → adjustCounter  +/- buttons, blank-aware
 //
 //  Blank-to-zero happens ONLY at:
-//    â€¢ adjustCounter: reads blank as 0 before applying delta
-//    â€¢ submitFullAudit: _numVal() reads blank as 0 in FormData
-//    â€¢ PHP backend: (int)$_POST[field] coerces "" to 0
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//    • adjustCounter: reads blank as 0 before applying delta
+//    • submitFullAudit: _numVal() reads blank as 0 in FormData
+//    • PHP backend: (int)$_POST[field] coerces "" to 0
+// ══════════════════════════════════════════════════════════════════
 
-// â”€â”€ Safe integer read — blank/invalid treated as 0 ————————————
+// ── Safe integer read — blank/invalid treated as 0 ————————————
 function _numVal(el) {
   if (!el) return 0;
   const n = parseInt(el.value, 10);
   return Number.isFinite(n) && n >= 0 ? n : 0;
 }
 
-// â”€â”€ +/- button handler ——————————————————————————————————————————————
-// blank + (+) â†’ "1"     "1" + (-) â†’ blank (0 shown as blank)
+// ── +/- button handler ——————————————————————————————————————————————
+// blank + (+) → "1"     "1" + (-) → blank (0 shown as blank)
 function adjustCounter(id, delta) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -163,7 +163,7 @@ function adjustCounter(id, delta) {
   el.value = next === 0 ? '' : String(next);
 }
 
-// â”€â”€ oninput: strip non-digits ONLY — never reformat mid-type —————
+// ── oninput: strip non-digits ONLY — never reformat mid-type —————
 // "034" is intentionally NOT collapsed here — the user might still
 // be typing.  Collapse happens on blur only.
 function counterInput(id) {
@@ -183,8 +183,8 @@ function counterInput(id) {
   }
 }
 
-// â”€â”€ onblur: collapse leading zeros; blank stays blank ——————————
-// "034" â†’ "34"   "007" â†’ "7"   "0" â†’ blank   "" â†’ blank
+// ── onblur: collapse leading zeros; blank stays blank ——————————
+// "034" → "34"   "007" → "7"   "0" → blank   "" → blank
 function counterBlur(id) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -192,7 +192,7 @@ function counterBlur(id) {
   el.value = (Number.isFinite(n) && n > 0) ? String(n) : '';
 }
 
-// â”€â”€ Template: counter row with blank-default input —————————————
+// ── Template: counter row with blank-default input —————————————
 function makeCounter(id, labelText) {
   return `
     <div class="counter-row">
@@ -210,7 +210,7 @@ function makeCounter(id, labelText) {
     </div>`;
 }
 
-// â”€â”€ Obstruction toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Obstruction toggle ─────────────────────────────────────────
 function toggleObstruction(type, label) {
   const id        = type + '_' + label.replace(/\W/g, '_');
   const container = document.getElementById(type + 'Inputs');
@@ -236,7 +236,7 @@ function toggleObstruction(type, label) {
   }
 }
 
-// â”€â”€ Missing Length field (decimal numeric, not a counter) â”€â”€â”€â”€â”€â”€
+// ── Missing Length field (decimal numeric, not a counter) ──────
 // Allows digits and a single decimal point.  No leading zeros before decimal.
 function missingLengthInput(el) {
   const raw   = el.value;
@@ -252,7 +252,7 @@ function missingLengthInput(el) {
     clean = clean.slice(0, dotIdx + 1) + clean.slice(dotIdx + 1).replace(/\./g, '');
   }
 
-  // Remove leading zeros before a digit (e.g. "05" â†’ "5", but "0." â†’ "0.")
+  // Remove leading zeros before a digit (e.g. "05" → "5", but "0." → "0.")
   clean = clean.replace(/^0+([0-9])/, '$1');
 
   if (clean !== raw) {
@@ -264,12 +264,12 @@ function missingLengthInput(el) {
 }
 
 function missingLengthBlur(el) {
-  // Remove trailing dot  ("5." â†’ "5")
+  // Remove trailing dot  ("5." → "5")
   if (el.value.endsWith('.')) el.value = el.value.slice(0, -1);
   // Empty is fine for this optional field — don't snap to 0
 }
 
-// â”€â”€ Missing Length toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Missing Length toggle ──────────────────────────────────────
 function toggleMissingLength(radio) {
   const box = document.getElementById('missingLengthBox');
   box.style.display = radio.value === 'Yes' ? 'block' : 'none';
@@ -278,7 +278,7 @@ function toggleMissingLength(radio) {
   }
 }
 
-// â”€â”€ Intersections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Intersections ──────────────────────────────────────────────
 let intersections  = [];
 let intUIDCounter  = 0;
 
@@ -383,7 +383,7 @@ function addIntersection() {
           — click to collapse
         </span>
       </div>
-      <span class="int-chevron">â–¾</span>
+      <span class="int-chevron">▾</span>
     </div>
     <div class="int-body open" id="intBody_${uid}">
       ${buildIntersectionBody(uid)}
@@ -409,7 +409,7 @@ function removeIntersection(uid) {
   intersections = intersections.filter(id => id !== uid);
 }
 
-// â”€â”€ Footpath score â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Footpath score ─────────────────────────────────────────────
 function updateFootpathScore() {
   const weights = {
     minWidth: 30, obstructionFree: 30,
@@ -424,7 +424,7 @@ function updateFootpathScore() {
   document.getElementById('footpathScore').textContent = score + '%';
 }
 
-// â”€â”€ Form submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Form submit ────────────────────────────────────────────────
 async function submitFullAudit() {
   if (!validateForm()) return;
 
@@ -480,7 +480,7 @@ async function submitFullAudit() {
   }
 }
 
-// â”€â”€ Validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Validation ─────────────────────────────────────────────────
 
 
 // ═══════════════════════════════════════════════════════
@@ -540,10 +540,10 @@ function clearError(id) {
   document.getElementById(id)?.classList.remove('field-error');
 }
 
-// â”€â”€ Progress bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Progress bar ───────────────────────────────────────────────
 
 
-// â”€â”€ Reset / Confirm â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Reset / Confirm ────────────────────────────────────────────
 function resetForm()    { document.getElementById('confirmOverlay').classList.add('active');    }
 function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('active'); }
 
@@ -554,10 +554,10 @@ async function doReset() {
   // Show a loading state on the reset button
   const resetBtn = document.querySelector('.btn-reset');
   const origText = resetBtn ? resetBtn.textContent : '';
-  if (resetBtn) { resetBtn.textContent = 'â³ Resettingâ€¦'; resetBtn.disabled = true; }
+  if (resetBtn) { resetBtn.textContent = '⏳ Resetting…'; resetBtn.disabled = true; }
 
   try {
-    // â”€â”€ 1. Clear audit data from the database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── 1. Clear audit data from the database ─────────────────
     const segId  = document.getElementById('segment_id')?.value || segmentId;
     const sessId = document.getElementById('session_id')?.value || sessionId;
 
@@ -579,7 +579,7 @@ async function doReset() {
       }
     }
 
-    // â”€â”€ 2. Clear the form DOM in-place â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── 2. Clear the form DOM in-place ─────────────────────────
     // Text inputs & textareas
     document.querySelectorAll('#auditForm input[type="text"], #auditForm input[type="number"], #auditForm textarea')
       .forEach(el => {
@@ -614,7 +614,7 @@ async function doReset() {
     // Footpath score badge
     updateFootpathScore();
 
-    // â”€â”€ 3. Strip edit_mode from URL and remove the edit banner â”€
+    // ── 3. Strip edit_mode from URL and remove the edit banner ─
     const hEdit = document.getElementById('edit_mode');
     if (hEdit) hEdit.value = '0';
 
@@ -660,13 +660,13 @@ function showResetToast(msg) {
   toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
 }
 
-// â”€â”€ Scroll to top â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Scroll to top ──────────────────────────────────────────────
 window.addEventListener('scroll', () => {
   const btn = document.getElementById('scrollTopBtn');
   if (btn) btn.classList.toggle('visible', window.scrollY > 300);
 });
 
-// â”€â”€ Pre-fill helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Pre-fill helpers ───────────────────────────────────────────
 
 function prefillObstructions(obstructions) {
   if (!obstructions || !obstructions.length) return;
@@ -752,7 +752,7 @@ async function prefillFormIfEditMode() {
 
     const a = data.audit;
 
-    // â”€â”€ Text inputs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Text inputs ─────────────────────────────────────────
     const setVal = (id, val) => {
       const el = document.getElementById(id);
       if (el && val != null) el.value = val;
@@ -771,7 +771,7 @@ async function prefillFormIfEditMode() {
     };
     setCounter('signageCount', a.signage_count);
 
-    // â”€â”€ Radio buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Radio buttons ────────────────────────────────────────
     const setRadio = (name, val) => {
       if (!val) return;
       const el = document.querySelector(`input[name="${name}"][value="${val}"]`);
@@ -790,7 +790,7 @@ async function prefillFormIfEditMode() {
     setRadio('track_geometry',      a.track_geometry);
     setRadio('buffer_zone',         a.buffer_zone);
 
-    // â”€â”€ Checkboxes (surface_issues, overhead_issues, footpath_rating)
+    // ── Checkboxes (surface_issues, overhead_issues, footpath_rating)
     const tickCheckboxes = (name, values) => {
       if (!Array.isArray(values)) return;
       values.forEach(val => {
@@ -808,7 +808,7 @@ async function prefillFormIfEditMode() {
     tickCheckboxes('footpath_rating[]', a.footpath_rating);
     updateFootpathScore();
 
-    // â”€â”€ Dimensions / comments â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Dimensions / comments ────────────────────────────────
     const setByName = (name, val) => {
       const el = document.querySelector(`[name="${name}"]`);
       if (el && val != null) el.value = val;
@@ -817,10 +817,10 @@ async function prefillFormIfEditMode() {
     setByName('segment_length', a.segment_length);
     setByName('comments',       a.comments);
 
-    // â”€â”€ Obstructions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Obstructions ─────────────────────────────────────────
     prefillObstructions(data.obstructions);
 
-    // â”€â”€ Intersections â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Intersections ────────────────────────────────────────
     prefillIntersections(data.intersections);
 
   } catch (err) {
@@ -828,12 +828,12 @@ async function prefillFormIfEditMode() {
   }
 }
 
-// â”€â”€ Radio toggle (click same radio again to uncheck) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Radio toggle (click same radio again to uncheck) ───────────
 (function initRadioToggle() {
   // When a <label> wraps a <input type="radio"> (no `for` attr),
-  // clicking the label fires: mousedown(label) â†’ mousedown(input) â†’ click(input) â†’ click(label)
+  // clicking the label fires: mousedown(label) → mousedown(input) → click(input) → click(label)
   // We must snapshot on the FIRST mousedown (label) and act on the LAST click (label).
-  // Clicking the circle directly fires: mousedown(input) â†’ click(input) only.
+  // Clicking the circle directly fires: mousedown(input) → click(input) only.
 
   function getRadio(el) {
     if (el.type === 'radio') return el;
@@ -877,11 +877,11 @@ async function prefillFormIfEditMode() {
   }, true);
 })();
 
-// â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Init ───────────────────────────────────────────────────────
 ['fixed','movable','parked'].forEach(t => renderList(t, ''));
 prefillFormIfEditMode();
 
-// â”€â”€ FormStateManager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── FormStateManager ─────────────────────────────────────────────────────
 // Auto-saves form state to localStorage every 30s + on every change.
 // Restores on page load if same segment_id and not expired (24h).
 // Cleared on successful submit or reset.

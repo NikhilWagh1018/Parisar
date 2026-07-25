@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════
 //  auth/login.php — CycleAudit Login
 //  Supports: local email/password + Google OAuth
-//  Schema: parisar_db â†’ users table
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  Schema: parisar_db → users table
+// ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/constants.php';
 
 startSecureSession();
 
-// Already logged in â†’ dashboard
+// Already logged in → dashboard
 if (isset($_SESSION['user_id'])) {
     header('Location: ../pages/dashboard.php');
     exit;
@@ -24,7 +24,7 @@ require_once __DIR__ . '/../config/rate_limit.php';
 $error     = '';
 $clientIp  = getClientIp();
 
-// â”€â”€ Handle POST (local login) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Handle POST (local login) ──────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim(filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL) ?? '');
     $password = $_POST['password'] ?? '';
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please fill in all fields.';
     } else {
 
-        // â”€â”€ Rate limit check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Rate limit check ───────────────────────────────────
         $rl = checkLoginRateLimit($pdo, $clientIp);
         if (!$rl['allowed']) {
             $error = $rl['message'];
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (isset($user['is_active']) && (int)$user['is_active'] === 0) {
                     $error = 'This account has been deactivated. Please contact an administrator.';
                 } else {
-                // â”€â”€ Successful local login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                // ── Successful local login ─────────────────────
                 clearLoginAttempts($pdo, $clientIp);
 
                 session_regenerate_id(true);
@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// â”€â”€ Map OAuth error codes â†’ readable messages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Map OAuth error codes → readable messages ──────────────────
 $oauthErrors = [
     'state_mismatch'     => 'Security check failed. Please try signing in again.',
     'no_code'            => 'Google sign-in was cancelled. Please try again.',
