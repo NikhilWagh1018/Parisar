@@ -1,11 +1,13 @@
 <?php
 declare(strict_types=1);
 
-// ============================================================
-//  pages/admin_surveyors.php
-//  Surveyor list panel — admin-only. Shows every surveyor account
-//  with roads-created / segments-audited / last-active stats.
-// ============================================================
+// ═══════════════════════════════════════════════════════════════
+//  pages/admin_activity.php
+//  Activity Log — admin-only. Read-only viewer for the audit_log
+//  table (road create/delete actions written by api/admin/roads.php).
+//  Distinct from the surveyor-facing activity_log table — see the
+//  note in api/admin/activity_log.php.
+// ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../config/constants.php';
@@ -18,40 +20,43 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <meta charset="UTF-8">
   <link rel="stylesheet" href="../css/theme.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Users — CycleAudit</title>
+<title>Activity Log — CycleAudit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/dashboard.css">
 <style nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-  .surv-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  .surv-table th {
+  .act-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .act-table th {
     text-align: left; font-size: 0.72rem; font-weight: 700; letter-spacing: .04em;
     text-transform: uppercase; opacity: 0.55; padding: 0 12px 10px; white-space: nowrap;
   }
-  .surv-table td { padding: 12px; border-top: 1px solid rgba(127,127,127,0.12); vertical-align: middle; }
-  .surv-table tbody tr:hover { background: rgba(127,127,127,0.05); }
-  .surv-name-cell { display: flex; align-items: center; gap: 10px; }
-  .surv-avatar {
-    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-    background: var(--g, #16a34a); color: #fff; display: flex; align-items: center;
-    justify-content: center; font-weight: 700; font-size: 0.8rem;
+  .act-table td { padding: 12px; border-top: 1px solid rgba(127,127,127,0.12); vertical-align: middle; }
+  .act-table tbody tr:hover { background: rgba(127,127,127,0.05); }
+  .act-actor { font-weight: 600; color: var(--ink); }
+  .act-road { color: var(--ink); }
+  .act-muted { opacity: 0.55; }
+  .act-when { white-space: nowrap; color: var(--gray); font-size: 0.82rem; }
+
+  .action-pill {
+    display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 700;
+    padding: 4px 11px; border-radius: 999px; white-space: nowrap; text-transform: capitalize;
   }
-  .surv-name { font-weight: 600; }
-  .surv-email { opacity: 0.6; font-size: 0.78rem; }
-  .surv-stat { font-weight: 700; }
-  .surv-muted { opacity: 0.55; }
-  .surv-search {
+  .action-pill.create { background: var(--tsuccess-bg); color: var(--tsuccess-txt); }
+  .action-pill.delete { background: var(--tdanger-bg); color: var(--tdanger-txt); }
+  .action-pill.other  { background: var(--tseg-bg); color: var(--gray); }
+
+  .act-filterbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .act-search {
     width: 100%; max-width: 320px; padding: 9px 12px; border-radius: 8px;
     border: 1px solid rgba(127,127,127,0.25); background: transparent; font-size: 0.85rem;
     font-family: inherit;
   }
-  .surv-role-filter {
+  .act-action-filter {
     padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(127,127,127,0.25);
     background: transparent; font-size: 0.85rem; font-family: inherit;
   }
-  .surv-filterbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
-  .surv-filtercount { margin-left: auto; font-size: 0.8rem; opacity: 0.6; }
-  .surv-empty { text-align: center; padding: 30px; opacity: 0.6; }
+  .act-filtercount { margin-left: auto; font-size: 0.8rem; opacity: 0.6; white-space: nowrap; }
+  .act-empty { text-align: center; padding: 30px; opacity: 0.6; }
 </style>
 </head>
 <body>
@@ -74,11 +79,11 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 1-1.5 3-9 3s-9-2-9-3 1.5-3 9-3 9 2 9 3z"/></svg>
       Roads
     </a>
-    <a class="nav-item active" href="admin_surveyors.php">
+    <a class="nav-item" href="admin_surveyors.php">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Users
     </a>
-    <a class="nav-item" href="admin_activity.php">
+    <a class="nav-item active" href="admin_activity.php">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Activity Log
     </a>
@@ -160,42 +165,39 @@ document.addEventListener('click', e => {
     <button id="sb-toggle" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
     </button>
-    <h2>Users</h2>
+    <div class="topbar-left">
+      <h2>Activity Log</h2>
+      <p style="margin-top:2px;">Road create/delete actions, newest first.</p>
+    </div>
   </div>
 
   <div style="padding: 0 4px 4px;">
     <div class="card">
-      <div class="surv-filterbar">
-        <input type="text" id="survSearch" class="surv-search" placeholder="Search by name or email…">
-        <select id="roleFilter" class="surv-role-filter">
-          <option value="all">All roles</option>
-          <option value="admin">Admins only</option>
-          <option value="surveyor">Surveyors only</option>
+      <div class="act-filterbar">
+        <input type="text" id="actSearch" class="act-search" placeholder="Search by actor or road name…">
+        <select id="actionFilter" class="act-action-filter">
+          <option value="all">All actions</option>
+          <option value="create">Created only</option>
+          <option value="delete">Deleted only</option>
         </select>
-        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><input type="checkbox" id="showInactive"> Show inactive only</label>
-        <span id="filterCount" class="surv-filtercount"></span>
+        <span id="filterCount" class="act-filtercount"></span>
       </div>
 
-      <div id="loadingMsg" style="text-align:center;padding:30px;opacity:.6;">Loading surveyors…</div>
-      <div id="errorMsg" style="display:none;text-align:center;padding:30px;color:#dc2626;"></div>
+      <div id="loadingMsg" style="text-align:center;padding:30px;opacity:.6;">Loading activity…</div>
+      <div id="errorMsg" style="display:none;text-align:center;padding:30px;color:var(--tdanger-txt);"></div>
       <div id="tableWrap" style="display:none;overflow-x:auto;">
-        <table class="surv-table">
+        <table class="act-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Organisation</th>
-              <th>Role</th>
-              <th>Roads Created</th>
-              <th>Segments Audited</th>
-              <th>Last Active</th>
-              <th>Joined</th>
-              <th>Status</th>
+              <th>Actor</th>
               <th>Action</th>
+              <th>Road</th>
+              <th>When</th>
             </tr>
           </thead>
-          <tbody id="survTbody"></tbody>
+          <tbody id="actTbody"></tbody>
         </table>
-        <div id="noResults" class="surv-empty" style="display:none;">No surveyors match your search.</div>
+        <div id="noResults" class="act-empty" style="display:none;">No activity matches your search.</div>
       </div>
     </div>
   </div>
@@ -205,7 +207,7 @@ document.addEventListener('click', e => {
 (function () {
   'use strict';
 
-  var allSurveyors = [];
+  var allEntries = [];
 
   function escapeHtml(str) {
     var div = document.createElement('div');
@@ -214,132 +216,77 @@ document.addEventListener('click', e => {
   }
 
   function fmtDate(iso) {
-    if (!iso) return '<span class="surv-muted">Never</span>';
+    if (!iso) return '<span class="act-muted">—</span>';
     try {
       var d = new Date(iso.replace(' ', 'T'));
-      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) +
+        ' at ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
     } catch (e) {
       return escapeHtml(iso);
     }
   }
 
-  function initials(name) {
-    return (name || '?').trim().charAt(0).toUpperCase();
+  function actionPillClass(action) {
+    if (action === 'create') return 'create';
+    if (action === 'delete') return 'delete';
+    return 'other';
   }
 
-  function buildRow(s) {
+  function actionLabel(action) {
+    if (action === 'create') return 'Created';
+    if (action === 'delete') return 'Deleted';
+    return action;
+  }
+
+  function buildRow(e) {
     var tr = document.createElement('tr');
-    var roleBadge = s.role === 'admin'
-      ? '<span class="admin-badge">Admin</span>'
-      : '<span style="color:#6b7280;font-size:.78rem;">Surveyor</span>';
-    var roleBtn = s.is_current_user
-      ? ''
-      : ' <button class="toggle-role-btn" data-id="' + s.id + '" data-role="' + s.role + '">' +
-        (s.role === 'admin' ? 'Demote' : 'Promote') + '</button>';
     tr.innerHTML =
-      '<td><div class="surv-name-cell">' +
-        '<div class="surv-avatar">' + escapeHtml(initials(s.name)) + '</div>' +
-        '<div><div class="surv-name">' + escapeHtml(s.name) + '</div>' +
-        '<div class="surv-email">' + escapeHtml(s.email) + '</div></div>' +
-      '</div></td>' +
-      '<td>' + (s.organisation ? escapeHtml(s.organisation) : '<span class="surv-muted">—</span>') + '</td>' +
-      '<td>' + roleBadge + '</td>' +
-      '<td class="surv-stat">' + s.roads_created + '</td>' +
-      '<td class="surv-stat">' + s.segments_audited + '</td>' +
-      '<td>' + fmtDate(s.last_audit_at || s.last_login) + '</td>' +
-      '<td>' + fmtDate(s.created_at) + '</td>' +
-      '<td>' + (s.is_active ? '<span style="color:#16a34a;font-weight:600;">Active</span>' : '<span style="color:#9ca3af;font-weight:600;">Inactive</span>') + '</td>' +
-      '<td style="white-space:nowrap;"><button class="toggle-status-btn" data-id="' + s.id + '" data-active="' + s.is_active + '">' + (s.is_active ? 'Deactivate' : 'Reactivate') + '</button>' + roleBtn + '</td>';
+      '<td class="act-actor">' + (e.actor_name ? escapeHtml(e.actor_name) : '<span class="act-muted">Unknown</span>') + '</td>' +
+      '<td><span class="action-pill ' + actionPillClass(e.action) + '">' + escapeHtml(actionLabel(e.action)) + '</span></td>' +
+      '<td class="act-road">' + escapeHtml(e.road_group_name) + '</td>' +
+      '<td class="act-when">' + fmtDate(e.created_at) + '</td>';
     return tr;
   }
 
   function render(list) {
-    var tbody = document.getElementById('survTbody');
+    var tbody = document.getElementById('actTbody');
     tbody.innerHTML = '';
     document.getElementById('noResults').style.display = list.length === 0 ? 'block' : 'none';
-    list.forEach(function (s) { tbody.appendChild(buildRow(s)); });
+    list.forEach(function (e) { tbody.appendChild(buildRow(e)); });
   }
 
   function applyFilter() {
-    var q = document.getElementById('survSearch').value.trim().toLowerCase();
-    var showInactive = document.getElementById('showInactive').checked;
-    var roleFilter = document.getElementById('roleFilter').value;
-    var filtered = allSurveyors.filter(function (s) {
-      if (showInactive ? s.is_active : !s.is_active) return false;
-      if (roleFilter !== 'all' && s.role !== roleFilter) return false;
-      return (s.name || '').toLowerCase().indexOf(q) !== -1 ||
-             (s.email || '').toLowerCase().indexOf(q) !== -1;
+    var q = document.getElementById('actSearch').value.trim().toLowerCase();
+    var actionFilter = document.getElementById('actionFilter').value;
+    var filtered = allEntries.filter(function (e) {
+      if (actionFilter !== 'all' && e.action !== actionFilter) return false;
+      return (e.actor_name || '').toLowerCase().indexOf(q) !== -1 ||
+             (e.road_group_name || '').toLowerCase().indexOf(q) !== -1;
     });
     render(filtered);
     document.getElementById('filterCount').textContent =
-      'Showing ' + filtered.length + ' of ' + allSurveyors.length + ' users';
+      'Showing ' + filtered.length + ' of ' + allEntries.length + ' entries';
   }
 
-  document.getElementById('survSearch').addEventListener('input', applyFilter);
-  document.getElementById('showInactive').addEventListener('change', applyFilter);
-  document.getElementById('roleFilter').addEventListener('change', applyFilter);
+  document.getElementById('actSearch').addEventListener('input', applyFilter);
+  document.getElementById('actionFilter').addEventListener('change', applyFilter);
 
-  document.getElementById('survTbody').addEventListener('click', function (e) {
-    if (e.target.classList.contains('toggle-status-btn')) {
-      var id = parseInt(e.target.dataset.id, 10);
-      var newActive = e.target.dataset.active !== 'true';
-      if (!confirm(newActive ? 'Reactivate this user?' : 'Deactivate this user? They will no longer be able to log in.')) return;
-      fetch('../api/admin/surveyors.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        body: JSON.stringify({ id: id, is_active: newActive })
-      })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (!data.success) { alert(data.error || 'Update failed.'); return; }
-        var s = allSurveyors.find(function (x) { return x.id === id; });
-        if (s) s.is_active = newActive;
-        applyFilter();
-      })
-      .catch(function () { alert('Network error.'); });
-      return;
-    }
-
-    if (e.target.classList.contains('toggle-role-btn')) {
-      var rid = parseInt(e.target.dataset.id, 10);
-      var currentRole = e.target.dataset.role;
-      var newRole = currentRole === 'admin' ? 'surveyor' : 'admin';
-      var confirmMsg = newRole === 'admin'
-        ? 'Promote this user to Admin? They will get full admin access.'
-        : 'Demote this user to Surveyor? They will lose admin access.';
-      if (!confirm(confirmMsg)) return;
-      fetch('../api/admin/surveyors.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        body: JSON.stringify({ id: rid, role: newRole })
-      })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (!data.success) { alert(data.error || 'Update failed.'); return; }
-        var s = allSurveyors.find(function (x) { return x.id === rid; });
-        if (s) s.role = newRole;
-        applyFilter();
-      })
-      .catch(function () { alert('Network error.'); });
-    }
-  });
-
-  fetch('../api/admin/surveyors.php', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+  fetch('../api/admin/activity_log.php', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     .then(function (r) { return r.json(); })
     .then(function (data) {
       document.getElementById('loadingMsg').style.display = 'none';
       if (!data.success) {
-        document.getElementById('errorMsg').textContent = data.error || 'Could not load surveyors.';
+        document.getElementById('errorMsg').textContent = data.error || 'Could not load activity log.';
         document.getElementById('errorMsg').style.display = 'block';
         return;
       }
-      allSurveyors = data.surveyors;
+      allEntries = data.entries;
       document.getElementById('tableWrap').style.display = 'block';
       applyFilter();
     })
     .catch(function () {
       document.getElementById('loadingMsg').style.display = 'none';
-      document.getElementById('errorMsg').textContent = 'Network error — could not load surveyors.';
+      document.getElementById('errorMsg').textContent = 'Network error — could not load activity log.';
       document.getElementById('errorMsg').style.display = 'block';
     });
 })();
