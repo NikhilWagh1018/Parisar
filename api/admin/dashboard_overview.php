@@ -13,7 +13,18 @@ header('Content-Type: application/json');
 set_exception_handler(function (Throwable $e) {
     error_log('api/admin/dashboard_overview.php error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Server error.']);
+    // TEMPORARY — Session 16 diagnostic. Remove this block once the
+    // 500 on this endpoint is diagnosed; admin-gated so low risk, but
+    // do not leave exception details exposed long-term.
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Server error.',
+        'debug'   => [
+            'message' => $e->getMessage(),
+            'file'    => $e->getFile(),
+            'line'    => $e->getLine(),
+        ],
+    ]);
     exit;
 });
 
