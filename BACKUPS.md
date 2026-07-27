@@ -1,94 +1,131 @@
-# Automated Database Backups
+# Database Backups
 
-CycleAudit's MySQL database was not backed up automatically before this —
-if something went wrong (bad migration, accidental delete, application bug),
-there was no way to recover. This sets up daily automated backups at
-effectively zero cost, without changing anything about how or where the
-app itself is hosted.
+CycleAudit's MySQL database is backed up automatically once per day using a
+dedicated `backup-cron` service on Railway. Backups are dumped, compressed,
+and uploaded to a private Backblaze B2 bucket.
 
-## How it works
+## Overview
 
-`scripts/backup.sh` dumps the database with `mysqldump`, compresses it,
-and uploads it to S3-compatible object storage (Cloudflare R2 recommended —
-10 GB/month free, no egress fees). It keeps the last 7 days of backups by
-default and prunes older ones automatically.
+- **Schedule:** Daily at 02:00 AM UTC (Railway cron)
+- **Pipeline:** `mysqldump` → `gzip` → `rclone` upload → Backblaze B2
+- **Storage:** Backblaze B2 bucket `cycleaudit-backups` (private, SSE-B2 encryption at rest)
+- **Retention:** 7 days (see `RETENTION_DAYS` below)
+- **Script:** `scripts/backup.sh`
 
-This runs as a **separate Railway service** in the same project — not
-inside the main web app — on a daily cron schedule. It shares the same
-database credentials as the app, but doesn't affect the app's uptime or
-performance at all.
+## Backblaze B2 setup
 
-## One-time setup
+1. **Create a B2 account** (or use an existing one) at [backblaze.com/b2](https://www.backblaze.com/b2/cloud-storage.html).
+2. **Create a bucket:**
+   - Name: `cycleaudit-backups` (or your own — must be globally unique)
+   - Files in bucket: **Private**
+   - Default encryption: **SSE-B2** (server-side encryption)
+3. **Create an application key:**
+   - Go to **App Keys** → **Add a New Application Key**
+   - Restrict it to the `cycleaudit-backups` bucket if possible
+   - Save the **keyID** and **applicationKey** shown — the applicationKey is
+     only displayed once
+4. **Note your endpoint.** B2's S3-compatible endpoint format is:
+   ```
+   https://s3.<region>.backblazeb2.com
+   ```
+   For example: `https://s3.us-east-005.backblazeb2.com`. The region is shown
+   on the bucket's details page in the B2 dashboard.
 
-### 1. Create a Cloudflare R2 bucket (free)
+## Railway configuration
 
-1. Sign up / log in at [dash.cloudflare.com](https://dash.cloudflare.com) → R2
-2. Create a bucket, e.g. `cycleaudit-backups`
-3. Go to **Manage R2 API Tokens** → create a token with **read + write** access to that bucket
-4. Note down: the Account ID, Access Key ID, and Secret Access Key —
-   you'll need these in step 3 below
+The `backup-cron` service reads the following environment variables. Database
+credentials are wired in via Railway's **Variable Reference** picker
+(`${{MySQL.VARNAME}}`) rather than typed by hand, so they can't pick up stray
+whitespace — see the gotcha note below for why that matters.
 
-(Backblaze B2 or AWS S3 work the same way if you'd rather use one of those
-instead — just swap the endpoint format.)
+```env
+BACKUP_S3_ACCESS_KEY="<B2 keyID>"
+BACKUP_S3_BUCKET="cycleaudit-backups"
+BACKUP_S3_ENDPOINT="https://s3.us-east-005.backblazeb2.com"
+BACKUP_S3_SECRET_KEY="<B2 applicationKey>"
+DB_HOST="${{MySQL.MYSQLHOST}}"
+DB_NAME="${{MySQL.MYSQLDATABASE}}"
+DB_PASS="${{MySQL.MYSQLPASSWORD}}"
+DB_PORT="${{MySQL.MYSQLPORT}}"
+DB_USER="${{MySQL.MYSQLUSER}}"
+RETENTION_DAYS="7"
+```
 
-### 2. Add a new service in Railway
+`RETENTION_DAYS` controls how many days of backups are kept before older ones
+are pruned (see `scripts/backup.sh`).
 
-1. In your Railway project (the same one running the CycleAudit app), click
-   **+ New** → **GitHub Repo** → select the same `Parisar` repo again
-2. This creates a second service from the same codebase — that's expected,
-   we just point it at a different start command (step 4)
+## How the backup runs
 
-### 3. Set environment variables on the new (backup) service
+1. Railway's cron trigger starts the `backup-cron` service at 02:00 AM UTC.
+2. `scripts/backup.sh` runs `mysqldump` against the credentials above and
+   pipes the output through `gzip`.
+3. The compressed dump is uploaded via `rclone` (configured entirely through
+   `RCLONE_CONFIG_BACKUPSTORE_*` environment variables — no `rclone.conf` file
+   is used, so seeing `Config file "/root/.config/rclone/rclone.conf" not
+   found - using defaults` in the logs is expected and harmless).
+4. Files older than `RETENTION_DAYS` are deleted from the bucket.
 
-In the new service's **Variables** tab, add:
+A successful run looks like this in Railway's Deploy Logs:
 
-| Variable | Value |
-|---|---|
-| `DB_HOST` | same as the main app's `DB_HOST` |
-| `DB_PORT` | same as the main app's `DB_PORT` |
-| `DB_NAME` | same as the main app's `DB_NAME` |
-| `DB_USER` | same as the main app's `DB_USER` |
-| `DB_PASS` | same as the main app's `DB_PASS` |
-| `BACKUP_S3_ENDPOINT` | `https://<account-id>.r2.cloudflarestorage.com` |
-| `BACKUP_S3_BUCKET` | `cycleaudit-backups` |
-| `BACKUP_S3_ACCESS_KEY` | from step 1 |
-| `BACKUP_S3_SECRET_KEY` | from step 1 |
-| `BACKUP_RETENTION_DAYS` | `7` (optional, this is the default) |
+```
+[... ] Starting backup for database 'railway'...
+[... ] Dump complete: /tmp/cycleaudit_<timestamp>.sql.gz (1.1M)
+[... ] Uploaded to backupstore:cycleaudit-backups/cycleaudit_<timestamp>.sql.gz
+[... ] Backup job finished successfully.
+```
 
-### 4. Set the start command and cron schedule
+## Verifying a backup
 
-In the new service's **Settings** tab:
+Check the Backblaze B2 dashboard directly:
 
-- **Custom Start Command:** `bash scripts/backup.sh`
-- **Cron Schedule:** `0 2 * * *` (runs daily at 2:00 AM UTC — adjust as needed)
-
-Railway will now build the same Docker image, but instead of starting
-Apache, it runs the backup script once per day and then exits until the
-next scheduled run. This does **not** count against your app's uptime and
-uses negligible compute (a few seconds per day).
-
-### 5. Test it once manually
-
-Before trusting the schedule, trigger a manual run from the Railway
-dashboard (**Deployments → Trigger a run**, or redeploy this service) and
-check the logs for `Backup job finished successfully.` Then confirm the
-`.sql.gz` file actually appears in your R2 bucket.
-
-### 6. (Optional but recommended) Set a bucket lifecycle rule
-
-R2 and B2 both support automatic object expiry. Setting a 7-day lifecycle
-rule directly on the bucket is a good belt-and-suspenders backup to the
-script's own pruning step (`BACKUP_RETENTION_DAYS`), in case that step is
-ever skipped for any reason.
+- Bucket → file list should show a recently uploaded `cycleaudit_*.sql.gz`
+- Encryption column should read **AES256 (SSE-B2)**
+- Bucket should remain **Private**
 
 ## Restoring from a backup
 
+1. Download the desired `cycleaudit_<timestamp>.sql.gz` from the B2 bucket
+   (via the B2 dashboard or `rclone copy`).
+2. Decompress it: `gunzip cycleaudit_<timestamp>.sql.gz`
+3. Restore into MySQL:
+   ```bash
+   mysql -h <host> -P <port> -u <user> -p <database> < cycleaudit_<timestamp>.sql
+   ```
+
+## Troubleshooting
+
+### `mysqldump: Got error: 2005: Unknown MySQL server host ... (-2)`
+
+This error looks like a networking/DNS/private-networking problem but in
+practice has one very common, very unglamorous cause: **stray leading or
+trailing whitespace in an environment variable value.**
+
+Railway's normal (non-raw) variable editor UI renders a value with a leading
+space identically to a value without one — the whitespace is invisible there.
+The only reliable way to check is:
+
+1. Open the service's **Variables → Raw Editor** (plain-text `KEY="VALUE"` view).
+2. Look for any value that isn't sitting flush against its opening quote.
+3. If found, rewrite the Raw Editor contents with no leading/trailing spaces,
+   click **Update Variables**, redeploy, and re-test.
+
+This is most likely to happen on variables that were manually typed or pasted
+(e.g. copied out of the B2 dashboard) rather than added via Railway's
+point-and-click **Variable Reference** picker (`${{Service.VAR}}`), which
+doesn't introduce whitespace.
+
+To confirm this is the cause before touching the Raw Editor, add a temporary
+debug line directly above the `mysqldump` call in `scripts/backup.sh`:
+
 ```bash
-# Download the backup file from your R2/B2 bucket first, then:
-gunzip -c cycleaudit_YYYYMMDD_HHMMSS.sql.gz | mysql \
-    --host=<DB_HOST> --port=<DB_PORT> --user=<DB_USER> --password \
-    <DB_NAME>
+echo "DEBUG: DB_HOST=[$DB_HOST] DB_PORT=[$DB_PORT] DB_USER=[$DB_USER] DB_NAME=[$DB_NAME]"
 ```
 
-Always restore to a **test database first** to verify the dump is valid
-before ever restoring over the live database.
+Redeploy, trigger **Run now**, and check the Deploy Log — a visible gap after
+`DB_HOST=[` compared to the other fields sitting flush is the tell. Remove the
+debug line once confirmed and fixed.
+
+**Rule of thumb:** if an error is unchanged after a fix that seemed clearly
+relevant (e.g. toggling Serverless mode, waiting out DNS propagation), that's
+a signal to check the mundane stuff — variable values, whitespace, typos —
+before continuing down a deeper infrastructure rabbit hole.

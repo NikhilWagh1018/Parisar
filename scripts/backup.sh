@@ -15,13 +15,13 @@
 #    BACKUP_S3_BUCKET     e.g. cycleaudit-backups
 #    BACKUP_S3_ACCESS_KEY
 #    BACKUP_S3_SECRET_KEY
-#    BACKUP_RETENTION_DAYS   (optional, default 7 — see note below)
+#    RETENTION_DAYS   (optional, default 7 — see note below)
 # ═══════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
 DB_PORT="${DB_PORT:-3306}"
-RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-7}"
+RETENTION_DAYS="${RETENTION_DAYS:-7}"
 TIMESTAMP=$(date -u +%Y%m%d_%H%M%S)
 DUMP_FILE="/tmp/cycleaudit_${TIMESTAMP}.sql.gz"
 REMOTE="backupstore:${BACKUP_S3_BUCKET}"
@@ -32,7 +32,6 @@ echo "[$(date -u)] Starting backup for database '${DB_NAME}'..."
 # --single-transaction: consistent snapshot without locking tables
 #   (safe for InnoDB, which this schema uses throughout)
 # --routines --triggers: capture stored procedures/triggers too, if any
-echo "DEBUG: DB_HOST=[$DB_HOST] DB_PORT=[$DB_PORT] DB_USER=[$DB_USER] DB_NAME=[$DB_NAME]"
 mysqldump \
     --host="${DB_HOST}" \
     --port="${DB_PORT}" \
