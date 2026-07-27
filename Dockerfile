@@ -16,7 +16,9 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     zip \
+    default-mysql-client \
     && a2enmod rewrite headers \
+    && curl https://rclone.org/install.sh | bash \
     && rm -rf /var/lib/apt/lists/*
 
 RUN { \

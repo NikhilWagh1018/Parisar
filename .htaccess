@@ -25,6 +25,10 @@ RewriteRule ^ index.html [L]
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    # Safe to set unconditionally: browsers ignore HSTS on plain HTTP
+    # responses, so this only takes effect once already on HTTPS.
+    Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 </IfModule>
 
 # Disable directory listing

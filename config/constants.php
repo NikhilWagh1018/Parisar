@@ -93,6 +93,20 @@ define('REPORTS_PATH',  ROOT_PATH . '/reports');
 
 // ── Secure session bootstrap ───────────────────────────────────
 /**
+ * Detects whether the current request is HTTPS, accounting for
+ * Railway (or any reverse proxy) terminating TLS and forwarding
+ * the scheme via X-Forwarded-Proto. Used by startSecureSession()
+ * to decide whether cookies should be marked HTTPS-only.
+ */
+function isRequestHttps(): bool
+{
+    return (
+        ($_SERVER['HTTPS']                    ?? '') === 'on'
+        || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'
+    );
+}
+
+/**
  * Call this instead of bare session_start() in every auth file
  * and auth_guard.php. Enforces cookie security in PHP itself,
  * giving defence-in-depth on top of the Dockerfile php.ini flags.
@@ -106,10 +120,7 @@ function startSecureSession(): void
 
     // Railway terminates TLS at the proxy and forwards the scheme
     // via X-Forwarded-Proto. Check both to detect HTTPS correctly.
-    $isHttps = (
-        ($_SERVER['HTTPS']                    ?? '') === 'on'
-        || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'
-    );
+    $isHttps = isRequestHttps();
 
     session_name(SESSION_NAME);
     session_set_cookie_params([
