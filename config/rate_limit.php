@@ -3,13 +3,18 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  config/rate_limit.php
-//  IP-based login rate limiting.
+//  IP + action-based rate limiting (generalized from login-only).
 //
 //  Rules:
-//    · 5 failed attempts within 15 minutes  → 15-minute lockout
-//    · Lockout doubles on each subsequent block (15 → 30 → 60 min)
-//    · Successful login clears the record for that IP
+//    · 5 failed attempts within 15 minutes for a given action → 15-minute lockout
+//    · Lockout doubles on each subsequent block (15 → 30 → 60 min), capped at 24h
+//    · Successful attempt clears the record for that IP + action
 //    · Old rows pruned on every check (no cron needed)
+//
+//  Each protected endpoint calls these with its own $action string, e.g.
+//  'login', 'register', 'password_reset', 'survey_submit'. Attempts are
+//  tracked independently per (ip_address, action) pair, so hammering
+//  /register doesn't lock you out of /login and vice versa.
 // ═══════════════════════════════════════════════════════════════
 
 const RL_MAX_ATTEMPTS  = 5;
@@ -17,21 +22,26 @@ const RL_WINDOW_SEC    = 15 * 60;   // 15-minute sliding window
 const RL_BASE_LOCK_SEC = 15 * 60;   // first lockout = 15 min
 
 /**
- * Call at the top of the POST handler, before touching the DB for auth.
+ * Call at the top of the POST handler, before doing the sensitive work
+ * (auth check, account creation, sending a reset email, etc.).
+ *
  * Returns an array:
  *   ['allowed' => true]
  *   ['allowed' => false, 'retry_after' => int seconds, 'message' => string]
  *
  * @param PDO    $pdo
- * @param string $ip   Pass in $_SERVER['REMOTE_ADDR'] (or forwarded IP)
+ * @param string $ip     Pass in getClientIp(), not raw $_SERVER['REMOTE_ADDR']
+ * @param string $action A short identifier for the endpoint, e.g. 'login',
+ *                        'register', 'password_reset'. Keep it stable —
+ *                        changing it resets that endpoint's counters.
  */
-function checkLoginRateLimit(PDO $pdo, string $ip): array
+function checkRateLimit(PDO $pdo, string $ip, string $action): array
 {
     _pruneOldAttempts($pdo);
 
-    $row = _getRecord($pdo, $ip);
+    $row = _getRecord($pdo, $ip, $action);
 
-    // ── Currently locked out? ──────────────────────────────────
+    // ── Currently locked out? ────────────────────────────────────
     if ($row && $row['locked_until'] !== null) {
         $remaining = strtotime($row['locked_until']) - time();
         if ($remaining > 0) {
@@ -39,30 +49,30 @@ function checkLoginRateLimit(PDO $pdo, string $ip): array
             return [
                 'allowed'     => false,
                 'retry_after' => $remaining,
-                'message'     => "Too many failed attempts. Try again in {$mins} minute" . ($mins === 1 ? '' : 's') . '.',
+                'message'     => "Too many attempts. Try again in {$mins} minute" . ($mins === 1 ? '' : 's') . '.',
             ];
         }
         // Lockout expired — clear it so we start a fresh window
-        _clearRecord($pdo, $ip);
+        _clearRecord($pdo, $ip, $action);
     }
 
     return ['allowed' => true];
 }
 
 /**
- * Call after a FAILED login attempt.
- * Increments the counter; locks the IP if the threshold is crossed.
+ * Call after a FAILED attempt for the given action.
+ * Increments the counter; locks the IP+action if the threshold is crossed.
  */
-function recordFailedAttempt(PDO $pdo, string $ip): void
+function recordFailedAttempt(PDO $pdo, string $ip, string $action): void
 {
-    $row = _getRecord($pdo, $ip);
+    $row = _getRecord($pdo, $ip, $action);
 
     if ($row === null) {
-        // First failure for this IP
+        // First failure for this IP + action
         $pdo->prepare(
-            'INSERT INTO login_attempts (ip_address, attempts, last_attempt_at)
-             VALUES (?, 1, NOW())'
-        )->execute([$ip]);
+            'INSERT INTO rate_limit_attempts (ip_address, action, attempts, last_attempt_at)
+             VALUES (?, ?, 1, NOW())'
+        )->execute([$ip, $action]);
         return;
     }
 
@@ -70,78 +80,78 @@ function recordFailedAttempt(PDO $pdo, string $ip): void
 
     if ($newAttempts >= RL_MAX_ATTEMPTS) {
         // Calculate lockout duration — doubles each time they've been locked
-        $lockouts     = (int)($row['lockout_count'] ?? 0) + 1;
-        $lockSec      = RL_BASE_LOCK_SEC * (int)pow(2, $lockouts - 1);
-        $lockSec      = min($lockSec, 60 * 60 * 24); // cap at 24 hours
-        $lockedUntil  = date('Y-m-d H:i:s', time() + $lockSec);
+        $lockouts    = (int)($row['lockout_count'] ?? 0) + 1;
+        $lockSec     = RL_BASE_LOCK_SEC * (int)pow(2, $lockouts - 1);
+        $lockSec     = min($lockSec, 60 * 60 * 24); // cap at 24 hours
+        $lockedUntil = date('Y-m-d H:i:s', time() + $lockSec);
 
         $pdo->prepare(
-            'UPDATE login_attempts
+            'UPDATE rate_limit_attempts
              SET attempts = ?, last_attempt_at = NOW(),
                  locked_until = ?, lockout_count = ?
-             WHERE ip_address = ?'
-        )->execute([$newAttempts, $lockedUntil, $lockouts, $ip]);
+             WHERE ip_address = ? AND action = ?'
+        )->execute([$newAttempts, $lockedUntil, $lockouts, $ip, $action]);
     } else {
         $pdo->prepare(
-            'UPDATE login_attempts
+            'UPDATE rate_limit_attempts
              SET attempts = ?, last_attempt_at = NOW()
-             WHERE ip_address = ?'
-        )->execute([$newAttempts, $ip]);
+             WHERE ip_address = ? AND action = ?'
+        )->execute([$newAttempts, $ip, $action]);
     }
 }
 
 /**
- * Call after a SUCCESSFUL login.
- * Wipes the record so a legitimate user starts fresh next time.
+ * Call after a SUCCESSFUL attempt (e.g. successful login, completed
+ * registration). Wipes the record so a legitimate user starts fresh.
  */
-function clearLoginAttempts(PDO $pdo, string $ip): void
+function clearRateLimitAttempts(PDO $pdo, string $ip, string $action): void
 {
-    _clearRecord($pdo, $ip);
+    _clearRecord($pdo, $ip, $action);
 }
 
 /**
- * Returns the number of remaining attempts before lockout.
- * Use this to show a warning on the login form ("2 attempts remaining").
+ * Returns the number of remaining attempts before lockout for this
+ * IP + action. Use this to show a warning on a form ("2 attempts remaining").
  */
-function remainingAttempts(PDO $pdo, string $ip): int
+function remainingAttempts(PDO $pdo, string $ip, string $action): int
 {
-    $row = _getRecord($pdo, $ip);
+    $row = _getRecord($pdo, $ip, $action);
     if ($row === null) {
         return RL_MAX_ATTEMPTS;
     }
     return max(0, RL_MAX_ATTEMPTS - (int)$row['attempts']);
 }
 
-// ── Private helpers ───────────────────────────────────────────
+// ── Private helpers ──────────────────────────────────────────────
 
-function _getRecord(PDO $pdo, string $ip): ?array
+function _getRecord(PDO $pdo, string $ip, string $action): ?array
 {
     $stmt = $pdo->prepare(
-        'SELECT * FROM login_attempts WHERE ip_address = ? LIMIT 1'
+        'SELECT * FROM rate_limit_attempts WHERE ip_address = ? AND action = ? LIMIT 1'
     );
-    $stmt->execute([$ip]);
+    $stmt->execute([$ip, $action]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return $row ?: null;
 }
 
-function _clearRecord(PDO $pdo, string $ip): void
+function _clearRecord(PDO $pdo, string $ip, string $action): void
 {
-    $pdo->prepare('DELETE FROM login_attempts WHERE ip_address = ?')
-        ->execute([$ip]);
+    $pdo->prepare('DELETE FROM rate_limit_attempts WHERE ip_address = ? AND action = ?')
+        ->execute([$ip, $action]);
 }
 
 function _pruneOldAttempts(PDO $pdo): void
 {
     // Remove rows with no active lockout whose last attempt is outside the window
     $pdo->prepare(
-        'DELETE FROM login_attempts
+        'DELETE FROM rate_limit_attempts
          WHERE locked_until IS NULL
            AND last_attempt_at < DATE_SUB(NOW(), INTERVAL ? SECOND)'
     )->execute([RL_WINDOW_SEC]);
 
     // Also remove rows where the lockout has fully expired
     $pdo->prepare(
-        'DELETE FROM login_attempts
+        'DELETE FROM rate_limit_attempts
          WHERE locked_until IS NOT NULL
            AND locked_until < NOW()'
     )->execute([]);

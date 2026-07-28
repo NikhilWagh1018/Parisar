@@ -10,6 +10,8 @@ declare(strict_types=1);
 //    1. Auto-login + redirect to dashboard after successful registration
 //    2. Sets last_login on registration
 //    3. Generates public_id (SURV-NNNN) in PHP after INSERT (no trigger needed)
+//    4. Rate limiting now uses its own 'register' bucket (previously the
+//       check ran but was discarded, and no attempt was ever recorded)
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/constants.php';
@@ -25,20 +27,24 @@ if (isset($_SESSION['user_id'])) {
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/google_config.php';
 
-// ── Rate limit registrations (reuse login_attempts table) ──────
+$errors      = [];
+$success     = false;
+$rateLimited = false;
+$clientIp    = getClientIp();
+
+// ── Rate limit registrations (own 'register' bucket — independent
+//    from login attempts, so a login lockout never blocks
+//    registration and vice versa) ────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $ip       = getClientIp();
-    $rl_check = checkLoginRateLimit($pdo, $ip);
+    $rl_check = checkRateLimit($pdo, $clientIp, 'register');
     if (!$rl_check['allowed']) {
-        $errors[] = $rl_check['message'];
+        $rateLimited = true;
+        $errors['rate_limit'] = $rl_check['message'];
     }
 }
 
-$errors  = [];
-$success = false;
-
 // ── Handle POST ────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$rateLimited) {
     $name   = trim($_POST['name']           ?? '');
     $email  = trim($_POST['email']          ?? '');
     $phone  = trim($_POST['phone']          ?? '');
@@ -140,8 +146,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
 
+        // Successful registration — clear this IP's register attempt count
+        clearRateLimitAttempts($pdo, $clientIp, 'register');
+
         header('Location: ../pages/dashboard.php');
         exit;
+    } else {
+        // Validation or duplicate-email failure — count it as a failed attempt
+        recordFailedAttempt($pdo, $clientIp, 'register');
     }
 }
 
@@ -214,6 +226,10 @@ $googleUrl = getGoogleAuthUrl();
   <div class="form-box">
     <h1 class="form-title">Create Account</h1>
     <p class="form-subtitle">Already have an account? <a href="login.php">Sign in here</a></p>
+
+    <?php if (isset($errors['rate_limit'])): ?>
+    <div class="alert alert-error">⚠️ <?= htmlspecialchars($errors['rate_limit']) ?></div>
+    <?php endif; ?>
 
     <a href="<?= htmlspecialchars($googleUrl) ?>" class="btn-google">
       <svg width="20" height="20" viewBox="0 0 48 48">

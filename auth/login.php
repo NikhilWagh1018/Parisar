@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
 
         // ── Rate limit check ───────────────────────────────────
-        $rl = checkLoginRateLimit($pdo, $clientIp);
+        $rl = checkRateLimit($pdo, $clientIp, 'login');
         if (!$rl['allowed']) {
             $error = $rl['message'];
         } else {
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'This account has been deactivated. Please contact an administrator.';
                 } else {
                 // ── Successful local login ─────────────────────
-                clearLoginAttempts($pdo, $clientIp);
+                clearRateLimitAttempts($pdo, $clientIp, 'login');
 
                 session_regenerate_id(true);
                 $_SESSION['user_id']         = $user['id'];
@@ -74,8 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } else {
                 // Wrong password or unknown email — record the failure
-                recordFailedAttempt($pdo, $clientIp);
-                $remaining = remainingAttempts($pdo, $clientIp);
+                recordFailedAttempt($pdo, $clientIp, 'login');
+                $remaining = remainingAttempts($pdo, $clientIp, 'login');
 
                 $error = 'Invalid email or password. Please try again.';
                 if ($remaining > 0 && $remaining <= 2) {
