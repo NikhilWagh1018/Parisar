@@ -122,6 +122,77 @@ function remainingAttempts(PDO $pdo, string $ip, string $action): int
     return max(0, RL_MAX_ATTEMPTS - (int)$row['attempts']);
 }
 
+/**
+ * ── General-purpose request throttle (distinct from the failed-attempt
+ *    lockout logic above) ─────────────────────────────────────────────
+ *
+ * Use this for public GET/read endpoints where every request "succeeds"
+ * (no login/register-style pass/fail) but repeated hits are still a
+ * scraping or resource-exhaustion risk — e.g. a public stats endpoint
+ * that recomputes scores across every row on each call.
+ *
+ * Unlike checkRateLimit()/recordFailedAttempt(), this has no escalating
+ * lockout: it's a plain fixed-window cap. Call once per request, at the
+ * top of the handler, before doing any real work:
+ *
+ *   $rl = checkAndRecordApiRequest($pdo, getClientIp(), 'public_stats', 20, 60);
+ *   if (!$rl['allowed']) {
+ *       http_response_code(429);
+ *       echo json_encode(['success' => false, 'error' => $rl['message']]);
+ *       exit;
+ *   }
+ *
+ * @param PDO    $pdo
+ * @param string $ip          Pass in getClientIp().
+ * @param string $action      A short identifier distinct from any
+ *                             login/register action, e.g. 'public_stats'.
+ * @param int    $maxRequests Max requests allowed within $windowSec.
+ * @param int    $windowSec   Rolling window length in seconds.
+ */
+function checkAndRecordApiRequest(PDO $pdo, string $ip, string $action, int $maxRequests, int $windowSec): array
+{
+    $row = _getRecord($pdo, $ip, $action);
+
+    if ($row === null) {
+        $pdo->prepare(
+            'INSERT INTO rate_limit_attempts (ip_address, action, attempts, last_attempt_at)
+             VALUES (?, ?, 1, NOW())'
+        )->execute([$ip, $action]);
+        return ['allowed' => true];
+    }
+
+    $secondsSinceLast = time() - strtotime($row['last_attempt_at']);
+
+    // Window has fully elapsed since the last request — reset the counter.
+    if ($secondsSinceLast > $windowSec) {
+        $pdo->prepare(
+            'UPDATE rate_limit_attempts
+             SET attempts = 1, last_attempt_at = NOW(), locked_until = NULL
+             WHERE ip_address = ? AND action = ?'
+        )->execute([$ip, $action]);
+        return ['allowed' => true];
+    }
+
+    $newAttempts = (int)$row['attempts'] + 1;
+
+    $pdo->prepare(
+        'UPDATE rate_limit_attempts
+         SET attempts = ?, last_attempt_at = NOW()
+         WHERE ip_address = ? AND action = ?'
+    )->execute([$newAttempts, $ip, $action]);
+
+    if ($newAttempts > $maxRequests) {
+        $retryAfter = max(1, $windowSec - $secondsSinceLast);
+        return [
+            'allowed'     => false,
+            'retry_after' => $retryAfter,
+            'message'     => 'Too many requests. Please slow down and try again shortly.',
+        ];
+    }
+
+    return ['allowed' => true];
+}
+
 // ── Private helpers ──────────────────────────────────────────────
 
 function _getRecord(PDO $pdo, string $ip, string $action): ?array

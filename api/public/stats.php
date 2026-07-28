@@ -4,6 +4,11 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  api/public/stats.php
 //  GET — returns public landing page stats (no auth required).
+//
+//  Throttled: this endpoint loops over every segment_audits row and
+//  recomputes scores on each call, so it's a real resource-exhaustion
+//  risk if hit repeatedly and directly (the Cache-Control header only
+//  helps browsers/CDNs — it doesn't cache anything server-side).
 // ═══════════════════════════════════════════════════════════════
 
 header('Content-Type: application/json');
@@ -16,11 +21,22 @@ set_exception_handler(function (Throwable $e) {
 });
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/rate_limit.php';
 require_once __DIR__ . '/../../services/ScoreService.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
     echo json_encode(['success' => false, 'error' => 'Method not allowed.']);
+    exit;
+}
+
+// ── Request throttle: max 20 requests per 60 seconds per IP ────────
+$clientIp = getClientIp();
+$rl = checkAndRecordApiRequest($pdo, $clientIp, 'public_stats', 20, 60);
+if (!$rl['allowed']) {
+    header('Retry-After: ' . $rl['retry_after']);
+    http_response_code(429);
+    echo json_encode(['success' => false, 'error' => $rl['message']]);
     exit;
 }
 
