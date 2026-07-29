@@ -23,6 +23,16 @@ require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../../services/ScoreService.php';
+
+require_once __DIR__ . '/../../config/rate_limit.php';
+
+$rl = checkAndRecordApiRequest($pdo, 'user:' . $CURRENT_USER_ID, 'export_excel', 5, 60);
+if (!$rl['allowed']) {
+    http_response_code(429);
+    header('Retry-After: ' . $rl['retry_after']);
+    echo json_encode(['success' => false, 'error' => $rl['message']]);
+    exit;
+}
 // vendor/autoload.php is already loaded via config/constants.php → no need to re-require.
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;

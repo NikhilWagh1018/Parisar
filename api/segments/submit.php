@@ -40,6 +40,16 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
 }
 
 // ── Input validation via Validator ────────────────────────────
+require_once __DIR__ . '/../../config/rate_limit.php';
+
+$rl = checkAndRecordApiRequest($pdo, 'user:' . $CURRENT_USER_ID, 'segment_submit', 30, 60);
+if (!$rl['allowed']) {
+    http_response_code(429);
+    header('Retry-After: ' . $rl['retry_after']);
+    echo json_encode(['success' => false, 'error' => $rl['message']]);
+    exit;
+}
+
 $v = Validator::make($_POST)
     ->required('session_id', 'segment_id')
     ->integer('session_id', 'segment_id')

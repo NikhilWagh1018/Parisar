@@ -20,6 +20,16 @@ require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
 require_once __DIR__ . '/../../repositories/RoadRepository.php';
 
+require_once __DIR__ . '/../../config/rate_limit.php';
+
+$rl = checkAndRecordApiRequest($pdo, 'user:' . $CURRENT_USER_ID, 'audit_session_create', 10, 60);
+if (!$rl['allowed']) {
+    http_response_code(429);
+    header('Retry-After: ' . $rl['retry_after']);
+    echo json_encode(['success' => false, 'error' => $rl['message']]);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'error' => 'Method not allowed.']);
