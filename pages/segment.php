@@ -100,52 +100,14 @@ require_once __DIR__ . '/../config/auth_guard.php';
         <?php endif; ?>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label class="required">Start Point</label>
-          <input type="text" id="roadStart" placeholder="Start landmark or intersection">
-          <div class="field-error" id="err-roadStart">Start point is required.</div>
-        </div>
-        <div class="form-group">
-          <label class="required">End Point</label>
-          <input type="text" id="roadEnd" placeholder="End landmark or intersection">
-          <div class="field-error" id="err-roadEnd">End point is required.</div>
-        </div>
-      </div>
-
       <div class="form-group">
         <label class="required">Total Road Length (meters)</label>
         <input type="number" id="roadLength" placeholder="e.g. 1500" min="1">
         <div class="input-hint">Minimum 50 m. Used to calculate segment distribution.</div>
         <div class="field-error" id="err-roadLength">Enter a valid length greater than 0.</div>
       </div>
-
-      <div class="divider"></div>
-
-      <div class="card-title" style="margin-bottom:12px">
-        <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
-        GPS Coordinates <span style="font-size:12px;font-weight:400;color:#9aaa88;margin-left:6px">(optional)</span>
-      </div>
-
-      <div class="gps-row">
-        <div class="form-group">
-          <label>GPS Start</label>
-          <div class="gps-input-wrap">
-            <input type="text" id="roadGpsStart" placeholder="18.5204, 73.8567">
-            <span class="gps-icon" onclick="getGPS('start')" title="Use current location">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
-            </span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>GPS End</label>
-          <div class="gps-input-wrap">
-            <input type="text" id="roadGpsEnd" placeholder="18.5214, 73.8577">
-            <span class="gps-icon" onclick="getGPS('end')" title="Use current location">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
-            </span>
-          </div>
-        </div>
+      <div class="input-hint" style="margin-top:-4px">
+        Start/End landmark &amp; GPS are captured automatically from Segment 1's start and the last segment's end during the audit.
       </div>
     </div>
 
@@ -156,22 +118,10 @@ require_once __DIR__ . '/../config/auth_guard.php';
         Segmentation Method
       </div>
 
-      <div class="method-grid">
-        <div class="method-option" id="opt-auto" onclick="selectMethod('auto')">
-          <input type="radio" name="segmentMethod" value="auto">
-          <div class="method-label"><span class="method-radio"></span>Automatic</div>
-          <div class="method-desc">Divide into equal segments by standard length</div>
-        </div>
-        <div class="method-option" id="opt-manual" onclick="selectMethod('manual')">
-          <input type="radio" name="segmentMethod" value="manual">
-          <div class="method-label"><span class="method-radio"></span>Manual</div>
-          <div class="method-desc">Define custom boundaries by landmark</div>
-        </div>
-      </div>
+      <div class="method-desc" style="margin-bottom:12px">Divide into equal segments by standard length</div>
 
-      <!-- Auto -->
-      <div id="autoContent" class="method-content">
-        <div class="form-group" style="margin-top:16px">
+      <div id="autoContent" class="method-content active">
+        <div class="form-group">
           <label>Standard Segment Length</label>
           <select id="segmentLength">
             <option value="100">100 meters</option>
@@ -205,24 +155,6 @@ require_once __DIR__ . '/../config/auth_guard.php';
           <button class="btn btn-primary" onclick="generateAutoSegments()">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Generate &amp; Save Segments
-          </button>
-        </div>
-      </div>
-
-      <!-- Manual -->
-      <div id="manualContent" class="method-content">
-        <div class="manual-header">
-          <span class="manual-count" id="manualCountBadge">0 segments</span>
-          <button class="btn btn-secondary btn-sm" onclick="addManualSegment()">+ Add Segment</button>
-        </div>
-        <div id="manualSegmentsList"></div>
-        <div id="manualEmptyState" class="empty-state" style="display:none">
-          <p>No segments added yet.<br>Click <strong>+ Add Segment</strong> to begin.</p>
-        </div>
-        <div class="btn-row" style="margin-top:16px">
-          <button class="btn btn-primary" onclick="saveManualSegments()">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Save Segments
           </button>
         </div>
       </div>

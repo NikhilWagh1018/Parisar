@@ -101,18 +101,14 @@ class RoadRepository
 
         $this->pdo->prepare(
             'INSERT INTO roads
-               (creator_id, name, road_group_id, start_point, end_point, total_length,
-                gps_start, gps_end, segment_method, segment_length)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+               (creator_id, name, road_group_id, total_length,
+                segment_method, segment_length)
+             VALUES (?, ?, ?, ?, ?, ?)'
         )->execute([
             $creatorId,
             $name,
             $roadGroupId,
-            $data['start_point']    ?: null,
-            $data['end_point']      ?: null,
             $data['total_length']   ?? null,
-            $data['gps_start']      ?: null,
-            $data['gps_end']        ?: null,
             $data['segment_method'] ?? 'auto',
             $data['segment_length'] ?? null,
         ]);
@@ -191,21 +187,13 @@ class RoadRepository
         $this->pdo->prepare(
             'UPDATE roads SET
                name           = ?,
-               start_point    = ?,
-               end_point      = ?,
                total_length   = ?,
-               gps_start      = ?,
-               gps_end        = ?,
                segment_method = ?,
                segment_length = ?
              WHERE id = ? AND creator_id = ?'
         )->execute([
             strtoupper(strip_tags((string)$data['name'])),
-            $data['start_point']    ?: null,
-            $data['end_point']      ?: null,
             $data['total_length']   ?? null,
-            $data['gps_start']      ?: null,
-            $data['gps_end']        ?: null,
             $data['segment_method'] ?? 'auto',
             $data['segment_length'] ?? null,
             $roadId,

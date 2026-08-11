@@ -79,7 +79,7 @@ try {
 
     // ── 1. Lock segment — prevent duplicate submissions ────────
     $stmtSeg = $pdo->prepare(
-        'SELECT s.status, s.road_id, r.creator_id
+        'SELECT s.status, s.road_id, s.segment_number, r.creator_id
          FROM   segments s
          JOIN   roads r ON r.id = s.road_id
          WHERE  s.id = ?
@@ -333,6 +333,35 @@ foreach ($dims as $key => $weight) {
     $pdo->prepare(
         'UPDATE segments SET status = \'completed\', completed_at = NOW() WHERE id = ?'
     )->execute([$segmentId]);
+
+    // ── 6b. Derive road-level Start/End from segment 1 / last segment ──
+    // The Road Info page no longer asks the surveyor to guess the road's
+    // start/end landmark up front — instead segment 1's start (captured
+    // here) becomes the road's start, and the last segment's end becomes
+    // the road's end, once each is actually audited.
+    $segNumber    = (int)$segment['segment_number'];
+    $roadIdForSeg = (int)$segment['road_id'];
+
+    $startLandmark = trim((string)($_POST['start_landmark'] ?? ''));
+    $endLandmark   = trim((string)($_POST['end_landmark']   ?? ''));
+    $gpsStartVal   = trim((string)($_POST['gps_start']      ?? ''));
+    $gpsEndVal     = trim((string)($_POST['gps_end']        ?? ''));
+
+    if ($segNumber === 1 && $startLandmark !== '') {
+        $pdo->prepare(
+            'UPDATE roads SET start_point = ?, gps_start = ? WHERE id = ?'
+        )->execute([$startLandmark, $gpsStartVal !== '' ? $gpsStartVal : null, $roadIdForSeg]);
+    }
+
+    $stmtMaxSeg = $pdo->prepare('SELECT MAX(segment_number) FROM segments WHERE road_id = ?');
+    $stmtMaxSeg->execute([$roadIdForSeg]);
+    $maxSegNumber = (int)$stmtMaxSeg->fetchColumn();
+
+    if ($segNumber === $maxSegNumber && $endLandmark !== '') {
+        $pdo->prepare(
+            'UPDATE roads SET end_point = ?, gps_end = ? WHERE id = ?'
+        )->execute([$endLandmark, $gpsEndVal !== '' ? $gpsEndVal : null, $roadIdForSeg]);
+    }
 
     // ── 7. Log activity ────────────────────────────────────────
     ActivityLogger::log($pdo, $editMode ? ActivityLogger::SEGMENT_EDITED : ActivityLogger::SEGMENT_SUBMITTED, $CURRENT_USER_ID, [

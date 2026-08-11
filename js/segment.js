@@ -12,7 +12,6 @@
 // ── State ──────────────────────────────────────────────────────
 let roadData        = {};
 let segments        = [];
-let manualCount     = 0;
 let _currentRoadId  = null;
 window._currentSessionId = null;
 
@@ -135,11 +134,7 @@ async function loadSegmentsFromDB(roadId) {
         // Road exists but has no segments — pre-populate form fields for re-generation
         showRoadForm();
         roadSelectItem(data.road.name);
-        document.getElementById('roadStart').value  = data.road.start_point  || '';
-        document.getElementById('roadEnd').value    = data.road.end_point    || '';
         document.getElementById('roadLength').value = data.road.total_length || '';
-        if (data.road.gps_start) document.getElementById('roadGpsStart').value = data.road.gps_start;
-        if (data.road.gps_end)   document.getElementById('roadGpsEnd').value   = data.road.gps_end;
         _currentRoadId = data.road.id; // keep so save uses UPDATE not INSERT
       }
     } else {
@@ -155,38 +150,17 @@ function showRoadForm() {
   roadData = {}; segments = []; _currentRoadId = null;
   window._currentSessionId = null;
 
-  ['roadName','roadStart','roadEnd','roadLength','roadGpsStart','roadGpsEnd']
+  ['roadName','roadLength']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 
-  selectMethod('auto');
   document.getElementById('segmentLength').value             = '200';
   document.getElementById('customLengthInput').style.display = 'none';
   document.getElementById('autoPreview').classList.remove('show');
-  document.getElementById('manualSegmentsList').innerHTML    = '';
-  manualCount = 0;
-  updateManualEmpty();
   clearErrors();
 
   document.getElementById('roadSetupSection').style.display = 'block';
   document.getElementById('segmentsSection').style.display  = 'none';
   setStep(1);
-}
-
-// ── GPS helper ─────────────────────────────────────────────────
-function getGPS(endpoint) {
-  if (!navigator.geolocation) {
-    showToast('Geolocation not supported.', 'error'); return;
-  }
-  showToast('Getting location…');
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const coord = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
-      const id    = endpoint === 'start' ? 'roadGpsStart' : 'roadGpsEnd';
-      document.getElementById(id).value = coord;
-      showToast('Location captured!', 'success');
-    },
-    () => showToast('Location access denied.', 'error')
-  );
 }
 
 // ── Validation ─────────────────────────────────────────────────
@@ -205,27 +179,10 @@ function validateRoadFields() {
   if (!document.getElementById('roadName').value.trim() ||
        document.getElementById('roadName').value === '__custom__')
     { showFieldError('roadName', 'err-roadName');   valid = false; }
-  if (!document.getElementById('roadStart').value.trim())
-    { showFieldError('roadStart', 'err-roadStart');  valid = false; }
-  if (!document.getElementById('roadEnd').value.trim())
-    { showFieldError('roadEnd', 'err-roadEnd');    valid = false; }
   const len = parseFloat(document.getElementById('roadLength').value);
   if (!len || len < 50)
     { showFieldError('roadLength', 'err-roadLength'); valid = false; }
   return valid;
-}
-
-// ── Method selection ───────────────────────────────────────────
-function selectMethod(method) {
-  ['auto','manual'].forEach(m => {
-    document.getElementById(`opt-${m}`)?.classList.remove('selected');
-  });
-  document.getElementById(`opt-${method}`)?.classList.add('selected');
-  document.getElementById('autoContent').classList.remove('active');
-  document.getElementById('manualContent').classList.remove('active');
-  document.getElementById(`${method}Content`).classList.add('active');
-  if (method === 'auto') updateAutoPreview();
-  updateManualEmpty();
 }
 
 // ── Auto preview ───────────────────────────────────────────────
@@ -280,94 +237,13 @@ async function generateAutoSegments() {
   await saveRoadAndSegments(roadName, segsArr, 'auto', segLen);
 }
 
-// ── Manual segment UI ──────────────────────────────────────────
-function addManualSegment() {
-  manualCount++;
-  const n    = manualCount;
-  const list = document.getElementById('manualSegmentsList');
-  const div  = document.createElement('div');
-  div.className = 'manual-seg-row';
-  div.id        = `mseg-${n}`;
-  div.innerHTML = `
-    <div class="mseg-num">${n}</div>
-    <div class="mseg-fields">
-      <input type="text"   placeholder="Start landmark" id="ms-sl-${n}">
-      <input type="text"   placeholder="End landmark"   id="ms-el-${n}">
-      <input type="number" placeholder="Start (m)"      id="ms-sd-${n}" min="0">
-      <input type="number" placeholder="End (m)"        id="ms-ed-${n}" min="0">
-    </div>
-    <button style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;
-                   padding:6px 10px;cursor:pointer;font-weight:700"
-            onclick="removeManualSeg(${n})">✕</button>`;
-  list.appendChild(div);
-  updateManualCount();
-  updateManualEmpty();
-}
-
-function removeManualSeg(n) {
-  document.getElementById(`mseg-${n}`)?.remove();
-  updateManualCount();
-  updateManualEmpty();
-}
-
-function updateManualCount() {
-  const rows = document.querySelectorAll('.manual-seg-row');
-  document.getElementById('manualCountBadge').textContent =
-    `${rows.length} segment${rows.length !== 1 ? 's' : ''}`;
-}
-
-function updateManualEmpty() {
-  const rows = document.querySelectorAll('.manual-seg-row');
-  const el   = document.getElementById('manualEmptyState');
-  if (el) el.style.display = rows.length === 0 ? 'block' : 'none';
-}
-
-async function saveManualSegments() {
-  if (!validateRoadFields()) return;
-
-  const rows = document.querySelectorAll('.manual-seg-row');
-  if (rows.length === 0) {
-    showToast('Add at least one segment.', 'error'); return;
-  }
-
-  const segsArr = []; let valid = true;
-  rows.forEach((row, idx) => {
-    const n  = row.id.replace('mseg-', '');
-    const sl = document.getElementById(`ms-sl-${n}`)?.value.trim() || '';
-    const el = document.getElementById(`ms-el-${n}`)?.value.trim() || '';
-    const sd = parseFloat(document.getElementById(`ms-sd-${n}`)?.value || '0');
-    const ed = parseFloat(document.getElementById(`ms-ed-${n}`)?.value || '0');
-    if (!sl || !el || isNaN(sd) || isNaN(ed) || ed <= sd) { valid = false; return; }
-    segsArr.push({
-      segment_number: idx + 1,
-      start_label:    sl,
-      end_label:      el,
-      start_distance: sd,
-      end_distance:   ed,
-      length:         parseFloat((ed - sd).toFixed(2)),
-    });
-  });
-
-  if (!valid) {
-    showToast('Fill all segment fields. End must be greater than Start.', 'error'); return;
-  }
-
-  const roadName = document.getElementById('roadName').value.trim();
-  const roadLen  = parseFloat(document.getElementById('roadLength').value);
-  await saveRoadAndSegments(roadName, segsArr, 'manual', roadLen / segsArr.length);
-}
-
 // ── Core save: road → segments → session ──────────────────────
 async function saveRoadAndSegments(roadName, segsArr, method, segmentLength) {
   showToast('Saving…');
   try {
     const roadPayload = {
       name:           roadName,
-      start_point:    document.getElementById('roadStart').value.trim(),
-      end_point:      document.getElementById('roadEnd').value.trim(),
       total_length:   parseFloat(document.getElementById('roadLength').value),
-      gps_start:      document.getElementById('roadGpsStart').value.trim(),
-      gps_end:        document.getElementById('roadGpsEnd').value.trim(),
       segment_method: method,
       segment_length: segmentLength,
     };
@@ -617,29 +493,22 @@ function confirmEditRoad() {
       }
     }
   }
-  if (roadData.start)  document.getElementById('roadStart').value    = roadData.start;
-  if (roadData.end)    document.getElementById('roadEnd').value      = roadData.end;
   if (roadData.length) document.getElementById('roadLength').value   = roadData.length;
-  if (roadData.gpsStart) document.getElementById('roadGpsStart').value = roadData.gpsStart;
-  if (roadData.gpsEnd)   document.getElementById('roadGpsEnd').value   = roadData.gpsEnd;
 
-  // Restore segmentation method
-  if (roadData.method) {
-    selectMethod(roadData.method);
-    if (roadData.method === 'auto' && roadData.segmentLength) {
-      const sel2 = document.getElementById('segmentLength');
-      const knownValues = ['100','200','300','500'];
-      const lenStr = String(roadData.segmentLength);
-      if (knownValues.includes(lenStr)) {
-        sel2.value = lenStr;
-      } else {
-        sel2.value = 'custom';
-        document.getElementById('customLengthInput').style.display = 'block';
-        const custLen = document.getElementById('customSegmentLength');
-        if (custLen) custLen.value = roadData.segmentLength;
-      }
-      updateAutoPreview();
+  // Restore segment length (segmentation is always Automatic now)
+  if (roadData.segmentLength) {
+    const sel2 = document.getElementById('segmentLength');
+    const knownValues = ['100','200','300','500'];
+    const lenStr = String(roadData.segmentLength);
+    if (knownValues.includes(lenStr)) {
+      sel2.value = lenStr;
+    } else {
+      sel2.value = 'custom';
+      document.getElementById('customLengthInput').style.display = 'block';
+      const custLen = document.getElementById('customSegmentLength');
+      if (custLen) custLen.value = roadData.segmentLength;
     }
+    updateAutoPreview();
   }
 }
 
