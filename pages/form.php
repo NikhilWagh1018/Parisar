@@ -581,56 +581,5 @@ if ($segNum > 0) {
 
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/form.js?v=<?= filemtime(__DIR__ . '/../js/form.js') ?>"></script>
 
-
-<script>
-(function () {
-  var GPS_REGEX = /^-?[0-9]{1,3}[.][0-9]+[,][ ]*-?[0-9]{1,3}[.][0-9]+$/;
-  var FIELDS = [
-    document.getElementById('gpsStart'),
-    document.getElementById('gpsEnd')
-  ];
-  var ALLOWED = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight',
-                 'Home','End','-','.',' ',','];
-
-  FIELDS.forEach(function(el) {
-    if (!el) return;
-
-    el.addEventListener('keydown', function(e) {
-      if (ALLOWED.indexOf(e.key) !== -1) return;
-      if (e.key >= '0' && e.key <= '9') return;
-      if (e.ctrlKey || e.metaKey) return;
-      e.preventDefault();
-    });
-
-    el.addEventListener('input', function() {
-      var cleaned = el.value.replace(/[^0-9.,\s-]/g, '');
-      if (cleaned !== el.value) el.value = cleaned;
-      showError(el);
-    });
-
-    el.addEventListener('blur', function() { showError(el); });
-  });
-
-  function showError(el) {
-    var val = el.value.trim();
-    var errId = el.id + 'Error';
-    var err = document.getElementById(errId);
-    if (!err) {
-      err = document.createElement('div');
-      err.id = errId;
-      err.style.cssText = 'color:#c0392b;font-size:0.78rem;margin-top:4px;';
-      el.parentNode.appendChild(err);
-    }
-    if (!val) { err.textContent = ''; el.style.borderColor = ''; return; }
-    if (!GPS_REGEX.test(val)) {
-      err.textContent = 'Enter coordinates like 18.5204, 73.8567';
-      el.style.borderColor = '#c0392b';
-    } else {
-      err.textContent = '';
-      el.style.borderColor = '#27ae60';
-    }
-  }
-})();
-</script>
 </body>
 </html>
