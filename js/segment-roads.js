@@ -113,6 +113,7 @@ function roadSelectItem(val) {
   const err = document.getElementById('err-roadName');
   if (err) err.style.display = 'none';
   roadDropdownClose();
+  document.getElementById('roadSearchInput').blur();
 }
 
 function roadSelectCustom() {
@@ -126,6 +127,7 @@ function roadSelectCustom() {
   const err = document.getElementById('err-roadName');
   if (err) err.style.display = 'none';
   roadDropdownClose();
+  document.getElementById('roadSearchInput').blur();
 }
 
 function roadSelectCustomFill(val) {
@@ -141,6 +143,7 @@ function roadSelectCustomFill(val) {
   validateCustomRoad(custInput);
   setTimeout(() => custInput.focus(), 350);
   roadDropdownClose();
+  document.getElementById('roadSearchInput').blur();
 }
 
 // Keyboard navigation

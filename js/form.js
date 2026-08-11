@@ -1103,21 +1103,18 @@ setTimeout(() => {
     el.addEventListener('blur', function () { validateGPS(el); });
   });
   function validateGPS(el) {
-    var val = el.value.trim();
-    var errId = el.id + 'Error';
-    var errEl = document.getElementById(errId);
-    if (!errEl) {
-      errEl = document.createElement('div');
-      errEl.id = errId;
-      errEl.style.cssText = 'color:#c0392b;font-size:0.78rem;margin-top:4px;';
-      el.parentNode.appendChild(errEl);
+    var val    = el.value.trim();
+    var wrapEl = document.getElementById('wrap-' + el.id);
+    if (val === '') {
+      if (wrapEl) wrapEl.classList.remove('field-error');
+      el.style.borderColor = '';
+      return;
     }
-    if (val === '') { errEl.textContent = ''; el.style.borderColor = ''; return; }
     if (!GPS_REGEX.test(val)) {
-      errEl.textContent = 'Enter coordinates like 18.5204, 73.8567';
+      if (wrapEl) wrapEl.classList.add('field-error');
       el.style.borderColor = '#c0392b';
     } else {
-      errEl.textContent = '';
+      if (wrapEl) wrapEl.classList.remove('field-error');
       el.style.borderColor = '#27ae60';
     }
   }

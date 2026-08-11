@@ -134,7 +134,7 @@ if ($segNum > 0) {
 
     <!-- Section nav -->
     <nav class="section-nav">
-      <a href="#sec-landmarks">📍 Landmarks</a>
+      <a href="#sec-landmarks">📍 Start Point</a>
       <a href="#sec-fixed">🏗 Fixed Obs.</a>
       <a href="#sec-movable">🔄 Movable Obs.</a>
       <a href="#sec-parked">🚗 Parked Vehicles</a>
@@ -142,18 +142,19 @@ if ($segNum > 0) {
       <a href="#sec-intersections">🔀 Intersections</a>
       <a href="#sec-footpath">🚶 Footpath Rating</a>
       <a href="#sec-additional">ℹ️ Additional Info</a>
+      <a href="#sec-endpoint">🏁 End Point</a>
       <a href="#sec-dimensions">📐 Dimensions</a>
     </nav>
 
     <!-- ══════════════════════════════════════
-         1. LANDMARKS & GPS
+         1. START POINT & GPS
     ══════════════════════════════════════ -->
     <div class="section-card">
       <div class="section-card-header" id="sec-landmarks">
         <div class="section-card-icon icon-green">📍</div>
         <div>
-          <div class="section-card-title section-anchor">Landmarks &amp; GPS</div>
-          <div class="section-card-subtitle">Define the start and end points of this segment</div>
+          <div class="section-card-title section-anchor">Start Point &amp; GPS</div>
+          <div class="section-card-subtitle">Mark this at the start of this segment</div>
         </div>
       </div>
       <div class="section-card-body">
@@ -170,33 +171,13 @@ if ($segNum > 0) {
             <div class="gps-input-row">
               <input type="text" id="gpsStart" name="gps_start"
                      oninput="clearError(this.id)"
+                     autocomplete="off"
                      placeholder="e.g. 18.5204, 73.8567">
               <button type="button" class="gps-btn" onclick="fillGPS('gpsStart')" title="Use my current location">
                 <span class="gps-btn-icon">GPS</span>
               </button>
             </div>
             <span class="error-msg" id="gpsStart-error">Enter valid coordinates (e.g. 18.5204, 73.8567)</span>
-          </div>
-        </div>
-        <div class="field-row" style="margin-top:14px">
-          <div class="field-group req-field" id="wrap-endLandmark">
-            <label>End Point Landmark <span class="required-star">*</span></label>
-            <input type="text" id="endLandmark" name="end_landmark"
-                   oninput="clearError('wrap-endLandmark')"
-                   autocomplete="off" placeholder="e.g. Near Pune University Gate">
-            <span class="error-msg">This field is required</span>
-          </div>
-          <div class="field-group req-field" id="wrap-gpsEnd">
-            <label>GPS End Point <span class="required-star">*</span></label>
-            <div class="gps-input-row">
-              <input type="text" id="gpsEnd" name="gps_end"
-                     oninput="clearError(this.id)"
-                     placeholder="e.g. 18.5214, 73.8577">
-              <button type="button" class="gps-btn" onclick="fillGPS('gpsEnd')" title="Use my current location">
-                <span class="gps-btn-icon">GPS</span>
-              </button>
-            </div>
-            <span class="error-msg" id="gpsEnd-error">Enter valid coordinates (e.g. 18.5214, 73.8577)</span>
           </div>
         </div>
       </div>
@@ -514,6 +495,43 @@ if ($segNum > 0) {
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         8b. END POINT & GPS
+    ══════════════════════════════════════ -->
+    <div class="section-card">
+      <div class="section-card-header" id="sec-endpoint">
+        <div class="section-card-icon icon-green">🏁</div>
+        <div>
+          <div class="section-card-title section-anchor">End Point &amp; GPS</div>
+          <div class="section-card-subtitle">Mark this once you've reached the end of this segment</div>
+        </div>
+      </div>
+      <div class="section-card-body">
+        <div class="field-row">
+          <div class="field-group req-field" id="wrap-endLandmark">
+            <label>End Point Landmark <span class="required-star">*</span></label>
+            <input type="text" id="endLandmark" name="end_landmark"
+                   oninput="clearError('wrap-endLandmark')"
+                   autocomplete="off" placeholder="e.g. Near Pune University Gate">
+            <span class="error-msg">This field is required</span>
+          </div>
+          <div class="field-group req-field" id="wrap-gpsEnd">
+            <label>GPS End Point <span class="required-star">*</span></label>
+            <div class="gps-input-row">
+              <input type="text" id="gpsEnd" name="gps_end"
+                     oninput="clearError(this.id)"
+                     autocomplete="off"
+                     placeholder="e.g. 18.5214, 73.8577">
+              <button type="button" class="gps-btn" onclick="fillGPS('gpsEnd')" title="Use my current location">
+                <span class="gps-btn-icon">GPS</span>
+              </button>
+            </div>
+            <span class="error-msg" id="gpsEnd-error">Enter valid coordinates (e.g. 18.5214, 73.8577)</span>
+          </div>
+        </div>
       </div>
     </div>
 
