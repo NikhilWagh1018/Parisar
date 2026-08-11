@@ -1071,6 +1071,18 @@ setTimeout(() => {
 
 
 (function () {
+  var LANDMARK_FIELDS = ['startLandmark', 'endLandmark'];
+  LANDMARK_FIELDS.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function () {
+      var cleaned = el.value.replace(/[^a-zA-Z0-9\s]/g, '');
+      if (cleaned !== el.value) el.value = cleaned;
+    });
+  });
+})();
+
+(function () {
   var GPS_REGEX = /^-?[0-9]{1,3}[.][0-9]+[,][ ]*-?[0-9]{1,3}[.][0-9]+$/;
   var GPS_FIELDS = ['gpsStart', 'gpsEnd'];
   var allowedKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','-','.',' ',','];

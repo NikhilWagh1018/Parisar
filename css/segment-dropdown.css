@@ -45,6 +45,14 @@
       border-bottom: 1px solid #f0f5ea;
     }
 
+    /* The .card animation applies a transform, which creates its own
+       stacking context — that traps the dropdown's z-index so it only
+       wins against elements inside the same card, not the next sibling
+       card. Raise the whole card above its siblings while the dropdown
+       inside it is open, so the dropdown isn't hidden behind the
+       Segmentation Method card below it. */
+    .card:has(.road-dropdown.open) { position: relative; z-index: 20; }
+
     /* Custom road text input (shown when Other selected) */
     .custom-road-wrap {
       overflow: hidden; max-height: 0; opacity: 0;

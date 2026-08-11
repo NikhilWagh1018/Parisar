@@ -123,18 +123,12 @@ if ($segNum > 0) {
 
   <div class="container">
 
-    <div class="form-page-heading">
-      <?php if ($segNum > 0 && $totalSegments > 0): ?>
+    <div class="form-page-heading form-page-heading--compact">
+      <?php if ($segNum > 0 && $totalSegments > 0 && $breadcrumb): ?>
       <div class="seg-breadcrumb">
         <span><?php echo $breadcrumb; ?></span>
-        <span class="seg-breadcrumb-sep">›</span>
-        <span>Segment <?php echo $segNum; ?></span>
-        <span class="seg-breadcrumb-sep">›</span>
-        <span class="seg-breadcrumb-active">Audit Form</span>
       </div>
       <?php endif; ?>
-      <h2><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></h2>
-      <p><?php echo htmlspecialchars($pageSubtitle, ENT_QUOTES, 'UTF-8'); ?></p>
     </div>
 
 
@@ -171,15 +165,6 @@ if ($segNum > 0) {
                    autocomplete="off" placeholder="e.g. Near SBI Bank">
             <span class="error-msg">This field is required</span>
           </div>
-          <div class="field-group req-field" id="wrap-endLandmark">
-            <label>End Point Landmark <span class="required-star">*</span></label>
-            <input type="text" id="endLandmark" name="end_landmark"
-                   oninput="clearError('wrap-endLandmark')"
-                   autocomplete="off" placeholder="e.g. Near Pune University Gate">
-            <span class="error-msg">This field is required</span>
-          </div>
-        </div>
-        <div class="field-row" style="margin-top:14px">
           <div class="field-group req-field" id="wrap-gpsStart">
             <label>GPS Start Point <span class="required-star">*</span></label>
             <div class="gps-input-row">
@@ -191,6 +176,15 @@ if ($segNum > 0) {
               </button>
             </div>
             <span class="error-msg" id="gpsStart-error">Enter valid coordinates (e.g. 18.5204, 73.8567)</span>
+          </div>
+        </div>
+        <div class="field-row" style="margin-top:14px">
+          <div class="field-group req-field" id="wrap-endLandmark">
+            <label>End Point Landmark <span class="required-star">*</span></label>
+            <input type="text" id="endLandmark" name="end_landmark"
+                   oninput="clearError('wrap-endLandmark')"
+                   autocomplete="off" placeholder="e.g. Near Pune University Gate">
+            <span class="error-msg">This field is required</span>
           </div>
           <div class="field-group req-field" id="wrap-gpsEnd">
             <label>GPS End Point <span class="required-star">*</span></label>

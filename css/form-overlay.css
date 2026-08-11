@@ -70,6 +70,9 @@
     .form-page-heading {
       margin-bottom: 24px;
     }
+    .form-page-heading--compact {
+      margin-bottom: 8px;
+    }
     .form-page-heading h2 {
       font-size: 26px;
       font-weight: 700;
