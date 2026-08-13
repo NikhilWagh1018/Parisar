@@ -15,6 +15,20 @@ function getRoadId() {
   return el ? el.value : '';
 }
 
+// Strips anything but digits and a single decimal point as the user types.
+// Used on text-type numeric fields (segment_width/segment_length) instead of
+// type="number", since a number input's .value returns "" whenever the
+// displayed text isn't a valid parseable number — making JS unable to see
+// or clean up invalid characters like "-" or extra "." while typing.
+function sanitizeNumericInput(el) {
+  let v = el.value.replace(/[^0-9.]/g, '');
+  const firstDot = v.indexOf('.');
+  if (firstDot !== -1) {
+    v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, '');
+  }
+  if (v !== el.value) el.value = v;
+}
+
 // ── Inject hidden fields ───────────────────────────────────────
 if (segmentId) {
   const h = document.getElementById('segment_id');
