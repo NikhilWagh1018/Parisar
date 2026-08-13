@@ -24,6 +24,33 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/dashboard.css?v=<?= filemtime(__DIR__ . '/../css/dashboard.css') ?>">
+<style nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
+  /* Scoped to my_audits.php only — filter bar + pagination controls */
+  .ma-select {
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    background: #fff;
+    color: #1f2937;
+    cursor: pointer;
+  }
+  .ma-page-btn {
+    padding: 6px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+    color: #3d7a1f;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .ma-page-btn:disabled {
+    color: #cbd5e1;
+    cursor: not-allowed;
+  }
+</style>
 </head>
 <body>
 
@@ -133,7 +160,43 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <div class="stat-card"><div class="stat-icon" style="background:#dcfce7">🗓️</div><div><div class="stat-val" id="ma-since">—</div><div class="stat-lbl">Member Since</div></div></div>
     </div>
 
-    <!-- Sections 2–4 (filters, continue-where-left-off, main list) land in later deliveries -->
+    <!-- ═══════════ SECTION 2: FILTER & SORT BAR ═══════════ -->
+    <div class="card" style="margin-top:20px;padding:16px 20px;">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label for="ma-filter-status" style="font-size:12px;font-weight:600;color:#6b7280;">Status</label>
+          <select id="ma-filter-status" class="ma-select">
+            <option value="all">All</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label for="ma-filter-range" style="font-size:12px;font-weight:600;color:#6b7280;">Date range</label>
+          <select id="ma-filter-range" class="ma-select">
+            <option value="all">All time</option>
+            <option value="week">This week</option>
+            <option value="month">This month</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <label for="ma-sort" style="font-size:12px;font-weight:600;color:#6b7280;">Sort by</label>
+          <select id="ma-sort" class="ma-select">
+            <option value="recent">Most recent</option>
+            <option value="name">Road name (A–Z)</option>
+            <option value="score">Condition (worst first)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ SECTION 4: AUDIT LIST ═══════════ -->
+    <div class="card" style="margin-top:16px;" id="ma-list-card">
+      <div id="ma-list-body">
+        <p style="padding:24px;color:#6b7280;">Loading your audits…</p>
+      </div>
+      <div id="ma-pagination" style="display:flex;justify-content:center;gap:12px;padding:16px;align-items:center;"></div>
+    </div>
 
   </div>
 </main>
@@ -168,6 +231,108 @@ async function loadMyAuditStats() {
 }
 
 loadMyAuditStats();
+
+// ── Section 2+4: filter/sort bar + audit list ──────────────────
+let maCurrentPage = 1;
+
+function maConditionColor(condition) {
+  switch (condition) {
+    case 'Good':     return '#27ae60';
+    case 'OK':       return '#f1c40f';
+    case 'Poor':     return '#e67e22';
+    case 'Bad':      return '#e74c3c';
+    case 'Very Bad': return '#8e1010';
+    default:         return '#95a5a6';
+  }
+}
+
+function maFormatDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+async function loadMyAuditList(page) {
+  maCurrentPage = page || 1;
+
+  const status = document.getElementById('ma-filter-status').value;
+  const range  = document.getElementById('ma-filter-range').value;
+  const sort   = document.getElementById('ma-sort').value;
+
+  const listBody = document.getElementById('ma-list-body');
+  listBody.innerHTML = '<p style="padding:24px;color:#6b7280;">Loading your audits…</p>';
+
+  try {
+    const params = new URLSearchParams({ status, range, sort, page: String(maCurrentPage) });
+    const res  = await fetch('../api/user/audit_history_list.php?' + params.toString(), {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      listBody.innerHTML = '<p style="padding:24px;color:#e74c3c;">Could not load your audits. Please try again.</p>';
+      document.getElementById('ma-pagination').innerHTML = '';
+      return;
+    }
+
+    if (data.items.length === 0) {
+      listBody.innerHTML = '<p style="padding:24px;color:#6b7280;">No audits match these filters yet.</p>';
+      document.getElementById('ma-pagination').innerHTML = '';
+      return;
+    }
+
+    listBody.innerHTML = data.items.map(function (item) {
+      const chipColor = maConditionColor(item.condition);
+      const conditionChip = item.condition
+        ? '<span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#fff;background:' + chipColor + ';">' + item.condition + '</span>'
+        : '<span style="color:#9ca3af;font-size:12px;">—</span>';
+
+      const statusChip = item.session_status === 'active'
+        ? '<span style="color:#b45309;font-size:12px;font-weight:600;">Active</span>'
+        : '<span style="color:#15803d;font-size:12px;font-weight:600;">Completed</span>';
+
+      return (
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #f0f0f0;">' +
+          '<div>' +
+            '<div style="font-weight:600;">' + item.road_name + ' — Segment ' + item.segment_number + '</div>' +
+            '<div style="font-size:13px;color:#6b7280;margin-top:2px;">' +
+              maFormatDate(item.created_at) + ' · ' + statusChip +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:16px;">' +
+            conditionChip +
+            '<a href="view.php?segment_id=' + item.segment_id + '" style="color:#3d7a1f;font-weight:600;font-size:14px;text-decoration:none;">View →</a>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    // Pagination controls
+    const pag = document.getElementById('ma-pagination');
+    if (data.total_pages <= 1) {
+      pag.innerHTML = '';
+    } else {
+      pag.innerHTML =
+        '<button class="ma-page-btn" id="ma-prev" ' + (data.page <= 1 ? 'disabled' : '') + '>← Prev</button>' +
+        '<span style="font-size:13px;color:#6b7280;">Page ' + data.page + ' of ' + data.total_pages + '</span>' +
+        '<button class="ma-page-btn" id="ma-next" ' + (data.page >= data.total_pages ? 'disabled' : '') + '>Next →</button>';
+
+      const prevBtn = document.getElementById('ma-prev');
+      const nextBtn = document.getElementById('ma-next');
+      if (prevBtn) prevBtn.onclick = function () { loadMyAuditList(data.page - 1); };
+      if (nextBtn) nextBtn.onclick = function () { loadMyAuditList(data.page + 1); };
+    }
+
+  } catch (err) {
+    console.error('Error loading audit list:', err);
+    listBody.innerHTML = '<p style="padding:24px;color:#e74c3c;">Could not load your audits. Please try again.</p>';
+  }
+}
+
+document.getElementById('ma-filter-status').addEventListener('change', function () { loadMyAuditList(1); });
+document.getElementById('ma-filter-range').addEventListener('change', function () { loadMyAuditList(1); });
+document.getElementById('ma-sort').addEventListener('change', function () { loadMyAuditList(1); });
+
+loadMyAuditList(1);
 </script>
 
 </body>

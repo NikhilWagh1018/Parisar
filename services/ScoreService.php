@@ -363,6 +363,84 @@ function calculateSegmentScoreDetailed(int $segmentAuditId, PDO $pdo): array
 }
 
 /**
+ * Batch-compute condition scores for an arbitrary set of segment_audit IDs.
+ * Same 3-query batching pattern as calculateRoadScore() (Issue 7 fix),
+ * generalised to a mixed set of audits that may span multiple roads —
+ * used by the "My Audits" personal history list, where sorting/filtering
+ * by condition needs every candidate segment's score, not just one road's.
+ *
+ * @param  int[] $auditIds
+ * @return array<int, array{final:float, condition:string, rating:string}> keyed by audit_id
+ */
+function calculateScoresForAuditIds(array $auditIds, PDO $pdo): array
+{
+    $auditIds = array_values(array_unique(array_map('intval', $auditIds)));
+    if (empty($auditIds)) {
+        return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($auditIds), '?'));
+
+    // ── Q1: audit rows + segment length + road name ────────────
+    $stmt = $pdo->prepare(
+        "SELECT sa.id AS audit_id,
+                sa.buffer_zone, sa.light_after_sunset, sa.shade,
+                sa.surface_material, sa.cycle_track_missing, sa.missing_length,
+                s.length AS segment_length,
+                r.name   AS road_name
+         FROM   segment_audits sa
+         JOIN   segments s ON s.id = sa.segment_id
+         JOIN   roads    r ON r.id = s.road_id
+         WHERE  sa.id IN ({$placeholders})"
+    );
+    $stmt->execute($auditIds);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (empty($rows)) {
+        return [];
+    }
+
+    // ── Q2: batch obstructions ──────────────────────────────────
+    $stmtObs = $pdo->prepare(
+        "SELECT audit_id,
+                COALESCE(SUM(partial_obstructions), 0) AS partial,
+                COALESCE(SUM(total_obstructions),   0) AS total,
+                COALESCE(SUM(cyclist_slowed),        0) AS slowed
+         FROM   obstructions
+         WHERE  audit_id IN ({$placeholders})
+         GROUP  BY audit_id"
+    );
+    $stmtObs->execute($auditIds);
+    $obsMap = [];
+    foreach ($stmtObs->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $obsMap[(int)$row['audit_id']] = $row;
+    }
+
+    // ── Q3: batch intersections ─────────────────────────────────
+    $stmtInt = $pdo->prepare(
+        "SELECT audit_id, off_ramp, on_ramp, markings, signage, traffic_calming
+         FROM   intersections
+         WHERE  audit_id IN ({$placeholders})"
+    );
+    $stmtInt->execute($auditIds);
+    $intMap = [];
+    foreach ($stmtInt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $intMap[(int)$row['audit_id']][] = $row;
+    }
+
+    // ── Compute in PHP, keyed by audit_id ───────────────────────
+    $result = [];
+    foreach ($rows as $row) {
+        $auditId = (int)$row['audit_id'];
+        $obs     = $obsMap[$auditId] ?? ['partial' => 0, 'total' => 0, 'slowed' => 0];
+        $ints    = $intMap[$auditId] ?? [];
+        $result[$auditId] = _computeScoreFromData($row, $obs, $ints);
+    }
+
+    return $result;
+}
+
+/**
  * Pure computation — no DB queries.
  * Used by unit tests and batch scoring (calculateRoadScore).
  *

@@ -341,6 +341,53 @@ class SegmentRepository
         ];
     }
 
+    /**
+     * Fetch every segment this user has audited (latest audit per segment
+     * only — same de-dup rule as personalStats()), joined with road name
+     * and that road's audit-session status for this user.
+     *
+     * Filtering by date range, sorting by score, and pagination all
+     * happen in PHP on the caller side (api/user/audit_history_list.php)
+     * because condition score isn't a stored column — see ScoreService's
+     * calculateScoresForAuditIds().
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function personalAuditList(int $userId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT
+                 latest.id              AS audit_id,
+                 latest.segment_id,
+                 latest.segment_width,
+                 latest.segment_length,
+                 latest.created_at,
+                 s.segment_number,
+                 s.road_id,
+                 r.name                 AS road_name,
+                 sess.status            AS session_status
+             FROM (
+                 SELECT segment_id, MAX(id) AS latest_audit_id
+                   FROM segment_audits
+                  WHERE surveyor_id = ?
+                  GROUP BY segment_id
+             ) latest_ids
+             JOIN segment_audits latest ON latest.id = latest_ids.latest_audit_id
+             JOIN segments s ON s.id = latest.segment_id
+             JOIN roads r    ON r.id = s.road_id
+             LEFT JOIN audit_sessions sess
+                    ON sess.id = (
+                         SELECT id FROM audit_sessions
+                          WHERE road_id = s.road_id AND user_id = ?
+                          ORDER BY id DESC
+                          LIMIT 1
+                       )
+             ORDER BY latest.created_at DESC'
+        );
+        $stmt->execute([$userId, $userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     // ══════════════════════════════════════════════════════════
     //  SEGMENT AUDIT WRITES
     // ══════════════════════════════════════════════════════════
