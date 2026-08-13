@@ -24,6 +24,7 @@ require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
+require_once __DIR__ . '/../../repositories/AuditSessionRepository.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -335,6 +336,14 @@ foreach ($dims as $key => $weight) {
     $pdo->prepare(
         'UPDATE segments SET status = \'completed\', completed_at = NOW() WHERE id = ?'
     )->execute([$segmentId]);
+
+    // ── 6a. Auto-complete the session if all its segments are now done ──
+    // Mirrors api/segments/complete.php, which already does this on the
+    // manual-completion path. submit.php (the real audit-submission path)
+    // was missing this call, so sessions never flipped from 'active' to
+    // 'completed' when a user finished a road through the normal form flow.
+    $sessionRepo = new AuditSessionRepository($pdo);
+    $sessionRepo->autoCompleteIfReady($sessionId);
 
     // ── 6b. Derive road-level Start/End from segment 1 / last segment ──
     // The Road Info page no longer asks the surveyor to guess the road's
