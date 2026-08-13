@@ -269,7 +269,7 @@ select {
   font-family: 'DM Sans', sans-serif;
   font-size: .92rem;
   color: var(--ink);
-  background: var(--white);
+  background-color: var(--white);
   outline: none;
   transition: border-color var(--transition), box-shadow var(--transition);
   appearance: none;
