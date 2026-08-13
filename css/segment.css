@@ -304,10 +304,11 @@ input::placeholder { color: var(--gray-light); }
   display: none;
 }
 
-.field-error.visible { display: block; }
+.field-error.show { display: block; }
 
-.form-group.has-error input,
-.form-group.has-error select {
+input.error,
+select.error,
+.road-search-input.error {
   border-color: var(--red);
   box-shadow: 0 0 0 3px rgba(220,38,38,.12);
 }
@@ -929,8 +930,14 @@ input::placeholder { color: var(--gray-light); }
     border-radius: 9px;
     border: 1.5px solid var(--border);
     width: 100%;
-    background: #fff;
+    background-color: #fff;
     -webkit-appearance: none;
+  }
+  .form-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7566' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 34px;
   }
   .form-group input:focus,
   .form-group select:focus {

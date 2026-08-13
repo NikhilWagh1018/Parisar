@@ -125,9 +125,9 @@ require_once __DIR__ . '/../config/auth_guard.php';
           <label>Standard Segment Length</label>
           <select id="segmentLength">
             <option value="100">100 meters</option>
-            <option value="200" selected>200 meters</option>
+            <option value="200">200 meters</option>
             <option value="300">300 meters</option>
-            <option value="500">500 meters</option>
+            <option value="500" selected>500 meters</option>
             <option value="custom">Custom length…</option>
           </select>
         </div>

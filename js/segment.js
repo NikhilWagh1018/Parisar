@@ -153,7 +153,7 @@ function showRoadForm() {
   ['roadName','roadLength']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 
-  document.getElementById('segmentLength').value             = '200';
+  document.getElementById('segmentLength').value             = '500';
   document.getElementById('customLengthInput').style.display = 'none';
   document.getElementById('autoPreview').classList.remove('show');
   clearErrors();
@@ -168,6 +168,7 @@ function clearErrors() {
   document.querySelectorAll('.field-error').forEach(el => el.classList.remove('show'));
   document.querySelectorAll('input.error, select.error')
           .forEach(el => el.classList.remove('error'));
+  document.getElementById('roadSearchInput')?.classList.remove('error');
 }
 function showFieldError(fieldId, errId) {
   document.getElementById(fieldId)?.classList.add('error');
@@ -178,7 +179,9 @@ function validateRoadFields() {
   clearErrors(); let valid = true;
   if (!document.getElementById('roadName').value.trim() ||
        document.getElementById('roadName').value === '__custom__')
-    { showFieldError('roadName', 'err-roadName');   valid = false; }
+    { showFieldError('roadName', 'err-roadName');
+      document.getElementById('roadSearchInput')?.classList.add('error');
+      valid = false; }
   const len = parseFloat(document.getElementById('roadLength').value);
   if (!len || len < 50)
     { showFieldError('roadLength', 'err-roadLength'); valid = false; }
