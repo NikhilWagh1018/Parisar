@@ -102,7 +102,7 @@ require_once __DIR__ . '/../config/auth_guard.php';
 
       <div class="form-group">
         <label class="required">Total Road Length (meters)</label>
-        <input type="number" id="roadLength" placeholder="e.g. 1500" min="1">
+        <input type="number" id="roadLength" placeholder="e.g. 1500" min="1" oninput="sanitizeNumericInput(this)">
         <div class="input-hint">Minimum 50 m. Used to calculate segment distribution.</div>
         <div class="field-error" id="err-roadLength">Enter a valid length of at least 50 m.</div>
       </div>
@@ -134,7 +134,7 @@ require_once __DIR__ . '/../config/auth_guard.php';
         <div id="customLengthInput" style="display:none">
           <div class="form-group">
             <label>Custom Length (meters)</label>
-            <input type="number" id="customSegmentLength" placeholder="e.g. 150" min="10">
+            <input type="number" id="customSegmentLength" placeholder="e.g. 150" min="10" oninput="sanitizeNumericInput(this)">
           </div>
         </div>
         <div class="preview-box" id="autoPreview">

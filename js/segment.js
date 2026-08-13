@@ -164,6 +164,14 @@ function showRoadForm() {
 }
 
 // ── Validation ─────────────────────────────────────────────────
+function sanitizeNumericInput(el) {
+  let v = el.value.replace(/[^0-9.]/g, '');
+  const firstDot = v.indexOf('.');
+  if (firstDot !== -1) {
+    v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, '');
+  }
+  if (v !== el.value) el.value = v;
+}
 function clearErrors() {
   document.querySelectorAll('.field-error').forEach(el => el.classList.remove('show'));
   document.querySelectorAll('input.error, select.error')
