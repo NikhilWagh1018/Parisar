@@ -301,6 +301,46 @@ class SegmentRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Personal audit summary stats for one surveyor, used on the
+     * "My Audits" history page header strip.
+     *
+     * Aggregates over the MOST RECENT audit per segment only — a segment
+     * can legally be re-audited (no unique constraint on segment_id in
+     * segment_audits), so a naive SUM/COUNT across all rows would
+     * double-count re-audited segments in both the segment count and
+     * the distance total.
+     *
+     * @return array{segments_audited:int, total_length_m:float, roads_touched:int, first_audit_at:?string}
+     */
+    public function personalStats(int $userId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT
+                 COUNT(DISTINCT latest.segment_id) AS segments_audited,
+                 SUM(latest.segment_length)         AS total_length_m,
+                 COUNT(DISTINCT s.road_id)          AS roads_touched,
+                 MIN(latest.created_at)             AS first_audit_at
+             FROM (
+                 SELECT segment_id, MAX(id) AS latest_audit_id
+                   FROM segment_audits
+                  WHERE surveyor_id = ?
+                  GROUP BY segment_id
+             ) latest_ids
+             JOIN segment_audits latest ON latest.id = latest_ids.latest_audit_id
+             JOIN segments s ON s.id = latest.segment_id'
+        );
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return [
+            'segments_audited' => (int)($row['segments_audited'] ?? 0),
+            'total_length_m'   => (float)($row['total_length_m'] ?? 0),
+            'roads_touched'    => (int)($row['roads_touched'] ?? 0),
+            'first_audit_at'   => $row['first_audit_at'] ?? null,
+        ];
+    }
+
     // ══════════════════════════════════════════════════════════
     //  SEGMENT AUDIT WRITES
     // ══════════════════════════════════════════════════════════

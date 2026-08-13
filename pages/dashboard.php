@@ -41,6 +41,10 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       Dashboard
     </a>
+    <a class="nav-item" href="my_audits.php">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      My Audits
+    </a>
     <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
     <div class="nav-section">Admin</div>
     <a class="nav-item" href="admin.php">
