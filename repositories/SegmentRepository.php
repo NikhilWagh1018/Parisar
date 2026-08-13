@@ -388,6 +388,60 @@ class SegmentRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Roads this user can resume — the user's most recent audit_session
+     * on the road is 'active' AND the road still has at least one
+     * 'pending' segment. Used by "My Audits" Section 3 ("Continue where
+     * you left off").
+     *
+     * For each qualifying road, returns segment-progress counts, the
+     * next pending segment to resume at, and the most recent audit
+     * timestamp this user logged on that road (for "most recently
+     * touched" ordering — audit_sessions has no updated_at column, so
+     * segment_audits.created_at is the best available recency signal).
+     *
+     * Roads where the active session has no pending segments left
+     * (edge case — session not yet transitioned to completed) are
+     * excluded in PHP below, since there's nothing to resume there.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function personalContinueAudits(int $userId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT
+                 r.id                  AS road_id,
+                 r.name                AS road_name,
+                 latest_sess.id        AS session_id,
+                 latest_sess.started_at AS session_started_at,
+                 (SELECT COUNT(*) FROM segments s2
+                   WHERE s2.road_id = r.id)                       AS total_segments,
+                 (SELECT COUNT(*) FROM segments s2
+                   WHERE s2.road_id = r.id AND s2.status = \'completed\') AS completed_segments,
+                 (SELECT s3.id FROM segments s3
+                   WHERE s3.road_id = r.id AND s3.status = \'pending\'
+                   ORDER BY s3.segment_number ASC LIMIT 1)         AS next_segment_id,
+                 (SELECT s3.segment_number FROM segments s3
+                   WHERE s3.road_id = r.id AND s3.status = \'pending\'
+                   ORDER BY s3.segment_number ASC LIMIT 1)         AS next_segment_number,
+                 (SELECT MAX(sa.created_at) FROM segment_audits sa
+                   JOIN segments s4 ON s4.id = sa.segment_id
+                  WHERE s4.road_id = r.id AND sa.surveyor_id = ?)  AS last_activity_at
+             FROM (
+                 SELECT road_id, MAX(id) AS latest_session_id
+                   FROM audit_sessions
+                  WHERE user_id = ?
+                  GROUP BY road_id
+             ) latest_ids
+             JOIN audit_sessions latest_sess ON latest_sess.id = latest_ids.latest_session_id
+             JOIN roads r ON r.id = latest_sess.road_id
+             WHERE latest_sess.status = \'active\'
+             ORDER BY last_activity_at DESC'
+        );
+        $stmt->execute([$userId, $userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     // ══════════════════════════════════════════════════════════
     //  SEGMENT AUDIT WRITES
     // ══════════════════════════════════════════════════════════

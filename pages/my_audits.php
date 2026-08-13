@@ -50,6 +50,56 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     color: #cbd5e1;
     cursor: not-allowed;
   }
+  /* Section 3 — "Continue where you left off" callout */
+  .ma-continue-card {
+    background: #fef9ec;
+    border: 1px solid #f5e3b3;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 20px;
+  }
+  .ma-continue-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #92702c;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    margin-bottom: 12px;
+  }
+  .ma-continue-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 0;
+    border-top: 1px solid #f2e6c2;
+  }
+  .ma-continue-row:first-of-type {
+    border-top: none;
+    padding-top: 0;
+  }
+  .ma-continue-progress-track {
+    background: #f2e6c2;
+    border-radius: 6px;
+    height: 6px;
+    width: 140px;
+    overflow: hidden;
+  }
+  .ma-continue-progress-fill {
+    background: #d97706;
+    height: 100%;
+    border-radius: 6px;
+  }
+  .ma-resume-btn {
+    background: #3d7a1f;
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 6px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -160,6 +210,13 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <div class="stat-card"><div class="stat-icon" style="background:#dcfce7">🗓️</div><div><div class="stat-val" id="ma-since">—</div><div class="stat-lbl">Member Since</div></div></div>
     </div>
 
+    <!-- ═══════════ SECTION 3: CONTINUE WHERE YOU LEFT OFF ═══════════ -->
+    <!-- Hidden by default; JS reveals it only if the user has roads to resume. -->
+    <div class="ma-continue-card" id="ma-continue-card" style="display:none;">
+      <div class="ma-continue-title">Continue where you left off</div>
+      <div id="ma-continue-body"></div>
+    </div>
+
     <!-- ═══════════ SECTION 2: FILTER & SORT BAR ═══════════ -->
     <div class="card" style="margin-top:20px;padding:16px 20px;">
       <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
@@ -231,6 +288,50 @@ async function loadMyAuditStats() {
 }
 
 loadMyAuditStats();
+
+// ── Section 3: "Continue where you left off" callout ────────────
+async function loadMyAuditContinue() {
+  const card = document.getElementById('ma-continue-card');
+  const body = document.getElementById('ma-continue-body');
+
+  try {
+    const res  = await fetch('../api/user/audit_continue.php', {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await res.json();
+
+    if (!data.success || !data.items || data.items.length === 0) {
+      card.style.display = 'none';
+      return;
+    }
+
+    body.innerHTML = data.items.map(function (item) {
+      const pct = item.total_segments > 0
+        ? Math.round((item.completed_segments / item.total_segments) * 100)
+        : 0;
+
+      return (
+        '<div class="ma-continue-row">' +
+          '<div>' +
+            '<div style="font-weight:600;">' + item.road_name + '</div>' +
+            '<div style="font-size:13px;color:#92702c;margin-top:4px;display:flex;align-items:center;gap:8px;">' +
+              '<span>' + item.completed_segments + ' of ' + item.total_segments + ' segments done</span>' +
+              '<span class="ma-continue-progress-track"><span class="ma-continue-progress-fill" style="width:' + pct + '%;"></span></span>' +
+            '</div>' +
+          '</div>' +
+          '<a class="ma-resume-btn" href="form.php?segment_id=' + item.next_segment_id + '">Resume →</a>' +
+        '</div>'
+      );
+    }).join('');
+
+    card.style.display = 'block';
+  } catch (err) {
+    console.error('Error loading continue-audits data:', err);
+    card.style.display = 'none';
+  }
+}
+
+loadMyAuditContinue();
 
 // ── Section 2+4: filter/sort bar + audit list ──────────────────
 let maCurrentPage = 1;
