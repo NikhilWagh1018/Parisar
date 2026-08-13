@@ -73,6 +73,14 @@ if ($action === 'update_profile') {
         json_out(false, error: 'Name is required.');
     }
 
+    if ($phone !== '' && !preg_match('/^\d{10}$/', $phone)) {
+        json_out(false, error: 'Phone number must be exactly 10 digits.');
+    }
+
+    if ($org !== '' && !preg_match('/^[A-Za-z ]+$/', $org)) {
+        json_out(false, error: 'Organisation must contain letters only.');
+    }
+
     $allowedGenders = ['Male', 'Female', 'Other', null, ''];
     if (!in_array($gender, $allowedGenders, true)) {
         json_out(false, error: 'Invalid gender value.');

@@ -2,6 +2,18 @@
 
 const API  = '../api/user/profile.php';
 
+// Strips non-digits and caps length at 10 (Indian mobile number format).
+function sanitizePhoneInput(el) {
+  const v = el.value.replace(/\D/g, '').slice(0, 10);
+  if (v !== el.value) el.value = v;
+}
+
+// Strips anything but letters and spaces, so organisation names stay alphabetic.
+function sanitizeAlphaInput(el) {
+  const v = el.value.replace(/[^A-Za-z ]/g, '');
+  if (v !== el.value) el.value = v;
+}
+
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {

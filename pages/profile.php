@@ -127,11 +127,11 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
           </div>
           <div class="field">
             <label>Phone Number</label>
-            <input type="tel" id="f-phone" placeholder="+91 98765 43210" maxlength="30">
+            <input type="tel" inputmode="numeric" id="f-phone" placeholder="e.g. 9876543210" maxlength="10" oninput="sanitizePhoneInput(this)">
           </div>
           <div class="field">
             <label>Organisation</label>
-            <input type="text" id="f-org" placeholder="e.g. Parisar, KSE" maxlength="200">
+            <input type="text" id="f-org" placeholder="e.g. Parisar, KSE" maxlength="200" oninput="sanitizeAlphaInput(this)">
           </div>
           <div class="field">
             <label>Gender</label>
