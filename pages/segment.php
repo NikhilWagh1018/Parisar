@@ -104,7 +104,7 @@ require_once __DIR__ . '/../config/auth_guard.php';
         <label class="required">Total Road Length (meters)</label>
         <input type="number" id="roadLength" placeholder="e.g. 1500" min="1">
         <div class="input-hint">Minimum 50 m. Used to calculate segment distribution.</div>
-        <div class="field-error" id="err-roadLength">Enter a valid length greater than 0.</div>
+        <div class="field-error" id="err-roadLength">Enter a valid length of at least 50 m.</div>
       </div>
       <div class="input-hint" style="margin-top:-4px">
         Start/End landmark &amp; GPS are captured automatically from Segment 1's start and the last segment's end during the audit.
