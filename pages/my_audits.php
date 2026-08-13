@@ -279,8 +279,20 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 function toggleUserMenu() {
-  document.getElementById('sbPopup').classList.toggle('open');
+  const popup = document.getElementById('sbPopup');
+  const btn   = document.getElementById('sbUserBtn');
+  const open  = popup.classList.toggle('show');
+  btn.classList.toggle('open', open);
 }
+document.addEventListener('click', e => {
+  const popup = document.getElementById('sbPopup');
+  if (!popup.classList.contains('show')) return;
+  if (!document.getElementById('sbUserBtn').contains(e.target) &&
+      !popup.contains(e.target)) {
+    popup.classList.remove('show');
+    document.getElementById('sbUserBtn').classList.remove('open');
+  }
+});
 
 async function loadMyAuditStats() {
   try {
