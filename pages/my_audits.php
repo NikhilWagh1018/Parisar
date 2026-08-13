@@ -100,6 +100,13 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     text-decoration: none;
     white-space: nowrap;
   }
+  /* Section 5 — .empty-state a's default color (var(--g), green) is a
+     descendant selector and out-specifies .btn-new's own color:#fff,
+     so without this override the CTA text would render green on the
+     button's green background. */
+  #ma-empty-state a.btn-new {
+    color: #fff;
+  }
 </style>
 </head>
 <body>
@@ -218,7 +225,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     </div>
 
     <!-- ═══════════ SECTION 2: FILTER & SORT BAR ═══════════ -->
-    <div class="card" style="margin-top:20px;padding:16px 20px;">
+    <div class="card" id="ma-filterbar" style="margin-top:20px;padding:16px 20px;">
       <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
         <div style="display:flex;flex-direction:column;gap:4px;">
           <label for="ma-filter-status" style="font-size:12px;font-weight:600;color:#6b7280;">Status</label>
@@ -255,6 +262,18 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <div id="ma-pagination" style="display:flex;justify-content:center;gap:12px;padding:16px;align-items:center;"></div>
     </div>
 
+    <!-- ═══════════ SECTION 5: EMPTY STATE (zero audits ever) ═══════════ -->
+    <!-- Hidden by default. Shown only when the user has no completed
+         audits AND nothing to resume — distinct from the "no audits
+         match these filters yet" message inside Section 4, which
+         handles the filtered-empty case for users who do have audits. -->
+    <div class="card empty-state" id="ma-empty-state" style="display:none;margin-top:16px;">
+      <div class="empty-icon">🚴</div>
+      <p><strong>No audits yet</strong></p>
+      <p>Once you audit your first road segment, it'll show up here — along with your progress and history.</p>
+      <a href="segment.php" class="btn-new" style="margin-top:14px;">+ Start your first audit</a>
+    </div>
+
   </div>
 </main>
 
@@ -272,7 +291,7 @@ async function loadMyAuditStats() {
 
     if (!data.success) {
       console.error('Failed to load audit history:', data.error);
-      return;
+      return true; // unknown — fail open, don't claim "zero audits"
     }
 
     const s = data.stats;
@@ -282,14 +301,19 @@ async function loadMyAuditStats() {
     document.getElementById('ma-since').textContent    = s.member_since
       ? new Date(s.member_since).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
       : '—';
+
+    return s.segments_audited > 0;
   } catch (err) {
     console.error('Error loading audit history stats:', err);
+    return true; // unknown — fail open, don't claim "zero audits"
   }
 }
 
-loadMyAuditStats();
-
 // ── Section 3: "Continue where you left off" callout ────────────
+// Returns true if it rendered at least one resumable road. A user can
+// have an active session with pending segments but zero *completed*
+// audits yet (segments_audited === 0), so this is checked separately
+// from the stats call before Section 5's empty state is decided.
 async function loadMyAuditContinue() {
   const card = document.getElementById('ma-continue-card');
   const body = document.getElementById('ma-continue-body');
@@ -302,7 +326,7 @@ async function loadMyAuditContinue() {
 
     if (!data.success || !data.items || data.items.length === 0) {
       card.style.display = 'none';
-      return;
+      return false;
     }
 
     body.innerHTML = data.items.map(function (item) {
@@ -325,13 +349,13 @@ async function loadMyAuditContinue() {
     }).join('');
 
     card.style.display = 'block';
+    return true;
   } catch (err) {
     console.error('Error loading continue-audits data:', err);
     card.style.display = 'none';
+    return true; // unknown — fail open, don't claim "zero audits"
   }
 }
-
-loadMyAuditContinue();
 
 // ── Section 2+4: filter/sort bar + audit list ──────────────────
 let maCurrentPage = 1;
@@ -433,7 +457,23 @@ document.getElementById('ma-filter-status').addEventListener('change', function 
 document.getElementById('ma-filter-range').addEventListener('change', function () { loadMyAuditList(1); });
 document.getElementById('ma-sort').addEventListener('change', function () { loadMyAuditList(1); });
 
-loadMyAuditList(1);
+// ── Init: decide between the normal filter bar + list vs. Section 5's
+//    empty state, based on whether the user has any completed audits
+//    or anything resumable. Both calls run first so the decision is
+//    never made on partial information. ──────────────────────────
+(async function initMyAudits() {
+  const hasCompletedAudits = await loadMyAuditStats();
+  const hasResumable       = await loadMyAuditContinue();
+
+  if (!hasCompletedAudits && !hasResumable) {
+    document.getElementById('ma-filterbar').style.display  = 'none';
+    document.getElementById('ma-list-card').style.display  = 'none';
+    document.getElementById('ma-empty-state').style.display = 'block';
+    return;
+  }
+
+  loadMyAuditList(1);
+})();
 </script>
 
 </body>
