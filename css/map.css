@@ -1,0 +1,112 @@
+/* ═══════════════════════════════════════════════════════════════
+   css/map.css
+   Map View page (pages/map.php). Sidebar/topbar/.content layout
+   comes from dashboard.css — this file only covers the map card,
+   legend, and Leaflet popup content.
+   ═══════════════════════════════════════════════════════════════ */
+
+#map-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+#map-canvas {
+  width: 100%;
+  height: 65vh;
+  min-height: 420px;
+}
+
+.map-legend {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--bdr);
+  font-size: 13px;
+  color: var(--txt2);
+  flex-wrap: wrap;
+}
+
+.map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.map-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.map-legend-dot.completed { background: var(--tgreen); }
+.map-legend-dot.pending   { background: var(--tamber); }
+
+#map-empty-state {
+  display: none;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--txt3);
+}
+
+/* Leaflet popup content */
+.map-popup-road {
+  font-weight: 700;
+  color: var(--txt1);
+  margin-bottom: 2px;
+}
+
+.map-popup-seg {
+  font-size: 13px;
+  color: var(--txt2);
+  margin-bottom: 8px;
+}
+
+.map-popup-status {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+}
+
+.map-popup-status.completed {
+  background: var(--tgreen-bg);
+  color: var(--tgreen-txt);
+}
+
+.map-popup-status.pending {
+  background: var(--tamber-bg);
+  color: var(--tamber);
+}
+
+.map-popup-link {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tgreen);
+  text-decoration: none;
+}
+
+.map-popup-link:hover {
+  text-decoration: underline;
+}
+
+/* Leaflet's own default marker styling references ./images/ relative
+   to this file — see css/leaflet/images/. Custom dot markers
+   below replace the default pin for status coloring. */
+.map-dot-marker {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.35);
+}
+
+.map-dot-marker.completed { background: var(--tgreen); }
+.map-dot-marker.pending   { background: var(--tamber); }

@@ -32,7 +32,7 @@ header(
     "script-src 'self' 'unsafe-inline'; " .
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
     "font-src 'self' https://fonts.gstatic.com; " .
-    "img-src 'self' data: https://lh3.googleusercontent.com https://*.googleusercontent.com; " .
+    "img-src 'self' data: https://lh3.googleusercontent.com https://*.googleusercontent.com https://*.tile.openstreetmap.org; " .
     "connect-src 'self';"
 );
 
