@@ -274,6 +274,29 @@ class RoadRepository
     }
 
     /**
+     * Find the most recently updated session for a user on a road,
+     * regardless of status (active, completed, whatever). Used for
+     * finalized roads, where there is no active session to resume but
+     * the UI (e.g. "Download Road Score PDF") still needs a session_id
+     * to build the report link.
+     *
+     * @return array{id:int,public_id:string}|null
+     */
+    public function findLatestSession(int $userId, int $roadId): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT id, public_id
+               FROM audit_sessions
+              WHERE user_id = ? AND road_id = ?
+              ORDER BY updated_at DESC
+              LIMIT 1"
+        );
+        $stmt->execute([$userId, $roadId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    /**
      * Fetch full session data including road_id and user_id.
      * Returns null if not found.
      *

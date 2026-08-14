@@ -62,6 +62,24 @@ $roadId = (int)$data['road_id'];
 try {
     $repo = new RoadRepository($pdo);
 
+    // Finalized roads are locked — never spin up a new session for
+    // them (this is what "View" on the dashboard hits). Doing so would
+    // flip the road's dashboard status back to "Active" even though
+    // nothing can actually be edited. Instead, hand back the existing
+    // (already-completed) session id so read-only features on that page
+    // — e.g. "Download Road Score PDF" — still work.
+    $road = $repo->find($roadId);
+    if ($road !== null && $road['finalized_at'] !== null) {
+        $latest = $repo->findLatestSession($CURRENT_USER_ID, $roadId);
+        echo json_encode([
+            'success'    => true,
+            'session_id' => $latest['id'] ?? null,
+            'public_id'  => $latest['public_id'] ?? null,
+            'finalized'  => true,
+        ]);
+        exit;
+    }
+
     // Resume existing active session if one exists
     $existing = $repo->findActiveSession($CURRENT_USER_ID, $roadId);
     if ($existing) {

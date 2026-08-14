@@ -74,7 +74,7 @@ async function loadDashboard() {
           </div>
           <div class="road-actions">
             ${road.is_finalized
-              ? `<a class="action-btn btn-audit" href="segment.php?road_id=${road.road_id}">👁️ View</a>`
+              ? '' /* Finalized roads are locked and read-only — nothing to view, only Report/PDF matters. */
               : `<a class="action-btn btn-audit" href="segment.php?road_id=${road.road_id}">✏️ Audit</a>`}
             ${road.session_id
               ? `<a class="action-btn btn-report" href="report.php?session_id=${road.session_id}"><span>📄</span> Report</a>`
