@@ -36,9 +36,10 @@ class SegmentRepositoryTest extends TestCase
         );
 
         CREATE TABLE IF NOT EXISTS roads (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            name       TEXT    NOT NULL,
-            creator_id INTEGER NOT NULL,
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            name         TEXT    NOT NULL,
+            creator_id   INTEGER NOT NULL,
+            finalized_at TEXT,
             FOREIGN KEY (creator_id) REFERENCES users(id)
         );
 
