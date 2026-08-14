@@ -24,3 +24,5 @@ vendor/
 Parisar/
 
 parisar_backup.sql
+
+*.bak
