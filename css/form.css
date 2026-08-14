@@ -420,6 +420,11 @@
 .gps-input-row input {
   flex: 1;
 }
+.gps-input-row input[readonly] {
+  background: #f5f5f5;
+  color: #444;
+  cursor: default;
+}
 .gps-btn {
   flex-shrink: 0;
   padding: 0 10px;

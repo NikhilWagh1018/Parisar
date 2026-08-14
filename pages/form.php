@@ -170,14 +170,15 @@ if ($segNum > 0) {
             <label>GPS Start Point <span class="required-star">*</span></label>
             <div class="gps-input-row">
               <input type="text" id="gpsStart" name="gps_start"
+                     readonly
                      oninput="clearError(this.id)"
                      autocomplete="off"
-                     placeholder="e.g. 18.5204, 73.8567">
+                     placeholder="Tap GPS to capture your location">
               <button type="button" class="gps-btn" onclick="fillGPS('gpsStart')" title="Use my current location">
                 <span class="gps-btn-icon">GPS</span>
               </button>
             </div>
-            <span class="error-msg" id="gpsStart-error">Enter valid coordinates (e.g. 18.5204, 73.8567)</span>
+            <span class="error-msg" id="gpsStart-error">Tap the GPS button to capture your current location</span>
           </div>
         </div>
       </div>
@@ -522,14 +523,15 @@ if ($segNum > 0) {
             <label>GPS End Point <span class="required-star">*</span></label>
             <div class="gps-input-row">
               <input type="text" id="gpsEnd" name="gps_end"
+                     readonly
                      oninput="clearError(this.id)"
                      autocomplete="off"
-                     placeholder="e.g. 18.5214, 73.8577">
+                     placeholder="Tap GPS to capture your location">
               <button type="button" class="gps-btn" onclick="fillGPS('gpsEnd')" title="Use my current location">
                 <span class="gps-btn-icon">GPS</span>
               </button>
             </div>
-            <span class="error-msg" id="gpsEnd-error">Enter valid coordinates (e.g. 18.5214, 73.8577)</span>
+            <span class="error-msg" id="gpsEnd-error">Tap the GPS button to capture your current location</span>
           </div>
         </div>
       </div>

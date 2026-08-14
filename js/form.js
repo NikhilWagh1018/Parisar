@@ -308,7 +308,7 @@ function buildIntersectionBody(uid) {
     <div class="int-gps-row">
       <div>
         <label>GPS Coordinates</label>
-        <div class="gps-input-row"><input type="text" id="${p}gps" name="${p}gps" placeholder="e.g. 18.5204, 73.8567">
+        <div class="gps-input-row"><input type="text" id="${p}gps" name="${p}gps" readonly placeholder="Tap GPS to capture your location">
                  <button type="button" class="gps-btn" onclick="fillGPS('${p}gps')"
                          title="Auto-fill from device location">
                    <span class="gps-btn-icon">GPS</span>
@@ -507,7 +507,7 @@ function fillGPS(inputId) {
   if (!input) return;
   if (errorEl) errorEl.textContent = '';
   if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-    if (errorEl) errorEl.textContent = 'GPS requires HTTPS. Enter coordinates manually.';
+    if (errorEl) errorEl.textContent = 'GPS requires HTTPS on this page. Please contact an admin.';
     return;
   }
   if (!navigator.geolocation) {
@@ -525,8 +525,8 @@ function fillGPS(inputId) {
     },
     (err) => {
       const msgs = {
-        1: 'Location access denied. Allow location in browser settings.',
-        2: 'Location unavailable. Enter coordinates manually.',
+        1: 'Location access denied. Allow location access in your browser settings, then tap GPS again.',
+        2: 'Location unavailable. Move to an open area and try again.',
         3: 'Location request timed out. Try again.'
       };
       if (errorEl) errorEl.textContent = msgs[err.code] || 'Could not get location.';
@@ -1095,40 +1095,8 @@ setTimeout(() => {
   });
 })();
 
-(function () {
-  var GPS_REGEX = /^-?[0-9]{1,3}[.][0-9]+[,][ ]*-?[0-9]{1,3}[.][0-9]+$/;
-  var GPS_FIELDS = ['gpsStart', 'gpsEnd'];
-  var allowedKeys = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End','-','.',' ',','];
-  GPS_FIELDS.forEach(function (id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('keydown', function (e) {
-      if (allowedKeys.indexOf(e.key) !== -1) return;
-      if (e.key >= '0' && e.key <= '9') return;
-      if (e.ctrlKey || e.metaKey) return;
-      e.preventDefault();
-    });
-    el.addEventListener('input', function () {
-      var cleaned = el.value.replace(/[^0-9.,\s-]/g, '');
-      if (cleaned !== el.value) el.value = cleaned;
-      validateGPS(el);
-    });
-    el.addEventListener('blur', function () { validateGPS(el); });
-  });
-  function validateGPS(el) {
-    var val    = el.value.trim();
-    var wrapEl = document.getElementById('wrap-' + el.id);
-    if (val === '') {
-      if (wrapEl) wrapEl.classList.remove('field-error');
-      el.style.borderColor = '';
-      return;
-    }
-    if (!GPS_REGEX.test(val)) {
-      if (wrapEl) wrapEl.classList.add('field-error');
-      el.style.borderColor = '#c0392b';
-    } else {
-      if (wrapEl) wrapEl.classList.remove('field-error');
-      el.style.borderColor = '#27ae60';
-    }
-  }
-})();
+// GPS fields (gpsStart, gpsEnd, and per-intersection "${p}gps" fields)
+// are read-only and can only be filled via the GPS button — see
+// fillGPS() above. No manual-entry keystroke filtering or format
+// validation is needed here anymore: a successful fillGPS() call
+// always produces a well-formed "lat, lng" value.
