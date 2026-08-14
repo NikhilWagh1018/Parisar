@@ -70,6 +70,7 @@ async function loadDashboard() {
               <div class="prog-bar prog-track">
                 <div class="prog-fill" data-w="${pct}%"></div>
               </div>
+              <span class="prog-lbl">${pct}%</span>
             </div>
           </div>
           <div class="road-actions">
