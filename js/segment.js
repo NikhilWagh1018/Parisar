@@ -343,17 +343,17 @@ function displaySegments() {
   document.getElementById('progressPercent').textContent = pct + '%';
   document.getElementById('progressLabel').textContent   = `${done} of ${segments.length} completed`;
 
-  const viewBtn = document.getElementById('viewResultsBtn');
-  if (viewBtn) {
-    viewBtn.disabled = !allDone;
-    viewBtn.title    = allDone ? '' : `${pending} segment(s) still pending`;
-  }
+  const finalSubmitBtn      = document.getElementById('finalSubmitBtn');
+  const backToDashboardBtn  = document.getElementById('backToDashboardBtn');
+  const dlPdfBtn             = document.getElementById('dlPdfBtn');
 
-  const finalSubmitBtn = document.getElementById('finalSubmitBtn');
-  if (finalSubmitBtn) {
-    // Only offered once fully audited and not already finalized.
-    finalSubmitBtn.style.display = (allDone && !isFinalized) ? '' : 'none';
-  }
+  // Bottom action row is single-purpose per state:
+  //  - not yet fully audited: nothing shown here (use browser back / top nav)
+  //  - fully audited, not finalized: Final Submit only
+  //  - finalized: Back to Dashboard + Download Road Score PDF only
+  if (finalSubmitBtn)     finalSubmitBtn.style.display     = (allDone && !isFinalized) ? '' : 'none';
+  if (backToDashboardBtn) backToDashboardBtn.style.display = isFinalized ? '' : 'none';
+  if (dlPdfBtn)            dlPdfBtn.style.display           = isFinalized ? '' : 'none';
 
   document.getElementById('completionBanner').style.display =
     (allDone && !isFinalized) ? 'block' : 'none';

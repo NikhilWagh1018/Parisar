@@ -187,8 +187,6 @@ require_once __DIR__ . '/../config/auth_guard.php';
 
     <div id="completionBanner" class="banner banner-success" style="display:none">
       <span id="completionTitle"></span>
-      <button class="btn btn-primary btn-sm" id="viewResultsBtn" onclick="viewRoadResult()">View Road Result →</button>
-      <button class="btn btn-primary btn-sm" id="finalSubmitBtn" onclick="finalizeRoad()" style="display:none">✅ Final Submit</button>
     </div>
     <div id="lockedBanner" class="banner banner-locked" style="display:none">
       <span>🔒 This audit has been finalized and can no longer be edited.</span>
@@ -205,15 +203,16 @@ require_once __DIR__ . '/../config/auth_guard.php';
       <div id="segmentsList"></div>
     </div>
 
-    <div class="btn-row" style="justify-content:center;margin-top:24px;gap:14px;flex-wrap:wrap">
-      <button class="btn btn-secondary btn-lg" onclick="goToDashboard()">
+    <div class="btn-row" id="bottomActions" style="justify-content:center;margin-top:24px;gap:14px;flex-wrap:wrap">
+      <button class="btn btn-secondary btn-lg" id="backToDashboardBtn" onclick="goToDashboard()" style="display:none">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
         Back to Dashboard
       </button>
-      <button class="btn btn-primary btn-lg" id="dlPdfBtn" onclick="downloadRoadScore()">
+      <button class="btn btn-primary btn-lg" id="dlPdfBtn" onclick="downloadRoadScore()" style="display:none">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download Road Score PDF
       </button>
+      <button class="btn btn-primary btn-lg" id="finalSubmitBtn" onclick="finalizeRoad()" style="display:none">✅ Final Submit</button>
     </div>
   </div>
 
