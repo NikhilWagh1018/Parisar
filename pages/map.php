@@ -136,6 +136,12 @@ $nonce    = htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8');
 
   <div class="content">
     <div class="card" id="map-card">
+      <div class="map-toolbar">
+        <div class="map-scope-toggle" role="group" aria-label="Map scope">
+          <button type="button" class="map-scope-btn active" data-scope="mine">My Audits</button>
+          <button type="button" class="map-scope-btn" data-scope="all">All Audits</button>
+        </div>
+      </div>
       <div id="map-canvas"></div>
       <div id="map-empty-state">
         No GPS-tagged segments yet — audit a road with GPS capture on the

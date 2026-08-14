@@ -389,41 +389,49 @@ class SegmentRepository
     }
 
     /**
-     * This user's audited segments that have a captured GPS start point,
-     * for the Map View (Visibility & Motivation roadmap item #2). One row
-     * per segment, using that segment's latest audit for GPS + label data.
+     * Audited segments that have a captured GPS start point, for the Map
+     * View (Visibility & Motivation roadmap item #2). One row per segment,
+     * using that segment's latest audit for GPS + label data.
      * segments.status ('pending'|'completed') drives pin color client-side.
      *
+     * @param int|null $userId Pass a user id to scope to just that
+     *     surveyor's own audits ("My Audits" mode — the latest audit
+     *     *by that user* on each segment). Pass null for "All Audits"
+     *     mode — the latest audit by anyone on each segment, plus who
+     *     did it.
      * @return list<array{
      *     segment_id:int, road_id:int, road_name:string,
      *     segment_number:int, status:string,
-     *     gps_start:string, start_label:?string
+     *     gps_start:string, start_label:?string, surveyor_name:?string
      * }>
      */
-    public function mapDataForUser(int $userId): array
+    public function mapData(?int $userId): array
     {
+        $scopeClause = $userId !== null ? 'WHERE surveyor_id = ?' : '';
         $stmt = $this->pdo->prepare(
-            'SELECT
+            "SELECT
                  s.id            AS segment_id,
                  s.road_id,
                  r.name          AS road_name,
                  s.segment_number,
                  s.status,
                  latest.gps_start,
-                 latest.start_landmark AS start_label
+                 latest.start_landmark AS start_label,
+                 u.name          AS surveyor_name
              FROM (
                  SELECT segment_id, MAX(id) AS latest_audit_id
                    FROM segment_audits
-                  WHERE surveyor_id = ?
+                   $scopeClause
                   GROUP BY segment_id
              ) latest_ids
              JOIN segment_audits latest ON latest.id = latest_ids.latest_audit_id
              JOIN segments s ON s.id = latest.segment_id
              JOIN roads r    ON r.id = s.road_id
-             WHERE latest.gps_start IS NOT NULL AND latest.gps_start != \'\'
-             ORDER BY r.name, s.segment_number'
+             JOIN users u    ON u.id = latest.surveyor_id
+             WHERE latest.gps_start IS NOT NULL AND latest.gps_start != ''
+             ORDER BY r.name, s.segment_number"
         );
-        $stmt->execute([$userId]);
+        $stmt->execute($userId !== null ? [$userId] : []);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

@@ -3,8 +3,12 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  api/segments/map-data.php
-//  GET — the logged-in user's audited segments that have a captured
-//        GPS start point, for the Map View page (pages/map.php).
+//  GET — audited segments that have a captured GPS start point, for
+//        the Map View page (pages/map.php).
+//  ?scope=mine (default) — latest audit *by the logged-in user* per
+//        segment, own audits only.
+//  ?scope=all  — latest audit *by anyone* per segment, across every
+//        surveyor, with who did it.
 //  gps_start is stored as "lat, lng" text (validated by the same
 //  regex api/segments/submit.php enforces) — parsed to floats here
 //  so the client never has to.
@@ -27,9 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
+$scope = $_GET['scope'] ?? 'mine';
+if (!in_array($scope, ['mine', 'all'], true)) {
+    $scope = 'mine';
+}
+
 try {
     $repo = new SegmentRepository($pdo);
-    $rows = $repo->mapDataForUser($CURRENT_USER_ID);
+    $rows = $repo->mapData($scope === 'all' ? null : $CURRENT_USER_ID);
 
     $points = [];
     foreach ($rows as $r) {
@@ -46,12 +55,13 @@ try {
             'segment_number' => (int)$r['segment_number'],
             'status'         => $r['status'],
             'start_label'    => $r['start_label'],
+            'surveyor_name'  => $r['surveyor_name'],
             'lat'            => (float)$m[1],
             'lng'            => (float)$m[2],
         ];
     }
 
-    echo json_encode(['success' => true, 'points' => $points]);
+    echo json_encode(['success' => true, 'scope' => $scope, 'points' => $points]);
 
 } catch (PDOException $e) {
     error_log('api/segments/map-data.php error: ' . $e->getMessage());
