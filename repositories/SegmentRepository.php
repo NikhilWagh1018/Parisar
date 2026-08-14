@@ -320,7 +320,7 @@ class SegmentRepository
                  COUNT(DISTINCT latest.segment_id) AS segments_audited,
                  SUM(s.length)                      AS total_length_m,
                  COUNT(DISTINCT s.road_id)          AS roads_touched,
-                 MIN(latest.audited_at)             AS first_audit_at
+                 MIN(latest.created_at)             AS first_audit_at
              FROM (
                  SELECT segment_id, MAX(id) AS latest_audit_id
                    FROM segment_audits
@@ -361,7 +361,7 @@ class SegmentRepository
                  latest.segment_id,
                  latest.segment_width,
                  s.length               AS segment_length,
-                 latest.audited_at      AS created_at,
+                 latest.created_at,
                  s.segment_number,
                  s.road_id,
                  r.name                 AS road_name,
@@ -382,7 +382,7 @@ class SegmentRepository
                           ORDER BY id DESC
                           LIMIT 1
                        )
-             ORDER BY latest.audited_at DESC'
+             ORDER BY latest.created_at DESC'
         );
         $stmt->execute([$userId, $userId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -445,7 +445,7 @@ class SegmentRepository
      * next pending segment to resume at, and the most recent audit
      * timestamp this user logged on that road (for "most recently
      * touched" ordering — audit_sessions has no updated_at column, so
-     * segment_audits.audited_at is the best available recency signal).
+     * segment_audits.created_at is the best available recency signal).
      *
      * Roads where the active session has no pending segments left
      * (edge case — session not yet transitioned to completed) are
@@ -471,7 +471,7 @@ class SegmentRepository
                  (SELECT s3.segment_number FROM segments s3
                    WHERE s3.road_id = r.id AND s3.status = \'pending\'
                    ORDER BY s3.segment_number ASC LIMIT 1)         AS next_segment_number,
-                 (SELECT MAX(sa.audited_at) FROM segment_audits sa
+                 (SELECT MAX(sa.created_at) FROM segment_audits sa
                    JOIN segments s4 ON s4.id = sa.segment_id
                   WHERE s4.road_id = r.id AND sa.surveyor_id = ?)  AS last_activity_at
              FROM (
@@ -537,7 +537,7 @@ class SegmentRepository
     public function leaderboardRows(bool $thisWeekOnly): array
     {
         $windowClause = $thisWeekOnly
-            ? 'WHERE YEARWEEK(sa.audited_at, 3) = YEARWEEK(CURDATE(), 3)'
+            ? 'WHERE YEARWEEK(sa.created_at, 3) = YEARWEEK(CURDATE(), 3)'
             : '';
 
         $stmt = $this->pdo->prepare(
@@ -578,7 +578,7 @@ class SegmentRepository
     public function auditDatesForUser(int $userId): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT DISTINCT DATE(audited_at) AS d
+            'SELECT DISTINCT DATE(created_at) AS d
                FROM segment_audits
               WHERE surveyor_id = ?
               ORDER BY d DESC
