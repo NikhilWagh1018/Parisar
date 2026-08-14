@@ -519,4 +519,72 @@ class SegmentRepository
         $this->pdo->prepare('DELETE FROM obstructions  WHERE audit_id = ?')->execute([$auditId]);
         $this->pdo->prepare('DELETE FROM intersections WHERE audit_id = ?')->execute([$auditId]);
     }
+
+    // ══════════════════════════════════════════════════════════
+    //  LEADERBOARD / STREAK — Visibility & Motivation roadmap #3
+    // ══════════════════════════════════════════════════════════
+
+    /**
+     * Ranked surveyor totals: segment submissions + distance audited
+     * (sum of each audited segment's length), either all-time or
+     * scoped to the current ISO week (Mon–Sun, matches MySQL mode 3).
+     * Every segment_audits row counts once — this rewards submitted
+     * work, not just currently-completed segment state, so a segment
+     * re-audited by someone else doesn't retroactively strip credit.
+     *
+     * @return list<array{surveyor_id:int,surveyor_name:string,segments_completed:int,distance_m:float}>
+     */
+    public function leaderboardRows(bool $thisWeekOnly): array
+    {
+        $windowClause = $thisWeekOnly
+            ? 'WHERE YEARWEEK(sa.audited_at, 3) = YEARWEEK(CURDATE(), 3)'
+            : '';
+
+        $stmt = $this->pdo->prepare(
+            "SELECT
+                 u.id            AS surveyor_id,
+                 u.name          AS surveyor_name,
+                 COUNT(*)        AS segments_completed,
+                 COALESCE(SUM(s.length), 0) AS distance_m
+             FROM segment_audits sa
+             JOIN users u    ON u.id = sa.surveyor_id
+             JOIN segments s ON s.id = sa.segment_id
+             {$windowClause}
+             GROUP BY u.id, u.name
+             ORDER BY segments_completed DESC, distance_m DESC, u.name ASC
+             LIMIT 50"
+        );
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($rows as &$r) {
+            $r['surveyor_id']         = (int)$r['surveyor_id'];
+            $r['segments_completed']  = (int)$r['segments_completed'];
+            $r['distance_m']          = (float)$r['distance_m'];
+        }
+        unset($r);
+
+        return $rows;
+    }
+
+    /**
+     * Distinct calendar dates (Y-m-d strings, DESC) this user has
+     * submitted at least one segment audit on — the raw input for
+     * streak calculation. Capped at 400 rows (~13 months of daily
+     * activity) since only the trailing consecutive run matters.
+     *
+     * @return list<string>
+     */
+    public function auditDatesForUser(int $userId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT DISTINCT DATE(audited_at) AS d
+               FROM segment_audits
+              WHERE surveyor_id = ?
+              ORDER BY d DESC
+              LIMIT 400'
+        );
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
 }

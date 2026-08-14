@@ -2,15 +2,12 @@
 declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
-//  pages/map.php
-//  Map View — Visibility & Motivation roadmap item #2.
-//  Renders the logged-in user's GPS-tagged audited segments as
-//  color-coded pins (green = completed, amber = pending) on a
-//  Leaflet + OpenStreetMap map. Data via api/segments/map-data.php.
-//  Leaflet is vendored locally (css/leaflet, js/leaflet — note: NOT under a "vendor" name, since .gitignore blanket-ignores any vendor/ dir (meant for Composer))
-//  rather than loaded from a CDN, since the app's CSP script-src is
-//  'self' only. Map tile images come from OSM's tile servers, so
-//  img-src in config/auth_guard.php was widened for those domains.
+//  pages/leaderboard.php
+//  Leaderboard — Visibility & Motivation roadmap item #3.
+//  Ranks surveyors by segments audited + distance covered, either
+//  this ISO week or all-time. Data via api/leaderboard/data.php.
+//  Current-streak is shown on the Dashboard instead (personal
+//  motivation stat, not a competitive ranking column here).
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/auth_guard.php';
@@ -25,16 +22,15 @@ $nonce    = htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8');
 <meta charset="UTF-8">
   <link rel="stylesheet" href="../css/theme.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Map View — CycleAudit</title>
+<title>Leaderboard — CycleAudit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link nonce="<?= $nonce ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/dashboard.css?v=<?= filemtime(__DIR__ . '/../css/dashboard.css') ?>">
-<link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/leaflet/leaflet.css">
-<link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/map.css?v=<?= filemtime(__DIR__ . '/../css/map.css') ?>">
+<link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/leaderboard.css?v=<?= filemtime(__DIR__ . '/../css/leaderboard.css') ?>">
 </head>
 <body>
 
-<!-- SIDEBAR (matches dashboard.php / my_audits.php nav) -->
+<!-- SIDEBAR (matches dashboard.php / my_audits.php / map.php nav) -->
 <aside>
   <div class="sb-brand">
     <img src="../assets/parisar-logo.png" alt="Parisar" style="height:22px;width:auto;filter:brightness(0) invert(1);opacity:.85;flex-shrink:0;">
@@ -52,11 +48,11 @@ $nonce    = htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8');
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       My Audits
     </a>
-    <a class="nav-item active" href="map.php">
+    <a class="nav-item" href="map.php">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16"/><path d="M16 6v16"/></svg>
       Map View
     </a>
-    <a class="nav-item" href="leaderboard.php">
+    <a class="nav-item active" href="leaderboard.php">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
       Leaderboard
     </a>
@@ -133,27 +129,40 @@ $nonce    = htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8');
   <div class="topbar">
     <button class="sb-hamburger" id="sb-toggle" aria-label="Menu">&#9776;</button>
     <div class="topbar-left">
-      <h1>Map View</h1>
-      <p>Every road you've audited, plotted where you captured it.</p>
+      <h1>Leaderboard</h1>
+      <p>See how your audit work stacks up against the rest of the team.</p>
     </div>
   </div>
 
   <div class="content">
-    <div class="card" id="map-card">
-      <div class="map-toolbar">
-        <div class="map-scope-toggle" role="group" aria-label="Map scope">
-          <button type="button" class="map-scope-btn active" data-scope="mine">My Audits</button>
-          <button type="button" class="map-scope-btn" data-scope="all">All Audits</button>
+    <div class="card" id="lb-card">
+      <div class="lb-toolbar">
+        <div class="lb-window-toggle" role="group" aria-label="Leaderboard window">
+          <button type="button" class="lb-window-btn active" data-window="week">This Week</button>
+          <button type="button" class="lb-window-btn" data-window="all">All Time</button>
         </div>
       </div>
-      <div id="map-canvas"></div>
-      <div id="map-empty-state">
-        No GPS-tagged segments yet — audit a road with GPS capture on the
-        form to see it appear here.
+
+      <div id="lb-your-rank"></div>
+
+      <div id="lb-table-wrap">
+        <table class="lb-table">
+          <thead>
+            <tr>
+              <th class="lb-col-rank">Rank</th>
+              <th>Surveyor</th>
+              <th class="lb-col-num">Segments</th>
+              <th class="lb-col-num">Distance</th>
+            </tr>
+          </thead>
+          <tbody id="lb-tbody">
+            <tr><td colspan="4"><div class="skeleton" style="height:18px;width:100%"></div></td></tr>
+          </tbody>
+        </table>
       </div>
-      <div class="map-legend">
-        <div class="map-legend-item"><span class="map-legend-dot completed"></span>Completed</div>
-        <div class="map-legend-item"><span class="map-legend-dot pending"></span>Pending</div>
+
+      <div id="lb-empty-state" style="display:none">
+        No audits yet this week — be the first on the board!
       </div>
     </div>
   </div>
@@ -161,10 +170,9 @@ $nonce    = htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8');
 
 <div class="sb-overlay" id="sb-overlay"></div>
 
-<script nonce="<?= $nonce ?>" src="../js/leaflet/leaflet.js"></script>
-<script nonce="<?= $nonce ?>" src="../js/map.js?v=<?= filemtime(__DIR__ . '/../js/map.js') ?>"></script>
+<script nonce="<?= $nonce ?>" src="../js/leaderboard.js?v=<?= filemtime(__DIR__ . '/../js/leaderboard.js') ?>"></script>
 <script nonce="<?= $nonce ?>">
-// Shared sidebar user-menu + mobile-drawer toggle (matches dashboard.php / my_audits.php)
+// Shared sidebar user-menu + mobile-drawer toggle (matches dashboard.php / my_audits.php / map.php)
 function toggleUserMenu() {
   const popup = document.getElementById('sbPopup');
   const btn   = document.getElementById('sbUserBtn');

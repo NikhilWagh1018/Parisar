@@ -14,6 +14,7 @@
     "autoload": {"files": [
             "services/ScoreService.php",
             "helpers/Validator.php",
+            "helpers/StreakCalculator.php",
             "repositories/SegmentRepository.php"
         ]
     },

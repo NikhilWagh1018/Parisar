@@ -23,6 +23,7 @@ async function loadDashboard() {
       document.getElementById('st-segs').textContent   = data.stats.total_segments;
       document.getElementById('st-done').textContent   = data.stats.completed_segments;
       document.getElementById('st-active').textContent = data.stats.active_sessions;
+      document.getElementById('st-streak').textContent = data.stats.current_streak;
     }
 
     // ── Roads table (not rendered for admins — "My Roads" card removed) ──

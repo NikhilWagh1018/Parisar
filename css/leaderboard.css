@@ -1,0 +1,139 @@
+/* ═══════════════════════════════════════════════════════════════
+   css/leaderboard.css
+   Leaderboard page (pages/leaderboard.php). Sidebar/topbar/.content
+   layout comes from dashboard.css — this file only covers the
+   leaderboard card, toggle, and table.
+   ═══════════════════════════════════════════════════════════════ */
+
+.lb-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 20px 0;
+}
+
+.lb-window-toggle {
+  display: inline-flex;
+  background: var(--bg2);
+  border: 1px solid var(--bdr);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.lb-window-btn {
+  border: none;
+  background: transparent;
+  color: var(--txt2);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.lb-window-btn:hover {
+  color: var(--txt1);
+}
+
+.lb-window-btn.active {
+  background: var(--tgreen);
+  color: #fff;
+}
+
+.lb-your-rank-banner {
+  margin: 14px 20px 0;
+  padding: 10px 14px;
+  background: var(--tblue-bg);
+  border: 1px solid var(--tblue-bdr);
+  color: var(--tblue-txt);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#lb-table-wrap {
+  padding: 16px 20px 20px;
+  overflow-x: auto;
+}
+
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.lb-table thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--txt3);
+  padding: 0 10px 10px;
+  border-bottom: 1px solid var(--bdr);
+}
+
+.lb-table tbody td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--bdr);
+  font-size: 14px;
+  color: var(--txt1);
+}
+
+.lb-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.lb-col-rank { width: 56px; }
+.lb-col-num  { text-align: right; width: 110px; font-variant-numeric: tabular-nums; }
+
+.lb-medal {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.lb-rank-num {
+  font-weight: 700;
+  color: var(--txt3);
+}
+
+.lb-col-name {
+  font-weight: 600;
+}
+
+.lb-row-you td {
+  background: var(--tgreen-bg);
+}
+
+.lb-row-you .lb-rank-num {
+  color: var(--tgreen-txt);
+}
+
+.lb-you-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  background: var(--tgreen);
+  color: #fff;
+  padding: 1px 7px;
+  border-radius: 20px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+#lb-empty-state {
+  display: none;
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--txt3);
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .lb-col-rank { width: 40px; }
+  .lb-col-num  { width: 76px; font-size: 13px; }
+  .lb-table thead th,
+  .lb-table tbody td { padding: 10px 6px; }
+}

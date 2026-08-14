@@ -20,6 +20,8 @@ set_exception_handler(function (Throwable $e) {
 
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../repositories/SegmentRepository.php';
+require_once __DIR__ . '/../../helpers/StreakCalculator.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
@@ -91,6 +93,10 @@ try {
     }
     unset($road);
 
+    // ── Current streak (consecutive days with a segment audit) ───
+    $streakRepo    = new SegmentRepository($pdo);
+    $currentStreak = StreakCalculator::current($streakRepo->auditDatesForUser($CURRENT_USER_ID));
+
     echo json_encode([
         'success' => true,
         'stats'   => [
@@ -98,6 +104,7 @@ try {
             'total_segments'     => $totalSegments,
             'completed_segments' => $completedSegments,
             'active_sessions'    => $activeSessions,
+            'current_streak'     => $currentStreak,
         ],
         'roads' => $roads,
     ]);
