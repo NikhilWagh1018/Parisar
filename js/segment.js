@@ -396,13 +396,12 @@ function displaySegments() {
     }
 
     // Edit is only offered while the road isn't finalized yet — once
-    // finalized, segments are permanently read-only.
+    // finalized, segments are permanently read-only with no actions.
     let actionsHtml;
     if (isDone) {
       actionsHtml = isFinalized
-        ? `<button class="btn btn-secondary btn-sm" onclick="viewSegmentResult(${seg.id})">Results</button>`
-        : `<button class="btn btn-warning btn-sm" onclick="editAuditedSegment(${seg.id})">✏️ Edit</button>
-           <button class="btn btn-secondary btn-sm" onclick="viewSegmentResult(${seg.id})">Results</button>`;
+        ? ''
+        : `<button class="btn btn-warning btn-sm" onclick="editAuditedSegment(${seg.id})">✏️ Edit</button>`;
     } else {
       actionsHtml = `<button class="btn btn-primary btn-sm" onclick="auditSegment(${seg.id})">Start Audit</button>`;
     }

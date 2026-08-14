@@ -75,18 +75,33 @@ try {
     $stmtSegs->execute([$roadId]);
     $segments = $stmtSegs->fetchAll(PDO::FETCH_ASSOC);
 
+    // MySQL DATETIME values come back as "Y-m-d H:i:s" with no timezone
+    // marker. NOW() on this server writes UTC, but a bare string like that
+    // gets parsed as LOCAL time by JS's `new Date()` — on a UTC+5:30
+    // browser that silently shifts every "time ago" display by ~5.5h
+    // (e.g. a segment audited moments ago showing "5h ago"). Stamp these
+    // explicitly as UTC before sending so the client parses them correctly.
+    $toIsoUtc = static function (?string $val): ?string {
+        if ($val === null || $val === '') {
+            return null;
+        }
+        return str_replace(' ', 'T', $val) . 'Z';
+    };
+
     // Cast numeric fields for clean JSON output
     $road['id']             = (int)$road['id'];
     $road['creator_id']     = (int)$road['creator_id'];
     $road['total_length']   = $road['total_length']   !== null ? (float)$road['total_length']   : null;
     $road['segment_length'] = $road['segment_length'] !== null ? (float)$road['segment_length'] : null;
+    $road['finalized_at']   = $toIsoUtc($road['finalized_at']);
 
-    $segments = array_map(static function (array $seg): array {
+    $segments = array_map(static function (array $seg) use ($toIsoUtc): array {
         $seg['id']             = (int)$seg['id'];
         $seg['segment_number'] = (int)$seg['segment_number'];
         $seg['start_distance'] = (float)$seg['start_distance'];
         $seg['end_distance']   = (float)$seg['end_distance'];
         $seg['length']         = (float)$seg['length'];
+        $seg['completed_at']   = $toIsoUtc($seg['completed_at']);
         return $seg;
     }, $segments);
 
