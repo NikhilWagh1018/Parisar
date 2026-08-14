@@ -10,7 +10,7 @@ declare(strict_types=1);
 //    success: true,
 //    road: { id, public_id, name, start_point, end_point,
 //            total_length, gps_start, gps_end,
-//            segment_method, segment_length, finalized_at },
+//            segment_method, segment_length },
 //    segments: [ { id, public_id, segment_number, start_label,
 //                  end_label, start_distance, end_distance,
 //                  length, status, completed_at } ]
@@ -45,8 +45,7 @@ try {
     // ── Fetch road ─────────────────────────────────────────────
     $stmtRoad = $pdo->prepare(
         'SELECT id, public_id, creator_id, name, start_point, end_point,
-                total_length, gps_start, gps_end, segment_method, segment_length,
-                finalized_at
+                total_length, gps_start, gps_end, segment_method, segment_length
          FROM   roads
          WHERE  id = ?
          LIMIT  1'

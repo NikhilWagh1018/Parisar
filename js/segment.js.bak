@@ -113,7 +113,6 @@ async function loadSegmentsFromDB(roadId) {
         gpsEnd:        data.road.gps_end,
         method:        data.road.segment_method,
         segmentLength: data.road.segment_length,
-        finalizedAt:   data.road.finalized_at || null,
       };
 
       if (data.segments.length > 0) {
@@ -327,13 +326,6 @@ function displaySegments() {
     <span class="pill">🔖 ${segments.length} segments</span>
     <span class="pill">${roadData.method === 'auto' ? '⚡ Auto' : '✏️ Manual'}</span>`;
 
-  const isFinalized = !!roadData.finalizedAt;
-
-  // "Edit Road" (destructive regenerate-segments action) is never
-  // available once the road is finalized.
-  const editRoadBtn = document.getElementById('editRoadBtn');
-  if (editRoadBtn) editRoadBtn.style.display = isFinalized ? 'none' : '';
-
   const done    = segments.filter(s => s.status === 'completed').length;
   const pending = segments.length - done;
   const pct     = segments.length ? Math.round((done / segments.length) * 100) : 0;
@@ -349,23 +341,15 @@ function displaySegments() {
     viewBtn.title    = allDone ? '' : `${pending} segment(s) still pending`;
   }
 
-  const finalSubmitBtn = document.getElementById('finalSubmitBtn');
-  if (finalSubmitBtn) {
-    // Only offered once fully audited and not already finalized.
-    finalSubmitBtn.style.display = (allDone && !isFinalized) ? '' : 'none';
-  }
-
   document.getElementById('completionBanner').style.display =
-    (allDone && !isFinalized) ? 'block' : 'none';
-  document.getElementById('lockedBanner').style.display =
-    isFinalized ? 'block' : 'none';
+    allDone ? 'block' : 'none';
   document.getElementById('blockedBanner').style.display    =
-    (!allDone && !isFinalized && segments.length > 0) ? 'block' : 'none';
+    (!allDone && segments.length > 0) ? 'block' : 'none';
 
-  if (allDone && !isFinalized) {
+  if (allDone) {
     document.getElementById('completionTitle').textContent =
       `All ${segments.length} segments audited ✓ — Road ready for final scoring.`;
-  } else if (!isFinalized && segments.length > 0) {
+  } else if (segments.length > 0) {
     document.getElementById('blockedText').textContent =
       `${pending} segment(s) still pending — complete all to unlock the result.`;
   }
@@ -395,18 +379,6 @@ function displaySegments() {
       statusHtml = `<div class="status-col"><span class="status-chip status-pending">Pending</span><span class="seg-timestamp">Needed for final score</span></div>`;
     }
 
-    // Edit is only offered while the road isn't finalized yet — once
-    // finalized, segments are permanently read-only.
-    let actionsHtml;
-    if (isDone) {
-      actionsHtml = isFinalized
-        ? `<button class="btn btn-secondary btn-sm" onclick="viewSegmentResult(${seg.id})">Results</button>`
-        : `<button class="btn btn-warning btn-sm" onclick="editAuditedSegment(${seg.id})">✏️ Edit</button>
-           <button class="btn btn-secondary btn-sm" onclick="viewSegmentResult(${seg.id})">Results</button>`;
-    } else {
-      actionsHtml = `<button class="btn btn-primary btn-sm" onclick="auditSegment(${seg.id})">Start Audit</button>`;
-    }
-
     card.innerHTML = `
       <div class="seg-num ${isDone ? 'done' : ''}">${isDone ? '✓' : seg.number}</div>
       <div class="seg-list-info">
@@ -414,31 +386,14 @@ function displaySegments() {
         <div class="seg-list-meta">${seg.startDistance}m – ${seg.endDistance}m &nbsp;|&nbsp; ${seg.length.toFixed(0)}m</div>
       </div>
       ${statusHtml}
-      <div class="seg-actions">${actionsHtml}</div>`;
+      <div class="seg-actions">
+        ${isDone
+          ? `<button class="btn btn-warning btn-sm" onclick="editAuditedSegment(${seg.id})">✏️ Edit</button>
+             <button class="btn btn-secondary btn-sm" onclick="viewSegmentResult(${seg.id})">Results</button>`
+          : `<button class="btn btn-primary btn-sm" onclick="auditSegment(${seg.id})">Start Audit</button>`}
+      </div>`;
     list.appendChild(card);
   });
-}
-
-// ── Finalize (permanently lock) the road ────────────────────────
-async function finalizeRoad() {
-  if (!_currentRoadId) return;
-
-  if (!confirm(
-    'Finalize this audit?\n\n' +
-    'Once submitted, no further edits will be possible for this road.'
-  )) return;
-
-  try {
-    const data = await apiFetch('../api/roads/finalize.php', 'PUT', { road_id: _currentRoadId });
-    if (data.success) {
-      alert('✅ This audit has been finalized and cannot be edited further.');
-      loadSegmentsFromDB(_currentRoadId);
-    } else {
-      alert('Could not finalize: ' + (data.error ?? 'Unknown error'));
-    }
-  } catch {
-    alert('Network error — please try again.');
-  }
 }
 
 // ── Navigation ─────────────────────────────────────────────────

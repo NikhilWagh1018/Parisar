@@ -56,12 +56,6 @@ $PERMISSIONS = [
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
-    'finalize_road' => static function (int $userId, string $role, array $ctx): bool {
-        // Only the road owner or an admin may finalize (permanently lock) a road.
-        if ($role === 'admin') return true;
-        return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
-    },
-
     // ── Audit sessions ────────────────────────────────────────
     'create_session' => static function (int $userId, string $role, array $ctx): bool {
         // Any authenticated user may start an audit session.

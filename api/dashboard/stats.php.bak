@@ -36,7 +36,6 @@ try {
              r.name                                        AS road_name,
              r.total_length,
              r.creator_id,
-             r.finalized_at,
              COUNT(s.id)                                   AS total_segments,
              SUM(s.status = \'completed\')                 AS completed_segments,
              SUM(s.status = \'pending\')                   AS pending_segments,
@@ -80,7 +79,6 @@ try {
         $road['pending_segments']   = (int)$road['pending_segments'];
         $road['total_length']       = $road['total_length'] !== null ? (float)$road['total_length'] : null;
         $road['session_id']         = $road['session_id'] !== null ? (int)$road['session_id'] : null;
-        $road['is_finalized']       = $road['finalized_at'] !== null;
 
         $totalSegments     += $road['total_segments'];
         $completedSegments += $road['completed_segments'];

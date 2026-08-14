@@ -62,14 +62,6 @@ try {
     // ── 2. RBAC gate ───────────────────────────────────────────
     gate('unlock_segment', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $segment['creator_id']]);
 
-    // ── 2b. Finalized roads are permanently locked ──────────────
-    if ($segment['finalized_at'] !== null) {
-        $pdo->rollBack();
-        http_response_code(409);
-        echo json_encode(['success' => false, 'error' => 'This audit has been finalized and can no longer be edited.']);
-        exit;
-    }
-
     // ── 3. Only completed segments can be unlocked ─────────────
     if ($segment['status'] !== 'completed') {
         $pdo->rollBack();

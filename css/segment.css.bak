@@ -725,12 +725,6 @@ select.error,
   color: #9a3412;
 }
 
-.banner-locked {
-  background: var(--cream);
-  border: 1.5px solid var(--border-dark);
-  color: var(--ink-soft);
-}
-
 /* ── Segment List (Section 2) ────────────────────────────────── */
 .segment-row {
   display: flex;

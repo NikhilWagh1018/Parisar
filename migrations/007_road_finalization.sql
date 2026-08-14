@@ -1,0 +1,32 @@
+-- ═══════════════════════════════════════════════════════════════
+--  007_road_finalization.sql
+--  Session 31 (continued) — adds explicit finalization to roads.
+--
+--  Problem: a fully-audited road ("Completed") could still be
+--  re-opened via the per-segment "Edit" button, which immediately
+--  unlocks the segment and flips the road back to "Active" before
+--  the user has made or confirmed any actual change. There was no
+--  point at which a road became genuinely immutable.
+--
+--  Fix: roads.finalized_at marks a road as permanently locked.
+--  Set only via the new explicit "Final Submit" action (see
+--  api/roads/finalize.php), which requires all segments to already
+--  be completed. Once set:
+--    - api/segments/unlock.php refuses to unlock any segment
+--      belonging to the road
+--    - api/roads/segments/save.php refuses to regenerate segments
+--      for the road (the destructive "Edit Road" action)
+--    - api/segments/submit.php refuses new submissions for the
+--      road's segments (defense in depth)
+--    - UI hides all edit affordances (segment Edit buttons, the
+--      "Edit Road" button, and the dashboard "Audit" action)
+--      once finalized_at is set.
+--
+--  Deliberately separate from audit_sessions.status: a road can
+--  accumulate multiple session rows over its lifetime, but
+--  finalization is a property of the road itself, not any one
+--  session.
+-- ═══════════════════════════════════════════════════════════════
+
+ALTER TABLE roads
+    ADD COLUMN finalized_at DATETIME NULL AFTER created_at;

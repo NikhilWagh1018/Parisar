@@ -169,7 +169,7 @@ require_once __DIR__ . '/../config/auth_guard.php';
         <div class="page-subtitle" id="roadRouteDisplay"></div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-secondary btn-sm" id="editRoadBtn" onclick="editRoadInfo()">✏️ Edit Road</button>
+        <button class="btn btn-secondary btn-sm" onclick="editRoadInfo()">✏️ Edit Road</button>
       </div>
     </div>
 
@@ -188,10 +188,6 @@ require_once __DIR__ . '/../config/auth_guard.php';
     <div id="completionBanner" class="banner banner-success" style="display:none">
       <span id="completionTitle"></span>
       <button class="btn btn-primary btn-sm" id="viewResultsBtn" onclick="viewRoadResult()">View Road Result →</button>
-      <button class="btn btn-primary btn-sm" id="finalSubmitBtn" onclick="finalizeRoad()" style="display:none">✅ Final Submit</button>
-    </div>
-    <div id="lockedBanner" class="banner banner-locked" style="display:none">
-      <span>🔒 This audit has been finalized and can no longer be edited.</span>
     </div>
     <div id="blockedBanner" class="banner banner-warn" style="display:none">
       <span id="blockedText"></span>

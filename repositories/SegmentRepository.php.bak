@@ -27,7 +27,7 @@ class SegmentRepository
     public function findWithRoad(int $segmentId): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT s.id, s.status, s.road_id, r.creator_id, r.finalized_at
+            'SELECT s.id, s.status, s.road_id, r.creator_id
                FROM segments s
                JOIN roads r ON r.id = s.road_id
               WHERE s.id = ?
@@ -47,7 +47,7 @@ class SegmentRepository
     public function findWithRoadForUpdate(int $segmentId): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT s.id, s.status, s.road_id, r.creator_id, r.finalized_at
+            'SELECT s.id, s.status, s.road_id, r.creator_id
                FROM segments s
                JOIN roads r ON r.id = s.road_id
               WHERE s.id = ?

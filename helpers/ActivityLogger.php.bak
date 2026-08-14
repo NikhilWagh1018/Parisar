@@ -19,7 +19,6 @@ class ActivityLogger
     public const USER_REGISTERED   = 'user_registered';
     public const ROAD_CREATED      = 'road_created';
     public const ROAD_DELETED      = 'road_deleted';
-    public const ROAD_FINALIZED    = 'road_finalized';
 
     /**
      * Log an activity.

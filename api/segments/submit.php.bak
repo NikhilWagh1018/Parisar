@@ -82,7 +82,7 @@ try {
 
     // ── 1. Lock segment — prevent duplicate submissions ────────
     $stmtSeg = $pdo->prepare(
-        'SELECT s.status, s.road_id, s.segment_number, r.creator_id, r.finalized_at
+        'SELECT s.status, s.road_id, s.segment_number, r.creator_id
          FROM   segments s
          JOIN   roads r ON r.id = s.road_id
          WHERE  s.id = ?
@@ -95,13 +95,6 @@ try {
         $pdo->rollBack();
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Segment not found.']);
-        exit;
-    }
-
-    if ($segment['finalized_at'] !== null) {
-        $pdo->rollBack();
-        http_response_code(409);
-        echo json_encode(['success' => false, 'error' => 'This road has been finalized and can no longer be edited.']);
         exit;
     }
 

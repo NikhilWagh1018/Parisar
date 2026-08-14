@@ -73,12 +73,6 @@ try {
 
     gate('save_segments', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $road['creator_id']]);
 
-    if ($road['finalized_at'] !== null) {
-        http_response_code(409);
-        echo json_encode(['success' => false, 'error' => 'This road has been finalized and can no longer be edited.']);
-        exit;
-    }
-
     $pdo->beginTransaction();
 
     $segmentRepo->deleteForRoad($roadId);

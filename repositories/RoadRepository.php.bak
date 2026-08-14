@@ -32,7 +32,7 @@ class RoadRepository
                     start_point, end_point, total_length,
                     gps_start, gps_end,
                     segment_method, segment_length,
-                    created_at, finalized_at
+                    created_at
                FROM roads
               WHERE id = ?
               LIMIT 1'
@@ -54,7 +54,7 @@ class RoadRepository
             'SELECT id, public_id, creator_id, name,
                     start_point, end_point, total_length,
                     gps_start, gps_end,
-                    segment_method, segment_length, finalized_at
+                    segment_method, segment_length
                FROM roads
               WHERE id = ? AND creator_id = ?
               LIMIT 1'
@@ -207,47 +207,6 @@ class RoadRepository
     public function delete(int $roadId): void
     {
         $this->pdo->prepare('DELETE FROM roads WHERE id = ?')->execute([$roadId]);
-    }
-
-    /**
-     * Whether every segment for a road is status = 'completed'
-     * (and the road has at least one segment). Used to gate
-     * finalization — a road can't be finalized until it's fully
-     * audited.
-     */
-    public function allSegmentsCompleted(int $roadId): bool
-    {
-        $stmt = $this->pdo->prepare(
-            "SELECT COUNT(*) AS total, SUM(status = 'completed') AS done
-               FROM segments
-              WHERE road_id = ?"
-        );
-        $stmt->execute([$roadId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$row || (int)$row['total'] === 0) {
-            return false;
-        }
-
-        return (int)$row['total'] === (int)$row['done'];
-    }
-
-    /**
-     * Permanently lock a road against further edits. Caller must
-     * verify ownership and that allSegmentsCompleted() is true first.
-     * Idempotent — only sets finalized_at if it isn't already set.
-     *
-     * @return bool  true if this call set finalized_at, false if it
-     *               was already finalized (no-op).
-     */
-    public function finalize(int $roadId): bool
-    {
-        $stmt = $this->pdo->prepare(
-            'UPDATE roads SET finalized_at = NOW()
-              WHERE id = ? AND finalized_at IS NULL'
-        );
-        $stmt->execute([$roadId]);
-        return $stmt->rowCount() > 0;
     }
 
     // ══════════════════════════════════════════════════════════
