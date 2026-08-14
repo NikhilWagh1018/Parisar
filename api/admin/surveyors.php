@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             u.created_at,
             (SELECT COUNT(*) FROM roads r WHERE r.creator_id = u.id) AS roads_created,
             (SELECT COUNT(*) FROM segment_audits sa WHERE sa.surveyor_id = u.id) AS segments_audited,
-            (SELECT MAX(sa2.created_at) FROM segment_audits sa2 WHERE sa2.surveyor_id = u.id) AS last_audit_at
+            (SELECT MAX(sa2.audited_at) FROM segment_audits sa2 WHERE sa2.surveyor_id = u.id) AS last_audit_at
          FROM users u
         ORDER BY u.is_active DESC, u.role = 'admin' DESC, u.name ASC"
     );

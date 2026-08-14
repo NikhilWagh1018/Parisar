@@ -45,7 +45,7 @@ try {
              sess.id                                       AS session_id,
              sess.public_id                                AS session_public_id,
              sess.status                                   AS session_status,
-             sess.updated_at                               AS last_activity
+             COALESCE(sess.completed_at, sess.started_at)  AS last_activity
          FROM roads r
          LEFT JOIN segments s
                ON  s.road_id = r.id
@@ -53,7 +53,7 @@ try {
                ON  sess.id = (
                      SELECT id FROM audit_sessions
                      WHERE  road_id = r.id AND user_id = ?
-                     ORDER  BY updated_at DESC
+                     ORDER  BY id DESC
                      LIMIT  1
                    )
          WHERE r.creator_id = ?
