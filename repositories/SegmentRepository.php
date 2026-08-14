@@ -318,7 +318,7 @@ class SegmentRepository
         $stmt = $this->pdo->prepare(
             'SELECT
                  COUNT(DISTINCT latest.segment_id) AS segments_audited,
-                 SUM(latest.segment_length)         AS total_length_m,
+                 SUM(s.length)                      AS total_length_m,
                  COUNT(DISTINCT s.road_id)          AS roads_touched,
                  MIN(latest.created_at)             AS first_audit_at
              FROM (
@@ -360,7 +360,7 @@ class SegmentRepository
                  latest.id              AS audit_id,
                  latest.segment_id,
                  latest.segment_width,
-                 latest.segment_length,
+                 s.length               AS segment_length,
                  latest.created_at,
                  s.segment_number,
                  s.road_id,

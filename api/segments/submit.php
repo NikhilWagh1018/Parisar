@@ -142,7 +142,7 @@ try {
         'cycle_track_missing', 'missing_length', 'cyclist_use', 'better_surface',
         'surface_material', 'people_walking', 'signage_count', 'shade',
         'light_after_sunset', 'track_geometry', 'buffer_zone',
-        'segment_width', 'segment_length', 'comments',
+        'segment_width', 'comments',
     ];
 
     $mainValues = array_map(

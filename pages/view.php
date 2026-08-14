@@ -121,7 +121,6 @@ $footpathRating = json_decode((string)($row['footpath_rating'] ?? '[]'), true) ?
       'Track Geometry'      => $row['track_geometry'],
       'Buffer Zone'         => $row['buffer_zone'],
       'Segment Width'       => $row['segment_width']  ? $row['segment_width'].' m'  : null,
-      'Segment Length'      => $row['segment_length'] ? $row['segment_length'].' m' : null,
     ];
     foreach ($details as $k => $v):
       if ($v === null || $v === '') continue; ?>

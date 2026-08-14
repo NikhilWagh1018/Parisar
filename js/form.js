@@ -828,7 +828,6 @@ async function prefillFormIfEditMode() {
       if (el && val != null) el.value = val;
     };
     setByName('segment_width',  a.segment_width);
-    setByName('segment_length', a.segment_length);
     setByName('comments',       a.comments);
 
     // ── Obstructions ─────────────────────────────────────────

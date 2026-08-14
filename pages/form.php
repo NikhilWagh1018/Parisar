@@ -547,17 +547,10 @@ if ($segNum > 0) {
         </div>
       </div>
       <div class="section-card-body">
-        <div class="field-row">
-          <div class="field-group">
-            <label class="field-label">Width of Segment (m)</label>
-            <input type="text" inputmode="decimal" id="segment_width_input" name="segment_width"
-                   placeholder="e.g. 2.5" oninput="sanitizeNumericInput(this)">
-          </div>
-          <div class="field-group">
-            <label class="field-label">Length of Segment (m)</label>
-            <input type="text" inputmode="decimal" id="segment_length_input" name="segment_length"
-                   placeholder="e.g. 500" oninput="sanitizeNumericInput(this)">
-          </div>
+        <div class="field-group">
+          <label class="field-label">Width of Segment (m)</label>
+          <input type="text" inputmode="decimal" id="segment_width_input" name="segment_width"
+                 placeholder="e.g. 2.5" oninput="sanitizeNumericInput(this)">
         </div>
         <div class="field-group" style="margin-top:14px">
           <label class="field-label">Surveyor's Comments</label>

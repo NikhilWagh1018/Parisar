@@ -1,0 +1,30 @@
+-- ═══════════════════════════════════════════════════════════════
+--  008_drop_segment_audits_segment_length.sql
+--  Session 32 — removes the unused manual "Length of Segment"
+--  field on individual audit records.
+--
+--  Problem: the audit form asked surveyors to manually re-type a
+--  segment's length even though the authoritative value already
+--  exists on segments.length (auto-generated when the road was
+--  defined). Nobody reliably filled it in, so
+--  segment_audits.segment_length was NULL for almost every audit —
+--  which meant the "Distance Covered" stat on My Audits always
+--  showed 0 km, no matter how much real auditing had happened.
+--
+--  Confirmed this column was never used for anything functional:
+--  ScoreService.php already computes scores from segments.length,
+--  not this field. It only ever fed:
+--    - the "Distance Covered" stat (personalStats())
+--    - the per-audit list on My Audits (personalAuditList())
+--    - a redundant "Segment Length" line on the audit view page
+--      (pages/view.php), which already shows the correct length
+--      from segments.length a few lines above it in the header
+--  All three were switched to read segments.length directly
+--  (this is a JOIN that already existed in each of those queries).
+--
+--  This migration is irreversible (DROP COLUMN) — there is no
+--  meaningful historical data to lose, since the column was NULL
+--  for the overwhelming majority of existing rows anyway.
+-- ═══════════════════════════════════════════════════════════════
+
+ALTER TABLE segment_audits DROP COLUMN segment_length;
