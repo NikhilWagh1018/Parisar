@@ -106,9 +106,13 @@ function roadSelectItem(val) {
   // Update visible input
   document.getElementById('roadSearchInput').value = val;
   document.getElementById('roadSearchInput').classList.add('has-value');
-  // Hide custom wrap
-  document.getElementById('customRoadWrap').classList.remove('open');
-  document.getElementById('customRoadName').value = '';
+  // Hide custom wrap (admin-only element — doesn't exist in the DOM for
+  // non-admin users, so guard with optional chaining or this throws and
+  // aborts before roadDropdownClose() below ever runs, leaving the
+  // dropdown stuck open)
+  document.getElementById('customRoadWrap')?.classList.remove('open');
+  const customRoadNameEl = document.getElementById('customRoadName');
+  if (customRoadNameEl) customRoadNameEl.value = '';
   // Hide error
   const err = document.getElementById('err-roadName');
   if (err) err.style.display = 'none';
