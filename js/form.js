@@ -434,7 +434,7 @@ function updateFootpathScore() {
     .map(el => el.value)
   );
   const score = Object.entries(weights)
-    .reduce((sum, [key, w]) => sum + (checked.has(key) ? 0 : w), 0);
+    .reduce((sum, [key, w]) => sum + (checked.has(key) ? w : 0), 0);
   document.getElementById('footpathScore').textContent = score + '%';
 }
 

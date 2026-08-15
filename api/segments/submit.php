@@ -166,20 +166,24 @@ try {
     $surfaceIssues  = json_encode(array_values(array_filter((array)($_POST['surface_issues']  ?? []))));
     $overheadIssues = json_encode(array_values(array_filter((array)($_POST['overhead_issues'] ?? []))));
     $footpathRating = json_encode(array_values(array_filter((array)($_POST['footpath_rating'] ?? []))));
-    $dims = json_decode($dims ?? '', true) ?? [];
-    $dims     = [
-    'minWidth'         => 30,
-    'obstructionFree'  => 30,
-    'continuous'       => 20,
-    'disabledFriendly' => 15,
-    'comfort'          => 5,
-];
-$footpathScore = 0;
-foreach ($dims as $key => $weight) {
-    if (!in_array($key, array_keys($dims), true)) {
-        $footpathScore += $weight;
+    // Footpath score: sum the weight of each footpath_rating[] criterion
+    // the surveyor actually checked. Weights mirror updateFootpathScore()
+    // in js/form.js so the live preview shown while filling the form
+    // matches what gets stored.
+    $footpathWeights = [
+        'minWidth'         => 30,
+        'obstructionFree'  => 30,
+        'continuous'       => 20,
+        'disabledFriendly' => 15,
+        'comfort'          => 5,
+    ];
+    $checkedFootpathCriteria = json_decode($footpathRating, true) ?? [];
+    $footpathScore = 0;
+    foreach ($footpathWeights as $key => $weight) {
+        if (in_array($key, $checkedFootpathCriteria, true)) {
+            $footpathScore += $weight;
+        }
     }
-}
 
     if ($editMode) {
         // ── EDIT: update the most-recent audit row ─────────────
