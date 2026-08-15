@@ -34,7 +34,7 @@ require_once __DIR__ . '/../config/auth_guard.php';
 <div class="container">
 
   <!-- ── SECTION 1: Road Setup ── -->
-  <div id="roadSetupSection">
+  <div id="roadSetupSection" style="display:none">
     <div class="page-title">Define Road</div>
     <div class="page-subtitle">Set up the road details before adding audit segments.</div>
 
