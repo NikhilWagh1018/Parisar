@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  js/segment.js
 //  Road & segment definition UI logic.
 //  API endpoints used:
@@ -6,22 +6,21 @@
 //    POST api/roads/segments/save.php
 //    GET  api/roads/segments/index.php?road_id=
 //    POST api/audit-sessions/create.php
-//    PUT  api/segments/complete.php
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 
-// ── State ──────────────────────────────────────────────────────
+// ── State ────────────────────────────────────────────────────────
 let roadData        = {};
 let segments        = [];
 let _currentRoadId  = null;
 window._currentSessionId = null;
 
-// ── CSRF token ─────────────────────────────────────────────────
+// ── CSRF token ───────────────────────────────────────────────────
 function getCsrf() {
   const meta = document.querySelector('meta[name="csrf"]');
   return meta ? meta.content : (window.__CSRF__ || '');
 }
 
-// ── Boot ───────────────────────────────────────────────────────
+// ── Boot ─────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('segmentLength')
     .addEventListener('change', function () {
@@ -44,7 +43,18 @@ window.addEventListener('DOMContentLoaded', () => {
     const roadIdDone   = parseInt(params.get('road_id')    || '0');
     if (roadIdDone   > 0) _currentRoadId           = roadIdDone;
     if (sessionIdQS2 > 0) window._currentSessionId = sessionIdQS2;
-    markSegmentCompleted(segId);
+    // api/segments/submit.php already marks the segment completed and
+    // auto-completes the session server-side, atomically, in the same
+    // transaction as saving the audit answers (see submit.php step 6 /
+    // 6a). Calling api/segments/complete.php again here was redundant
+    // and — once the session had already auto-completed, which is the
+    // common case — reliably 403'd ("Session not found, not owned by
+    // you, or not active."), causing a visible flash back to the road
+    // setup view before this same fallback re-render below ran anyway.
+    // Just clean the URL and refresh the segments list from the DB.
+    window.history.replaceState({}, '', 'segment.php');
+    if (_currentRoadId) loadSegmentsFromDB(_currentRoadId);
+    else showRoadForm();
   } else if (roadIdQS > 0) {
     _currentRoadId = roadIdQS;
     ensureSession(roadIdQS).then(() => loadSegmentsFromDB(roadIdQS));
@@ -60,7 +70,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// ── Ensure an audit session exists for this road ───────────────
+// ── Ensure an audit session exists for this road ────────────────
 async function ensureSession(roadId) {
   try {
     const data = await apiFetch('../api/audit-sessions/create.php', 'POST', { road_id: roadId });
@@ -72,25 +82,7 @@ async function ensureSession(roadId) {
   }
 }
 
-// ── Mark segment completed on return from audit form ──────────
-async function markSegmentCompleted(segId) {
-  try {
-    if (window._currentSessionId) {
-      await apiFetch('../api/segments/complete.php', 'PUT', {
-        segment_id: segId,
-        session_id: window._currentSessionId,
-      });
-    }
-  } catch (e) {
-    console.warn('markSegmentCompleted failed:', e);
-  } finally {
-    window.history.replaceState({}, '', 'segment.php');
-    if (_currentRoadId) loadSegmentsFromDB(_currentRoadId);
-    else showRoadForm();
-  }
-}
-
-// ── Load segments from DB ──────────────────────────────────────
+// ── Load segments from DB ───────────────────────────────────────
 async function loadSegmentsFromDB(roadId) {
   try {
     const res  = await fetch(
@@ -146,7 +138,7 @@ async function loadSegmentsFromDB(roadId) {
   }
 }
 
-// ── Show blank road form ───────────────────────────────────────
+// ── Show blank road form ────────────────────────────────────────
 function showRoadForm() {
   roadData = {}; segments = []; _currentRoadId = null;
   window._currentSessionId = null;
@@ -164,7 +156,7 @@ function showRoadForm() {
   setStep(1);
 }
 
-// ── Validation ─────────────────────────────────────────────────
+// ── Validation ───────────────────────────────────────────────────
 function sanitizeNumericInput(el) {
   let v = el.value.replace(/[^0-9.]/g, '');
   const firstDot = v.indexOf('.');
@@ -197,7 +189,7 @@ function validateRoadFields() {
   return valid;
 }
 
-// ── Auto preview ───────────────────────────────────────────────
+// ── Auto preview ─────────────────────────────────────────────────
 function updateAutoPreview() {
   const roadLen = parseFloat(document.getElementById('roadLength').value) || 0;
   const sel     = document.getElementById('segmentLength').value;
@@ -216,7 +208,7 @@ function updateAutoPreview() {
   preview.classList.add('show');
 }
 
-// ── Generate auto segments ─────────────────────────────────────
+// ── Generate auto segments ──────────────────────────────────────
 async function generateAutoSegments() {
   if (!validateRoadFields()) return;
 
@@ -249,7 +241,7 @@ async function generateAutoSegments() {
   await saveRoadAndSegments(roadName, segsArr, 'auto', segLen);
 }
 
-// ── Core save: road → segments → session ──────────────────────
+// ── Core save: road → segments → session ────────────────────────
 async function saveRoadAndSegments(roadName, segsArr, method, segmentLength) {
   showToast('Saving…');
   try {
@@ -263,7 +255,7 @@ async function saveRoadAndSegments(roadName, segsArr, method, segmentLength) {
     let roadId;
 
     if (_currentRoadId) {
-      // ── Edit mode: update existing road ──────────────────────
+      // ── Edit mode: update existing road ─────────────────────
       roadPayload.road_id = _currentRoadId;
       const roadResp = await apiFetch('../api/roads/update.php', 'POST', roadPayload);
       if (!roadResp.success) {
@@ -275,7 +267,7 @@ async function saveRoadAndSegments(roadName, segsArr, method, segmentLength) {
       }
       roadId = _currentRoadId;
     } else {
-      // ── Create mode: new road ─────────────────────────────────
+      // ── Create mode: new road ────────────────────────────────
       const roadResp = await apiFetch('../api/roads/create.php', 'POST', roadPayload);
       if (!roadResp.success) {
         showToast(
@@ -311,7 +303,7 @@ async function saveRoadAndSegments(roadName, segsArr, method, segmentLength) {
   }
 }
 
-// ── Display segments view ──────────────────────────────────────
+// ── Display segments view ───────────────────────────────────────
 function displaySegments() {
   document.getElementById('roadSetupSection').style.display = 'none';
   document.getElementById('segmentsSection').style.display  = 'block';
@@ -440,7 +432,7 @@ async function finalizeRoad() {
   }
 }
 
-// ── Navigation ─────────────────────────────────────────────────
+// ── Navigation ───────────────────────────────────────────────────
 function auditSegment(segId) {
   const seg = segments.find(s => s.id === segId);
   if (!seg) return;
@@ -490,7 +482,7 @@ function viewSegmentResult(segId) {
   window.location.href = `view.php?segment_id=${segId}${roadId ? '&road_id=' + roadId : ''}`;
 }
 
-// ── Edit road ──────────────────────────────────────────────────
+// ── Edit road ────────────────────────────────────────────────────
 function editRoadInfo() {
   const done  = segments.filter(s => s.status === 'completed').length;
   const total = segments.length;
@@ -567,7 +559,7 @@ function confirmEditRoad() {
   }
 }
 
-// ── Step indicator ─────────────────────────────────────────────
+// ── Step indicator ───────────────────────────────────────────────
 function setStep(n) {
   [1, 2, 3].forEach(i => {
     const el = document.getElementById(`step${i}`);
@@ -578,7 +570,7 @@ function setStep(n) {
   });
 }
 
-// ── Toast ──────────────────────────────────────────────────────
+// ── Toast ────────────────────────────────────────────────────────
 let _toastTimer;
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
@@ -590,7 +582,7 @@ function showToast(msg, type = '') {
   _toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 
-// ── Fetch helper with CSRF — always returns parsed JSON ────────
+// ── Fetch helper with CSRF — always returns parsed JSON ──────────
 async function apiFetch(url, method, body) {
   const res = await fetch(url, {
     method,
@@ -615,7 +607,7 @@ async function apiFetch(url, method, body) {
   return json;
 }
 
-// ── Timestamp formatter ────────────────────────────────────────
+// ── Timestamp formatter ───────────────────────────────────────────
 function formatTime(iso) {
   try {
     const d       = new Date(iso);
