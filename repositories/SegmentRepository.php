@@ -1,22 +1,22 @@
 <?php
 declare(strict_types=1);
 
-// ════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  repositories/SegmentRepository.php
 //  Centralises all segment + segment_audit SQL.
 //  Eliminates duplicated ownership/status queries spread across:
 //    api/segments/submit.php, reset.php, unlock.php,
 //    audit-data.php, complete.php,
 //    api/roads/segments/index.php, save.php
-// ════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 
 class SegmentRepository
 {
     public function __construct(private PDO $pdo) {}
 
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
     //  SEGMENT READS
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
 
     /**
      * Fetch a single segment row joined with its road's creator_id.
@@ -107,9 +107,9 @@ class SegmentRepository
         return (int)$stmt->fetchColumn();
     }
 
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
     //  SEGMENT WRITES
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
 
     /**
      * Mark a segment as completed.
@@ -150,9 +150,9 @@ class SegmentRepository
         )->execute([$roadId]);
     }
 
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
     //  AUDIT SESSION OWNERSHIP
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
 
     /**
      * Find an active audit session owned by $userId.
@@ -208,9 +208,9 @@ class SegmentRepository
         )->execute([$roadId, $userId]);
     }
 
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
     //  SEGMENT AUDIT READS
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
 
     /**
      * Fetch the most recent segment_audit row for a segment.
@@ -259,22 +259,35 @@ class SegmentRepository
      * Decodes the same JSON multi-select columns as latestAudit() so
      * callers get arrays, not strings.
      *
+     * NOTE (fixed after live testing): segment_length is NOT a real
+     * column on segment_audits in production — confirmed via live
+     * DESCRIBE segment_audits. It's derived here via a join to
+     * segments.length, same pattern personalAuditList() already uses
+     * (s.length AS segment_length). Selecting it as a bare
+     * segment_audits column (as originally written, mirroring
+     * latestAudit()'s column list) throws "Unknown column
+     * 'segment_length' in field list" against the live DB — this was
+     * causing "Server error while loading comparison" in the browser.
+     * latestAudit() above has this same latent bug and was NOT
+     * modified here — flagged separately, not in scope for this fix.
+     *
      * @return list<array<string,mixed>>
      */
     public function auditHistoryForSegment(int $segmentId, int $userId): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, session_id,
-                    start_landmark, end_landmark, gps_start, gps_end,
-                    cycle_track_missing, missing_length, cyclist_use, better_surface,
-                    surface_material, people_walking, signage_count, shade,
-                    light_after_sunset, track_geometry, buffer_zone,
-                    segment_width, segment_length, comments,
-                    surface_issues, overhead_issues, footpath_rating, footpath_score,
-                    public_id, surveyor_id, created_at
-               FROM segment_audits
-              WHERE segment_id = ? AND surveyor_id = ?
-              ORDER BY id ASC'
+            'SELECT sa.id, sa.session_id,
+                    sa.start_landmark, sa.end_landmark, sa.gps_start, sa.gps_end,
+                    sa.cycle_track_missing, sa.missing_length, sa.cyclist_use, sa.better_surface,
+                    sa.surface_material, sa.people_walking, sa.signage_count, sa.shade,
+                    sa.light_after_sunset, sa.track_geometry, sa.buffer_zone,
+                    sa.segment_width, s.length AS segment_length, sa.comments,
+                    sa.surface_issues, sa.overhead_issues, sa.footpath_rating, sa.footpath_score,
+                    sa.public_id, sa.surveyor_id, sa.created_at
+               FROM segment_audits sa
+               JOIN segments s ON s.id = sa.segment_id
+              WHERE sa.segment_id = ? AND sa.surveyor_id = ?
+              ORDER BY sa.id ASC'
         );
         $stmt->execute([$segmentId, $userId]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -546,9 +559,9 @@ class SegmentRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
     //  SEGMENT AUDIT WRITES
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
 
     /**
      * Delete all audit data (segment_audits + children) for a segment.
@@ -577,9 +590,9 @@ class SegmentRepository
         $this->pdo->prepare('DELETE FROM intersections WHERE audit_id = ?')->execute([$auditId]);
     }
 
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
     //  LEADERBOARD / STREAK — Visibility & Motivation roadmap #3
-    // ────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
 
     /**
      * Ranked surveyor totals: segment submissions + distance audited
