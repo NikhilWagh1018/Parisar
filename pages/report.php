@@ -250,7 +250,6 @@ $logoBase64 = file_exists($logoPath)
   <div class="toolbar-title">📄 <?= htmlspecialchars($session['road_name']) ?> — Audit Report</div>
   <div class="toolbar-btns">
     <a href="dashboard.php" class="tbtn tbtn-back">← Dashboard</a>
-    <a href="segment.php?road_id=<?php echo $roadId; ?>" class="tbtn tbtn-segments">↩ Back to Segments</a>
     <a href="../api/reports/export-excel.php?session_id=<?= $sessionId ?>" class="tbtn tbtn-excel">⬇ Excel</a>
     <button class="tbtn tbtn-print" onclick="window.print()">🖨 Print / Save PDF</button>
   </div>
