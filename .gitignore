@@ -26,3 +26,5 @@ Parisar/
 parisar_backup.sql
 
 *.bak
+
+.phpunit.result.cache
