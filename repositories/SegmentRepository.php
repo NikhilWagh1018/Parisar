@@ -220,18 +220,25 @@ class SegmentRepository
      */
     public function latestAudit(int $segmentId): ?array
     {
+        // NOTE (fixed after live testing — same root cause as
+        // auditHistoryForSegment() below): segment_length is NOT a real
+        // column on segment_audits in production. This was silently
+        // breaking api/segments/audit-data.php (500 "Server error") on
+        // every call, since that endpoint calls this method directly to
+        // pre-fill the edit-audit form.
         $stmt = $this->pdo->prepare(
-            'SELECT id, session_id,
-                    start_landmark, end_landmark, gps_start, gps_end,
-                    cycle_track_missing, missing_length, cyclist_use, better_surface,
-                    surface_material, people_walking, signage_count, shade,
-                    light_after_sunset, track_geometry, buffer_zone,
-                    segment_width, segment_length, comments,
-                    surface_issues, overhead_issues, footpath_rating, footpath_score,
-                    public_id, surveyor_id
-               FROM segment_audits
-              WHERE segment_id = ?
-              ORDER BY id DESC
+            'SELECT sa.id, sa.session_id,
+                    sa.start_landmark, sa.end_landmark, sa.gps_start, sa.gps_end,
+                    sa.cycle_track_missing, sa.missing_length, sa.cyclist_use, sa.better_surface,
+                    sa.surface_material, sa.people_walking, sa.signage_count, sa.shade,
+                    sa.light_after_sunset, sa.track_geometry, sa.buffer_zone,
+                    sa.segment_width, s.length AS segment_length, sa.comments,
+                    sa.surface_issues, sa.overhead_issues, sa.footpath_rating, sa.footpath_score,
+                    sa.public_id, sa.surveyor_id
+               FROM segment_audits sa
+               JOIN segments s ON s.id = sa.segment_id
+              WHERE sa.segment_id = ?
+              ORDER BY sa.id DESC
               LIMIT 1'
         );
         $stmt->execute([$segmentId]);
@@ -262,14 +269,13 @@ class SegmentRepository
      * NOTE (fixed after live testing): segment_length is NOT a real
      * column on segment_audits in production — confirmed via live
      * DESCRIBE segment_audits. It's derived here via a join to
-     * segments.length, same pattern personalAuditList() already uses
-     * (s.length AS segment_length). Selecting it as a bare
-     * segment_audits column (as originally written, mirroring
-     * latestAudit()'s column list) throws "Unknown column
-     * 'segment_length' in field list" against the live DB — this was
-     * causing "Server error while loading comparison" in the browser.
-     * latestAudit() above has this same latent bug and was NOT
-     * modified here — flagged separately, not in scope for this fix.
+     * segments.length, same pattern personalAuditList() and
+     * latestAudit() above now both use. Selecting it as a bare
+     * segment_audits column (as originally written) throws "Unknown
+     * column 'segment_length' in field list" against the live DB —
+     * this was causing "Server error while loading comparison" in
+     * the browser (and, via latestAudit(), a 500 on
+     * api/segments/audit-data.php as well).
      *
      * @return list<array<string,mixed>>
      */
