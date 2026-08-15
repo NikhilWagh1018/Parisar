@@ -1,6 +1,6 @@
 {
     "name": "parisar/cycleaudit",
-    "description": "Parisar CycleAudit — road segment audit platform",
+    "description": "Parisar CycleAudit \u2014 road segment audit platform",
     "type": "project",
     "require": {
         "php": ">=8.1",
@@ -15,6 +15,7 @@
             "services/ScoreService.php",
             "helpers/Validator.php",
             "helpers/StreakCalculator.php",
+            "helpers/AuditHistoryFilter.php",
             "repositories/SegmentRepository.php"
         ]
     },

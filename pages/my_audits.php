@@ -234,31 +234,37 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 
     <!-- ═══════════ SECTION 2: FILTER & SORT BAR ═══════════ -->
     <div class="card" id="ma-filterbar" style="margin-top:20px;padding:16px 20px;">
-      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
-        <div style="display:flex;flex-direction:column;gap:4px;">
-          <label for="ma-filter-status" style="font-size:12px;font-weight:600;color:#6b7280;">Status</label>
-          <select id="ma-filter-status" class="ma-select">
-            <option value="all">All</option>
-            <option value="active">Active</option>
-            <option value="completed">Completed</option>
-          </select>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <label for="ma-filter-status" style="font-size:12px;font-weight:600;color:#6b7280;">Status</label>
+            <select id="ma-filter-status" class="ma-select">
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <label for="ma-filter-range" style="font-size:12px;font-weight:600;color:#6b7280;">Date range</label>
+            <select id="ma-filter-range" class="ma-select">
+              <option value="all">All time</option>
+              <option value="week">This week</option>
+              <option value="month">This month</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <label for="ma-sort" style="font-size:12px;font-weight:600;color:#6b7280;">Sort by</label>
+            <select id="ma-sort" class="ma-select">
+              <option value="recent">Most recent</option>
+              <option value="name">Road name (A–Z)</option>
+              <option value="score">Condition (worst first)</option>
+            </select>
+          </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px;">
-          <label for="ma-filter-range" style="font-size:12px;font-weight:600;color:#6b7280;">Date range</label>
-          <select id="ma-filter-range" class="ma-select">
-            <option value="all">All time</option>
-            <option value="week">This week</option>
-            <option value="month">This month</option>
-          </select>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;">
-          <label for="ma-sort" style="font-size:12px;font-weight:600;color:#6b7280;">Sort by</label>
-          <select id="ma-sort" class="ma-select">
-            <option value="recent">Most recent</option>
-            <option value="name">Road name (A–Z)</option>
-            <option value="score">Condition (worst first)</option>
-          </select>
-        </div>
+        <button id="ma-export-btn" class="ma-page-btn" type="button" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export to Excel
+        </button>
       </div>
     </div>
 
@@ -329,7 +335,7 @@ async function loadMyAuditStats() {
   }
 }
 
-// ── Section 3: "Continue where you left off" callout ────────────
+// ── Section 3: "Continue where you left off" callout ─────────────
 // Returns true if it rendered at least one resumable road. A user can
 // have an active session with pending segments but zero *completed*
 // audits yet (segments_audited === 0), so this is checked separately
@@ -377,7 +383,7 @@ async function loadMyAuditContinue() {
   }
 }
 
-// ── Section 2+4: filter/sort bar + audit list ──────────────────
+// ── Section 2+4: filter/sort bar + audit list ─────────────────────
 let maCurrentPage = 1;
 
 function maConditionColor(condition) {
@@ -477,10 +483,21 @@ document.getElementById('ma-filter-status').addEventListener('change', function 
 document.getElementById('ma-filter-range').addEventListener('change', function () { loadMyAuditList(1); });
 document.getElementById('ma-sort').addEventListener('change', function () { loadMyAuditList(1); });
 
+// Export respects whatever filters are currently selected — same
+// status/range/sort params the on-screen list uses, no page param
+// since the export always includes every matching row.
+document.getElementById('ma-export-btn').addEventListener('click', function () {
+  const status = document.getElementById('ma-filter-status').value;
+  const range  = document.getElementById('ma-filter-range').value;
+  const sort   = document.getElementById('ma-sort').value;
+  const params = new URLSearchParams({ status, range, sort });
+  window.location.href = '../api/user/audit_export.php?' + params.toString();
+});
+
 // ── Init: decide between the normal filter bar + list vs. Section 5's
 //    empty state, based on whether the user has any completed audits
 //    or anything resumable. Both calls run first so the decision is
-//    never made on partial information. ──────────────────────────
+//    never made on partial information. ─────────────────────────────
 (async function initMyAudits() {
   const hasCompletedAudits = await loadMyAuditStats();
   const hasResumable       = await loadMyAuditContinue();
