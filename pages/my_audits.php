@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-// ═══════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
 //  pages/my_audits.php
 //  Personal audit history page.
 //  Section 1 (this delivery): header/summary strip only, backed by
 //  api/user/audit_history.php. Filters, "continue where you left
 //  off," and the main audit list are added in later sections.
-// ═══════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/auth_guard.php';
 require_once __DIR__ . '/../config/constants.php';
@@ -106,6 +106,131 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
      button's green background. */
   #ma-empty-state a.btn-new {
     color: #fff;
+  }
+  /* Reporting roadmap item 2 — before/after comparison panel */
+  .ma-compare-link {
+    color: #3d7a1f;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+  }
+  .ma-compare-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .55);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .ma-compare-overlay.show {
+    display: flex;
+  }
+  .ma-compare-modal {
+    background: #fff;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 640px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 24px 28px;
+    position: relative;
+  }
+  .ma-compare-close {
+    position: absolute;
+    top: 16px;
+    right: 18px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    color: #9ca3af;
+    cursor: pointer;
+  }
+  .ma-compare-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 4px;
+    padding-right: 24px;
+  }
+  .ma-compare-sub {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0 0 18px;
+  }
+  .ma-compare-scoreband {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #f9fafb;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+  }
+  .ma-compare-score-block {
+    flex: 1;
+    text-align: center;
+  }
+  .ma-compare-score-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #9ca3af;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .ma-compare-score-val {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+  }
+  .ma-compare-arrow {
+    color: #9ca3af;
+    font-size: 18px;
+  }
+  .ma-compare-delta {
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .ma-compare-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-top: 1px solid #f0f0f0;
+    font-size: 13px;
+    gap: 12px;
+  }
+  .ma-compare-row:first-of-type {
+    border-top: none;
+  }
+  .ma-compare-row-label {
+    color: #6b7280;
+    font-weight: 600;
+    flex: 0 0 130px;
+  }
+  .ma-compare-row-vals {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    text-align: right;
+  }
+  .ma-compare-unchanged {
+    color: #9ca3af;
+  }
+  .ma-compare-changed {
+    color: #1f2937;
+    font-weight: 600;
   }
 </style>
 </head>
@@ -291,6 +416,16 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   </div>
 </main>
 
+<!-- ═══════════ Reporting roadmap item 2: before/after comparison modal ═══════════ -->
+<div class="ma-compare-overlay" id="ma-compare-overlay">
+  <div class="ma-compare-modal">
+    <button class="ma-compare-close" id="ma-compare-close" aria-label="Close">&times;</button>
+    <div id="ma-compare-body">
+      <p style="padding:24px 0;color:#6b7280;">Loading comparison…</p>
+    </div>
+  </div>
+</div>
+
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 function toggleUserMenu() {
   const popup = document.getElementById('sbPopup');
@@ -335,7 +470,7 @@ async function loadMyAuditStats() {
   }
 }
 
-// ── Section 3: "Continue where you left off" callout ─────────────
+// ── Section 3: "Continue where you left off" callout ─────────────────
 // Returns true if it rendered at least one resumable road. A user can
 // have an active session with pending segments but zero *completed*
 // audits yet (segments_audited === 0), so this is checked separately
@@ -383,7 +518,7 @@ async function loadMyAuditContinue() {
   }
 }
 
-// ── Section 2+4: filter/sort bar + audit list ─────────────────────
+// ── Section 2+4: filter/sort bar + audit list ─────────────────────────
 let maCurrentPage = 1;
 
 function maConditionColor(condition) {
@@ -441,6 +576,12 @@ async function loadMyAuditList(page) {
         ? '<span style="color:#b45309;font-size:12px;font-weight:600;">Active</span>'
         : '<span style="color:#15803d;font-size:12px;font-weight:600;">Completed</span>';
 
+      // Reporting roadmap item 2: only segments this user has audited
+      // 2+ times are eligible for the before/after comparison view.
+      const compareLink = (item.audit_count >= 2)
+        ? '<button type="button" class="ma-compare-link" onclick="maOpenCompare(' + item.segment_id + ')">Compare →</button>'
+        : '';
+
       return (
         '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #f0f0f0;">' +
           '<div>' +
@@ -451,6 +592,7 @@ async function loadMyAuditList(page) {
           '</div>' +
           '<div style="display:flex;align-items:center;gap:16px;">' +
             conditionChip +
+            compareLink +
             '<a href="view.php?segment_id=' + item.segment_id + '" style="color:#3d7a1f;font-weight:600;font-size:14px;text-decoration:none;">View →</a>' +
           '</div>' +
         '</div>'
@@ -494,10 +636,95 @@ document.getElementById('ma-export-btn').addEventListener('click', function () {
   window.location.href = '../api/user/audit_export.php?' + params.toString();
 });
 
+// ── Reporting roadmap item 2: before/after comparison modal ──────────
+function maFormatScore(v) {
+  return (v === null || v === undefined) ? '—' : Math.round(v * 10) / 10;
+}
+
+function maCompareRow(label, beforeVal, afterVal) {
+  const changed = String(beforeVal) !== String(afterVal);
+  const beforeDisplay = '<span class="ma-compare-unchanged">' + (beforeVal ?? '—') + '</span>';
+  const afterDisplay = changed
+    ? ' → <span class="ma-compare-changed">' + (afterVal ?? '—') + '</span>'
+    : '';
+  return (
+    '<div class="ma-compare-row">' +
+      '<div class="ma-compare-row-label">' + label + '</div>' +
+      '<div class="ma-compare-row-vals">' + beforeDisplay + afterDisplay + '</div>' +
+    '</div>'
+  );
+}
+
+async function maOpenCompare(segmentId) {
+  const overlay = document.getElementById('ma-compare-overlay');
+  const body    = document.getElementById('ma-compare-body');
+  body.innerHTML = '<p style="padding:24px 0;color:#6b7280;">Loading comparison…</p>';
+  overlay.classList.add('show');
+
+  try {
+    const res  = await fetch('../api/user/audit_compare.php?segment_id=' + segmentId, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      body.innerHTML = '<p style="padding:24px 0;color:#e74c3c;">' + (data.error || 'Could not load comparison.') + '</p>';
+      return;
+    }
+
+    const b = data.before;
+    const a = data.after;
+    const deltaVal = data.score_delta;
+    const deltaColor = (deltaVal === null) ? '#6b7280' : (deltaVal > 0 ? '#15803d' : (deltaVal < 0 ? '#e74c3c' : '#6b7280'));
+    const deltaLabel = (deltaVal === null) ? '' : (deltaVal > 0 ? '+' + deltaVal + ' pts' : deltaVal + ' pts');
+
+    const beforeObs = b.obstructions.total;
+    const afterObs   = a.obstructions.total;
+
+    body.innerHTML =
+      '<h2 class="ma-compare-title">' + data.segment.road_name + ' — Segment ' + data.segment.segment_number + '</h2>' +
+      '<p class="ma-compare-sub">Comparing your first audit (' + maFormatDate(b.created_at) + ') to your most recent audit (' + maFormatDate(a.created_at) + ')</p>' +
+      '<div class="ma-compare-scoreband">' +
+        '<div class="ma-compare-score-block">' +
+          '<div class="ma-compare-score-label">Before</div>' +
+          '<div class="ma-compare-score-val">' + maFormatScore(b.score) + '</div>' +
+          '<div style="font-size:12px;color:#6b7280;">' + (b.condition || '—') + '</div>' +
+        '</div>' +
+        '<div class="ma-compare-arrow">→</div>' +
+        '<div class="ma-compare-score-block">' +
+          '<div class="ma-compare-score-label">After</div>' +
+          '<div class="ma-compare-score-val">' + maFormatScore(a.score) + '</div>' +
+          '<div style="font-size:12px;color:#6b7280;">' + (a.condition || '—') + '</div>' +
+        '</div>' +
+        '<div class="ma-compare-score-block">' +
+          '<div class="ma-compare-score-label">Change</div>' +
+          '<div class="ma-compare-delta" style="color:' + deltaColor + ';">' + deltaLabel + '</div>' +
+        '</div>' +
+      '</div>' +
+      maCompareRow('Buffer zone', b.buffer_zone, a.buffer_zone) +
+      maCompareRow('Surface', b.surface_material, a.surface_material) +
+      maCompareRow('Shade', b.shade, a.shade) +
+      maCompareRow('Lit after dark', b.light_after_sunset, a.light_after_sunset) +
+      maCompareRow('Segment width (m)', b.segment_width, a.segment_width) +
+      maCompareRow('Total obstructions', beforeObs, afterObs);
+
+  } catch (err) {
+    console.error('Error loading comparison:', err);
+    body.innerHTML = '<p style="padding:24px 0;color:#e74c3c;">Could not load comparison. Please try again.</p>';
+  }
+}
+
+document.getElementById('ma-compare-close').addEventListener('click', function () {
+  document.getElementById('ma-compare-overlay').classList.remove('show');
+});
+document.getElementById('ma-compare-overlay').addEventListener('click', function (e) {
+  if (e.target === this) this.classList.remove('show');
+});
+
 // ── Init: decide between the normal filter bar + list vs. Section 5's
 //    empty state, based on whether the user has any completed audits
 //    or anything resumable. Both calls run first so the decision is
-//    never made on partial information. ─────────────────────────────
+//    never made on partial information. ───────────────────────────────
 (async function initMyAudits() {
   const hasCompletedAudits = await loadMyAuditStats();
   const hasResumable       = await loadMyAuditContinue();

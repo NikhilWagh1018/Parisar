@@ -1,33 +1,40 @@
 <?php
 declare(strict_types=1);
 
-// ═══════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
 //  repositories/SegmentRepository.php
 //  Centralises all segment + segment_audit SQL.
 //  Eliminates duplicated ownership/status queries spread across:
 //    api/segments/submit.php, reset.php, unlock.php,
 //    audit-data.php, complete.php,
 //    api/roads/segments/index.php, save.php
-// ═══════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
 
 class SegmentRepository
 {
     public function __construct(private PDO $pdo) {}
 
-    // ══════════════════════════════════════════════════════════
+    // ────────────────────────────────────────────────────────────
     //  SEGMENT READS
-    // ══════════════════════════════════════════════════════════
+    // ────────────────────────────────────────────────────────────
 
     /**
      * Fetch a single segment row joined with its road's creator_id.
      * Returns null if not found.
      *
-     * @return array{id:int,road_id:int,status:string,creator_id:int}|null
+     * Also includes road_name and segment_number — added for the
+     * before/after comparison view (audit_compare.php), which needed
+     * a friendly label for the segment. Purely additive; existing
+     * callers that only read id/status/road_id/creator_id/finalized_at
+     * are unaffected.
+     *
+     * @return array{id:int,road_id:int,status:string,creator_id:int,segment_number:int,road_name:string}|null
      */
     public function findWithRoad(int $segmentId): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT s.id, s.status, s.road_id, r.creator_id, r.finalized_at
+            'SELECT s.id, s.status, s.road_id, s.segment_number,
+                    r.creator_id, r.finalized_at, r.name AS road_name
                FROM segments s
                JOIN roads r ON r.id = s.road_id
               WHERE s.id = ?
@@ -100,9 +107,9 @@ class SegmentRepository
         return (int)$stmt->fetchColumn();
     }
 
-    // ══════════════════════════════════════════════════════════
+    // ────────────────────────────────────────────────────────────
     //  SEGMENT WRITES
-    // ══════════════════════════════════════════════════════════
+    // ────────────────────────────────────────────────────────────
 
     /**
      * Mark a segment as completed.
@@ -143,9 +150,9 @@ class SegmentRepository
         )->execute([$roadId]);
     }
 
-    // ══════════════════════════════════════════════════════════
+    // ────────────────────────────────────────────────────────────
     //  AUDIT SESSION OWNERSHIP
-    // ══════════════════════════════════════════════════════════
+    // ────────────────────────────────────────────────────────────
 
     /**
      * Find an active audit session owned by $userId.
@@ -201,9 +208,9 @@ class SegmentRepository
         )->execute([$roadId, $userId]);
     }
 
-    // ══════════════════════════════════════════════════════════
+    // ────────────────────────────────────────────────────────────
     //  SEGMENT AUDIT READS
-    // ══════════════════════════════════════════════════════════
+    // ────────────────────────────────────────────────────────────
 
     /**
      * Fetch the most recent segment_audit row for a segment.
@@ -239,6 +246,47 @@ class SegmentRepository
         $row['footpath_rating'] = json_decode($row['footpath_rating'] ?? '[]', true) ?? [];
 
         return $row;
+    }
+
+    /**
+     * Fetch every segment_audit row for a segment, submitted by a given
+     * user, oldest first — the raw input for the before/after comparison
+     * view (Reporting roadmap item 2). Deliberately scoped to $userId,
+     * same ownership rule as personalAuditList()/personalStats(): "My
+     * Audits" only shows/compares a user's own submissions, never audits
+     * by other surveyors on the same segment.
+     *
+     * Decodes the same JSON multi-select columns as latestAudit() so
+     * callers get arrays, not strings.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function auditHistoryForSegment(int $segmentId, int $userId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, session_id,
+                    start_landmark, end_landmark, gps_start, gps_end,
+                    cycle_track_missing, missing_length, cyclist_use, better_surface,
+                    surface_material, people_walking, signage_count, shade,
+                    light_after_sunset, track_geometry, buffer_zone,
+                    segment_width, segment_length, comments,
+                    surface_issues, overhead_issues, footpath_rating, footpath_score,
+                    public_id, surveyor_id, created_at
+               FROM segment_audits
+              WHERE segment_id = ? AND surveyor_id = ?
+              ORDER BY id ASC'
+        );
+        $stmt->execute([$segmentId, $userId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($rows as &$row) {
+            $row['surface_issues']  = json_decode($row['surface_issues']  ?? '[]', true) ?? [];
+            $row['overhead_issues'] = json_decode($row['overhead_issues'] ?? '[]', true) ?? [];
+            $row['footpath_rating'] = json_decode($row['footpath_rating'] ?? '[]', true) ?? [];
+        }
+        unset($row);
+
+        return $rows;
     }
 
     /**
@@ -346,6 +394,12 @@ class SegmentRepository
      * only — same de-dup rule as personalStats()), joined with road name
      * and that road's audit-session status for this user.
      *
+     * Also returns audit_count — the TOTAL number of audits this user has
+     * submitted on that segment (not just the latest) — so callers (the
+     * "My Audits" list UI) can decide whether to show a "Compare" link
+     * for the before/after view, which only makes sense when a segment
+     * has been re-audited (audit_count >= 2).
+     *
      * Filtering by date range, sorting by score, and pagination all
      * happen in PHP on the caller side (api/user/audit_history_list.php)
      * because condition score isn't a stored column — see ScoreService's
@@ -365,7 +419,10 @@ class SegmentRepository
                  s.segment_number,
                  s.road_id,
                  r.name                 AS road_name,
-                 sess.status            AS session_status
+                 sess.status            AS session_status,
+                 (SELECT COUNT(*) FROM segment_audits sa2
+                   WHERE sa2.segment_id = latest.segment_id
+                     AND sa2.surveyor_id = ?)           AS audit_count
              FROM (
                  SELECT segment_id, MAX(id) AS latest_audit_id
                    FROM segment_audits
@@ -384,7 +441,7 @@ class SegmentRepository
                        )
              ORDER BY latest.created_at DESC'
         );
-        $stmt->execute([$userId, $userId]);
+        $stmt->execute([$userId, $userId, $userId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -489,9 +546,9 @@ class SegmentRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // ══════════════════════════════════════════════════════════
+    // ────────────────────────────────────────────────────────────
     //  SEGMENT AUDIT WRITES
-    // ══════════════════════════════════════════════════════════
+    // ────────────────────────────────────────────────────────────
 
     /**
      * Delete all audit data (segment_audits + children) for a segment.
@@ -520,9 +577,9 @@ class SegmentRepository
         $this->pdo->prepare('DELETE FROM intersections WHERE audit_id = ?')->execute([$auditId]);
     }
 
-    // ══════════════════════════════════════════════════════════
+    // ────────────────────────────────────────────────────────────
     //  LEADERBOARD / STREAK — Visibility & Motivation roadmap #3
-    // ══════════════════════════════════════════════════════════
+    // ────────────────────────────────────────────────────────────
 
     /**
      * Ranked surveyor totals: segment submissions + distance audited

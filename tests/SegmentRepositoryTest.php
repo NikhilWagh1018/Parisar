@@ -1,26 +1,27 @@
 <?php
 declare(strict_types=1);
 
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  tests/SegmentRepositoryTest.php
 //  PHPUnit 10 — integration tests for repositories/SegmentRepository.php
 //
 //  Uses SQLite :memory: — no real database required.
 //  Test methods covering the most critical repository paths:
-//    - findWithRoad (found + not found)
+//    - findWithRoad (found + not found; road_name/segment_number added)
 //    - belongsToRoad
 //    - markCompleted / resetToPending round-trip
 //    - countForRoad
 //    - allForRoad ordering
 //    - personalStats (re-audit de-dup)
-//    - personalAuditList (latest-per-segment, ordering)
+//    - personalAuditList (latest-per-segment, ordering, audit_count)
 //    - personalContinueAudits (resume-where-left-off)
 //    - leaderboardRows (all-time + this-week windowing)
 //    - auditDatesForUser (distinct dates, DESC)
+//    - auditHistoryForSegment (before/after comparison view, Session 41)
 //
 //  Run:
 //    php vendor/bin/phpunit --testdox tests/SegmentRepositoryTest.php
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 
 use PHPUnit\Framework\TestCase;
 
@@ -31,7 +32,7 @@ class SegmentRepositoryTest extends TestCase
     private PDO $pdo;
     private SegmentRepository $repo;
 
-    // ── SQLite schema (minimal — matches real MySQL shape) ─────
+    // ── SQLite schema (minimal — matches real MySQL shape) ─────────
 
     private const SCHEMA = <<<SQL
         CREATE TABLE IF NOT EXISTS users (
@@ -77,14 +78,39 @@ class SegmentRepositoryTest extends TestCase
         -- NOTE: created_at added to match production segment_audits shape
         -- (this is the exact column the Session 38 schema-drift bug was about —
         -- keeping this test schema in sync with prod is the whole point).
+        --
+        -- Session 41: added every column auditHistoryForSegment() selects
+        -- (start_landmark through footpath_score) so its test coverage below
+        -- doesn't throw "no such column" — same gotcha as the created_at fix.
         CREATE TABLE IF NOT EXISTS segment_audits (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            segment_id  INTEGER NOT NULL,
-            session_id  INTEGER NOT NULL,
-            surveyor_id INTEGER,
-            public_id   TEXT    NOT NULL DEFAULT '',
-            created_at  TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            segment_width REAL,
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            segment_id          INTEGER NOT NULL,
+            session_id          INTEGER NOT NULL,
+            surveyor_id         INTEGER,
+            public_id           TEXT    NOT NULL DEFAULT '',
+            created_at          TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            segment_width       REAL,
+            start_landmark      TEXT,
+            end_landmark        TEXT,
+            gps_start           TEXT,
+            gps_end             TEXT,
+            cycle_track_missing TEXT,
+            missing_length      REAL,
+            cyclist_use         TEXT,
+            better_surface      TEXT,
+            surface_material    TEXT,
+            people_walking      TEXT,
+            signage_count       INTEGER,
+            shade               TEXT,
+            light_after_sunset  TEXT,
+            track_geometry      TEXT,
+            buffer_zone         TEXT,
+            segment_length      REAL,
+            comments            TEXT,
+            surface_issues      TEXT,
+            overhead_issues     TEXT,
+            footpath_rating     TEXT,
+            footpath_score      REAL,
             FOREIGN KEY (segment_id) REFERENCES segments(id),
             FOREIGN KEY (session_id) REFERENCES audit_sessions(id)
         );
@@ -169,7 +195,7 @@ class SegmentRepositoryTest extends TestCase
                           VALUES (4, 2, 1, 'X', 'Y', 500, 'pending')");
     }
 
-    // ── Test 1: findWithRoad — returns row with creator_id ─────
+    // ── Test 1: findWithRoad — returns row with creator_id ─────────
 
     public function test_findWithRoad_returns_row_with_creator_id(): void
     {
@@ -188,7 +214,17 @@ class SegmentRepositoryTest extends TestCase
         $this->assertNull($row);
     }
 
-    // ── Test 2: belongsToRoad ───────────────────────────────────
+    // Session 41: findWithRoad() gained road_name + segment_number,
+    // added for the before/after comparison view's segment label.
+    public function test_findWithRoad_includes_road_name_and_segment_number(): void
+    {
+        $row = $this->repo->findWithRoad(2);
+
+        $this->assertSame('Baner Road', $row['road_name']);
+        $this->assertSame(2,            (int)$row['segment_number']);
+    }
+
+    // ── Test 2: belongsToRoad ────────────────────────────────────
 
     public function test_belongsToRoad_returns_true_for_correct_road(): void
     {
@@ -202,7 +238,7 @@ class SegmentRepositoryTest extends TestCase
         $this->assertFalse($this->repo->belongsToRoad(1, 2));
     }
 
-    // ── Test 3: countForRoad ────────────────────────────────────
+    // ── Test 3: countForRoad ─────────────────────────────────────
 
     public function test_countForRoad_returns_correct_count(): void
     {
@@ -211,7 +247,7 @@ class SegmentRepositoryTest extends TestCase
         $this->assertSame(0, $this->repo->countForRoad(999)); // non-existent road
     }
 
-    // ── Test 4: allForRoad — ordered by segment_number ─────────
+    // ── Test 4: allForRoad — ordered by segment_number ─────────────
 
     public function test_allForRoad_returns_segments_in_order(): void
     {
@@ -231,7 +267,7 @@ class SegmentRepositoryTest extends TestCase
         $this->assertSame([], $rows);
     }
 
-    // ── Test 5: markCompleted / resetToPending round-trip ──────
+    // ── Test 5: markCompleted / resetToPending round-trip ─────────
 
     public function test_markCompleted_updates_status_and_returns_true(): void
     {
@@ -277,7 +313,7 @@ class SegmentRepositoryTest extends TestCase
         $this->assertSame('pending', $status);
     }
 
-    // ── Bonus: deleteAuditData cleans child rows ────────────────
+    // ── Bonus: deleteAuditData cleans child rows ────────────────────
 
     public function test_deleteAuditData_removes_children(): void
     {
@@ -303,7 +339,7 @@ class SegmentRepositoryTest extends TestCase
         $this->assertSame(0, (int)$intCount);
     }
 
-    // ── Test 6: personalStats — de-dups re-audited segments ─────
+    // ── Test 6: personalStats — de-dups re-audited segments ─────────
     //
     // Regression coverage for the Session 38 bug: this method (and its
     // siblings below) referenced segment_audits.audited_at, a column
@@ -361,7 +397,44 @@ class SegmentRepositoryTest extends TestCase
         $this->assertSame('2026-01-03 10:00:00', $rows[1]['created_at']);
     }
 
-    // ── Test 8: personalContinueAudits — resume-where-left-off ──
+    // Session 41: personalAuditList() gained audit_count — total number
+    // of this user's audits on that segment (not just the latest one),
+    // used by the "My Audits" list UI to decide whether to show a
+    // "Compare →" link (only when audit_count >= 2).
+    public function test_personalAuditList_audit_count_reflects_total_audits_per_segment(): void
+    {
+        $this->pdo->exec("INSERT INTO users (id, name, email) VALUES (2, 'Nick', 'nick@example.com')");
+        $this->pdo->exec("INSERT INTO audit_sessions (id, road_id, user_id, status)
+                          VALUES (1, 1, 1, 'completed')");
+
+        // Segment 1: user 1 audits it twice (re-audit).
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at)
+                          VALUES (10, 1, 1, 1, '2026-01-01 10:00:00')");
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at)
+                          VALUES (11, 1, 1, 1, '2026-01-05 10:00:00')");
+        // Segment 2: user 1 audits it once.
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at)
+                          VALUES (12, 2, 1, 1, '2026-01-03 10:00:00')");
+        // Segment 1: user 2 also audits it once — must NOT inflate user 1's audit_count.
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at)
+                          VALUES (13, 1, 1, 2, '2026-01-06 10:00:00')");
+
+        $rows = $this->repo->personalAuditList(1);
+        $bySegment = [];
+        foreach ($rows as $r) {
+            $bySegment[(int)$r['segment_id']] = $r;
+        }
+
+        $this->assertSame(2, (int)$bySegment[1]['audit_count'],
+            'segment 1 re-audited twice by user 1 should show audit_count = 2, unaffected by user 2\'s audit');
+        $this->assertSame(1, (int)$bySegment[2]['audit_count'],
+            'segment 2 audited once by user 1 should show audit_count = 1');
+
+        // audit_count must not change which audit_id is reported as "latest".
+        $this->assertSame(11, (int)$bySegment[1]['audit_id']);
+    }
+
+    // ── Test 8: personalContinueAudits — resume-where-left-off ─────
 
     public function test_personalContinueAudits_returns_road_with_pending_segment(): void
     {
@@ -395,7 +468,7 @@ class SegmentRepositoryTest extends TestCase
         $this->assertSame([], $rows);
     }
 
-    // ── Test 9: leaderboardRows — all-time and this-week windows ──
+    // ── Test 9: leaderboardRows — all-time and this-week windows ───
 
     public function test_leaderboardRows_counts_every_audit_row_not_deduped(): void
     {
@@ -435,7 +508,7 @@ class SegmentRepositoryTest extends TestCase
         $this->assertSame(1, $rows[0]['segments_completed'], 'only the current-week audit should count');
     }
 
-    // ── Test 10: auditDatesForUser — distinct dates, DESC ────────
+    // ── Test 10: auditDatesForUser — distinct dates, DESC ───────────
 
     public function test_auditDatesForUser_returns_distinct_dates_descending(): void
     {
@@ -455,5 +528,107 @@ class SegmentRepositoryTest extends TestCase
         $this->assertCount(2, $dates);
         $this->assertSame('2026-01-05', $dates[0]); // most recent first
         $this->assertSame('2026-01-01', $dates[1]);
+    }
+
+    // ── Test 11: auditHistoryForSegment — before/after comparison ──
+    //
+    // New in Session 41. Covers ordering, JSON decoding, ownership
+    // scoping, and the "not comparable yet" / "not found" edge cases
+    // that api/user/audit_compare.php relies on to 404 correctly.
+
+    public function test_auditHistoryForSegment_returns_rows_oldest_first(): void
+    {
+        $this->pdo->exec("INSERT INTO audit_sessions (id, road_id, user_id, status)
+                          VALUES (1, 1, 1, 'completed')");
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at)
+                          VALUES (10, 1, 1, 1, '2026-01-10 10:00:00')"); // later, inserted first
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at)
+                          VALUES (11, 1, 1, 1, '2026-01-01 10:00:00')"); // earlier, inserted second
+
+        $rows = $this->repo->auditHistoryForSegment(1, 1);
+
+        $this->assertCount(2, $rows);
+        // Must be ordered by id ASC (oldest submission first), not by
+        // insertion order or created_at — the "before" audit is index 0.
+        $this->assertSame(10, (int)$rows[0]['id']);
+        $this->assertSame(11, (int)$rows[1]['id']);
+    }
+
+    public function test_auditHistoryForSegment_decodes_json_multiselect_columns(): void
+    {
+        $this->pdo->exec("INSERT INTO audit_sessions (id, road_id, user_id, status)
+                          VALUES (1, 1, 1, 'completed')");
+        $this->pdo->exec("INSERT INTO segment_audits
+                              (id, segment_id, session_id, surveyor_id, created_at,
+                               surface_issues, overhead_issues, footpath_rating)
+                          VALUES
+                              (10, 1, 1, 1, '2026-01-01 10:00:00',
+                               '[\"potholes\",\"cracking\"]', '[\"low_wires\"]', '[\"poor\"]')");
+
+        $rows = $this->repo->auditHistoryForSegment(1, 1);
+
+        $this->assertSame(['potholes', 'cracking'], $rows[0]['surface_issues']);
+        $this->assertSame(['low_wires'],             $rows[0]['overhead_issues']);
+        $this->assertSame(['poor'],                  $rows[0]['footpath_rating']);
+    }
+
+    public function test_auditHistoryForSegment_null_json_columns_decode_to_empty_array(): void
+    {
+        // Row inserted without surface_issues/overhead_issues/footpath_rating —
+        // columns are NULL. Must decode to [], matching latestAudit()'s behavior,
+        // not throw or return null.
+        $this->pdo->exec("INSERT INTO audit_sessions (id, road_id, user_id, status)
+                          VALUES (1, 1, 1, 'completed')");
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at)
+                          VALUES (10, 1, 1, 1, '2026-01-01 10:00:00')");
+
+        $rows = $this->repo->auditHistoryForSegment(1, 1);
+
+        $this->assertSame([], $rows[0]['surface_issues']);
+        $this->assertSame([], $rows[0]['overhead_issues']);
+        $this->assertSame([], $rows[0]['footpath_rating']);
+    }
+
+    public function test_auditHistoryForSegment_scoped_to_requesting_user_only(): void
+    {
+        $this->pdo->exec("INSERT INTO users (id, name, email) VALUES (2, 'Nick', 'nick@example.com')");
+        $this->pdo->exec("INSERT INTO audit_sessions (id, road_id, user_id, status)
+                          VALUES (1, 1, 1, 'completed')");
+
+        // User 1 audits segment 1 twice; user 2 audits the SAME segment once.
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at)
+                          VALUES (10, 1, 1, 1, '2026-01-01 10:00:00')");
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at)
+                          VALUES (11, 1, 1, 1, '2026-01-05 10:00:00')");
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at)
+                          VALUES (12, 1, 1, 2, '2026-01-03 10:00:00')");
+
+        $forUser1 = $this->repo->auditHistoryForSegment(1, 1);
+        $forUser2 = $this->repo->auditHistoryForSegment(1, 2);
+
+        $this->assertCount(2, $forUser1, 'user 1 should see only their own 2 audits');
+        $this->assertCount(1, $forUser2, 'user 2 should see only their own 1 audit, never user 1\'s');
+        $this->assertSame(12, (int)$forUser2[0]['id']);
+    }
+
+    public function test_auditHistoryForSegment_returns_single_row_for_once_audited_segment(): void
+    {
+        // Segment 2 is audited exactly once by user 1 in this test — the
+        // endpoint layer (audit_compare.php) is responsible for 404ing when
+        // count < 2; the repository itself just returns what exists.
+        $this->pdo->exec("INSERT INTO audit_sessions (id, road_id, user_id, status)
+                          VALUES (1, 1, 1, 'completed')");
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at)
+                          VALUES (10, 2, 1, 1, '2026-01-01 10:00:00')");
+
+        $rows = $this->repo->auditHistoryForSegment(2, 1);
+
+        $this->assertCount(1, $rows, 'a once-audited segment must not be treated as comparable');
+    }
+
+    public function test_auditHistoryForSegment_returns_empty_array_for_nonexistent_segment(): void
+    {
+        $rows = $this->repo->auditHistoryForSegment(9999, 1);
+        $this->assertSame([], $rows);
     }
 }
