@@ -73,7 +73,7 @@ $CURRENT_USER_AUTH = (string)($_SESSION['auth_provider']   ?? 'local');
 // don't trust the session cache for these. This makes role changes
 // (promote/demote) and account deactivation take effect immediately,
 // instead of waiting for the affected user to log out and back in.
-$stmt = $pdo->prepare('SELECT role, is_active, profile_picture FROM users WHERE id = ? LIMIT 1');
+$stmt = $pdo->prepare('SELECT role, is_active, profile_picture, city_id FROM users WHERE id = ? LIMIT 1');
 $stmt->execute([$CURRENT_USER_ID]);
 $freshUser = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -112,6 +112,12 @@ if (!$freshUser || (int)$freshUser['is_active'] === 0) {
 
 $CURRENT_USER_ROLE     = (string)$freshUser['role'];
 $_SESSION['user_role'] = $CURRENT_USER_ROLE; // keep session cache in sync
+
+// city_id is nullable — NULL for national_admin (national scope) and for
+// any user not yet assigned a city. Kept fresh from the DB for the same
+// reason role is: a city reassignment should take effect immediately.
+$CURRENT_USER_CITY_ID     = $freshUser['city_id'] !== null ? (int)$freshUser['city_id'] : null;
+$_SESSION['user_city_id'] = $CURRENT_USER_CITY_ID;
 
 // Belt-and-suspenders: if the session profile_picture is missing, always
 // re-fetch it from the DB (covers local users whose Google pic was linked,

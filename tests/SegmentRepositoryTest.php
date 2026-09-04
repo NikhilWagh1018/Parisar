@@ -41,12 +41,25 @@ class SegmentRepositoryTest extends TestCase
             email      TEXT    NOT NULL
         );
 
+        -- Added for Phase 3 (city_admin): SegmentRepository::findWithRoad()
+        -- now LEFT JOINs road_groups to expose city_id for the permissions
+        -- gate. road_groups.city_id is nullable here (unlike prod, where
+        -- it's NOT NULL) purely to keep this fixture minimal — no test
+        -- currently asserts on city_id, so its exact nullability doesn't
+        -- matter for what's covered today.
+        CREATE TABLE IF NOT EXISTS road_groups (
+            id      INTEGER PRIMARY KEY AUTOINCREMENT,
+            city_id INTEGER
+        );
+
         CREATE TABLE IF NOT EXISTS roads (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            name         TEXT    NOT NULL,
-            creator_id   INTEGER NOT NULL,
-            finalized_at TEXT,
-            FOREIGN KEY (creator_id) REFERENCES users(id)
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            name          TEXT    NOT NULL,
+            creator_id    INTEGER NOT NULL,
+            road_group_id INTEGER,
+            finalized_at  TEXT,
+            FOREIGN KEY (creator_id)    REFERENCES users(id),
+            FOREIGN KEY (road_group_id) REFERENCES road_groups(id)
         );
 
         CREATE TABLE IF NOT EXISTS segments (

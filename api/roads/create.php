@@ -19,6 +19,7 @@ require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
 require_once __DIR__ . '/../../repositories/RoadRepository.php';
+require_once __DIR__ . '/../../config/permissions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -75,7 +76,7 @@ $repo = new RoadRepository($pdo);
 // road_group (matched by normalized name). This is the server-side
 // half of hiding "Other / Custom Road" from non-admins in the UI —
 // the UI gate alone wouldn't stop a direct POST to this endpoint.
-if ($CURRENT_USER_ROLE !== 'national_admin' && !$repo->roadGroupExists((string)$data['name'])) {
+if (!isAnyAdmin($CURRENT_USER_ROLE) && !$repo->roadGroupExists((string)$data['name'])) {
     http_response_code(403);
     echo json_encode([
         'success' => false,

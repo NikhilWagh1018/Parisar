@@ -76,7 +76,7 @@ try {
         exit;
     }
 
-    gate('edit_road', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $road['creator_id']]);
+    gate('edit_road', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $road['creator_id'], 'city_id' => $road['city_id']]);
 
     $repo->update($roadId, $CURRENT_USER_ID, $data);
 

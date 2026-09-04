@@ -30,16 +30,35 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
+$isNationalAdmin = $CURRENT_USER_ROLE === 'national_admin';
+$cityId          = $isNationalAdmin ? null : $CURRENT_USER_CITY_ID;
+
+// A city_admin with no city assigned sees an empty log rather than
+// falling through to every city's entries.
+if (!$isNationalAdmin && $cityId === null) {
+    echo json_encode(['success' => true, 'entries' => []]);
+    exit;
+}
+
 // audit_log is small by nature (one row per road create/delete), but
 // cap the read as a sane safety net rather than trusting it'll stay
 // small forever. Page filters/searches client-side, same convention
 // as pages/admin.php and pages/admin_surveyors.php.
-$stmt = $pdo->query(
-    'SELECT id, actor_id, actor_name, action, road_group_id, road_group_name, created_at
-       FROM audit_log
-      ORDER BY created_at DESC, id DESC
+//
+// LEFT JOIN so a city_admin still sees log entries whose road_group
+// has since been deleted (rg will be NULL) rather than silently
+// losing them — but those NULL-city rows are excluded for a
+// city_admin (unknowable which city they belonged to), while a
+// national_admin sees everything as before.
+$stmt = $pdo->prepare(
+    'SELECT al.id, al.actor_id, al.actor_name, al.action, al.road_group_id, al.road_group_name, al.created_at
+       FROM audit_log al
+       LEFT JOIN road_groups rg ON rg.id = al.road_group_id
+      WHERE (:cid1 IS NULL OR rg.city_id = :cid2)
+      ORDER BY al.created_at DESC, al.id DESC
       LIMIT 500'
 );
+$stmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 foreach ($rows as &$r) {

@@ -177,7 +177,8 @@ document.addEventListener('click', e => {
         <input type="text" id="survSearch" class="surv-search" placeholder="Search by name or email…">
         <select id="roleFilter" class="surv-role-filter">
           <option value="all">All roles</option>
-          <option value="national_admin">Admins only</option>
+          <option value="national_admin">National admins only</option>
+          <option value="city_admin">City admins only</option>
           <option value="surveyor">Surveyors only</option>
         </select>
         <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><input type="checkbox" id="showInactive"> Show inactive only</label>
@@ -211,7 +212,7 @@ document.addEventListener('click', e => {
   </div>
 </main>
 
-<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';</script>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';const IS_NATIONAL_ADMIN = <?= $CURRENT_USER_ROLE === 'national_admin' ? 'true' : 'false' ?>;</script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 (function () {
   'use strict';
@@ -238,15 +239,36 @@ document.addEventListener('click', e => {
     return (name || '?').trim().charAt(0).toUpperCase();
   }
 
+  var ROLE_LABELS = {
+    national_admin: 'National Admin',
+    city_admin: 'City Admin',
+    surveyor: 'Surveyor'
+  };
+
   function buildRow(s) {
     var tr = document.createElement('tr');
     var roleBadge = s.role === 'national_admin'
-      ? '<span class="admin-badge">Admin</span>'
-      : '<span style="color:#6b7280;font-size:.78rem;">Surveyor</span>';
-    var roleBtn = s.is_current_user
-      ? ''
-      : ' <button class="toggle-role-btn" data-id="' + s.id + '" data-role="' + s.role + '">' +
-        (s.role === 'national_admin' ? 'Demote' : 'Promote') + '</button>';
+      ? '<span class="admin-badge">National Admin</span>'
+      : s.role === 'city_admin'
+        ? '<span class="admin-badge" style="background:#eef2ff;color:#4338ca;">City Admin</span>'
+        : '<span style="color:#6b7280;font-size:.78rem;">Surveyor</span>';
+
+    // Role selector options: national_admin viewers can set any role;
+    // city_admin viewers can only choose between surveyor/city_admin
+    // (the API enforces this too — this is just UI convenience).
+    // A national_admin row is never editable by a city_admin viewer
+    // (the API also excludes such rows from the city-scoped listing).
+    var roleOptions = IS_NATIONAL_ADMIN
+      ? ['surveyor', 'city_admin', 'national_admin']
+      : ['surveyor', 'city_admin'];
+    var roleBtn = '';
+    if (!s.is_current_user && (IS_NATIONAL_ADMIN || s.role !== 'national_admin')) {
+      roleBtn = ' <select class="role-select" data-id="' + s.id + '" data-role="' + s.role + '">' +
+        roleOptions.map(function (r) {
+          return '<option value="' + r + '"' + (r === s.role ? ' selected' : '') + '>' + ROLE_LABELS[r] + '</option>';
+        }).join('') +
+        '</select>';
+    }
     tr.innerHTML =
       '<td><div class="surv-name-cell">' +
         '<div class="surv-avatar">' + escapeHtml(initials(s.name)) + '</div>' +
@@ -314,28 +336,42 @@ document.addEventListener('click', e => {
       return;
     }
 
-    if (e.target.classList.contains('toggle-role-btn')) {
-      var rid = parseInt(e.target.dataset.id, 10);
-      var currentRole = e.target.dataset.role;
-      var newRole = currentRole === 'national_admin' ? 'surveyor' : 'national_admin';
-      var confirmMsg = newRole === 'national_admin'
-        ? 'Promote this user to Admin? They will get full admin access.'
-        : 'Demote this user to Surveyor? They will lose admin access.';
-      if (!confirm(confirmMsg)) return;
-      fetch('../api/admin/surveyors.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
-        body: JSON.stringify({ id: rid, role: newRole })
-      })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (!data.success) { alert(data.error || 'Update failed.'); return; }
-        var s = allSurveyors.find(function (x) { return x.id === rid; });
-        if (s) s.role = newRole;
-        applyFilter();
-      })
-      .catch(function () { alert('Network error.'); });
+  });
+
+  document.getElementById('survTbody').addEventListener('change', function (e) {
+    if (!e.target.classList.contains('role-select')) return;
+
+    var rid = parseInt(e.target.dataset.id, 10);
+    var previousRole = e.target.dataset.role;
+    var newRole = e.target.value;
+    if (newRole === previousRole) return;
+
+    var confirmMsg = 'Change this user\'s role from ' + ROLE_LABELS[previousRole] + ' to ' + ROLE_LABELS[newRole] + '?';
+    if (!confirm(confirmMsg)) {
+      e.target.value = previousRole;
+      return;
     }
+
+    fetch('../api/admin/surveyors.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ id: rid, role: newRole })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (!data.success) {
+        alert(data.error || 'Update failed.');
+        e.target.value = previousRole;
+        return;
+      }
+      var s = allSurveyors.find(function (x) { return x.id === rid; });
+      if (s) s.role = newRole;
+      applyFilter();
+    })
+    .catch(function () {
+      alert('Network error.');
+      e.target.value = previousRole;
+    });
   });
 
   fetch('../api/admin/surveyors.php', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })

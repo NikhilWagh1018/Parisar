@@ -58,7 +58,7 @@ try {
         exit;
     }
 
-    gate('finalize_road', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $road['creator_id']]);
+    gate('finalize_road', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $road['creator_id'], 'city_id' => $road['city_id']]);
 
     if ($road['finalized_at'] !== null) {
         echo json_encode(['success' => true, 'already_finalized' => true]);
