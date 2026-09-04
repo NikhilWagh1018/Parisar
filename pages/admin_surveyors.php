@@ -177,7 +177,7 @@ document.addEventListener('click', e => {
         <input type="text" id="survSearch" class="surv-search" placeholder="Search by name or email…">
         <select id="roleFilter" class="surv-role-filter">
           <option value="all">All roles</option>
-          <option value="admin">Admins only</option>
+          <option value="national_admin">Admins only</option>
           <option value="surveyor">Surveyors only</option>
         </select>
         <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><input type="checkbox" id="showInactive"> Show inactive only</label>
@@ -240,13 +240,13 @@ document.addEventListener('click', e => {
 
   function buildRow(s) {
     var tr = document.createElement('tr');
-    var roleBadge = s.role === 'admin'
+    var roleBadge = s.role === 'national_admin'
       ? '<span class="admin-badge">Admin</span>'
       : '<span style="color:#6b7280;font-size:.78rem;">Surveyor</span>';
     var roleBtn = s.is_current_user
       ? ''
       : ' <button class="toggle-role-btn" data-id="' + s.id + '" data-role="' + s.role + '">' +
-        (s.role === 'admin' ? 'Demote' : 'Promote') + '</button>';
+        (s.role === 'national_admin' ? 'Demote' : 'Promote') + '</button>';
     tr.innerHTML =
       '<td><div class="surv-name-cell">' +
         '<div class="surv-avatar">' + escapeHtml(initials(s.name)) + '</div>' +
@@ -317,8 +317,8 @@ document.addEventListener('click', e => {
     if (e.target.classList.contains('toggle-role-btn')) {
       var rid = parseInt(e.target.dataset.id, 10);
       var currentRole = e.target.dataset.role;
-      var newRole = currentRole === 'admin' ? 'surveyor' : 'admin';
-      var confirmMsg = newRole === 'admin'
+      var newRole = currentRole === 'national_admin' ? 'surveyor' : 'national_admin';
+      var confirmMsg = newRole === 'national_admin'
         ? 'Promote this user to Admin? They will get full admin access.'
         : 'Demote this user to Surveyor? They will lose admin access.';
       if (!confirm(confirmMsg)) return;

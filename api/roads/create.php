@@ -75,7 +75,7 @@ $repo = new RoadRepository($pdo);
 // road_group (matched by normalized name). This is the server-side
 // half of hiding "Other / Custom Road" from non-admins in the UI —
 // the UI gate alone wouldn't stop a direct POST to this endpoint.
-if ($CURRENT_USER_ROLE !== 'admin' && !$repo->roadGroupExists((string)$data['name'])) {
+if ($CURRENT_USER_ROLE !== 'national_admin' && !$repo->roadGroupExists((string)$data['name'])) {
     http_response_code(403);
     echo json_encode([
         'success' => false,

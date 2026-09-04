@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             (SELECT COUNT(*) FROM segment_audits sa WHERE sa.surveyor_id = u.id) AS segments_audited,
             (SELECT MAX(sa2.created_at) FROM segment_audits sa2 WHERE sa2.surveyor_id = u.id) AS last_audit_at
          FROM users u
-        ORDER BY u.is_active DESC, u.role = 'admin' DESC, u.name ASC"
+        ORDER BY u.is_active DESC, u.role = 'national_admin' DESC, u.name ASC"
     );
     $surveyors = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($surveyors as &$s) {
@@ -73,20 +73,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ── Role change (promote/demote) ───────────────────────────
     if (array_key_exists('role', $body)) {
         $newRole = $body['role'];
-        if (!in_array($newRole, ['admin', 'surveyor'], true)) {
+        if (!in_array($newRole, ['national_admin', 'surveyor'], true)) {
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => 'Invalid role.']);
             exit;
         }
 
-        if ($newRole !== 'admin' && $targetId === $CURRENT_USER_ID) {
+        if ($newRole !== 'national_admin' && $targetId === $CURRENT_USER_ID) {
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => 'You cannot demote yourself.']);
             exit;
         }
 
-        if ($newRole !== 'admin' && $target['role'] === 'admin') {
-            $adminCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
+        if ($newRole !== 'national_admin' && $target['role'] === 'national_admin') {
+            $adminCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'national_admin'")->fetchColumn();
             if ($adminCount <= 1) {
                 http_response_code(400);
                 echo json_encode(['success' => false, 'error' => 'Cannot demote the last remaining admin.']);
@@ -116,9 +116,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if (!$active && $target['role'] === 'admin') {
+        if (!$active && $target['role'] === 'national_admin') {
             $activeAdminCount = (int)$pdo->query(
-                "SELECT COUNT(*) FROM users WHERE role = 'admin' AND is_active = 1"
+                "SELECT COUNT(*) FROM users WHERE role = 'national_admin' AND is_active = 1"
             )->fetchColumn();
             if ($activeAdminCount <= 1) {
                 http_response_code(400);

@@ -53,7 +53,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
       Leaderboard
     </a>
-    <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
+    <?php if ($CURRENT_USER_ROLE === 'national_admin'): ?>
     <div class="nav-section">Admin</div>
     <a class="nav-item" href="admin.php">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 1-1.5 3-9 3s-9-2-9-3 1.5-3 9-3 9 2 9 3z"/></svg>
@@ -131,7 +131,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <h1><?= $greet ?>, <?= htmlspecialchars(explode(' ', $CURRENT_USER_NAME)[0]) ?>!</h1>
       <p>Here's your audit overview for today.</p>
     </div>
-    <?php if ($CURRENT_USER_ROLE !== 'admin'): ?>
+    <?php if ($CURRENT_USER_ROLE !== 'national_admin'): ?>
     <a href="segment.php" class="btn-new">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       New Road Audit
@@ -141,7 +141,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 
   <div class="content">
 
-    <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
+    <?php if ($CURRENT_USER_ROLE === 'national_admin'): ?>
     <!-- ════════════════ ADMIN OVERVIEW ════════════════ -->
     <section class="admin-overview" id="adminOverview">
       <div class="admin-overview-head">
@@ -228,7 +228,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     </section>
     <?php endif; ?>
 
-    <?php if ($CURRENT_USER_ROLE !== 'admin'): ?>
+    <?php if ($CURRENT_USER_ROLE !== 'national_admin'): ?>
     <!-- Stat cards — populated by JS -->
     <div class="stat-grid" id="statGrid">
       <div class="stat-card"><div class="stat-icon" style="background:#edf7d6">🛣️</div><div><div class="stat-val" id="st-roads">—</div><div class="stat-lbl">Roads</div></div></div>
@@ -239,7 +239,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     </div>
     <?php endif; ?>
 
-    <?php if ($CURRENT_USER_ROLE !== 'admin'): ?>
+    <?php if ($CURRENT_USER_ROLE !== 'national_admin'): ?>
     <!-- Roads table -->
     <div class="card">
       <div class="card-head">

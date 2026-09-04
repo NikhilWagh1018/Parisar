@@ -68,7 +68,7 @@ require_once __DIR__ . '/../config/auth_guard.php';
           <option>SINHAGAD ROAD</option>
           <option>SPICER COLLEGE ROAD</option>
           <option>SWAMI VIVEKANAD ROAD</option>
-          <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
+          <?php if ($CURRENT_USER_ROLE === 'national_admin'): ?>
           <option value="__custom__">Other / Custom Road</option>
           <?php endif; ?>
         </select>
@@ -86,7 +86,7 @@ require_once __DIR__ . '/../config/auth_guard.php';
 
         <div class="field-error" id="err-roadName">Please select or enter a road name.</div>
 
-        <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
+        <?php if ($CURRENT_USER_ROLE === 'national_admin'): ?>
         <!-- Custom road entry (shown when Other is chosen) — admin only -->
         <div class="custom-road-wrap" id="customRoadWrap">
           <div class="form-group">
@@ -235,7 +235,7 @@ require_once __DIR__ . '/../config/auth_guard.php';
 </div>
 
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-  window.IS_ADMIN = <?= $CURRENT_USER_ROLE === 'admin' ? 'true' : 'false' ?>;
+  window.IS_ADMIN = <?= $CURRENT_USER_ROLE === 'national_admin' ? 'true' : 'false' ?>;
 </script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/segment.js?v=<?= filemtime(__DIR__ . '/../js/segment.js') ?>"></script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/segment-roads.js?v=<?= filemtime(__DIR__ . '/../js/segment-roads.js') ?>"></script>

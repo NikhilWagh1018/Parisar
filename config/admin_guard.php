@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/auth_guard.php';
 
-if ($CURRENT_USER_ROLE !== 'admin') {
+if ($CURRENT_USER_ROLE !== 'national_admin') {
     $wantsJson = (
         str_contains($_SERVER['HTTP_ACCEPT']         ?? '', 'application/json')
         || strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest'

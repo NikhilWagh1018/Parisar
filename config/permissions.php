@@ -40,25 +40,25 @@ $PERMISSIONS = [
 
     'edit_road' => static function (int $userId, string $role, array $ctx): bool {
         // Only the road owner or an admin may edit road metadata.
-        if ($role === 'admin') return true;
+        if ($role === 'national_admin') return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
     'delete_road' => static function (int $userId, string $role, array $ctx): bool {
         // Only the road owner or an admin may delete a road.
-        if ($role === 'admin') return true;
+        if ($role === 'national_admin') return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
     'save_segments' => static function (int $userId, string $role, array $ctx): bool {
         // Only the road owner or an admin may define/replace segments.
-        if ($role === 'admin') return true;
+        if ($role === 'national_admin') return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
     'finalize_road' => static function (int $userId, string $role, array $ctx): bool {
         // Only the road owner or an admin may finalize (permanently lock) a road.
-        if ($role === 'admin') return true;
+        if ($role === 'national_admin') return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
@@ -70,7 +70,7 @@ $PERMISSIONS = [
 
     'view_session' => static function (int $userId, string $role, array $ctx): bool {
         // Only the session owner or an admin may view session data.
-        if ($role === 'admin') return true;
+        if ($role === 'national_admin') return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
@@ -83,29 +83,29 @@ $PERMISSIONS = [
 
     'unlock_segment' => static function (int $userId, string $role, array $ctx): bool {
         // Only the road owner (creator) or an admin may unlock a completed segment.
-        if ($role === 'admin') return true;
+        if ($role === 'national_admin') return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
     'reset_segment' => static function (int $userId, string $role, array $ctx): bool {
         // Only the session owner or an admin may wipe and reset a segment.
-        if ($role === 'admin') return true;
+        if ($role === 'national_admin') return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
     'view_audit_data' => static function (int $userId, string $role, array $ctx): bool {
         // Only the road creator or an admin may pre-fill the edit form.
-        if ($role === 'admin') return true;
+        if ($role === 'national_admin') return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
     // ── Admin-only ────────────────────────────────────────────
     'manage_users' => static function (int $userId, string $role, array $ctx): bool {
-        return $role === 'admin';
+        return $role === 'national_admin';
     },
 
     'view_all_roads' => static function (int $userId, string $role, array $ctx): bool {
-        return $role === 'admin';
+        return $role === 'national_admin';
     },
 ];
 
@@ -116,7 +116,7 @@ $PERMISSIONS = [
  *
  * @param  string              $permission  Key from PERMISSIONS above.
  * @param  int                 $userId      Current user's ID.
- * @param  string              $role        Current user's role ('admin'|'surveyor').
+ * @param  string              $role        Current user's role ('national_admin'|'surveyor').
  * @param  array<string,mixed> $ctx         Optional context (owner_id, status, …).
  * @return bool
  */
