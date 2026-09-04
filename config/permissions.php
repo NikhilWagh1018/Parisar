@@ -7,22 +7,75 @@ declare(strict_types=1);
 //
 //  ROLES
 //  ─────
-//    admin     — Parisar staff. Can do everything.
-//    surveyor  — Default. Can create roads, run audits on any road,
-//                but can only modify/delete their OWN roads & segments.
+//    national_admin — Parisar staff. Can do everything, everywhere.
+//    city_admin      — Scoped staff. Everything national_admin can do,
+//                       but only for resources belonging to their own
+//                       city (users.city_id). Pass the resource's
+//                       city_id via $ctx['city_id'] so this can be
+//                       checked — see USAGE below.
+//    surveyor        — Default. Can create roads, run audits on any
+//                       road, but can only modify/delete their OWN
+//                       roads & segments.
 //
 //  USAGE
 //  ─────
 //  1. Simple boolean check (returns true/false, no abort):
-//       if (can('delete_road', $userId, ['owner_id' => $road['creator_id']])) { ... }
+//       if (can('delete_road', $userId, $role, ['owner_id' => $road['creator_id'], 'city_id' => $road['city_id']])) { ... }
 //
 //  2. Hard gate (aborts with 403 JSON if check fails):
-//       gate('delete_road', $userId, $userRole, ['owner_id' => $road['creator_id']]);
+//       gate('delete_road', $userId, $userRole, ['owner_id' => $road['creator_id'], 'city_id' => $road['city_id']]);
 //
 //  Context keys accepted per permission (all optional unless noted):
-//    owner_id   int   — the creator_id / user_id of the resource
-//    status     string — resource status (e.g. 'active', 'completed')
+//    owner_id   int     — the creator_id / user_id of the resource
+//    city_id    int|null — the city the resource belongs to. REQUIRED
+//                          for a city_admin's elevated access to apply —
+//                          without it, a city_admin is treated as a
+//                          plain surveyor (falls through to the
+//                          owner_id check) for that permission. This is
+//                          a deliberate fail-closed default: an endpoint
+//                          that forgets to pass city_id simply doesn't
+//                          grant city_admin anything extra, rather than
+//                          accidentally granting it everywhere.
+//    status     string  — resource status (e.g. 'active', 'completed')
+//
+//  $CURRENT_USER_CITY_ID (from auth_guard.php) is what a city_admin's
+//  own city_id is compared against — pass it in as part of building
+//  $ctx at the call site, not as a separate function argument.
 // ═══════════════════════════════════════════════════════════════
+
+// ── Helpers ──────────────────────────────────────────────────────
+
+/**
+ * True if $role is either flavor of admin (national or city-scoped).
+ * Use this instead of hand-rolling `in_array($role, [...])` everywhere.
+ */
+function isAnyAdmin(string $role): bool
+{
+    return $role === 'national_admin' || $role === 'city_admin';
+}
+
+/**
+ * True if $role has elevated access to a resource in $ctx['city_id']:
+ *   - national_admin: always (city-less, global scope)
+ *   - city_admin: only if $ctx['city_id'] is present AND matches the
+ *     admin's own city ($GLOBALS['CURRENT_USER_CITY_ID'], set by
+ *     auth_guard.php on every request)
+ *   - surveyor: never
+ */
+function hasAdminAccessToCity(string $role, array $ctx): bool
+{
+    if ($role === 'national_admin') {
+        return true;
+    }
+    if ($role === 'city_admin') {
+        $resourceCityId = $ctx['city_id'] ?? null;
+        $adminCityId    = $GLOBALS['CURRENT_USER_CITY_ID'] ?? null;
+        return $resourceCityId !== null
+            && $adminCityId !== null
+            && (int)$resourceCityId === (int)$adminCityId;
+    }
+    return false;
+}
 
 // ── Permission definitions ────────────────────────────────────
 //
@@ -39,26 +92,23 @@ $PERMISSIONS = [
     },
 
     'edit_road' => static function (int $userId, string $role, array $ctx): bool {
-        // Only the road owner or an admin may edit road metadata.
-        if ($role === 'national_admin') return true;
+        // The road owner, or an admin scoped to the road's city, may edit metadata.
+        if (hasAdminAccessToCity($role, $ctx)) return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
     'delete_road' => static function (int $userId, string $role, array $ctx): bool {
-        // Only the road owner or an admin may delete a road.
-        if ($role === 'national_admin') return true;
+        if (hasAdminAccessToCity($role, $ctx)) return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
     'save_segments' => static function (int $userId, string $role, array $ctx): bool {
-        // Only the road owner or an admin may define/replace segments.
-        if ($role === 'national_admin') return true;
+        if (hasAdminAccessToCity($role, $ctx)) return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
     'finalize_road' => static function (int $userId, string $role, array $ctx): bool {
-        // Only the road owner or an admin may finalize (permanently lock) a road.
-        if ($role === 'national_admin') return true;
+        if (hasAdminAccessToCity($role, $ctx)) return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
@@ -69,8 +119,7 @@ $PERMISSIONS = [
     },
 
     'view_session' => static function (int $userId, string $role, array $ctx): bool {
-        // Only the session owner or an admin may view session data.
-        if ($role === 'national_admin') return true;
+        if (hasAdminAccessToCity($role, $ctx)) return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
@@ -82,30 +131,32 @@ $PERMISSIONS = [
     },
 
     'unlock_segment' => static function (int $userId, string $role, array $ctx): bool {
-        // Only the road owner (creator) or an admin may unlock a completed segment.
-        if ($role === 'national_admin') return true;
+        if (hasAdminAccessToCity($role, $ctx)) return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
     'reset_segment' => static function (int $userId, string $role, array $ctx): bool {
-        // Only the session owner or an admin may wipe and reset a segment.
-        if ($role === 'national_admin') return true;
+        if (hasAdminAccessToCity($role, $ctx)) return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
     'view_audit_data' => static function (int $userId, string $role, array $ctx): bool {
-        // Only the road creator or an admin may pre-fill the edit form.
-        if ($role === 'national_admin') return true;
+        if (hasAdminAccessToCity($role, $ctx)) return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
     // ── Admin-only ────────────────────────────────────────────
+    // These two are checked as a coarse "is this user any kind of
+    // admin at all" gate — the actual city-scoping of WHICH users/
+    // roads a city_admin sees happens in the calling endpoint's SQL
+    // (filter by city_id when role === 'city_admin'), not here,
+    // since this returns a single bool, not a filtered list.
     'manage_users' => static function (int $userId, string $role, array $ctx): bool {
-        return $role === 'national_admin';
+        return isAnyAdmin($role);
     },
 
     'view_all_roads' => static function (int $userId, string $role, array $ctx): bool {
-        return $role === 'national_admin';
+        return isAnyAdmin($role);
     },
 ];
 
@@ -116,8 +167,8 @@ $PERMISSIONS = [
  *
  * @param  string              $permission  Key from PERMISSIONS above.
  * @param  int                 $userId      Current user's ID.
- * @param  string              $role        Current user's role ('national_admin'|'surveyor').
- * @param  array<string,mixed> $ctx         Optional context (owner_id, status, …).
+ * @param  string              $role        Current user's role ('national_admin'|'city_admin'|'surveyor').
+ * @param  array<string,mixed> $ctx         Optional context (owner_id, city_id, status, …).
  * @return bool
  */
 function can(string $permission, int $userId, string $role, array $ctx = []): bool

@@ -41,7 +41,7 @@ try {
     }
 
     // ── 2. RBAC gate ───────────────────────────────────────────
-    gate('view_audit_data', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $segment['creator_id']]);
+    gate('view_audit_data', $CURRENT_USER_ID, $CURRENT_USER_ROLE, ['owner_id' => $segment['creator_id'], 'city_id' => $segment['city_id']]);
 
     // ── 3. Fetch latest audit via repository ───────────────────
     $audit = $repo->latestAudit($segmentId);

@@ -34,9 +34,11 @@ class SegmentRepository
     {
         $stmt = $this->pdo->prepare(
             'SELECT s.id, s.status, s.road_id, s.segment_number,
-                    r.creator_id, r.finalized_at, r.name AS road_name
+                    r.creator_id, r.finalized_at, r.name AS road_name,
+                    rg.city_id AS city_id
                FROM segments s
                JOIN roads r ON r.id = s.road_id
+               LEFT JOIN road_groups rg ON rg.id = r.road_group_id
               WHERE s.id = ?
               LIMIT 1'
         );

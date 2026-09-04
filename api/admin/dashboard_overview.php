@@ -6,6 +6,8 @@ declare(strict_types=1);
 //  GET — org-wide stats + pending verification queue + recent
 //        activity feed, for the admin dashboard section.
 //  Admin-only (gated by config/admin_guard.php).
+//  city_admin sees the same shape of data, scoped to their own
+//  city only (via road_groups.city_id / users.city_id).
 // ═══════════════════════════════════════════════════════════════
 
 header('Content-Type: application/json');
@@ -25,35 +27,59 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
+// A city_admin with no city_id assigned sees empty/zeroed data rather
+// than falling through to org-wide — same fail-closed default used
+// throughout the rest of the city-scoping work.
+$isNationalAdmin = $CURRENT_USER_ROLE === 'national_admin';
+$cityId          = $isNationalAdmin ? null : $CURRENT_USER_CITY_ID;
+$cityBlocked     = !$isNationalAdmin && $cityId === null;
+
 // ── Org-wide KPIs ───────────────────────────────────────────────
-$roadGroupStmt = $pdo->query(
+$roadGroupStmt = $pdo->prepare(
     'SELECT COUNT(*) AS total, SUM(is_verified) AS verified
-       FROM road_groups'
+       FROM road_groups
+      WHERE (:cid1 IS NULL OR city_id = :cid2)'
 );
-$rg = $roadGroupStmt->fetch(PDO::FETCH_ASSOC);
+$roadGroupStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
+$rg = $cityBlocked ? ['total' => 0, 'verified' => 0] : $roadGroupStmt->fetch(PDO::FETCH_ASSOC);
 
-$segmentStmt = $pdo->query(
-    "SELECT COUNT(*) AS total, SUM(status = 'completed') AS completed
-       FROM segments"
+$segmentStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS total, SUM(s.status = 'completed') AS completed
+       FROM segments s
+       JOIN roads r       ON r.id = s.road_id
+       JOIN road_groups rg ON rg.id = r.road_group_id
+      WHERE (:cid1 IS NULL OR rg.city_id = :cid2)"
 );
-$seg = $segmentStmt->fetch(PDO::FETCH_ASSOC);
+$segmentStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
+$seg = $cityBlocked ? ['total' => 0, 'completed' => 0] : $segmentStmt->fetch(PDO::FETCH_ASSOC);
 
-$activeSessionsStmt = $pdo->query(
-    "SELECT COUNT(*) AS total FROM audit_sessions WHERE status = 'active'"
+$activeSessionsStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS total
+       FROM audit_sessions ases
+       JOIN roads r        ON r.id = ases.road_id
+       JOIN road_groups rg ON rg.id = r.road_group_id
+      WHERE ases.status = 'active'
+        AND (:cid1 IS NULL OR rg.city_id = :cid2)"
 );
-$activeSessions = (int)$activeSessionsStmt->fetchColumn();
+$activeSessionsStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
+$activeSessions = $cityBlocked ? 0 : (int)$activeSessionsStmt->fetchColumn();
 
-$surveyorStmt = $pdo->query(
-    "SELECT COUNT(*) AS total FROM users WHERE role = 'surveyor'"
+$surveyorStmt = $pdo->prepare(
+    "SELECT COUNT(*) AS total FROM users
+      WHERE role = 'surveyor' AND (:cid1 IS NULL OR city_id = :cid2)"
 );
-$totalSurveyors = (int)$surveyorStmt->fetchColumn();
+$surveyorStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
+$totalSurveyors = $cityBlocked ? 0 : (int)$surveyorStmt->fetchColumn();
 
-$totalLengthStmt = $pdo->query(
-    "SELECT COALESCE(SUM(total_length), 0) AS total
-       FROM roads
-      WHERE total_length IS NOT NULL"
+$totalLengthStmt = $pdo->prepare(
+    "SELECT COALESCE(SUM(r.total_length), 0) AS total
+       FROM roads r
+       JOIN road_groups rg ON rg.id = r.road_group_id
+      WHERE r.total_length IS NOT NULL
+        AND (:cid1 IS NULL OR rg.city_id = :cid2)"
 );
-$totalLengthAudited = (float)$totalLengthStmt->fetchColumn();
+$totalLengthStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
+$totalLengthAudited = $cityBlocked ? 0.0 : (float)$totalLengthStmt->fetchColumn();
 
 // ── Pending verification queue ──────────────────────────────────
 $pendingStmt = $pdo->prepare(
@@ -64,32 +90,41 @@ $pendingStmt = $pdo->prepare(
         (SELECT COUNT(*) FROM roads r WHERE r.road_group_id = g.id) AS member_count
      FROM road_groups g
     WHERE g.is_verified = 0
+      AND (:cid1 IS NULL OR g.city_id = :cid2)
     ORDER BY g.created_at ASC
     LIMIT 10'
 );
-$pendingStmt->execute();
-$pendingQueue = $pendingStmt->fetchAll(PDO::FETCH_ASSOC);
+$pendingStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
+$pendingQueue = $cityBlocked ? [] : $pendingStmt->fetchAll(PDO::FETCH_ASSOC);
 foreach ($pendingQueue as &$p) {
     $p['id']           = (int)$p['id'];
     $p['member_count'] = (int)$p['member_count'];
 }
 unset($p);
 
-$pendingTotalStmt = $pdo->query(
-    'SELECT COUNT(*) FROM road_groups WHERE is_verified = 0'
+$pendingTotalStmt = $pdo->prepare(
+    'SELECT COUNT(*) FROM road_groups WHERE is_verified = 0 AND (:cid1 IS NULL OR city_id = :cid2)'
 );
-$pendingTotal = (int)$pendingTotalStmt->fetchColumn();
+$pendingTotalStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
+$pendingTotal = $cityBlocked ? 0 : (int)$pendingTotalStmt->fetchColumn();
 
 // ── Audits over time (last 30 days, zero-filled) ─────────────────
-$overTimeStmt = $pdo->query(
-    "SELECT DATE(created_at) AS d, COUNT(*) AS total
-       FROM segment_audits
-      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
-      GROUP BY DATE(created_at)"
+$overTimeStmt = $pdo->prepare(
+    "SELECT DATE(sa.created_at) AS d, COUNT(*) AS total
+       FROM segment_audits sa
+       JOIN segments s     ON s.id = sa.segment_id
+       JOIN roads r        ON r.id = s.road_id
+       JOIN road_groups rg ON rg.id = r.road_group_id
+      WHERE sa.created_at >= DATE_SUB(CURDATE(), INTERVAL 29 DAY)
+        AND (:cid1 IS NULL OR rg.city_id = :cid2)
+      GROUP BY DATE(sa.created_at)"
 );
+$overTimeStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
 $overTimeRows = [];
-foreach ($overTimeStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-    $overTimeRows[$row['d']] = (int)$row['total'];
+if (!$cityBlocked) {
+    foreach ($overTimeStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $overTimeRows[$row['d']] = (int)$row['total'];
+    }
 }
 $auditsOverTime = [];
 for ($i = 29; $i >= 0; $i--) {
@@ -98,7 +133,7 @@ for ($i = 29; $i >= 0; $i--) {
 }
 
 // ── Audits by surveyor (top 8) ────────────────────────────────────
-$bySurveyorStmt = $pdo->query(
+$bySurveyorStmt = $pdo->prepare(
     'SELECT
         u.id,
         u.name,
@@ -106,11 +141,13 @@ $bySurveyorStmt = $pdo->query(
         COUNT(*) AS total
      FROM segment_audits sa
      JOIN users u ON u.id = sa.surveyor_id
+    WHERE (:cid1 IS NULL OR u.city_id = :cid2)
     GROUP BY u.id, u.name, u.organisation
     ORDER BY total DESC, u.name ASC
     LIMIT 8'
 );
-$bySurveyor = $bySurveyorStmt->fetchAll(PDO::FETCH_ASSOC);
+$bySurveyorStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
+$bySurveyor = $cityBlocked ? [] : $bySurveyorStmt->fetchAll(PDO::FETCH_ASSOC);
 foreach ($bySurveyor as &$sv) {
     $sv['id']    = (int)$sv['id'];
     $sv['total'] = (int)$sv['total'];
@@ -118,17 +155,19 @@ foreach ($bySurveyor as &$sv) {
 unset($sv);
 
 // ── Audits by organisation (top 8) ────────────────────────────────
-$byOrgStmt = $pdo->query(
+$byOrgStmt = $pdo->prepare(
     "SELECT
         COALESCE(NULLIF(TRIM(u.organisation), ''), 'Unspecified') AS organisation,
         COUNT(*) AS total
      FROM segment_audits sa
      JOIN users u ON u.id = sa.surveyor_id
+    WHERE (:cid1 IS NULL OR u.city_id = :cid2)
     GROUP BY organisation
     ORDER BY total DESC, organisation ASC
     LIMIT 8"
 );
-$byOrganisation = $byOrgStmt->fetchAll(PDO::FETCH_ASSOC);
+$byOrgStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
+$byOrganisation = $cityBlocked ? [] : $byOrgStmt->fetchAll(PDO::FETCH_ASSOC);
 foreach ($byOrganisation as &$og) {
     $og['total'] = (int)$og['total'];
 }
@@ -150,12 +189,14 @@ $activityStmt = $pdo->prepare(
      LEFT JOIN users u    ON u.id = al.user_id
      LEFT JOIN segments s ON s.id = (al.meta->>'$.segment_id') + 0
      LEFT JOIN roads r    ON r.id = s.road_id
+     LEFT JOIN road_groups rg ON rg.id = r.road_group_id
     WHERE al.action IN ('segment_submitted', 'segment_edited')
+      AND (:cid1 IS NULL OR rg.city_id = :cid2)
     ORDER BY al.created_at DESC
     LIMIT 15"
 );
-$activityStmt->execute();
-$recentActivity = $activityStmt->fetchAll(PDO::FETCH_ASSOC);
+$activityStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
+$recentActivity = $cityBlocked ? [] : $activityStmt->fetchAll(PDO::FETCH_ASSOC);
 foreach ($recentActivity as &$a) {
     $a['id']             = (int)$a['id'];
     $a['segment_number']  = $a['segment_number'] !== null ? (int)$a['segment_number'] : null;

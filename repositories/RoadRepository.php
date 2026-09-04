@@ -28,13 +28,15 @@ class RoadRepository
     public function find(int $roadId): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, public_id, creator_id, name,
-                    start_point, end_point, total_length,
-                    gps_start, gps_end,
-                    segment_method, segment_length,
-                    created_at, finalized_at
-               FROM roads
-              WHERE id = ?
+            'SELECT r.id, r.public_id, r.creator_id, r.name,
+                    r.start_point, r.end_point, r.total_length,
+                    r.gps_start, r.gps_end,
+                    r.segment_method, r.segment_length,
+                    r.created_at, r.finalized_at,
+                    rg.city_id AS city_id
+               FROM roads r
+               LEFT JOIN road_groups rg ON rg.id = r.road_group_id
+              WHERE r.id = ?
               LIMIT 1'
         );
         $stmt->execute([$roadId]);
@@ -51,12 +53,14 @@ class RoadRepository
     public function findOwnedBy(int $roadId, int $userId): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, public_id, creator_id, name,
-                    start_point, end_point, total_length,
-                    gps_start, gps_end,
-                    segment_method, segment_length, finalized_at
-               FROM roads
-              WHERE id = ? AND creator_id = ?
+            'SELECT r.id, r.public_id, r.creator_id, r.name,
+                    r.start_point, r.end_point, r.total_length,
+                    r.gps_start, r.gps_end,
+                    r.segment_method, r.segment_length, r.finalized_at,
+                    rg.city_id AS city_id
+               FROM roads r
+               LEFT JOIN road_groups rg ON rg.id = r.road_group_id
+              WHERE r.id = ? AND r.creator_id = ?
               LIMIT 1'
         );
         $stmt->execute([$roadId, $userId]);
@@ -97,7 +101,7 @@ class RoadRepository
     public function create(int $creatorId, array $data): array
     {
         $name      = strtoupper(strip_tags((string)$data['name']));
-        $roadGroupId = $this->findOrCreateRoadGroup($name);
+        $roadGroupId = $this->findOrCreateRoadGroup($name, $creatorId);
 
         $this->pdo->prepare(
             'INSERT INTO roads
@@ -145,7 +149,7 @@ class RoadRepository
      * instead of spawning an invisible 12th duplicate that needs
      * manual re-verification.
      */
-    private function findOrCreateRoadGroup(string $name): int
+    private function findOrCreateRoadGroup(string $name, int $creatorId): int
     {
         $normalized = trim(strtoupper($name));
 
@@ -159,13 +163,15 @@ class RoadRepository
             return (int)$existing;
         }
 
+        $cityId = $this->resolveCityIdForNewRoadGroup($creatorId);
+
         // Race-safe-ish: rely on the UNIQUE KEY on canonical_name. If a
         // concurrent request created the same group between our SELECT
         // and this INSERT, fall back to re-selecting instead of erroring.
         try {
             $this->pdo->prepare(
-                'INSERT INTO road_groups (canonical_name, is_verified) VALUES (?, 0)'
-            )->execute([$name]);
+                'INSERT INTO road_groups (canonical_name, city_id, is_verified) VALUES (?, ?, 0)'
+            )->execute([$name, $cityId]);
             return (int)$this->pdo->lastInsertId();
         } catch (PDOException $e) {
             $stmt->execute([$normalized]);
@@ -175,6 +181,38 @@ class RoadRepository
             }
             throw $e;
         }
+    }
+
+    /**
+     * road_groups.city_id is NOT NULL, but not every user has a city_id
+     * set yet (national_admins are city-less by design; older accounts
+     * predate city assignment). Resolution order:
+     *   1. The creator's own city_id, if set.
+     *   2. If exactly one city exists in the whole app, use that — this
+     *      is Parisar's current single-city state (Pune, id 1), so a
+     *      city-less national_admin creating a road still works.
+     *   3. Otherwise, fail loudly rather than guess which of several
+     *      cities a road belongs to.
+     */
+    private function resolveCityIdForNewRoadGroup(int $creatorId): int
+    {
+        $stmt = $this->pdo->prepare('SELECT city_id FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$creatorId]);
+        $creatorCityId = $stmt->fetchColumn();
+
+        if ($creatorCityId !== false && $creatorCityId !== null) {
+            return (int)$creatorCityId;
+        }
+
+        $cityCount = (int)$this->pdo->query('SELECT COUNT(*) FROM cities')->fetchColumn();
+        if ($cityCount === 1) {
+            return (int)$this->pdo->query('SELECT id FROM cities LIMIT 1')->fetchColumn();
+        }
+
+        throw new RuntimeException(
+            "Cannot create a new road: your account has no city assigned, and there is no single " .
+            "default city to fall back to. Please assign a city to this user before creating roads."
+        );
     }
 
     /**
