@@ -181,7 +181,11 @@ document.addEventListener('click', e => {
           <option value="city_admin">City admins only</option>
           <option value="surveyor">Surveyors only</option>
         </select>
-        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;"><input type="checkbox" id="showInactive"> Show inactive only</label>
+        <select id="statusFilter" class="surv-role-filter" aria-label="Filter by status">
+          <option value="active" selected>Active users</option>
+          <option value="inactive">Inactive users</option>
+          <option value="all">All users</option>
+        </select>
         <button class="action-btn" id="exportExcelBtn" type="button">Export Excel</button>
         <span id="filterCount" class="surv-filtercount"></span>
       </div>
@@ -297,10 +301,11 @@ document.addEventListener('click', e => {
 
   function applyFilter() {
     var q = document.getElementById('survSearch').value.trim().toLowerCase();
-    var showInactive = document.getElementById('showInactive').checked;
+    var statusFilter = document.getElementById('statusFilter').value;
     var roleFilter = document.getElementById('roleFilter').value;
     var filtered = allSurveyors.filter(function (s) {
-      if (showInactive ? s.is_active : !s.is_active) return false;
+      if (statusFilter === 'active' && !s.is_active) return false;
+      if (statusFilter === 'inactive' && s.is_active) return false;
       if (roleFilter !== 'all' && s.role !== roleFilter) return false;
       return (s.name || '').toLowerCase().indexOf(q) !== -1 ||
              (s.email || '').toLowerCase().indexOf(q) !== -1;
@@ -312,7 +317,7 @@ document.addEventListener('click', e => {
   }
 
   document.getElementById('survSearch').addEventListener('input', applyFilter);
-  document.getElementById('showInactive').addEventListener('change', applyFilter);
+  document.getElementById('statusFilter').addEventListener('change', applyFilter);
   document.getElementById('roleFilter').addEventListener('change', applyFilter);
 
   document.getElementById('survTbody').addEventListener('click', function (e) {
@@ -395,7 +400,7 @@ document.addEventListener('click', e => {
 
   // ── Export (CSV + Excel) ─────────────────────────────────────
   // Both formats export exactly `lastFiltered` — whatever the
-  // search box, role dropdown, and "show inactive only" checkbox
+  // search box, role dropdown, and status dropdown
   // currently show — never the full unfiltered `allSurveyors`.
   var exportExcelBtn = document.getElementById('exportExcelBtn');
   var exportMsg = document.getElementById('exportMsg');
