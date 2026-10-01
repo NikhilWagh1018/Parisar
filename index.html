@@ -20,7 +20,7 @@
     <span class="ln-sep" style="width:1px;height:22px;background:var(--bd);margin:0 4px;display:inline-block;vertical-align:middle;"></span>
     <span class="ln">CycleAudit</span>
   </a>
-  <div class="nl" id="nl"><a href="#about">About</a><a href="#findings">Findings</a><a href="#features">Features</a><a href="#how">How It Works</a><a href="#scoring">Scoring</a><a href="#roads">Roads</a><a href="auth/login.php" class="cta">Start Audit</a></div>
+  <div class="nl" id="nl"><a href="#about">About</a><a href="#findings">Findings</a><a href="#features">Features</a><a href="#how">How It Works</a><a href="#scoring">Scoring</a><a href="#roads">Roads</a><a href="auth/login.php" class="cta">Sign In</a></div>
   <div class="ham" id="ham" onclick="document.getElementById('nl').classList.toggle('open')"><span></span><span></span><span></span></div>
 </nav>
 <section id="hero">
@@ -28,8 +28,8 @@
   <div class="hl">
     <div class="eyebrow"><span class="dot"></span>Parisar Initiative<span class="js-city" data-with=" — {c}" data-without=""> — Pune, Maharashtra</span></div>
     <h1>Auditing <span class="js-city" data-with="{c}'s" data-without="">Pune's</span><br><em>Cycle Tracks</em><br>Segment by Segment</h1>
-    <p class="hero-p">A systematic, data-driven field auditing platform built for Parisar's cycle track assessment programme. Surveyors document obstructions, surface conditions, intersections, and safety data across <span class="js-city" data-with="{c}'s " data-without="the ">Pune's </span><span class="js-roads">19</span> cycle track roads — generating evidence for municipal advocacy and infrastructure improvement.</p>
-    <div class="hbtns"><a href="auth/login.php" class="btn-p">Start Your Audit →</a><a href="#about" class="btn-s">Learn More</a></div>
+    <p class="hero-p">A systematic, data-driven field auditing platform for cycle tracks. City audit teams document obstructions, surface conditions, intersections, and safety data across <span class="js-city" data-with="{c}'s " data-without="the ">Pune's </span><span class="js-roads">19</span> cycle track roads — building the evidence needed to improve cycling infrastructure.</p>
+    <div class="hbtns"><a href="auth/login.php" class="btn-p">Sign In to Audit →</a><a href="#about" class="btn-s">Learn More</a></div>
     <div class="hm-scope" id="stat-scope" hidden><label for="stat-city">Showing</label><select id="stat-city" aria-label="Choose city for statistics"><option value="">All cities</option></select></div>
     <div class="hm">
       <div class="hm-item"><div class="num" id="stat-roads">—</div><div class="lbl">Roads Audited</div></div>
@@ -69,17 +69,17 @@
 <section id="about"><div class="mw"><div class="ag">
   <div class="rv">
     <div class="ey">About the Platform</div><h2>Field Data That Drives Infrastructure Change</h2>
-    <p class="sub">CycleAudit is Parisar's internal auditing tool used by surveyors on the ground to document the real condition of <span class="js-city" data-with="{c}'s " data-without="">Pune's </span>cycle tracks. Every obstruction, broken surface, missing ramp, and dangerous intersection is recorded, scored, and converted into advocacy evidence.</p>
+    <p class="sub">CycleAudit is Parisar's auditing tool for city teams. Surveyors on the ground document the real condition of <span class="js-city" data-with="{c}'s " data-without="">Pune's </span>cycle tracks. Every obstruction, broken surface, missing ramp, and dangerous intersection is recorded and scored, and each city's audit data stays with that city's leaders to review.</p>
     <div class="about-features">
       <div class="af"><div class="af-ic">🗺️</div><div><h4>Geo-Referenced Segments</h4><p>Roads are divided into precise 500m segments with GPS coordinates, ensuring complete and consistent coverage.</p></div></div>
       <div class="af"><div class="af-ic">📊</div><div><h4>Multi-Dimensional Scoring</h4><p>Safety, Continuity, and Comfort — three independent dimensions measured from real field observations and combined into a final weighted score.</p></div></div>
-      <div class="af"><div class="af-ic">📄</div><div><h4>Professional PDF Reports</h4><p>Auto-generate comprehensive stakeholder reports with segment scores, observations, and actionable recommendations.</p></div></div>
-      <div class="af"><div class="af-ic">🔒</div><div><h4>Surveyor Accounts</h4><p>Each audit is linked to a registered surveyor, enabling accountability and historical tracking of audit data over time.</p></div></div>
+      <div class="af"><div class="af-ic">📄</div><div><h4>Professional PDF Reports</h4><p>Auto-generate comprehensive stakeholder reports with segment scores, observations, and actionable recommendations, and download a city-wide score sheet.</p></div></div>
+      <div class="af"><div class="af-ic">🔒</div><div><h4>Surveyor Accounts</h4><p>Each audit is linked to a named surveyor on the city\'s audit team, enabling accountability and historical tracking of audit data over time.</p></div></div>
     </div>
   </div>
   <div class="rv" style="transition-delay:.14s">
     <div class="av-card">
-      <div><div class="av-big">🚴</div><div class="av-t">Why Cycle Track Audits Matter</div><div class="av-p">Pune has invested crores in cycle track infrastructure, yet most tracks remain underused or inaccessible. Systematic audits create a factual baseline that Parisar uses to advocate with the PMC for targeted repairs, encroachment removal, better lighting, and safer intersections.<br><br>The 2024–25 audit found poor continuity, dangerous intersections, and encroachment as the three most common issues — all documentable through this platform.</div></div>
+      <div><div class="av-big">🚴</div><div class="av-t">Why Cycle Track Audits Matter</div><div class="av-p">Cities invest heavily in cycle track infrastructure, yet many tracks stay underused or inaccessible because of obstructions, missing links, and unsafe crossings. Systematic audits create a factual baseline that city teams and Parisar can use to make the case for targeted repairs, encroachment removal, better lighting, and safer intersections.<br><br>Because every segment is audited the same way, results are consistent and comparable from one road, and one city, to the next.</div></div>
       <div class="av-ps"><span class="av-pi">Safety Analysis</span><span class="av-pi">Continuity</span><span class="av-pi">Comfort Ratings</span><span class="av-pi">Obstruction Mapping</span><span class="av-pi">Intersection Audit</span><span class="av-pi">Surface Quality</span></div>
     </div>
     <div class="astats" style="margin-top:16px">
@@ -119,13 +119,13 @@
 <section id="how"><div class="mw"><div class="how-g">
   <div class="rv">
     <div class="ey">Audit Process</div><h2>How a Cycle Track Audit Works</h2>
-    <p class="sub" style="margin-bottom:32px">A structured 5-step process ensures every segment is audited consistently by any surveyor in the field — from road setup to final PDF export.</p>
+    <p class="sub" style="margin-bottom:32px">A structured 5-step process ensures every segment is audited consistently by any surveyor on a city\'s audit team — from road setup to the final report.</p>
     <div class="steps">
-      <div class="step act"><div class="stc">1</div><div class="stb"><h4>Define the Road</h4><p>Select a road from the <span class="js-roads">19</span> cycle track roads. Enter start/end landmarks, total length, and GPS coordinates.</p><span class="st-chip">segment.php</span></div></div>
-      <div class="step"><div class="stc">2</div><div class="stb"><h4>Generate Segments</h4><p>Auto-divide the road into standard 500m segments, or manually define custom boundaries with landmark names.</p><span class="st-chip">Auto or Manual</span></div></div>
+      <div class="step act"><div class="stc">1</div><div class="stb"><h4>Define the Road</h4><p>Select a road from the <span class="js-roads">19</span> cycle track roads in the audit network. Its start and end landmarks and GPS are captured automatically from the audit itself.</p><span class="st-chip">segment.php</span></div></div>
+      <div class="step"><div class="stc">2</div><div class="stb"><h4>Generate Segments</h4><p>Auto-divide the road into standard 500m segments, each with its own start and end landmarks.</p><span class="st-chip">Auto</span></div></div>
       <div class="step"><div class="stc">3</div><div class="stb"><h4>Field Audit Each Segment</h4><p>For each segment, fill in landmarks, obstructions (30+ types), intersections, surface issues, lighting, and footpath data.</p><span class="st-chip">form.html</span></div></div>
       <div class="step"><div class="stc">4</div><div class="stb"><h4>Submit and Auto-Score</h4><p>Data is stored in MySQL. Safety, Continuity, and Comfort scores are calculated automatically from submitted responses.</p><span class="st-chip">submit.php</span></div></div>
-      <div class="step"><div class="stc">5</div><div class="stb"><h4>Download PDF Report</h4><p>Generate a professional PDF with segment scores, key observations, critical issues, and recommendations for PMC.</p><span class="st-chip">report.php</span></div></div>
+      <div class="step"><div class="stc">5</div><div class="stb"><h4>Download PDF Report</h4><p>Generate a professional PDF with segment scores, key observations, critical issues, and recommendations for city authorities. City leaders can also download a city-wide score sheet.</p><span class="st-chip">report.php</span></div></div>
     </div>
   </div>
   <div class="rv how-cards" style="transition-delay:.14s">
@@ -155,7 +155,7 @@
 </div></section>
 <section id="impact"><div class="mw">
   <div class="ey">Why It Matters</div><h2>Driving Change Through Evidence</h2>
-  <p class="sub">Systematic data empowers Parisar to push for meaningful cycle infrastructure improvements from municipal authorities — backed by field evidence, not opinion.</p>
+  <p class="sub">Systematic data gives city teams and Parisar the evidence to press local authorities for better cycle infrastructure — facts from the field, not opinion.</p>
   <div class="imp-g">
     <div class="ic-card rv"><div class="big">🏙️</div><div class="n js-roads">19</div><div class="l">Roads in <span class="js-city" data-with="{c}'s " data-without="the ">Pune's </span>Cycle Network</div></div>
     <div class="ic-card rv" style="transition-delay:.08s"><div class="big">📏</div><div class="n">500m</div><div class="l">Standard Segment Length</div></div>
@@ -169,19 +169,19 @@
   <div class="rg" id="roads-grid"></div>
 </div></section>
 <section id="cta"><div class="mw"><div class="cta-inner">
-  <div class="ey" style="justify-content:center">Get Started</div>
-  <h2>Ready to Audit a Cycle Track?</h2>
-  <p class="sub">Register as a surveyor, pick a road, and start contributing to <span class="js-city" data-with="{c}'s " data-without="the ">Pune's </span>cycle infrastructure dataset. Your field data helps Parisar advocate for safer, better cycling conditions.</p>
-  <div class="cta-bs"><a href="auth/register.php" class="btn-p">Register as Surveyor</a><a href="auth/login.php" class="btn-s">Sign In</a></div>
+<div class="ey" style="justify-content:center">Audit Teams</div>
+<h2>Part of a City Audit Team?</h2>
+<p class="sub">Sign in to audit the roads in your city. City Leaders can manage their city's roads and surveyors, view audit data and scores, and download the city score sheet. Want to bring a cycle track audit to your city? Get in touch with Parisar.</p>
+<div class="cta-bs"><a href="auth/login.php" class="btn-p">Sign In</a><a href="https://parisar.org/contact-us" target="_blank" rel="noopener" class="btn-s">Contact Parisar</a></div>
 </div></div></section>
 <footer><div class="mw">
   <div class="fg-wrap">
     <div class="fb-brand">
       <img src="assets/parisar-logo.png" alt="Parisar" style="height:28px;width:auto;filter:brightness(0) invert(1);opacity:.85;margin-bottom:10px;display:block;">
       <div class="bn">CycleAudit</div>
-      <p>A Parisar initiative to systematically audit and improve cycle track infrastructure across <span class="js-city" data-with="{c}" data-without="our cities">Pune</span> using field data and evidence-based scoring.</p>
+      <p>A Parisar initiative that helps city teams audit cycle track infrastructure segment by segment, using field data and evidence-based scoring to guide improvements.</p>
     </div>
-    <div class="fcol"><h5>Platform</h5><a href="auth/login.php">Login</a><a href="auth/register.php">Register</a><a href="pages/segment.php">Start Audit</a><a href="pages/road_result.php">View Results</a></div>
+    <div class="fcol"><h5>Platform</h5><a href="auth/login.php">Login</a><a href="pages/segment.php">Start Audit</a><a href="pages/road_result.php">View Results</a></div>
     <div class="fcol"><h5>Parisar</h5><a href="https://parisar.org" target="_blank">parisar.org</a><a href="https://parisar.org/what-we-do/urban-transport" target="_blank">Urban Transport</a><a href="https://parisar.org/contact-us" target="_blank">Contact</a></div>
     <div class="fcol"><h5>Audit Scope</h5><a href="#roads"><span class="js-roads">19</span> Roads</a><a href="#scoring">Scoring Method</a><a href="#findings">2024–25 Findings</a></div>
   </div>
