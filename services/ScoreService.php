@@ -275,6 +275,126 @@ function calculateRoadScore(int $roadId, PDO $pdo): ?array
 }
 
 /**
+ * Length-weighted score across MULTIPLE road ids at once (a whole
+ * road_group — i.e. every duplicate `roads` row that represents the
+ * same real-world road). Identical batching/computation approach to
+ * calculateRoadScore(), just with `WHERE s.road_id IN (...)` instead
+ * of `= ?`, so a road_group with several member roads gets one
+ * correctly length-weighted score instead of the caller having to
+ * average per-road scores (which would weight by road count, not by
+ * actual audited length).
+ *
+ * Used by the city-wide score sheet export (api/reports/export-city-excel.php)
+ * — one call per road_group, plus one call across every road_group's
+ * combined ids for the city total row.
+ */
+function calculateRoadGroupScore(array $roadIds, PDO $pdo): ?array
+{
+    $roadIds = array_values(array_unique(array_map('intval', $roadIds)));
+    if (empty($roadIds)) {
+        return null;
+    }
+
+    $placeholders = implode(',', array_fill(0, count($roadIds), '?'));
+
+    $stmt = $pdo->prepare(
+        "SELECT s.id      AS segment_id,
+                s.length,
+                sa.id     AS audit_id,
+                sa.buffer_zone,
+                sa.light_after_sunset,
+                sa.shade,
+                sa.surface_material,
+                sa.cycle_track_missing,
+                sa.missing_length,
+                s.length  AS segment_length,
+                r.name    AS road_name
+         FROM   segments s
+         JOIN   segment_audits sa
+                ON  sa.segment_id = s.id
+                AND sa.id = (
+                      SELECT MAX(sa2.id)
+                      FROM   segment_audits sa2
+                      WHERE  sa2.segment_id = s.id
+                    )
+         JOIN   roads r ON r.id = s.road_id
+         WHERE  s.road_id IN ({$placeholders})
+         ORDER  BY s.segment_number ASC"
+    );
+    $stmt->execute($roadIds);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (empty($rows)) {
+        return null;
+    }
+
+    $auditIds = array_column($rows, 'audit_id');
+
+    $obsPlaceholders = implode(',', array_fill(0, count($auditIds), '?'));
+    $stmtObs = $pdo->prepare(
+        "SELECT audit_id,
+                COALESCE(SUM(partial_obstructions), 0) AS partial,
+                COALESCE(SUM(total_obstructions),   0) AS total,
+                COALESCE(SUM(cyclist_slowed),        0) AS slowed
+         FROM   obstructions
+         WHERE  audit_id IN ({$obsPlaceholders})
+         GROUP  BY audit_id"
+    );
+    $stmtObs->execute($auditIds);
+    $obsMap = [];
+    foreach ($stmtObs->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $obsMap[(int)$row['audit_id']] = $row;
+    }
+
+    $stmtInt = $pdo->prepare(
+        "SELECT audit_id, off_ramp, on_ramp, markings, signage, traffic_calming
+         FROM   intersections
+         WHERE  audit_id IN ({$obsPlaceholders})"
+    );
+    $stmtInt->execute($auditIds);
+    $intMap = [];
+    foreach ($stmtInt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $intMap[(int)$row['audit_id']][] = $row;
+    }
+
+    $totalLength        = 0.0;
+    $weightedFinal      = 0.0;
+    $weightedSafety     = 0.0;
+    $weightedContinuity = 0.0;
+    $weightedComfort    = 0.0;
+
+    foreach ($rows as $row) {
+        $auditId = (int)$row['audit_id'];
+        $obs     = $obsMap[$auditId] ?? ['partial' => 0, 'total' => 0, 'slowed' => 0];
+        $ints    = $intMap[$auditId]  ?? [];
+
+        $seg = _computeScoreFromData($row, $obs, $ints);
+        $len = max(0.0, (float)$row['length']);
+
+        $totalLength        += $len;
+        $weightedFinal      += $seg['final']            * $len;
+        $weightedSafety     += $seg['safety_score']     * $len;
+        $weightedContinuity += $seg['continuity_score'] * $len;
+        $weightedComfort    += $seg['comfort_score']    * $len;
+    }
+
+    if ($totalLength <= 0.0) {
+        return null;
+    }
+
+    $roadScore = round($weightedFinal / $totalLength, 2);
+
+    return [
+        'score'            => $roadScore,
+        'condition'        => ScoreHelpers::scoreToCondition($roadScore),
+        'safety_score'     => round($weightedSafety     / $totalLength, 2),
+        'continuity_score' => round($weightedContinuity / $totalLength, 2),
+        'comfort_score'    => round($weightedComfort    / $totalLength, 2),
+        'segment_count'    => count($rows),
+    ];
+}
+
+/**
  * Detailed breakdown with parameter-level scores.
  *
  * FIXED (Issue 8): Previously called calculateSegmentScore() first (3 queries)

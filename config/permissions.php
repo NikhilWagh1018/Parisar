@@ -98,7 +98,11 @@ $PERMISSIONS = [
     },
 
     'delete_road' => static function (int $userId, string $role, array $ctx): bool {
-        if (hasAdminAccessToCity($role, $ctx)) return true;
+        // Data deletion is Admin-only in this phase (confirmed scope) —
+        // a city_admin does NOT get elevated delete rights the way it
+        // does for edit/view. Only national_admin, or the resource's
+        // own owner (pre-existing surveyor self-delete), may delete.
+        if ($role === 'national_admin') return true;
         return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
     },
 
