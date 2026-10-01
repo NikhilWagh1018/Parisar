@@ -8,6 +8,7 @@ declare(strict_types=1);
 // ============================================================
 
 require_once __DIR__ . '/../config/admin_guard.php';
+require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../config/constants.php';
 
 $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
@@ -103,7 +104,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     </div>
     <div class="sb-uinfo">
       <div class="sb-uname"><?= htmlspecialchars($CURRENT_USER_NAME) ?></div>
-      <div class="sb-urole"><?= htmlspecialchars($CURRENT_USER_ROLE) ?></div>
+      <div class="sb-urole"><?= htmlspecialchars(roleLabel($CURRENT_USER_ROLE)) ?></div>
     </div>
     <svg class="sb-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
       <polyline points="18 15 12 9 6 15"/>
@@ -121,7 +122,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       </div>
       <div style="min-width:0">
         <div class="popup-uname"><?= htmlspecialchars($CURRENT_USER_NAME) ?></div>
-        <div class="popup-urole"><?= htmlspecialchars($CURRENT_USER_ROLE) ?></div>
+        <div class="popup-urole"><?= htmlspecialchars(roleLabel($CURRENT_USER_ROLE)) ?></div>
       </div>
     </div>
     <div class="popup-menu">
@@ -249,17 +250,17 @@ document.addEventListener('click', e => {
   }
 
   var ROLE_LABELS = {
-    national_admin: 'National Admin',
-    city_admin: 'City Admin',
+    national_admin: 'Platform Admin',
+    city_admin: 'City Leader',
     surveyor: 'Surveyor'
   };
 
   function buildRow(s) {
     var tr = document.createElement('tr');
     var roleBadge = s.role === 'national_admin'
-      ? '<span class="admin-badge">National Admin</span>'
+      ? '<span class="admin-badge">Platform Admin</span>'
       : s.role === 'city_admin'
-        ? '<span class="admin-badge" style="background:#eef2ff;color:#4338ca;">City Admin</span>'
+        ? '<span class="admin-badge" style="background:#eef2ff;color:#4338ca;">City Leader</span>'
         : '<span style="color:#6b7280;font-size:.78rem;">Surveyor</span>';
 
     // Role selector: shown to the Platform Admin only.

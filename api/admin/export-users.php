@@ -18,6 +18,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../../config/admin_guard.php';
+require_once __DIR__ . '/../../helpers/RoleHome.php';
 require_once __DIR__ . '/../../config/constants.php';
 // vendor/autoload.php is already loaded via config/constants.php.
 
@@ -81,7 +82,7 @@ foreach ($rows as $row) {
     $sheet->setCellValue("A{$r}", (string)($row['name'] ?? ''));
     $sheet->setCellValue("B{$r}", (string)($row['email'] ?? ''));
     $sheet->setCellValue("C{$r}", (string)($row['organisation'] ?? ''));
-    $sheet->setCellValue("D{$r}", ucfirst((string)($row['role'] ?? '')));
+    $sheet->setCellValue("D{$r}", roleLabel((string)($row['role'] ?? '')));
     $sheet->setCellValue("E{$r}", (int)($row['roads_created'] ?? 0));
     $sheet->setCellValue("F{$r}", (int)($row['segments_audited'] ?? 0));
     $sheet->setCellValue("G{$r}", (string)($row['last_active'] ?? ''));

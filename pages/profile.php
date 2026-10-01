@@ -6,6 +6,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/auth_guard.php';
+require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../config/constants.php';
 
 $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
@@ -61,7 +62,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
     </div>
     <div class="sb-uinfo">
       <div class="sb-uname"><?= htmlspecialchars($CURRENT_USER_NAME) ?></div>
-      <div class="sb-urole"><?= htmlspecialchars($CURRENT_USER_ROLE) ?></div>
+      <div class="sb-urole"><?= htmlspecialchars(roleLabel($CURRENT_USER_ROLE)) ?></div>
     </div>
     <a href="../auth/logout.php" title="Logout">
       <svg viewBox="0 0 24 24" fill="rgba(255,255,255,.5)" width="16" height="16"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zm-5 12H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h7v-2z"/></svg>
@@ -97,7 +98,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
         <h2 id="hero-name"><?= htmlspecialchars($CURRENT_USER_NAME) ?></h2>
         <div class="hero-email" id="hero-email">Loading…</div>
         <div class="hero-badges">
-          <span class="badge badge-role" id="hero-role"><?= htmlspecialchars(ucfirst($CURRENT_USER_ROLE)) ?></span>
+          <span class="badge badge-role" id="hero-role"><?= htmlspecialchars(roleLabel($CURRENT_USER_ROLE)) ?></span>
           <span class="badge badge-provider" id="hero-provider">—</span>
           <span class="badge" id="hero-verified">—</span>
         </div>

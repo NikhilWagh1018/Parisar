@@ -15,3 +15,14 @@ function roleHomePage(string $role): string
         default          => 'dashboard.php',
     };
 }
+
+// Display name for a role. Stored values stay national_admin / city_admin.
+function roleLabel(string $role): string
+{
+    return match ($role) {
+        'national_admin' => 'Platform Admin',
+        'city_admin'     => 'City Leader',
+        'surveyor'       => 'Surveyor',
+        default          => ucfirst(str_replace('_', ' ', $role)),
+    };
+}

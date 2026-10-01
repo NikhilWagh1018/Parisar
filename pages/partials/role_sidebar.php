@@ -33,7 +33,7 @@ $rsItem = static function (string $key, string $href, string $label) use ($activ
       </div>
       <div class="sb-uinfo">
         <div class="sb-uname"><?= htmlspecialchars($CURRENT_USER_NAME) ?></div>
-        <div class="sb-urole"><?= htmlspecialchars($CURRENT_USER_ROLE) ?></div>
+        <div class="sb-urole"><?= htmlspecialchars(roleLabel($CURRENT_USER_ROLE)) ?></div>
       </div>
     </a>
     <a class="nav-item" href="../auth/logout.php" style="margin-top:6px">Sign Out</a>
