@@ -141,14 +141,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $dupStmt = $pdo->prepare('SELECT id FROM road_groups WHERE TRIM(UPPER(canonical_name)) = ? LIMIT 1');
-        $dupStmt->execute([$name]);
-        if ($dupStmt->fetchColumn() !== false) {
-            http_response_code(409);
-            echo json_encode(['success' => false, 'error' => 'A road with that name already exists.']);
-            exit;
-        }
-
         // road_groups.city_id is NOT NULL. A city_admin always creates
         // within their own city. A national_admin may pass city_id
         // explicitly (once multiple cities exist); until then, this
@@ -178,6 +170,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
             $newCityId = (int)$pdo->query('SELECT id FROM cities LIMIT 1')->fetchColumn();
+        }
+
+        // Road names are unique per city, not globally: the same name in
+        // another city is a different road.
+        $dupStmt = $pdo->prepare(
+            'SELECT id FROM road_groups WHERE city_id = ? AND TRIM(UPPER(canonical_name)) = ? LIMIT 1'
+        );
+        $dupStmt->execute([$newCityId, $name]);
+        if ($dupStmt->fetchColumn() !== false) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'error' => 'A road with that name already exists in this city.']);
+            exit;
         }
 
         // Admin-added roads are trusted by definition — no separate

@@ -72,35 +72,56 @@ if ($v->fails()) {
 
 $repo = new RoadRepository($pdo);
 
-// ── Restrict introduction of brand-new road names to admins ───
+// ── Which city is this audit in? ─────────────────────────────────
+// Road names are only unique within a city, so every name lookup below
+// is scoped to one city. Surveyors and city admins always use their own
+// city. A national admin has no fixed city: they may pass city_id in the
+// body, otherwise the same default as road creation applies (their own
+// city, or the only city if exactly one exists).
+$cityScope = resolveViewerCityScope($pdo, $CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID);
+if ($cityScope === 0) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Your account has no city assigned — contact a national admin.']);
+    exit;
+}
+if ($cityScope === null) {
+    if (isset($data['city_id'])) {
+        $auditCityId = filter_var($data['city_id'], FILTER_VALIDATE_INT);
+        $cityCheck = $pdo->prepare('SELECT 1 FROM cities WHERE id = ? LIMIT 1');
+        if ($auditCityId !== false) {
+            $cityCheck->execute([$auditCityId]);
+        }
+        if ($auditCityId === false || $cityCheck->fetchColumn() === false) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'error' => 'Invalid city_id.']);
+            exit;
+        }
+    } else {
+        try {
+            $auditCityId = $repo->resolveCityIdForNewRoadGroup($CURRENT_USER_ID);
+        } catch (RuntimeException $e) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'error' => 'city_id is required — more than one city exists.']);
+            exit;
+        }
+    }
+} else {
+    $auditCityId = $cityScope;
+}
+
+// ── Restrict introduction of brand-new road names to admins ───────
 // Regular users may only attach a new audit session to an EXISTING
-// road_group (matched by normalized name). This is the server-side
-// half of hiding "Other / Custom Road" from non-admins in the UI —
-// the UI gate alone wouldn't stop a direct POST to this endpoint.
-if (!isAnyAdmin($CURRENT_USER_ROLE) && !$repo->roadGroupExists((string)$data['name'])) {
+// road_group in their city (matched by normalized name). This is the
+// server-side half of hiding "Other / Custom Road" from non-admins in
+// the UI — the UI gate alone wouldn't stop a direct POST to this
+// endpoint. A road with the same name in another city doesn't count.
+if (!isAnyAdmin($CURRENT_USER_ROLE) && !$repo->roadGroupExists((string)$data['name'], $auditCityId)) {
     http_response_code(403);
     echo json_encode([
         'success' => false,
         'error'   => 'That road isn\'t in the list yet. Only admins can add new roads — please ask an admin to add it first.',
     ]);
     exit;
-}
-
-// ── A road in another city can't be audited from this one ────────
-// Road names are matched across all cities, so without this a user
-// could attach an audit session to a different city's road_group by
-// typing its name. national_admin ($cityScope === null) is exempt.
-$cityScope = resolveViewerCityScope($pdo, $CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID);
-if ($cityScope !== null) {
-    $groupInfo = $repo->findRoadGroupCity((string)$data['name']);
-    if ($groupInfo !== null && $groupInfo['city_id'] !== $cityScope) {
-        http_response_code(403);
-        echo json_encode([
-            'success' => false,
-            'error'   => 'That road belongs to a different city.',
-        ]);
-        exit;
-    }
 }
 
 // ── Assigned roads are reserved for their assigned surveyor ──────
@@ -110,7 +131,7 @@ if ($cityScope !== null) {
 // reserved for that surveyor only. Admins bypass this, same as the
 // check above.
 if (!isAnyAdmin($CURRENT_USER_ROLE)) {
-    $assignedTo = $repo->getAssignedSurveyorId((string)$data['name']);
+    $assignedTo = $repo->getAssignedSurveyorId((string)$data['name'], $auditCityId);
     if ($assignedTo !== null && $assignedTo !== $CURRENT_USER_ID) {
         http_response_code(403);
         echo json_encode([
@@ -122,7 +143,7 @@ if (!isAnyAdmin($CURRENT_USER_ROLE)) {
 }
 
 try {
-    $result = $repo->create($CURRENT_USER_ID, $data);
+    $result = $repo->create($CURRENT_USER_ID, $data, $auditCityId);
 
     echo json_encode([
         'success'   => true,

@@ -96,12 +96,19 @@ class RoadRepository
      * @param array<string,mixed> $data  Keys: name, start_point, end_point,
      *                                   total_length, gps_start, gps_end,
      *                                   segment_method, segment_length
+     * @param int|null $cityId  City the road belongs to. Road names are only
+     *                          unique within a city, so the road group is
+     *                          matched / created in this city. Null falls
+     *                          back to the creator's own city.
      * @return array{road_id:int, public_id:string}
      */
-    public function create(int $creatorId, array $data): array
+    public function create(int $creatorId, array $data, ?int $cityId = null): array
     {
         $name      = strtoupper(strip_tags((string)$data['name']));
-        $roadGroupId = $this->findOrCreateRoadGroup($name, $creatorId);
+        $roadGroupId = $this->findOrCreateRoadGroup(
+            $name,
+            $cityId ?? $this->resolveCityIdForNewRoadGroup($creatorId)
+        );
 
         $this->pdo->prepare(
             'INSERT INTO roads
@@ -126,96 +133,78 @@ class RoadRepository
     }
 
     /**
-     * Check whether a road_groups row matching this name (normalized,
-     * case/whitespace insensitive) already exists. Used to block
-     * non-admin users from introducing brand-new road names via
+     * Whether a road_groups row with this name (case/whitespace
+     * insensitive) exists IN THIS CITY. Road names are only unique per
+     * city, so the same name in another city does not count. Used to
+     * block non-admin users from introducing brand-new road names via
      * api/roads/create.php — they may only attach to an existing group.
      */
-    /**
-     * The road_group matching this name (case/whitespace insensitive),
-     * as ['city_id' => ?int], or null if no such group exists. Used by
-     * api/roads/create.php to stop a user attaching an audit session to
-     * a road that belongs to a different city.
-     *
-     * @return array{city_id: ?int}|null
-     */
-    public function findRoadGroupCity(string $name): ?array
+    public function roadGroupExists(string $name, int $cityId): bool
     {
         $normalized = trim(strtoupper($name));
         $stmt = $this->pdo->prepare(
-            'SELECT city_id FROM road_groups WHERE TRIM(UPPER(canonical_name)) = ? LIMIT 1'
+            'SELECT 1 FROM road_groups
+              WHERE city_id = ? AND TRIM(UPPER(canonical_name)) = ? LIMIT 1'
         );
-        $stmt->execute([$normalized]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($row === false) {
-            return null;
-        }
-        return ['city_id' => $row['city_id'] !== null ? (int)$row['city_id'] : null];
-    }
-
-    public function roadGroupExists(string $name): bool
-    {
-        $normalized = trim(strtoupper($name));
-        $stmt = $this->pdo->prepare(
-            'SELECT 1 FROM road_groups WHERE TRIM(UPPER(canonical_name)) = ? LIMIT 1'
-        );
-        $stmt->execute([$normalized]);
+        $stmt->execute([$cityId, $normalized]);
         return $stmt->fetchColumn() !== false;
     }
 
     /**
      * The surveyor a City Leader has assigned this road to, if any
-     * (NULL if unassigned or the road_group doesn't exist). Used by
-     * api/roads/create.php to stop a different surveyor from starting
-     * an audit session on a road that's been assigned to someone else.
-     * An unassigned road remains open to any surveyor in the city, same
-     * as before this feature existed.
+     * (NULL if unassigned or the road_group doesn't exist in this city).
+     * Used by api/roads/create.php to stop a different surveyor from
+     * starting an audit session on a road that's been assigned to
+     * someone else. An unassigned road remains open to any surveyor in
+     * the city, same as before this feature existed.
      */
-    public function getAssignedSurveyorId(string $name): ?int
+    public function getAssignedSurveyorId(string $name, int $cityId): ?int
     {
         $normalized = trim(strtoupper($name));
         $stmt = $this->pdo->prepare(
-            'SELECT assigned_surveyor_id FROM road_groups WHERE TRIM(UPPER(canonical_name)) = ? LIMIT 1'
+            'SELECT assigned_surveyor_id FROM road_groups
+              WHERE city_id = ? AND TRIM(UPPER(canonical_name)) = ? LIMIT 1'
         );
-        $stmt->execute([$normalized]);
+        $stmt->execute([$cityId, $normalized]);
         $value = $stmt->fetchColumn();
         return ($value !== false && $value !== null) ? (int)$value : null;
     }
 
     /**
      * Find the road_groups row matching this name (case/whitespace
-     * insensitive), or create a new unverified group if none exists.
-     * This is what lets a 12th surveyor creating "Karve Road" attach
-     * automatically to the existing group, with zero admin steps,
-     * instead of spawning an invisible 12th duplicate that needs
-     * manual re-verification.
+     * insensitive) in this city, or create a new unverified group in
+     * that city if none exists. This is what lets a 12th surveyor
+     * creating "Karve Road" attach automatically to the existing group,
+     * with zero admin steps, instead of spawning an invisible 12th
+     * duplicate that needs manual re-verification. The same name in a
+     * different city is a different road and gets its own group.
      */
-    private function findOrCreateRoadGroup(string $name, int $creatorId): int
+    private function findOrCreateRoadGroup(string $name, int $cityId): int
     {
         $normalized = trim(strtoupper($name));
 
         $stmt = $this->pdo->prepare(
-            'SELECT id FROM road_groups WHERE TRIM(UPPER(canonical_name)) = ? LIMIT 1'
+            'SELECT id FROM road_groups
+              WHERE city_id = ? AND TRIM(UPPER(canonical_name)) = ? LIMIT 1'
         );
-        $stmt->execute([$normalized]);
+        $stmt->execute([$cityId, $normalized]);
         $existing = $stmt->fetchColumn();
 
         if ($existing !== false) {
             return (int)$existing;
         }
 
-        $cityId = $this->resolveCityIdForNewRoadGroup($creatorId);
-
-        // Race-safe-ish: rely on the UNIQUE KEY on canonical_name. If a
-        // concurrent request created the same group between our SELECT
-        // and this INSERT, fall back to re-selecting instead of erroring.
+        // Race-safe-ish: rely on the UNIQUE KEY (city_id, canonical_name).
+        // If a concurrent request created the same group between our
+        // SELECT and this INSERT, fall back to re-selecting instead of
+        // erroring.
         try {
             $this->pdo->prepare(
                 'INSERT INTO road_groups (canonical_name, city_id, is_verified) VALUES (?, ?, 0)'
             )->execute([$name, $cityId]);
             return (int)$this->pdo->lastInsertId();
         } catch (PDOException $e) {
-            $stmt->execute([$normalized]);
+            $stmt->execute([$cityId, $normalized]);
             $retry = $stmt->fetchColumn();
             if ($retry !== false) {
                 return (int)$retry;
@@ -235,7 +224,7 @@ class RoadRepository
      *   3. Otherwise, fail loudly rather than guess which of several
      *      cities a road belongs to.
      */
-    private function resolveCityIdForNewRoadGroup(int $creatorId): int
+    public function resolveCityIdForNewRoadGroup(int $creatorId): int
     {
         $stmt = $this->pdo->prepare('SELECT city_id FROM users WHERE id = ? LIMIT 1');
         $stmt->execute([$creatorId]);
