@@ -28,11 +28,13 @@ if ($sessionId <= 0) { header('Location: dashboard.php'); exit; }
 // ── Fetch session + road + surveyor ───────────────────────────
 $stmtSess = $pdo->prepare(
     'SELECT s.*, r.name AS road_name, r.total_length,
-            r.start_point, r.end_point,
+            r.start_point, r.end_point, c.name AS city_name,
             u.name AS surveyor_name, u.public_id AS surveyor_public_id,
             u.organisation, u.email AS surveyor_email
      FROM   audit_sessions s
      JOIN   roads r ON r.id = s.road_id
+     LEFT JOIN road_groups rg ON rg.id = r.road_group_id
+     LEFT JOIN cities c ON c.id = rg.city_id
      JOIN   users u ON u.id = s.user_id
      WHERE  s.id = ? AND s.user_id = ?
      LIMIT  1'
@@ -261,7 +263,7 @@ $logoBase64 = file_exists($logoPath)
   <div class="rpt-header">
     <div class="rpt-header-top">
       <div>
-        <div class="rpt-org">Parisar — Cycle Track Audit Programme, Pune</div>
+        <div class="rpt-org">Parisar — Cycle Track Audit Programme<?= !empty($session['city_name']) ? ', ' . htmlspecialchars($session['city_name']) : '' ?></div>
         <div class="rpt-title"><?= htmlspecialchars($session['road_name']) ?></div>
         <div class="rpt-sub">
           <?= htmlspecialchars($session['start_point'] ?? '') ?>

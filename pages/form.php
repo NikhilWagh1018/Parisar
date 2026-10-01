@@ -516,7 +516,7 @@ if ($segNum > 0) {
             <label>End Point Landmark <span class="required-star">*</span></label>
             <input type="text" id="endLandmark" name="end_landmark"
                    oninput="clearError('wrap-endLandmark')"
-                   autocomplete="off" placeholder="e.g. Near Pune University Gate">
+                   autocomplete="off" placeholder="e.g. Near University Gate">
             <span class="error-msg">This field is required</span>
           </div>
           <div class="field-group req-field" id="wrap-gpsEnd">
