@@ -16,6 +16,7 @@
             <file>tests/CitiesTest.php</file>
             <file>tests/RoleHomeTest.php</file>
             <file>tests/RoleRulesTest.php</file>
+            <file>tests/CityLeaderGateTest.php</file>
         </testsuite>
         <testsuite name="Integration">
             <file>tests/SegmentRepositoryTest.php</file>
