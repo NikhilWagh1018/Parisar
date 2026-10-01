@@ -51,6 +51,22 @@ function roadSearchFilter(q) {
   }
 }
 
+// Escape text before it goes into innerHTML / an HTML attribute. Road names and
+// the user's typed search text are untrusted: an apostrophe or quote in a name
+// used to break the inline onclick, and markup would render as HTML.
+function rdEsc(s) {
+  return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+// Escape the road name, wrapping the matched part of the search in <span class="match-bold">.
+function rdHighlightMatch(road, raw) {
+  const i = raw.length > 0 ? road.indexOf(raw) : -1;
+  if (i < 0) return rdEsc(road);
+  return rdEsc(road.slice(0, i)) +
+         '<span class="match-bold">' + rdEsc(raw) + '</span>' +
+         rdEsc(road.slice(i + raw.length));
+}
+
 function roadRenderDropdown(q) {
   const dd  = document.getElementById('roadDropdown');
   const raw = q.trim().toUpperCase();
@@ -70,17 +86,11 @@ function roadRenderDropdown(q) {
   }
 
   if (filtered.length > 0) {
-    const cityLabel = ROAD_CITY_NAME
-      ? ROAD_CITY_NAME.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])) + ' '
-      : '';
+    const cityLabel = ROAD_CITY_NAME ? rdEsc(ROAD_CITY_NAME) + ' ' : '';
     html += `<div class="road-dropdown-section-label">${cityLabel}Cycle Track Roads</div>`;
     filtered.forEach((road, i) => {
-      const label = raw.length > 0
-        ? road.replace(raw, `<span class="match-bold">${raw}</span>`)
-        : road;
-      html += `<div class="road-dropdown-item" data-idx="${i}" data-val="${road}"
-                onclick="roadSelectItem('${road}')">
-        <span>🛣</span> <span>${label}</span>
+      html += `<div class="road-dropdown-item" data-idx="${i}" data-val="${rdEsc(road)}">
+        <span>🛣</span> <span>${rdHighlightMatch(road, raw)}</span>
       </div>`;
     });
   } else if (!_rdListLoaded) {
@@ -89,14 +99,14 @@ function roadRenderDropdown(q) {
     // No match
     if (window.IS_ADMIN) {
       html += `<div class="road-dropdown-empty">
-        No match for "<strong>${raw}</strong>"
+        No match for "<strong>${rdEsc(raw)}</strong>"
       </div>
-      <div class="road-dropdown-item pinned" onclick="roadSelectCustomFill('${raw}')">
-        <span>＋</span> Add "<strong>${raw}</strong>" as custom road
+      <div class="road-dropdown-item pinned" data-fill="${rdEsc(raw)}">
+        <span>＋</span> Add "<strong>${rdEsc(raw)}</strong>" as custom road
       </div>`;
     } else {
       html += `<div class="road-dropdown-empty">
-        No match for "<strong>${raw}</strong>". Can't find your road? Ask an admin to add it.
+        No match for "<strong>${rdEsc(raw)}</strong>". Can't find your road? Ask an admin to add it.
       </div>`;
     }
   }
@@ -175,6 +185,15 @@ function roadSearchKeydown(e) {
     roadDropdownClose();
   }
 }
+
+// Clicks on dropdown rows. Values come from data- attributes (already escaped when
+// rendered; dataset gives back the plain text), not from inline onclick strings.
+document.addEventListener('click', function(e) {
+  const row = e.target.closest ? e.target.closest('#roadDropdown .road-dropdown-item') : null;
+  if (!row) return;
+  if (row.dataset.val !== undefined)       roadSelectItem(row.dataset.val);
+  else if (row.dataset.fill !== undefined) roadSelectCustomFill(row.dataset.fill);
+});
 
 // Close on outside click
 document.addEventListener('click', function(e) {
