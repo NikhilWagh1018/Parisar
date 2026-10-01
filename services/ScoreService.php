@@ -395,6 +395,107 @@ function calculateRoadGroupScore(array $roadIds, PDO $pdo): ?array
 }
 
 /**
+ * Per-segment final scores for MANY roads at once, using each segment's
+ * LATEST audit only (same "latest audit wins" rule as calculateRoadScore()
+ * and calculateRoadGroupScore(), so every surface in the app agrees).
+ *
+ * Batched: 3 queries total (audits, obstructions, intersections)
+ * regardless of how many roads/segments/cities are involved — replaces
+ * the old public-stats approach of calling calculateSegmentScore() once
+ * per audit row (N+1).
+ *
+ * Segments with no audit are simply absent from the result.
+ *
+ * @param  int[] $roadIds  roads.id values to include
+ * @return array<int, array{road_id:int, segment_id:int, length:float, final:float}>
+ */
+function loadLatestSegmentScores(array $roadIds, PDO $pdo): array
+{
+    $roadIds = array_values(array_unique(array_map('intval', $roadIds)));
+    if (empty($roadIds)) {
+        return [];
+    }
+
+    $ph = implode(',', array_fill(0, count($roadIds), '?'));
+
+    $stmt = $pdo->prepare(
+        "SELECT s.id      AS segment_id,
+                s.road_id AS road_id,
+                s.length,
+                sa.id     AS audit_id,
+                sa.buffer_zone,
+                sa.light_after_sunset,
+                sa.shade,
+                sa.surface_material,
+                sa.cycle_track_missing,
+                sa.missing_length,
+                s.length  AS segment_length,
+                r.name    AS road_name
+         FROM   segments s
+         JOIN   segment_audits sa
+                ON  sa.segment_id = s.id
+                AND sa.id = (
+                      SELECT MAX(sa2.id)
+                      FROM   segment_audits sa2
+                      WHERE  sa2.segment_id = s.id
+                    )
+         JOIN   roads r ON r.id = s.road_id
+         WHERE  s.road_id IN ({$ph})"
+    );
+    $stmt->execute($roadIds);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (empty($rows)) {
+        return [];
+    }
+
+    $auditIds = array_column($rows, 'audit_id');
+    $aph      = implode(',', array_fill(0, count($auditIds), '?'));
+
+    $stmtObs = $pdo->prepare(
+        "SELECT audit_id,
+                COALESCE(SUM(partial_obstructions), 0) AS partial,
+                COALESCE(SUM(total_obstructions),   0) AS total,
+                COALESCE(SUM(cyclist_slowed),        0) AS slowed
+         FROM   obstructions
+         WHERE  audit_id IN ({$aph})
+         GROUP  BY audit_id"
+    );
+    $stmtObs->execute($auditIds);
+    $obsMap = [];
+    foreach ($stmtObs->fetchAll(PDO::FETCH_ASSOC) as $o) {
+        $obsMap[(int)$o['audit_id']] = $o;
+    }
+
+    $stmtInt = $pdo->prepare(
+        "SELECT audit_id, off_ramp, on_ramp, markings, signage, traffic_calming
+         FROM   intersections
+         WHERE  audit_id IN ({$aph})"
+    );
+    $stmtInt->execute($auditIds);
+    $intMap = [];
+    foreach ($stmtInt->fetchAll(PDO::FETCH_ASSOC) as $i) {
+        $intMap[(int)$i['audit_id']][] = $i;
+    }
+
+    $out = [];
+    foreach ($rows as $row) {
+        $auditId = (int)$row['audit_id'];
+        $seg = _computeScoreFromData(
+            $row,
+            $obsMap[$auditId] ?? ['partial' => 0, 'total' => 0, 'slowed' => 0],
+            $intMap[$auditId] ?? []
+        );
+        $out[] = [
+            'road_id'    => (int)$row['road_id'],
+            'segment_id' => (int)$row['segment_id'],
+            'length'     => max(0.0, (float)$row['length']),
+            'final'      => (float)$seg['final'],
+        ];
+    }
+    return $out;
+}
+
+/**
  * Detailed breakdown with parameter-level scores.
  *
  * FIXED (Issue 8): Previously called calculateSegmentScore() first (3 queries)
