@@ -14,7 +14,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 header('Content-Type: application/json');
-header('Cache-Control: public, max-age=3600');
+header('Cache-Control: public, max-age=300');
 
 set_exception_handler(function (Throwable $e) {
     http_response_code(500);
@@ -41,13 +41,30 @@ if (!$rl['allowed']) {
     exit;
 }
 
+// Optional ?city_id=<int> — same scoping as api/public/stats.php so the
+// homepage road list always matches the stat strip for the chosen city.
+$cityId = null;
+if (isset($_GET['city_id']) && $_GET['city_id'] !== '' && $_GET['city_id'] !== 'all') {
+    $cityId = filter_var($_GET['city_id'], FILTER_VALIDATE_INT);
+    if ($cityId === false || $cityId < 1) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid city_id.']);
+        exit;
+    }
+}
+
 try {
-    $stmt = $pdo->query(
-        "SELECT canonical_name
-           FROM road_groups
-          WHERE is_verified = 1
-          ORDER BY canonical_name ASC"
-    );
+    $sql = "SELECT canonical_name
+              FROM road_groups
+             WHERE is_verified = 1";
+    $params = [];
+    if ($cityId !== null) {
+        $sql .= " AND city_id = ?";
+        $params[] = $cityId;
+    }
+    $sql .= " ORDER BY canonical_name ASC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
     $roads = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     echo json_encode([

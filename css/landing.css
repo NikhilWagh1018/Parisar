@@ -30,6 +30,10 @@ h1 em{font-style:italic;color:var(--g)}
 .btn-p:hover{background:var(--gd);transform:translateY(-2px);box-shadow:0 8px 28px rgba(61,122,31,.45)}
 .btn-s{background:transparent;color:var(--g);border:2px solid var(--g);padding:12px 26px;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:all var(--T)}
 .btn-s:hover{background:var(--g);color:#fff}
+.hm-scope{margin-top:32px;display:flex;align-items:center;gap:10px;font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--grl)}
+.hm-scope[hidden]{display:none}
+.hm-scope select{font:inherit;font-size:.8rem;letter-spacing:0;text-transform:none;color:var(--g);background:transparent;border:1px solid var(--bd);border-radius:8px;padding:6px 28px 6px 10px;cursor:pointer}
+.hm-scope:not([hidden]) + .hm{margin-top:16px;padding-top:20px}
 .hm{display:flex;gap:28px;margin-top:40px;flex-wrap:wrap;padding-top:28px;border-top:1px solid var(--bd);animation:fadeUp .7s .4s ease both}
 .hm-item .num{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:800;color:var(--g)}
 .hm-item .lbl{font-size:.72rem;color:var(--grl);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
