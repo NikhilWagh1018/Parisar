@@ -262,16 +262,12 @@ document.addEventListener('click', e => {
         ? '<span class="admin-badge" style="background:#eef2ff;color:#4338ca;">City Admin</span>'
         : '<span style="color:#6b7280;font-size:.78rem;">Surveyor</span>';
 
-    // Role selector options: national_admin viewers can set any role;
-    // city_admin viewers can only choose between surveyor/city_admin
-    // (the API enforces this too — this is just UI convenience).
-    // A national_admin row is never editable by a city_admin viewer
-    // (the API also excludes such rows from the city-scoped listing).
-    var roleOptions = IS_NATIONAL_ADMIN
-      ? ['surveyor', 'city_admin', 'national_admin']
-      : ['surveyor', 'city_admin'];
+    // Role selector: shown to the Platform Admin only.
+    var roleOptions = ['surveyor', 'city_admin', 'national_admin'];
     var roleBtn = '';
-    if (!s.is_current_user && (IS_NATIONAL_ADMIN || s.role !== 'national_admin')) {
+    // Only the Platform Admin changes roles (creates City Leaders); the
+    // API enforces this too. City Leaders only manage surveyors.
+    if (!s.is_current_user && IS_NATIONAL_ADMIN) {
       roleBtn = ' <select class="role-select" data-id="' + s.id + '" data-role="' + s.role + '">' +
         roleOptions.map(function (r) {
           return '<option value="' + r + '"' + (r === s.role ? ' selected' : '') + '>' + ROLE_LABELS[r] + '</option>';
@@ -296,6 +292,10 @@ document.addEventListener('click', e => {
       }
       cityCell = '<td>' + cityInner + '</td>';
     }
+    // City Leaders may only (de)activate surveyors; the API enforces this.
+    var toggleBtn = (IS_NATIONAL_ADMIN || s.role === 'surveyor')
+      ? '<button class="toggle-status-btn" data-id="' + s.id + '" data-active="' + s.is_active + '">' + (s.is_active ? 'Deactivate' : 'Reactivate') + '</button>'
+      : '';
     tr.innerHTML =
       '<td><div class="surv-name-cell">' +
         '<div class="surv-avatar">' + escapeHtml(initials(s.name)) + '</div>' +
@@ -310,7 +310,7 @@ document.addEventListener('click', e => {
       '<td>' + fmtDate(s.last_audit_at || s.last_login) + '</td>' +
       '<td>' + fmtDate(s.created_at) + '</td>' +
       '<td>' + (s.is_active ? '<span style="color:#16a34a;font-weight:600;">Active</span>' : '<span style="color:#9ca3af;font-weight:600;">Inactive</span>') + '</td>' +
-      '<td style="white-space:nowrap;"><button class="toggle-status-btn" data-id="' + s.id + '" data-active="' + s.is_active + '">' + (s.is_active ? 'Deactivate' : 'Reactivate') + '</button>' + roleBtn + '</td>';
+      '<td style="white-space:nowrap;">' + toggleBtn + roleBtn + '</td>';
     return tr;
   }
 
