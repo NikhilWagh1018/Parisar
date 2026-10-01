@@ -11,6 +11,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/auth_guard.php';
+require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../config/permissions.php';
 require_once __DIR__ . '/../config/constants.php';
 
@@ -86,7 +87,7 @@ $nonce    = htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8');
         </div>
         <div style="min-width:0">
           <div class="popup-uname"><?= htmlspecialchars($CURRENT_USER_NAME) ?></div>
-          <div class="popup-urole"><?= htmlspecialchars($CURRENT_USER_ROLE) ?></div>
+          <div class="popup-urole"><?= htmlspecialchars(roleLabel($CURRENT_USER_ROLE)) ?></div>
         </div>
       </div>
       <div class="popup-menu">
@@ -116,7 +117,7 @@ $nonce    = htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8');
       </div>
       <div class="sb-uinfo">
         <div class="sb-uname"><?= htmlspecialchars($CURRENT_USER_NAME) ?></div>
-        <div class="sb-urole"><?= htmlspecialchars($CURRENT_USER_ROLE) ?></div>
+        <div class="sb-urole"><?= htmlspecialchars(roleLabel($CURRENT_USER_ROLE)) ?></div>
       </div>
       <svg class="sb-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <polyline points="18 15 12 9 6 15"/>
