@@ -26,11 +26,13 @@ if (isset($_SESSION['user_id'])) {
 }
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/google_config.php';
+require_once __DIR__ . '/../helpers/Cities.php';
 
 $errors      = [];
 $success     = false;
 $rateLimited = false;
 $clientIp    = getClientIp();
+$cities      = listCities($pdo);
 
 // ── Rate limit registrations (own 'register' bucket — independent
 //    from login attempts, so a login lockout never blocks
@@ -89,6 +91,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$rateLimited) {
         $errors['organisation'] = 'Organisation name must be under 200 characters.';
     }
 
+    // City: asked only once there are two or more cities; with a single
+    // city the account is put in it automatically.
+    [$signupCityId, $cityError] = resolveSignupCity($cities, $_POST['city_id'] ?? '');
+    if ($cityError !== null) {
+        $errors['city_id'] = $cityError;
+    }
+
     if (strlen($pass) < 8) {
         $errors['password'] = 'Password must be at least 8 characters.';
     } elseif (!preg_match('/[A-Za-z]/', $pass) || !preg_match('/[0-9]/', $pass)) {
@@ -114,8 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$rateLimited) {
         $pdo->prepare(
             'INSERT INTO users
                (name, email, phone, organisation, gender, age, password,
-                role, auth_provider, email_verified, last_login)
-             VALUES (?, ?, ?, ?, ?, ?, ?, \'surveyor\', \'local\', 1, NOW())'
+                city_id, role, auth_provider, email_verified, last_login)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, \'surveyor\', \'local\', 1, NOW())'
         )->execute([
             $name,
             $email,
@@ -124,6 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$rateLimited) {
             $gender,
             (int)$age,
             $hash,
+            $signupCityId,
         ]);
 
         $newId = (int)$pdo->lastInsertId();
@@ -275,6 +285,19 @@ $googleUrl = getGoogleAuthUrl();
           <?= fe('gender', $errors) ?>
         </div>
       </div>
+
+      <?php if (count($cities) > 1): ?>
+      <div class="form-group<?= fc('city_id', $errors) ?>">
+        <label for="inp-city">City <span style="color:var(--red)">*</span></label>
+        <select name="city_id" id="inp-city">
+          <option value="">— Select your city —</option>
+          <?php foreach ($cities as $c): ?>
+          <option value="<?= (int)$c['id'] ?>" <?= (string)($_POST['city_id'] ?? '') === (string)$c['id'] ? 'selected' : '' ?>><?= htmlspecialchars($c['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <?= fe('city_id', $errors) ?>
+      </div>
+      <?php endif; ?>
 
       <div class="sdiv">Contact Details</div>
 

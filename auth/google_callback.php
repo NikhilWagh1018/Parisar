@@ -18,6 +18,7 @@ startSecureSession();
 
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/google_config.php';
+require_once __DIR__ . '/../helpers/Cities.php';
 
 // ── 1. CSRF / state verification ──────────────────────────────
 $state = $_GET['state'] ?? '';
@@ -103,9 +104,9 @@ if ($user === false) {
         $pdo->prepare(
             'INSERT INTO users
                (name, email, google_id, profile_picture, auth_provider,
-                email_verified, role, last_login)
-             VALUES (?, ?, ?, ?, \'google\', 1, \'surveyor\', NOW())'
-        )->execute([$name, $email, $googleId, $profilePicture]);
+                email_verified, role, city_id, last_login)
+             VALUES (?, ?, ?, ?, \'google\', 1, \'surveyor\', ?, NOW())'
+        )->execute([$name, $email, $googleId, $profilePicture, soleCityId($pdo)]);
 
         $newId = (int)$pdo->lastInsertId();
 
@@ -147,6 +148,19 @@ $_SESSION['auth_provider']   = 'google';
 // Generate CSRF token for this session
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Multi-city: a user with no city yet picks one. A brand-new Google user
+// gets the only city automatically while just one exists. Once there are
+// two or more, send anyone still without a city (national admins are
+// city-less by design) to choose one.
+if (
+    ($user['city_id'] ?? null) === null
+    && ($user['role'] ?? 'surveyor') !== 'national_admin'
+    && count(listCities($pdo)) > 1
+) {
+    header('Location: choose_city.php');
+    exit;
 }
 
 header('Location: ../pages/dashboard.php');

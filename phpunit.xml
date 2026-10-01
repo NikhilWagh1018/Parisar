@@ -13,6 +13,7 @@
             <file>tests/ValidatorTest.php</file>
             <file>tests/CityScopeTest.php</file>
             <file>tests/RoadRepositoryCityTest.php</file>
+            <file>tests/CitiesTest.php</file>
         </testsuite>
         <testsuite name="Integration">
             <file>tests/SegmentRepositoryTest.php</file>
