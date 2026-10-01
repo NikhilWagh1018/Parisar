@@ -24,6 +24,7 @@ set_exception_handler(function (Throwable $e) {
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../repositories/SegmentRepository.php';
+require_once __DIR__ . '/../../helpers/CityScope.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
@@ -38,7 +39,12 @@ if (!in_array($scope, ['mine', 'all'], true)) {
 
 try {
     $repo = new SegmentRepository($pdo);
-    $rows = $repo->mapData($scope === 'all' ? null : $CURRENT_USER_ID);
+    // 'all' shows other surveyors' work, so it is limited to the viewer's
+    // city. 'mine' is the user's own audits and stays unrestricted.
+    $cityScope = $scope === 'all'
+        ? resolveViewerCityScope($pdo, $CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID)
+        : null;
+    $rows = $repo->mapData($scope === 'all' ? null : $CURRENT_USER_ID, $cityScope);
 
     $points = [];
     foreach ($rows as $r) {
