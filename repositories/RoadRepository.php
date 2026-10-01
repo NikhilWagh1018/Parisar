@@ -142,6 +142,25 @@ class RoadRepository
     }
 
     /**
+     * The surveyor a City Leader has assigned this road to, if any
+     * (NULL if unassigned or the road_group doesn't exist). Used by
+     * api/roads/create.php to stop a different surveyor from starting
+     * an audit session on a road that's been assigned to someone else.
+     * An unassigned road remains open to any surveyor in the city, same
+     * as before this feature existed.
+     */
+    public function getAssignedSurveyorId(string $name): ?int
+    {
+        $normalized = trim(strtoupper($name));
+        $stmt = $this->pdo->prepare(
+            'SELECT assigned_surveyor_id FROM road_groups WHERE TRIM(UPPER(canonical_name)) = ? LIMIT 1'
+        );
+        $stmt->execute([$normalized]);
+        $value = $stmt->fetchColumn();
+        return ($value !== false && $value !== null) ? (int)$value : null;
+    }
+
+    /**
      * Find the road_groups row matching this name (case/whitespace
      * insensitive), or create a new unverified group if none exists.
      * This is what lets a 12th surveyor creating "Karve Road" attach

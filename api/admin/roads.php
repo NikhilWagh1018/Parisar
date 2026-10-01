@@ -47,13 +47,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $groupStmt = $pdo->prepare(
-        'SELECT id, canonical_name, is_verified, is_flagged, created_at
-           FROM road_groups
-          WHERE (:cid1 IS NULL OR city_id = :cid2)
-          ORDER BY canonical_name ASC'
+        'SELECT g.id, g.canonical_name, g.city_id, g.is_verified, g.is_flagged, g.created_at,
+                g.assigned_surveyor_id, u.name AS assigned_surveyor_name
+           FROM road_groups g
+           LEFT JOIN users u ON u.id = g.assigned_surveyor_id
+          WHERE (:cid1 IS NULL OR g.city_id = :cid2)
+          ORDER BY g.canonical_name ASC'
     );
     $groupStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
     $groups = $groupStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Surveyors available to assign, grouped by city_id, so each
+    // road_group's row can offer only surveyors from its own city
+    // (relevant once more than one city exists; harmless with one).
+    $survStmt = $pdo->query(
+        "SELECT id, name, city_id FROM users WHERE role = 'surveyor' AND city_id IS NOT NULL ORDER BY name ASC"
+    );
+    $surveyorsByCity = [];
+    foreach ($survStmt->fetchAll(PDO::FETCH_ASSOC) as $s) {
+        $surveyorsByCity[(int)$s['city_id']][] = ['id' => (int)$s['id'], 'name' => $s['name']];
+    }
 
     $memberStmt = $pdo->prepare(
         "SELECT
@@ -84,14 +97,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         unset($m);
 
         $result[] = [
-            'id'             => (int)$group['id'],
-            'name'           => $group['canonical_name'],
-            'is_verified'    => (bool)$group['is_verified'],
-            'is_flagged'     => (bool)$group['is_flagged'],
-            'created_at'     => $group['created_at'],
-            'entry_count'    => count($members),
-            'total_segments' => $totalSegments,
-            'members'        => $members,
+            'id'                     => (int)$group['id'],
+            'name'                   => $group['canonical_name'],
+            'is_verified'            => (bool)$group['is_verified'],
+            'is_flagged'             => (bool)$group['is_flagged'],
+            'created_at'             => $group['created_at'],
+            'entry_count'            => count($members),
+            'total_segments'         => $totalSegments,
+            'members'                => $members,
+            'assigned_surveyor_id'   => $group['assigned_surveyor_id'] !== null ? (int)$group['assigned_surveyor_id'] : null,
+            'assigned_surveyor_name' => $group['assigned_surveyor_name'],
+            'available_surveyors'    => $surveyorsByCity[(int)$group['city_id']] ?? [],
         ];
     }
 
@@ -182,6 +198,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // "only allowed when empty" restriction now that Delete is available
     // for every road, including ones with real audit entries under them.
     if (isset($body['action']) && $body['action'] === 'delete') {
+        // Data deletion is Admin-only in this phase (confirmed scope) —
+        // a city_admin can create/view roads in their city but not
+        // delete them; only national_admin may.
+        if (!$isNationalAdmin) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Only a national admin can delete roads.']);
+            exit;
+        }
+
         $id = isset($body['id']) ? (int)$body['id'] : 0;
         if ($id <= 0) {
             http_response_code(400);
@@ -250,6 +275,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         echo json_encode(['success' => true, 'id' => $id, 'entries_deleted' => $entryCount]);
+        exit;
+    }
+
+    // ── Assign path: { action: 'assign', id, surveyor_id } ───────
+    // surveyor_id may be null/0 to unassign. Available to both
+    // national_admin and city_admin (city-scoped), unlike delete.
+    if (isset($body['action']) && $body['action'] === 'assign') {
+        $id = isset($body['id']) ? (int)$body['id'] : 0;
+        if ($id <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Invalid road group id.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('SELECT canonical_name, city_id FROM road_groups WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $group = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$group) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Road group not found.']);
+            exit;
+        }
+
+        if (!$isNationalAdmin && ((int)$group['city_id'] !== $cityId)) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'You can only manage roads in your own city.']);
+            exit;
+        }
+
+        $surveyorId = isset($body['surveyor_id']) ? (int)$body['surveyor_id'] : 0;
+
+        if ($surveyorId <= 0) {
+            // Unassign.
+            $pdo->prepare(
+                'UPDATE road_groups SET assigned_surveyor_id = NULL, assigned_at = NULL, assigned_by = NULL WHERE id = ?'
+            )->execute([$id]);
+            echo json_encode(['success' => true, 'id' => $id, 'assigned_surveyor_id' => null]);
+            exit;
+        }
+
+        // Surveyor must exist, actually be a surveyor, and belong to
+        // the SAME city as the road — otherwise a city_admin could
+        // hand their roads to someone outside their city.
+        $survStmt = $pdo->prepare(
+            "SELECT id, name, city_id FROM users WHERE id = ? AND role = 'surveyor' LIMIT 1"
+        );
+        $survStmt->execute([$surveyorId]);
+        $surveyor = $survStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$surveyor) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Surveyor not found.']);
+            exit;
+        }
+        if ((int)$surveyor['city_id'] !== (int)$group['city_id']) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'error' => 'That surveyor is not in this road\'s city.']);
+            exit;
+        }
+
+        $pdo->prepare(
+            'UPDATE road_groups SET assigned_surveyor_id = ?, assigned_at = NOW(), assigned_by = ? WHERE id = ?'
+        )->execute([$surveyorId, $CURRENT_USER_ID, $id]);
+
+        echo json_encode([
+            'success'                => true,
+            'id'                     => $id,
+            'assigned_surveyor_id'   => $surveyorId,
+            'assigned_surveyor_name' => $surveyor['name'],
+        ]);
         exit;
     }
 
