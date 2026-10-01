@@ -155,11 +155,6 @@ h2{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,3.2vw,2.4rem);fon
 .cc.on svg{color:#fff}
 .cg-empty{grid-column:1/-1;color:var(--gray);font-size:.92rem}
 .cg-note{margin-top:20px;font-size:.88rem;font-weight:600;color:var(--g)}
-.cc.off{background:#f3f3f1;border-color:var(--bd);color:#9a9a96;cursor:default}
-.cc.off svg{color:#b5b5b0}
-.cc.off:hover{background:#f3f3f1;border-color:var(--bd);color:#9a9a96}
-.cc.off:hover svg{transform:none}
-.cc small{font-size:.72rem;font-weight:500;margin-top:-6px}
 .cg-msg{margin-top:14px;min-height:1.2em;font-size:.88rem;color:var(--gray)}
 #cta{background:var(--cream);text-align:center}
 .cta-inner{max-width:660px;margin:0 auto}.cta-inner h2{font-size:clamp(1.7rem,3.5vw,2.5rem)}
