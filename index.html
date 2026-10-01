@@ -20,7 +20,7 @@
     <span class="ln-sep" style="width:1px;height:22px;background:var(--bd);margin:0 4px;display:inline-block;vertical-align:middle;"></span>
     <span class="ln">CycleAudit</span>
   </a>
-  <div class="nl" id="nl"><a href="#about">About</a><a href="#findings">Findings</a><a href="#features">Features</a><a href="#how">How It Works</a><a href="#scoring">Scoring</a><a href="#roads">Roads</a><a href="auth/login.php" class="cta">Sign In</a></div>
+  <div class="nl" id="nl"><a href="#about">About</a><a href="#findings">Findings</a><a href="#features">Features</a><a href="#how">How It Works</a><a href="#scoring">Scoring</a><a href="#cities">Cities</a><a href="auth/login.php" class="cta">Sign In</a></div>
   <div class="ham" id="ham" onclick="document.getElementById('nl').classList.toggle('open')"><span></span><span></span><span></span></div>
 </nav>
 <section id="hero">
@@ -163,10 +163,11 @@
     <div class="ic-card rv" style="transition-delay:.24s"><div class="big">🚴</div><div class="n">100%</div><div class="l">Field-Data Driven Scores</div></div>
   </div>
 </div></section>
-<section id="roads"><div class="mw">
-  <div class="ey">Coverage</div><h2>Roads in the Audit Network</h2>
-  <p class="sub">These <span id="roads-count">—</span> roads are part of the cycle track network and are covered by this auditing platform.</p>
-  <div class="rg" id="roads-grid"></div>
+<section id="cities"><div class="mw">
+  <div class="ey">Coverage</div><h2>Cities in the Audit Network</h2>
+  <p class="sub">Cities where audit teams are using CycleAudit. Select a city to see its statistics on this page; select it again to see all cities.</p>
+  <div class="cg" id="cities-grid"><p class="cg-empty">Loading cities…</p></div>
+  <p class="cg-note" id="cities-note" aria-live="polite"></p>
 </div></section>
 <section id="cta"><div class="mw"><div class="cta-inner">
 <div class="ey" style="justify-content:center">Audit Teams</div>
@@ -183,7 +184,7 @@
     </div>
     <div class="fcol"><h5>Platform</h5><a href="auth/login.php">Login</a><a href="pages/segment.php">Start Audit</a><a href="pages/road_result.php">View Results</a></div>
     <div class="fcol"><h5>Parisar</h5><a href="https://parisar.org" target="_blank">parisar.org</a><a href="https://parisar.org/what-we-do/urban-transport" target="_blank">Urban Transport</a><a href="https://parisar.org/contact-us" target="_blank">Contact</a></div>
-    <div class="fcol"><h5>Audit Scope</h5><a href="#roads"><span class="js-roads">19</span> Roads</a><a href="#scoring">Scoring Method</a><a href="#findings">2024–25 Findings</a></div>
+    <div class="fcol"><h5>Audit Scope</h5><a href="#cities">Cities</a><a href="#scoring">Scoring Method</a><a href="#findings">2024–25 Findings</a></div>
   </div>
   <div class="fb-bot"><span>2026 CycleAudit — Built for <span class="pb-cr">Parisar</span></span><span>PHP · MySQL · Vanilla JS</span></div>
 </div></footer>
@@ -209,18 +210,70 @@
     return (Math.round(km * 10) / 10) + 'km';
   }
 
+  var CITY_ICON = '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 42h40"/><path d="M8 42V22h9v20"/><path d="M17 42V10h13v32"/><path d="M30 42V26h10v16"/><path d="M22 16h3M22 22h3M22 28h3M22 34h3"/><path d="M12 28h1M12 34h1M35 31h1M35 37h1"/></svg>';
+
+  function selectedCityName() {
+    return cityEl && cityEl.value && cityEl.selectedIndex >= 0
+      ? cityEl.options[cityEl.selectedIndex].textContent
+      : '';
+  }
+
+  function syncTiles() {
+    var tiles = document.querySelectorAll('#cities-grid .cc');
+    var cur = cityEl ? cityEl.value : '';
+    for (var i = 0; i < tiles.length; i++) {
+      var on = cur !== '' && tiles[i].getAttribute('data-id') === cur;
+      tiles[i].classList.toggle('on', on);
+      tiles[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+  }
+
+  function selectCity(id) {
+    if (!cityEl) return;
+    cityEl.value = (cityEl.value === id) ? '' : id;
+    refresh();
+  }
+
+  function renderCityTiles(cities) {
+    var grid = document.getElementById('cities-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    if (!cities.length) {
+      var p = document.createElement('p');
+      p.className = 'cg-empty';
+      p.textContent = 'No cities have published audit data yet.';
+      grid.appendChild(p);
+      return;
+    }
+    cities.forEach(function (c) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cc';
+      b.setAttribute('data-id', String(c.id));
+      b.setAttribute('aria-pressed', 'false');
+      b.innerHTML = CITY_ICON;
+      var n = document.createElement('span');
+      n.textContent = c.name;
+      b.appendChild(n);
+      b.addEventListener('click', function () { selectCity(String(c.id)); });
+      grid.appendChild(b);
+    });
+    syncTiles();
+  }
+
   function buildCityPicker(cities) {
-    if (citiesBuilt || !cityEl || !scopeEl) return;
+    if (citiesBuilt || !Array.isArray(cities)) return;
     citiesBuilt = true;
-    // Only worth showing once there is a real choice to make.
-    if (!Array.isArray(cities) || cities.length < 2) return;
+    renderCityTiles(cities);
+    if (!cityEl) return;
     cities.forEach(function (c) {
       var opt = document.createElement('option');
       opt.value = String(c.id);
       opt.textContent = c.name;
       cityEl.appendChild(opt);
     });
-    scopeEl.hidden = false;
+    // The dropdown in the hero is only worth showing once there is a real choice.
+    if (scopeEl && cities.length >= 2) scopeEl.hidden = false;
   }
 
   function loadStats(cityId) {
@@ -237,6 +290,10 @@
         setText('stat-good',     s.good_pct + '%');
         setText('about-segs',    s.audited_segments);
         setText('about-km',      fmtKm(s.total_length_km));
+        setText('cities-note',
+          (selectedCityName() || 'All cities') + ': ' + s.total_roads + ' roads · ' +
+          fmtKm(s.total_length_km) + ' of track · ' + s.audited_segments + ' segments audited');
+        syncTiles();
       })
       .catch(function () {});
   }
@@ -246,19 +303,8 @@
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (!data.success || !Array.isArray(data.roads)) return;
-        var grid  = document.getElementById('roads-grid');
-        var count = document.getElementById('roads-count');
-        if (count) count.textContent = data.roads.length;
         var rc = document.querySelectorAll('.js-roads');
         for (var i = 0; i < rc.length; i++) rc[i].textContent = data.roads.length;
-        if (!grid) return;
-        grid.innerHTML = '';
-        data.roads.forEach(function (name) {
-          var div = document.createElement('div');
-          div.className = 'rc';
-          div.textContent = name.toUpperCase();
-          grid.appendChild(div);
-        });
       })
       .catch(function () {});
   }
