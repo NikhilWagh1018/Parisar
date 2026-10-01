@@ -521,6 +521,43 @@ class SegmentRepositoryTest extends TestCase
         $this->assertSame(1, $rows[0]['segments_completed'], 'only the current-week audit should count');
     }
 
+    // ── City scoping: leaderboardRows + mapData ─────────────────────
+
+    /** Road 1 -> road_group in city 10 (Pune); road 2 -> road_group in city 20. */
+    private function seedTwoCities(): void
+    {
+        $this->pdo->exec("INSERT INTO road_groups (id, city_id) VALUES (1, 10)");
+        $this->pdo->exec("INSERT INTO road_groups (id, city_id) VALUES (2, 20)");
+        $this->pdo->exec("UPDATE roads SET road_group_id = 1 WHERE id = 1");
+        $this->pdo->exec("UPDATE roads SET road_group_id = 2 WHERE id = 2");
+        $this->pdo->exec("INSERT INTO audit_sessions (id, road_id, user_id, status)
+                          VALUES (1, 1, 1, 'completed')");
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at, gps_start)
+                          VALUES (10, 1, 1, 1, '2026-01-01 10:00:00', '18.5, 73.8')"); // city 10
+        $this->pdo->exec("INSERT INTO segment_audits (id, segment_id, session_id, surveyor_id, created_at, gps_start)
+                          VALUES (11, 4, 1, 1, '2026-01-02 10:00:00', '19.0, 72.8')"); // city 20 (road 2)
+    }
+
+    public function test_leaderboardRows_city_filter_counts_only_that_citys_roads(): void
+    {
+        $this->seedTwoCities();
+
+        $this->assertSame(2, $this->repo->leaderboardRows(false)[0]['segments_completed']);      // unscoped
+        $this->assertSame(1, $this->repo->leaderboardRows(false, 10)[0]['segments_completed']);
+        $this->assertSame([], $this->repo->leaderboardRows(false, 99));                           // unknown city
+    }
+
+    public function test_mapData_city_filter_limits_points_to_that_city(): void
+    {
+        $this->seedTwoCities();
+
+        $this->assertCount(2, $this->repo->mapData(null));
+        $pts = $this->repo->mapData(null, 20);
+        $this->assertCount(1, $pts);
+        $this->assertSame('PMC Road', $pts[0]['road_name']);
+        $this->assertCount(1, $this->repo->mapData(1, 10)); // own-audits scope + city together
+    }
+
     // ── Test 10: auditDatesForUser — distinct dates, DESC ───────────
 
     public function test_auditDatesForUser_returns_distinct_dates_descending(): void

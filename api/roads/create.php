@@ -20,6 +20,7 @@ require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
 require_once __DIR__ . '/../../repositories/RoadRepository.php';
 require_once __DIR__ . '/../../config/permissions.php';
+require_once __DIR__ . '/../../helpers/CityScope.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -83,6 +84,23 @@ if (!isAnyAdmin($CURRENT_USER_ROLE) && !$repo->roadGroupExists((string)$data['na
         'error'   => 'That road isn\'t in the list yet. Only admins can add new roads — please ask an admin to add it first.',
     ]);
     exit;
+}
+
+// ── A road in another city can't be audited from this one ────────
+// Road names are matched across all cities, so without this a user
+// could attach an audit session to a different city's road_group by
+// typing its name. national_admin ($cityScope === null) is exempt.
+$cityScope = resolveViewerCityScope($pdo, $CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID);
+if ($cityScope !== null) {
+    $groupInfo = $repo->findRoadGroupCity((string)$data['name']);
+    if ($groupInfo !== null && $groupInfo['city_id'] !== $cityScope) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'That road belongs to a different city.',
+        ]);
+        exit;
+    }
 }
 
 // ── Assigned roads are reserved for their assigned surveyor ──────

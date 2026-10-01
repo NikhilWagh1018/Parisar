@@ -131,6 +131,28 @@ class RoadRepository
      * non-admin users from introducing brand-new road names via
      * api/roads/create.php — they may only attach to an existing group.
      */
+    /**
+     * The road_group matching this name (case/whitespace insensitive),
+     * as ['city_id' => ?int], or null if no such group exists. Used by
+     * api/roads/create.php to stop a user attaching an audit session to
+     * a road that belongs to a different city.
+     *
+     * @return array{city_id: ?int}|null
+     */
+    public function findRoadGroupCity(string $name): ?array
+    {
+        $normalized = trim(strtoupper($name));
+        $stmt = $this->pdo->prepare(
+            'SELECT city_id FROM road_groups WHERE TRIM(UPPER(canonical_name)) = ? LIMIT 1'
+        );
+        $stmt->execute([$normalized]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row === false) {
+            return null;
+        }
+        return ['city_id' => $row['city_id'] !== null ? (int)$row['city_id'] : null];
+    }
+
     public function roadGroupExists(string $name): bool
     {
         $normalized = trim(strtoupper($name));

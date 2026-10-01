@@ -22,6 +22,7 @@ set_exception_handler(function (Throwable $e) {
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../repositories/SegmentRepository.php';
+require_once __DIR__ . '/../../helpers/CityScope.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
@@ -36,7 +37,8 @@ if (!in_array($window, ['week', 'all'], true)) {
 
 try {
     $repo = new SegmentRepository($pdo);
-    $rows = $repo->leaderboardRows($window === 'week');
+    $cityScope = resolveViewerCityScope($pdo, $CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID);
+    $rows = $repo->leaderboardRows($window === 'week', $cityScope);
 
     $yourRank = null;
     $out      = [];

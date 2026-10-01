@@ -23,6 +23,7 @@ set_exception_handler(function (Throwable $e) {
 });
 
 require_once __DIR__ . '/../../config/auth_guard.php';
+require_once __DIR__ . '/../../helpers/CityScope.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
@@ -30,12 +31,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
-$stmt = $pdo->query(
+// Only roads in the viewer's own city (national_admin sees all).
+$cityScope = resolveViewerCityScope($pdo, $CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID);
+
+$stmt = $pdo->prepare(
     'SELECT canonical_name
        FROM road_groups
       WHERE is_flagged = 0
+        AND (:cid1 IS NULL OR city_id = :cid2)
       ORDER BY canonical_name ASC'
 );
+$stmt->execute(['cid1' => $cityScope, 'cid2' => $cityScope]);
 $roads = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
 echo json_encode([

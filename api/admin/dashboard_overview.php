@@ -140,8 +140,11 @@ $bySurveyorStmt = $pdo->prepare(
         u.organisation,
         COUNT(*) AS total
      FROM segment_audits sa
-     JOIN users u ON u.id = sa.surveyor_id
-    WHERE (:cid1 IS NULL OR u.city_id = :cid2)
+     JOIN users u        ON u.id = sa.surveyor_id
+     JOIN segments s     ON s.id = sa.segment_id
+     JOIN roads r        ON r.id = s.road_id
+     JOIN road_groups rg ON rg.id = r.road_group_id
+    WHERE (:cid1 IS NULL OR rg.city_id = :cid2)
     GROUP BY u.id, u.name, u.organisation
     ORDER BY total DESC, u.name ASC
     LIMIT 8'
@@ -160,8 +163,11 @@ $byOrgStmt = $pdo->prepare(
         COALESCE(NULLIF(TRIM(u.organisation), ''), 'Unspecified') AS organisation,
         COUNT(*) AS total
      FROM segment_audits sa
-     JOIN users u ON u.id = sa.surveyor_id
-    WHERE (:cid1 IS NULL OR u.city_id = :cid2)
+     JOIN users u        ON u.id = sa.surveyor_id
+     JOIN segments s     ON s.id = sa.segment_id
+     JOIN roads r        ON r.id = s.road_id
+     JOIN road_groups rg ON rg.id = r.road_group_id
+    WHERE (:cid1 IS NULL OR rg.city_id = :cid2)
     GROUP BY organisation
     ORDER BY total DESC, organisation ASC
     LIMIT 8"

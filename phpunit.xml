@@ -11,6 +11,7 @@
             <file>tests/ScoreServiceTest.php</file>
             <file>tests/ScoringEngineTest.php</file>
             <file>tests/ValidatorTest.php</file>
+            <file>tests/CityScopeTest.php</file>
         </testsuite>
         <testsuite name="Integration">
             <file>tests/SegmentRepositoryTest.php</file>

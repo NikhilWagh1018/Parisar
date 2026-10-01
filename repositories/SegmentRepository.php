@@ -483,9 +483,11 @@ class SegmentRepository
      *     gps_start:string, start_label:?string, surveyor_name:?string
      * }>
      */
-    public function mapData(?int $userId): array
+    public function mapData(?int $userId, ?int $cityId = null): array
     {
+        // $cityId (optional) restricts to roads in that city's road_groups.
         $scopeClause = $userId !== null ? 'WHERE surveyor_id = ?' : '';
+        $cityClause  = $cityId !== null ? 'AND rg.city_id = ?' : '';
         $stmt = $this->pdo->prepare(
             "SELECT
                  s.id            AS segment_id,
@@ -505,11 +507,16 @@ class SegmentRepository
              JOIN segment_audits latest ON latest.id = latest_ids.latest_audit_id
              JOIN segments s ON s.id = latest.segment_id
              JOIN roads r    ON r.id = s.road_id
+             LEFT JOIN road_groups rg ON rg.id = r.road_group_id
              JOIN users u    ON u.id = latest.surveyor_id
              WHERE latest.gps_start IS NOT NULL AND latest.gps_start != ''
+               $cityClause
              ORDER BY r.name, s.segment_number"
         );
-        $stmt->execute($userId !== null ? [$userId] : []);
+        $params = [];
+        if ($userId !== null) { $params[] = $userId; }
+        if ($cityId !== null) { $params[] = $cityId; }
+        $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -612,11 +619,18 @@ class SegmentRepository
      *
      * @return list<array{surveyor_id:int,surveyor_name:string,segments_completed:int,distance_m:float}>
      */
-    public function leaderboardRows(bool $thisWeekOnly): array
+    public function leaderboardRows(bool $thisWeekOnly, ?int $cityId = null): array
     {
-        $windowClause = $thisWeekOnly
-            ? 'WHERE YEARWEEK(sa.created_at, 3) = YEARWEEK(CURDATE(), 3)'
-            : '';
+        // $cityId: null = every city; otherwise only audits on roads
+        // whose road_group belongs to that city.
+        $conditions = [];
+        if ($thisWeekOnly) {
+            $conditions[] = 'YEARWEEK(sa.created_at, 3) = YEARWEEK(CURDATE(), 3)';
+        }
+        if ($cityId !== null) {
+            $conditions[] = 'rg.city_id = :city_id';
+        }
+        $windowClause = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
 
         $stmt = $this->pdo->prepare(
             "SELECT
@@ -627,12 +641,14 @@ class SegmentRepository
              FROM segment_audits sa
              JOIN users u    ON u.id = sa.surveyor_id
              JOIN segments s ON s.id = sa.segment_id
+             JOIN roads r    ON r.id = s.road_id
+             LEFT JOIN road_groups rg ON rg.id = r.road_group_id
              {$windowClause}
              GROUP BY u.id, u.name
              ORDER BY segments_completed DESC, distance_m DESC, u.name ASC
              LIMIT 50"
         );
-        $stmt->execute();
+        $stmt->execute($cityId !== null ? ['city_id' => $cityId] : []);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($rows as &$r) {
