@@ -165,7 +165,7 @@
 </div></section>
 <section id="cities"><div class="mw">
   <div class="ey">Coverage</div><h2>Cities in the Audit Network</h2>
-  <p class="sub">Select a city to see its audit statistics on this page; select it again to see all cities. Cities in grey have no audit data yet.</p>
+  <p class="sub">Select a city to see its audit statistics on this page; select it again to see all cities.</p>
   <div class="cg" id="cities-grid"><p class="cg-empty">Loading cities…</p></div>
   <p class="cg-msg" id="cities-msg" aria-live="polite"></p>
   <p class="cg-note" id="cities-note" aria-live="polite"></p>
@@ -268,7 +268,7 @@
     var cur = cityEl ? cityEl.value : '';
     for (var i = 0; i < els.length; i++) {
       var on = cur !== '' && els[i].getAttribute('data-id') === cur;
-      if (els[i].classList.contains('off')) continue;
+      if (!els[i].hasAttribute('data-id')) continue;
       els[i].classList.toggle('on', on);
       els[i].setAttribute('aria-pressed', on ? 'true' : 'false');
     }
@@ -288,7 +288,7 @@
   function makeTile(label, key, city) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'cc' + (city ? '' : ' off');
+    b.className = 'cc';
     b.innerHTML = iconFor(key);
     var n = document.createElement('span');
     n.textContent = label;
@@ -298,10 +298,6 @@
       b.setAttribute('aria-pressed', 'false');
       b.addEventListener('click', function () { setCityMsg(''); selectCity(String(city.id)); });
     } else {
-      var s = document.createElement('small');
-      s.textContent = 'No audits yet';
-      b.appendChild(s);
-      b.setAttribute('aria-disabled', 'true');
       b.addEventListener('click', function () {
         setCityMsg(label + ' has no audit data yet.');
       });
