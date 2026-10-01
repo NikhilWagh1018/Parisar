@@ -66,3 +66,34 @@ function resolveSignupCity(array $cities, mixed $posted): array
     }
     return [null, 'Please select your city.'];
 }
+
+/**
+ * Validate an admin moving a user to another city.
+ *
+ *   - national admins have no city, so they cannot be moved;
+ *   - the target must be one of the real cities (an int id, not a
+ *     bool/array/string like "1 OR 1=1");
+ *   - a user cannot be left without a city this way.
+ *
+ * @param list<array{id:int, name:string}> $cities      from listCities()
+ * @param string                           $targetRole  the user's current role
+ * @param mixed                            $posted      raw value from the request
+ * @return array{0: ?int, 1: ?string}  [city id, error message]
+ */
+function validateUserCityChange(array $cities, string $targetRole, mixed $posted): array
+{
+    if ($targetRole === 'national_admin') {
+        return [null, 'National admins are not tied to a city.'];
+    }
+    if (!is_bool($posted) && !is_array($posted)) {
+        $id = filter_var($posted, FILTER_VALIDATE_INT);
+        if ($id !== false) {
+            foreach ($cities as $c) {
+                if ($c['id'] === $id) {
+                    return [$id, null];
+                }
+            }
+        }
+    }
+    return [null, 'Please choose a valid city.'];
+}

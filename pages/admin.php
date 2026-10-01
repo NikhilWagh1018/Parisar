@@ -11,8 +11,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../config/constants.php';
+require_once __DIR__ . '/../helpers/Cities.php';
 
 $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
+$cities   = listCities($pdo);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -163,6 +165,10 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     color: var(--ink); background: #fff;
   }
   .add-road-form input:focus { outline: none; border-color: var(--g); box-shadow: 0 0 0 3px #fff; }
+  .add-road-form select {
+    padding: 8px 12px; border-radius: 8px; border: 1px solid var(--bd);
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--ink); background: #fff;
+  }
   .add-road-msg { font-size: 0.78rem; font-weight: 600; }
   .add-road-msg.err { color: var(--tdanger-txt); }
   .add-road-msg.ok { color: var(--tsuccess-txt); }
@@ -332,6 +338,14 @@ document.addEventListener('click', e => {
     </div>
 
     <div class="add-road-form" id="addRoadForm">
+      <?php if ($CURRENT_USER_ROLE === 'national_admin' && count($cities) > 1): ?>
+      <select id="addRoadCity" aria-label="City for the new road">
+        <option value="">Select city&hellip;</option>
+        <?php foreach ($cities as $c): ?>
+        <option value="<?= (int)$c['id'] ?>"><?= htmlspecialchars($c['name']) ?></option>
+        <?php endforeach; ?>
+      </select>
+      <?php endif; ?>
       <input type="text" id="addRoadInput" placeholder="Road name (e.g. KOTHRUD ROAD)" maxlength="255">
       <button class="action-btn" id="addRoadSubmit" style="background:var(--g);color:#fff;border-color:var(--g);">Add</button>
       <button class="text-link-btn" id="addRoadCancel">Cancel</button>
@@ -363,7 +377,8 @@ document.addEventListener('click', e => {
 </main>
 
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';
-const IS_NATIONAL_ADMIN = <?= $CURRENT_USER_ROLE === 'national_admin' ? 'true' : 'false' ?>;</script>
+const IS_NATIONAL_ADMIN = <?= $CURRENT_USER_ROLE === 'national_admin' ? 'true' : 'false' ?>;
+const CITIES = <?= json_encode($cities, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 (function () {
   'use strict';
@@ -467,6 +482,12 @@ const IS_NATIONAL_ADMIN = <?= $CURRENT_USER_ROLE === 'national_admin' ? 'true' :
     segPill.textContent = group.total_segments + ' segments';
     countsEl.appendChild(entryPill);
     countsEl.appendChild(segPill);
+    if (IS_NATIONAL_ADMIN && CITIES.length > 1 && group.city_name) {
+      var cityPill = document.createElement('span');
+      cityPill.className = 'count-pill';
+      cityPill.textContent = group.city_name;
+      countsEl.appendChild(cityPill);
+    }
 
     left.appendChild(chev);
     left.appendChild(nameEl);
@@ -722,6 +743,16 @@ const IS_NATIONAL_ADMIN = <?= $CURRENT_USER_ROLE === 'national_admin' ? 'true' :
       addRoadMsg.className = 'add-road-msg err';
       return;
     }
+    var payload = { action: 'create', name: name };
+    var cityEl = document.getElementById('addRoadCity');
+    if (cityEl) {
+      if (!cityEl.value) {
+        addRoadMsg.textContent = 'Choose a city.';
+        addRoadMsg.className = 'add-road-msg err';
+        return;
+      }
+      payload.city_id = parseInt(cityEl.value, 10);
+    }
     addRoadSubmit.disabled = true;
     addRoadMsg.textContent = 'Adding\u2026';
     fetch('../api/admin/roads.php', {
@@ -731,7 +762,7 @@ const IS_NATIONAL_ADMIN = <?= $CURRENT_USER_ROLE === 'national_admin' ? 'true' :
         'X-CSRF-Token': CSRF,
         'X-Requested-With': 'XMLHttpRequest'
       },
-      body: JSON.stringify({ action: 'create', name: name })
+      body: JSON.stringify(payload)
     })
       .then(function (r) { return r.json(); })
       .then(function (data) {
