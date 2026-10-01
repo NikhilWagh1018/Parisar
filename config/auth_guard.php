@@ -112,6 +112,20 @@ if (!$freshUser || (int)$freshUser['is_active'] === 0) {
 
 $CURRENT_USER_ROLE     = (string)$freshUser['role'];
 $_SESSION['user_role'] = $CURRENT_USER_ROLE; // keep session cache in sync
+// City Leaders only get the screens built for them (helpers/CityLeaderGate.php).
+// Every other page and API is closed to them here, not just hidden from the menu.
+require_once __DIR__ . '/../helpers/CityLeaderGate.php';
+if ($CURRENT_USER_ROLE === 'city_admin' && !cityLeaderMayAccess((string)($_SERVER['SCRIPT_NAME'] ?? ''))) {
+    $clRedirect = cityLeaderRedirectTarget((string)($_SERVER['SCRIPT_NAME'] ?? ''));
+    if ($clRedirect !== null) {
+        header('Location: ' . $clRedirect);
+    } else {
+        header('Content-Type: application/json');
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'This area is not available to City Leaders.']);
+    }
+    exit;
+}
 
 // city_id is nullable — NULL for national_admin (national scope) and for
 // any user not yet assigned a city. Kept fresh from the DB for the same
