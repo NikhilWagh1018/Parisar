@@ -10,6 +10,16 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/auth_guard.php';
 require_once __DIR__ . '/../config/permissions.php';
 require_once __DIR__ . '/../config/constants.php';
+require_once __DIR__ . '/../helpers/RoleHome.php';
+
+// Admins land on their own dashboard; ?overview=1 keeps the old admin view.
+if (!isset($_GET['overview'])) {
+    $roleHome = roleHomePage($CURRENT_USER_ROLE);
+    if ($roleHome !== 'dashboard.php') {
+        header('Location: ' . $roleHome);
+        exit;
+    }
+}
 
 $hour     = (int)(new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('H');
 $greet    = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
