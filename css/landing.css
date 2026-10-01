@@ -147,7 +147,7 @@ h2{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,3.2vw,2.4rem);fon
 #cities{background:#fff}
 .cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:36px}
 .cc{display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 12px 18px;background:var(--cream);border:1px solid var(--bd);border-radius:14px;font:inherit;font-size:.9rem;font-weight:600;color:var(--ink);cursor:pointer;transition:all var(--T)}
-.cc svg{width:56px;height:56px;color:var(--g);transition:transform var(--T)}
+.cc svg{width:64px;height:64px;color:var(--g);transition:transform var(--T)}
 .cc:hover{background:var(--gp);border-color:var(--gl);color:var(--g)}
 .cc:hover svg{transform:translateY(-2px)}
 .cc:focus-visible{outline:2px solid var(--g);outline-offset:2px}
@@ -155,6 +155,20 @@ h2{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,3.2vw,2.4rem);fon
 .cc.on svg{color:#fff}
 .cg-empty{grid-column:1/-1;color:var(--gray);font-size:.92rem}
 .cg-note{margin-top:20px;font-size:.88rem;font-weight:600;color:var(--g)}
+.cg-more{text-align:center;margin-top:26px}
+.cg-toggle{background:none;border:0;font:inherit;font-size:.9rem;font-weight:700;color:var(--g);cursor:pointer;padding:8px 14px;border-radius:8px;transition:background var(--T)}
+.cg-toggle:hover{background:var(--gp)}
+.cg-toggle[hidden],.cg-all[hidden],.cg-none[hidden],.cg-list li[hidden]{display:none}
+.cg-all{margin-top:14px;padding:22px;background:var(--cream);border:1px solid var(--bd);border-radius:14px}
+.cg-search{width:100%;box-sizing:border-box;padding:12px 14px;font:inherit;font-size:.92rem;color:var(--ink);background:#fff;border:1px solid var(--bd);border-radius:10px}
+.cg-search:focus{outline:2px solid var(--g);outline-offset:1px}
+.cg-sub{margin:20px 0 10px;font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gray)}
+.cg-list{list-style:none;margin:0;padding:0;columns:5 150px;column-gap:20px}
+.cg-list li{break-inside:avoid}
+.cl{display:block;width:100%;text-align:left;background:none;border:0;font:inherit;font-size:.86rem;color:var(--gray);padding:6px 8px;border-radius:6px;cursor:pointer;transition:all var(--T)}
+.cl:hover{background:var(--gp);color:var(--g)}
+.cl.on{background:var(--g);color:#fff;font-weight:600}
+.cg-none{margin:6px 0 0;font-size:.88rem;color:var(--gray)}
 #cta{background:var(--cream);text-align:center}
 .cta-inner{max-width:660px;margin:0 auto}.cta-inner h2{font-size:clamp(1.7rem,3.5vw,2.5rem)}
 .cta-inner .sub{margin:0 auto 32px}
