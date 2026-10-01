@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════
 
 let ROAD_LIST = [];
+let ROAD_CITY_NAME = null; // viewer's city, from api/roads/groups.php (null = unknown/all cities)
 let _rdListLoaded = false;
 
 function loadRoadList() {
@@ -13,6 +14,7 @@ function loadRoadList() {
     .then(function (data) {
       if (data.success) {
         ROAD_LIST = data.roads;
+        ROAD_CITY_NAME = data.city_name || null;
       }
       _rdListLoaded = true;
       if (_rdOpen) roadRenderDropdown(document.getElementById('roadSearchInput').value);
@@ -68,7 +70,10 @@ function roadRenderDropdown(q) {
   }
 
   if (filtered.length > 0) {
-    html += `<div class="road-dropdown-section-label">Pune Cycle Track Roads</div>`;
+    const cityLabel = ROAD_CITY_NAME
+      ? ROAD_CITY_NAME.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])) + ' '
+      : '';
+    html += `<div class="road-dropdown-section-label">${cityLabel}Cycle Track Roads</div>`;
     filtered.forEach((road, i) => {
       const label = raw.length > 0
         ? road.replace(raw, `<span class="match-bold">${raw}</span>`)
