@@ -44,7 +44,18 @@ $stmt = $pdo->prepare(
 $stmt->execute(['cid1' => $cityScope, 'cid2' => $cityScope]);
 $roads = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
+// Name of the viewer's city, for the dropdown's section header.
+// null for national_admin (several cities) or when no city resolves.
+$cityName = null;
+if ($cityScope !== null && $cityScope > 0) {
+    $nameStmt = $pdo->prepare('SELECT name FROM cities WHERE id = ? LIMIT 1');
+    $nameStmt->execute([$cityScope]);
+    $found = $nameStmt->fetchColumn();
+    $cityName = ($found !== false && $found !== null) ? (string)$found : null;
+}
+
 echo json_encode([
-    'success' => true,
-    'roads'   => array_values($roads),
+    'success'   => true,
+    'roads'     => array_values($roads),
+    'city_name' => $cityName,
 ]);
