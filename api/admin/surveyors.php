@@ -10,6 +10,7 @@ set_exception_handler(function (Throwable $e) {
 require_once __DIR__ . '/../../config/admin_guard.php';
 require_once __DIR__ . '/../../helpers/Cities.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
+require_once __DIR__ . '/../../helpers/RoleRules.php';
 
 $isNationalAdmin = $CURRENT_USER_ROLE === 'national_admin';
 
@@ -103,9 +104,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'error' => 'You can only manage users in your own city.']);
             exit;
         }
-        if ($target['role'] === 'national_admin') {
+        if (!canManageUser($CURRENT_USER_ROLE, (string)$target['role'])) {
             http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'You do not have permission to modify this account.']);
+            echo json_encode(['success' => false, 'error' => 'City Leaders can only manage surveyors.']);
             exit;
         }
     }
@@ -140,31 +141,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (array_key_exists('role', $body)) {
         $newRole = $body['role'];
 
-        // city_admin may only ever set surveyor <-> city_admin, never
-        // grant/revoke national_admin.
-        $allowedRoles = $isNationalAdmin
-            ? ['national_admin', 'city_admin', 'surveyor']
-            : ['city_admin', 'surveyor'];
-
-        if (!in_array($newRole, $allowedRoles, true)) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Invalid role.']);
+        // Only the Platform Admin changes roles (so only the Platform
+        // Admin creates City Leaders), and a City Leader needs a city.
+        $adminCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'national_admin'")->fetchColumn();
+        $roleError  = validateRoleChange(
+            $CURRENT_USER_ROLE,
+            (string)$target['role'],
+            $target['city_id'] !== null ? (int)$target['city_id'] : null,
+            $newRole,
+            $targetId === $CURRENT_USER_ID,
+            $adminCount
+        );
+        if ($roleError !== null) {
+            http_response_code($CURRENT_USER_ROLE === 'national_admin' ? 400 : 403);
+            echo json_encode(['success' => false, 'error' => $roleError]);
             exit;
-        }
-
-        if ($newRole !== 'national_admin' && $newRole !== $target['role'] && $targetId === $CURRENT_USER_ID) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'You cannot demote yourself.']);
-            exit;
-        }
-
-        if ($newRole !== 'national_admin' && $target['role'] === 'national_admin') {
-            $adminCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'national_admin'")->fetchColumn();
-            if ($adminCount <= 1) {
-                http_response_code(400);
-                echo json_encode(['success' => false, 'error' => 'Cannot demote the last remaining admin.']);
-                exit;
-            }
         }
 
         $update = $pdo->prepare("UPDATE users SET role = ? WHERE id = ?");
