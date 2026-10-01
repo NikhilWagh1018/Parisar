@@ -48,9 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $groupStmt = $pdo->prepare(
         'SELECT g.id, g.canonical_name, g.city_id, g.is_verified, g.is_flagged, g.created_at,
-                g.assigned_surveyor_id, u.name AS assigned_surveyor_name
+                g.assigned_surveyor_id, u.name AS assigned_surveyor_name,
+                c.name AS city_name
            FROM road_groups g
            LEFT JOIN users u ON u.id = g.assigned_surveyor_id
+           LEFT JOIN cities c ON c.id = g.city_id
           WHERE (:cid1 IS NULL OR g.city_id = :cid2)
           ORDER BY g.canonical_name ASC'
     );
@@ -98,6 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $result[] = [
             'id'                     => (int)$group['id'],
+            'city_id'                => (int)$group['city_id'],
+            'city_name'              => $group['city_name'],
             'name'                   => $group['canonical_name'],
             'is_verified'            => (bool)$group['is_verified'],
             'is_flagged'             => (bool)$group['is_flagged'],

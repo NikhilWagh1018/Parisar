@@ -181,6 +181,9 @@ document.addEventListener('click', e => {
           <option value="city_admin">City admins only</option>
           <option value="surveyor">Surveyors only</option>
         </select>
+        <select id="cityFilter" class="surv-role-filter" aria-label="Filter by city" style="display:none;">
+          <option value="all">All cities</option>
+        </select>
         <select id="statusFilter" class="surv-role-filter" aria-label="Filter by status">
           <option value="active" selected>Active users</option>
           <option value="inactive">Inactive users</option>
@@ -200,6 +203,7 @@ document.addEventListener('click', e => {
               <th>Name</th>
               <th>Organisation</th>
               <th>Role</th>
+              <?php if ($CURRENT_USER_ROLE === 'national_admin'): ?><th>City</th><?php endif; ?>
               <th>Roads Created</th>
               <th>Segments Audited</th>
               <th>Last Active</th>
@@ -222,6 +226,7 @@ document.addEventListener('click', e => {
   'use strict';
 
   var allSurveyors = [];
+  var cities = [];
 
   function escapeHtml(str) {
     var div = document.createElement('div');
@@ -273,6 +278,24 @@ document.addEventListener('click', e => {
         }).join('') +
         '</select>';
     }
+    // City column - national admins only. With 2+ cities each row gets a
+    // dropdown to move the user; national admins span every city.
+    var cityCell = '';
+    if (IS_NATIONAL_ADMIN) {
+      var cityInner;
+      if (s.role === 'national_admin') {
+        cityInner = '<span class="surv-muted">All cities</span>';
+      } else if (cities.length > 1) {
+        cityInner = '<select class="role-select city-select" data-id="' + s.id + '" data-city="' + (s.city_id == null ? '' : s.city_id) + '" aria-label="City for ' + escapeHtml(s.name) + '">' +
+          (s.city_id == null ? '<option value="" selected disabled>&mdash; Not set &mdash;</option>' : '') +
+          cities.map(function (c) {
+            return '<option value="' + c.id + '"' + (c.id === s.city_id ? ' selected' : '') + '>' + escapeHtml(c.name) + '</option>';
+          }).join('') + '</select>';
+      } else {
+        cityInner = s.city_name ? escapeHtml(s.city_name) : '<span class="surv-muted">&mdash;</span>';
+      }
+      cityCell = '<td>' + cityInner + '</td>';
+    }
     tr.innerHTML =
       '<td><div class="surv-name-cell">' +
         '<div class="surv-avatar">' + escapeHtml(initials(s.name)) + '</div>' +
@@ -281,6 +304,7 @@ document.addEventListener('click', e => {
       '</div></td>' +
       '<td>' + (s.organisation ? escapeHtml(s.organisation) : '<span class="surv-muted">—</span>') + '</td>' +
       '<td>' + roleBadge + '</td>' +
+      cityCell +
       '<td class="surv-stat">' + s.roads_created + '</td>' +
       '<td class="surv-stat">' + s.segments_audited + '</td>' +
       '<td>' + fmtDate(s.last_audit_at || s.last_login) + '</td>' +
@@ -303,10 +327,13 @@ document.addEventListener('click', e => {
     var q = document.getElementById('survSearch').value.trim().toLowerCase();
     var statusFilter = document.getElementById('statusFilter').value;
     var roleFilter = document.getElementById('roleFilter').value;
+    var cityFilter = document.getElementById('cityFilter').value;
     var filtered = allSurveyors.filter(function (s) {
       if (statusFilter === 'active' && !s.is_active) return false;
       if (statusFilter === 'inactive' && s.is_active) return false;
       if (roleFilter !== 'all' && s.role !== roleFilter) return false;
+      if (cityFilter === 'none' && s.city_id != null) return false;
+      if (cityFilter !== 'all' && cityFilter !== 'none' && String(s.city_id) !== cityFilter) return false;
       return (s.name || '').toLowerCase().indexOf(q) !== -1 ||
              (s.email || '').toLowerCase().indexOf(q) !== -1;
     });
@@ -319,6 +346,50 @@ document.addEventListener('click', e => {
   document.getElementById('survSearch').addEventListener('input', applyFilter);
   document.getElementById('statusFilter').addEventListener('change', applyFilter);
   document.getElementById('roleFilter').addEventListener('change', applyFilter);
+  document.getElementById('cityFilter').addEventListener('change', applyFilter);
+
+  // The city filter only appears for national admins once there is more
+  // than one city to filter by.
+  function setupCityFilter() {
+    var f = document.getElementById('cityFilter');
+    if (!f || !IS_NATIONAL_ADMIN || cities.length < 2) return;
+    cities.forEach(function (c) {
+      var o = document.createElement('option');
+      o.value = String(c.id);
+      o.textContent = c.name;
+      f.appendChild(o);
+    });
+    var none = document.createElement('option');
+    none.value = 'none';
+    none.textContent = 'No city set';
+    f.appendChild(none);
+    f.style.display = '';
+  }
+
+  function handleCityChange(sel) {
+    var rid = parseInt(sel.dataset.id, 10);
+    var prev = sel.dataset.city;
+    var newId = parseInt(sel.value, 10);
+    if (String(newId) === prev) return;
+    var s = allSurveyors.find(function (x) { return x.id === rid; });
+    var newName = sel.options[sel.selectedIndex].textContent;
+    var oldName = (s && s.city_name) ? s.city_name : 'no city';
+    var msg = 'Move ' + (s ? s.name : 'this user') + ' from ' + oldName + ' to ' + newName + '?\n\n' +
+      'They will see ' + newName + '\'s roads from now on. Audits they have already submitted are not moved.';
+    if (!confirm(msg)) { sel.value = prev; return; }
+    fetch('../api/admin/surveyors.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ id: rid, city_id: newId })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (!data.success) { alert(data.error || 'Update failed.'); sel.value = prev; return; }
+      if (s) { s.city_id = newId; s.city_name = newName; }
+      applyFilter();
+    })
+    .catch(function () { alert('Network error.'); sel.value = prev; });
+  }
 
   document.getElementById('survTbody').addEventListener('click', function (e) {
     if (e.target.classList.contains('toggle-status-btn')) {
@@ -344,6 +415,7 @@ document.addEventListener('click', e => {
   });
 
   document.getElementById('survTbody').addEventListener('change', function (e) {
+    if (e.target.classList.contains('city-select')) { handleCityChange(e.target); return; }
     if (!e.target.classList.contains('role-select')) return;
 
     var rid = parseInt(e.target.dataset.id, 10);
@@ -389,6 +461,8 @@ document.addEventListener('click', e => {
         return;
       }
       allSurveyors = data.surveyors;
+      cities = Array.isArray(data.cities) ? data.cities : [];
+      setupCityFilter();
       document.getElementById('tableWrap').style.display = 'block';
       applyFilter();
     })

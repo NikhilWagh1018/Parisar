@@ -8,6 +8,8 @@ set_exception_handler(function (Throwable $e) {
     exit;
 });
 require_once __DIR__ . '/../../config/admin_guard.php';
+require_once __DIR__ . '/../../helpers/Cities.php';
+require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 
 $isNationalAdmin = $CURRENT_USER_ROLE === 'national_admin';
 
@@ -30,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             u.phone,
             u.role,
             u.city_id,
+            c.name AS city_name,
             u.organisation,
             u.profile_picture,
             u.is_active,
@@ -39,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             (SELECT COUNT(*) FROM segment_audits sa WHERE sa.surveyor_id = u.id) AS segments_audited,
             (SELECT MAX(sa2.created_at) FROM segment_audits sa2 WHERE sa2.surveyor_id = u.id) AS last_audit_at
          FROM users u
+         LEFT JOIN cities c ON c.id = u.city_id
          $where
         ORDER BY u.is_active DESC, u.role = 'national_admin' DESC, u.role = 'city_admin' DESC, u.name ASC"
     );
@@ -55,7 +59,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         unset($s['profile_picture']);
     }
     unset($s);
-    echo json_encode(['success' => true, 'surveyors' => $surveyors]);
+    echo json_encode([
+        'success'   => true,
+        'surveyors' => $surveyors,
+        // Only national admins can move users, so only they need the list.
+        'cities'    => $isNationalAdmin ? listCities($pdo) : [],
+    ]);
     exit;
 }
 
@@ -99,6 +108,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => false, 'error' => 'You do not have permission to modify this account.']);
             exit;
         }
+    }
+
+    // ── City change (national_admin only) ───────────────────────
+    if (array_key_exists('city_id', $body)) {
+        if (!$isNationalAdmin) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Only a national admin can move a user to another city.']);
+            exit;
+        }
+        [$newCityId, $cityError] = validateUserCityChange(listCities($pdo), (string)$target['role'], $body['city_id']);
+        if ($cityError !== null) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => $cityError]);
+            exit;
+        }
+        $oldCityId = $target['city_id'] !== null ? (int)$target['city_id'] : null;
+        if ($oldCityId !== $newCityId) {
+            $pdo->prepare('UPDATE users SET city_id = ? WHERE id = ?')->execute([$newCityId, $targetId]);
+            ActivityLogger::log($pdo, ActivityLogger::USER_CITY_CHANGED, $CURRENT_USER_ID, [
+                'user_id'      => $targetId,
+                'from_city_id' => $oldCityId,
+                'to_city_id'   => $newCityId,
+            ]);
+        }
+        echo json_encode(['success' => true, 'city_id' => $newCityId]);
+        exit;
     }
 
     // ── Role change (promote/demote) ───────────────────────────
