@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CycleAudit — Parisar Cycle Track Auditing Platform, Pune</title>
+<title>CycleAudit — Parisar Cycle Track Auditing Platform</title>
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://cycleaudit.parisar-pune.workers.dev/">
-<meta property="og:title" content="CycleAudit — Parisar Cycle Track Auditing Platform, Pune">
-<meta property="og:description" content="A systematic, data-driven field auditing platform built for Parisar's cycle track assessment programme across Pune.">
+<meta property="og:title" content="CycleAudit — Parisar Cycle Track Auditing Platform">
+<meta property="og:description" content="A systematic, data-driven field auditing platform built for Parisar's cycle track assessment programme.">
 <meta property="og:image" content="https://cycleaudit.parisar-pune.workers.dev/assets/parisar-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -26,9 +26,9 @@
 <section id="hero">
   <div class="hbg"></div>
   <div class="hl">
-    <div class="eyebrow"><span class="dot"></span>Parisar Initiative — Pune, Maharashtra</div>
-    <h1>Auditing Pune's<br><em>Cycle Tracks</em><br>Segment by Segment</h1>
-    <p class="hero-p">A systematic, data-driven field auditing platform built for Parisar's cycle track assessment programme. Surveyors document obstructions, surface conditions, intersections, and safety data across Pune's 19 cycle track roads — generating evidence for municipal advocacy and infrastructure improvement.</p>
+    <div class="eyebrow"><span class="dot"></span>Parisar Initiative<span class="js-city" data-with=" — {c}" data-without=""> — Pune, Maharashtra</span></div>
+    <h1>Auditing <span class="js-city" data-with="{c}'s" data-without="">Pune's</span><br><em>Cycle Tracks</em><br>Segment by Segment</h1>
+    <p class="hero-p">A systematic, data-driven field auditing platform built for Parisar's cycle track assessment programme. Surveyors document obstructions, surface conditions, intersections, and safety data across <span class="js-city" data-with="{c}'s " data-without="the ">Pune's </span><span class="js-roads">19</span> cycle track roads — generating evidence for municipal advocacy and infrastructure improvement.</p>
     <div class="hbtns"><a href="auth/login.php" class="btn-p">Start Your Audit →</a><a href="#about" class="btn-s">Learn More</a></div>
     <div class="hm-scope" id="stat-scope" hidden><label for="stat-city">Showing</label><select id="stat-city" aria-label="Choose city for statistics"><option value="">All cities</option></select></div>
     <div class="hm">
@@ -69,7 +69,7 @@
 <section id="about"><div class="mw"><div class="ag">
   <div class="rv">
     <div class="ey">About the Platform</div><h2>Field Data That Drives Infrastructure Change</h2>
-    <p class="sub">CycleAudit is Parisar's internal auditing tool used by surveyors on the ground to document the real condition of Pune's cycle tracks. Every obstruction, broken surface, missing ramp, and dangerous intersection is recorded, scored, and converted into advocacy evidence.</p>
+    <p class="sub">CycleAudit is Parisar's internal auditing tool used by surveyors on the ground to document the real condition of <span class="js-city" data-with="{c}'s " data-without="">Pune's </span>cycle tracks. Every obstruction, broken surface, missing ramp, and dangerous intersection is recorded, scored, and converted into advocacy evidence.</p>
     <div class="about-features">
       <div class="af"><div class="af-ic">🗺️</div><div><h4>Geo-Referenced Segments</h4><p>Roads are divided into precise 500m segments with GPS coordinates, ensuring complete and consistent coverage.</p></div></div>
       <div class="af"><div class="af-ic">📊</div><div><h4>Multi-Dimensional Scoring</h4><p>Safety, Continuity, and Comfort — three independent dimensions measured from real field observations and combined into a final weighted score.</p></div></div>
@@ -83,9 +83,9 @@
       <div class="av-ps"><span class="av-pi">Safety Analysis</span><span class="av-pi">Continuity</span><span class="av-pi">Comfort Ratings</span><span class="av-pi">Obstruction Mapping</span><span class="av-pi">Intersection Audit</span><span class="av-pi">Surface Quality</span></div>
     </div>
     <div class="astats" style="margin-top:16px">
-      <div class="asc"><div class="n">77</div><div class="l">Segments, 500m each</div></div>
-      <div class="asc"><div class="n">35km</div><div class="l">Total track covered</div></div>
-      <div class="asc"><div class="n">19</div><div class="l">Roads in Pune</div></div>
+      <div class="asc"><div class="n" id="about-segs">77</div><div class="l">Segments, 500m each</div></div>
+      <div class="asc"><div class="n" id="about-km">35km</div><div class="l">Total track covered</div></div>
+      <div class="asc"><div class="n js-roads">19</div><div class="l">Roads<span class="js-city" data-with=" in {c}" data-without=""> in Pune</span></div></div>
       <div class="asc"><div class="n">3</div><div class="l">Score dimensions</div></div>
     </div>
   </div>
@@ -121,7 +121,7 @@
     <div class="ey">Audit Process</div><h2>How a Cycle Track Audit Works</h2>
     <p class="sub" style="margin-bottom:32px">A structured 5-step process ensures every segment is audited consistently by any surveyor in the field — from road setup to final PDF export.</p>
     <div class="steps">
-      <div class="step act"><div class="stc">1</div><div class="stb"><h4>Define the Road</h4><p>Select a road from Pune's 19 cycle track roads. Enter start/end landmarks, total length, and GPS coordinates.</p><span class="st-chip">segment.php</span></div></div>
+      <div class="step act"><div class="stc">1</div><div class="stb"><h4>Define the Road</h4><p>Select a road from the <span class="js-roads">19</span> cycle track roads. Enter start/end landmarks, total length, and GPS coordinates.</p><span class="st-chip">segment.php</span></div></div>
       <div class="step"><div class="stc">2</div><div class="stb"><h4>Generate Segments</h4><p>Auto-divide the road into standard 500m segments, or manually define custom boundaries with landmark names.</p><span class="st-chip">Auto or Manual</span></div></div>
       <div class="step"><div class="stc">3</div><div class="stb"><h4>Field Audit Each Segment</h4><p>For each segment, fill in landmarks, obstructions (30+ types), intersections, surface issues, lighting, and footpath data.</p><span class="st-chip">form.html</span></div></div>
       <div class="step"><div class="stc">4</div><div class="stb"><h4>Submit and Auto-Score</h4><p>Data is stored in MySQL. Safety, Continuity, and Comfort scores are calculated automatically from submitted responses.</p><span class="st-chip">submit.php</span></div></div>
@@ -155,9 +155,9 @@
 </div></section>
 <section id="impact"><div class="mw">
   <div class="ey">Why It Matters</div><h2>Driving Change Through Evidence</h2>
-  <p class="sub">Systematic data empowers Parisar to push for meaningful cycle infrastructure improvements from Pune Municipal Corporation — backed by field evidence, not opinion.</p>
+  <p class="sub">Systematic data empowers Parisar to push for meaningful cycle infrastructure improvements from municipal authorities — backed by field evidence, not opinion.</p>
   <div class="imp-g">
-    <div class="ic-card rv"><div class="big">🏙️</div><div class="n">19</div><div class="l">Roads in Pune's Cycle Network</div></div>
+    <div class="ic-card rv"><div class="big">🏙️</div><div class="n js-roads">19</div><div class="l">Roads in <span class="js-city" data-with="{c}'s " data-without="the ">Pune's </span>Cycle Network</div></div>
     <div class="ic-card rv" style="transition-delay:.08s"><div class="big">📏</div><div class="n">500m</div><div class="l">Standard Segment Length</div></div>
     <div class="ic-card rv" style="transition-delay:.16s"><div class="big">🧪</div><div class="n">3</div><div class="l">Score Dimensions Measured</div></div>
     <div class="ic-card rv" style="transition-delay:.24s"><div class="big">🚴</div><div class="n">100%</div><div class="l">Field-Data Driven Scores</div></div>
@@ -165,13 +165,13 @@
 </div></section>
 <section id="roads"><div class="mw">
   <div class="ey">Coverage</div><h2>Roads in the Audit Network</h2>
-  <p class="sub">These <span id="roads-count">—</span> roads across <span id="roads-scope">our cities</span> are part of the PMC cycle track network and are covered by this auditing platform.</p>
+  <p class="sub">These <span id="roads-count">—</span> roads across <span class="js-city" data-with="{c}" data-without="our cities">our cities</span> are part of the cycle track network and are covered by this auditing platform.</p>
   <div class="rg" id="roads-grid"></div>
 </div></section>
 <section id="cta"><div class="mw"><div class="cta-inner">
   <div class="ey" style="justify-content:center">Get Started</div>
   <h2>Ready to Audit a Cycle Track?</h2>
-  <p class="sub">Register as a surveyor, pick a road, and start contributing to Pune's cycle infrastructure dataset. Your field data helps Parisar advocate for safer, better cycling conditions.</p>
+  <p class="sub">Register as a surveyor, pick a road, and start contributing to <span class="js-city" data-with="{c}'s " data-without="the ">Pune's </span>cycle infrastructure dataset. Your field data helps Parisar advocate for safer, better cycling conditions.</p>
   <div class="cta-bs"><a href="auth/register.php" class="btn-p">Register as Surveyor</a><a href="auth/login.php" class="btn-s">Sign In</a></div>
 </div></div></section>
 <footer><div class="mw">
@@ -179,11 +179,11 @@
     <div class="fb-brand">
       <img src="assets/parisar-logo.png" alt="Parisar" style="height:28px;width:auto;filter:brightness(0) invert(1);opacity:.85;margin-bottom:10px;display:block;">
       <div class="bn">CycleAudit</div>
-      <p>A Parisar initiative to systematically audit and improve cycle track infrastructure across Pune using field data and evidence-based scoring.</p>
+      <p>A Parisar initiative to systematically audit and improve cycle track infrastructure across <span class="js-city" data-with="{c}" data-without="our cities">Pune</span> using field data and evidence-based scoring.</p>
     </div>
     <div class="fcol"><h5>Platform</h5><a href="auth/login.php">Login</a><a href="auth/register.php">Register</a><a href="pages/segment.php">Start Audit</a><a href="pages/road_result.php">View Results</a></div>
     <div class="fcol"><h5>Parisar</h5><a href="https://parisar.org" target="_blank">parisar.org</a><a href="https://parisar.org/what-we-do/urban-transport" target="_blank">Urban Transport</a><a href="https://parisar.org/contact-us" target="_blank">Contact</a></div>
-    <div class="fcol"><h5>Audit Scope</h5><a href="#roads">19 Roads</a><a href="#scoring">Scoring Method</a><a href="#findings">2024–25 Findings</a></div>
+    <div class="fcol"><h5>Audit Scope</h5><a href="#roads"><span class="js-roads">19</span> Roads</a><a href="#scoring">Scoring Method</a><a href="#findings">2024–25 Findings</a></div>
   </div>
   <div class="fb-bot"><span>2026 CycleAudit — Built for <span class="pb-cr">Parisar, Pune</span></span><span>PHP · MySQL · Vanilla JS</span></div>
 </div></footer>
@@ -194,6 +194,27 @@
   var cityEl  = document.getElementById('stat-city');
   var scopeEl = document.getElementById('stat-scope');
   var citiesBuilt = false;
+  var cityList = [];
+
+  // The name of the city the page is currently about: the one picked in
+  // the dropdown, or the only city when just one exists, else '' (all).
+  function currentCityName() {
+    var id = cityEl ? cityEl.value : '';
+    if (id && cityEl.selectedIndex >= 0) return cityEl.options[cityEl.selectedIndex].textContent;
+    return cityList.length === 1 ? cityList[0].name : '';
+  }
+
+  // Fills every <span class="js-city"> from its data-with / data-without
+  // template ({c} = city name). The static text in the HTML is only the
+  // fallback shown before this runs.
+  function applyCityText() {
+    var name = currentCityName();
+    var els = document.querySelectorAll('.js-city');
+    for (var i = 0; i < els.length; i++) {
+      var tpl = els[i].getAttribute(name ? 'data-with' : 'data-without') || '';
+      els[i].textContent = tpl.split('{c}').join(name);
+    }
+  }
 
   function qs(cityId) {
     return cityId ? '?city_id=' + encodeURIComponent(cityId) : '';
@@ -230,11 +251,15 @@
         if (!data.success) return;
         var s = data.stats;
         buildCityPicker(data.cities);
+        if (Array.isArray(data.cities)) cityList = data.cities;
+        applyCityText();
         // "Segments" and "Rated Good" share one base: audited segments.
         setText('stat-roads',    s.total_roads);
         setText('stat-length',   fmtKm(s.total_length_km));
         setText('stat-segments', s.audited_segments);
         setText('stat-good',     s.good_pct + '%');
+        setText('about-segs',    s.audited_segments);
+        setText('about-km',      fmtKm(s.total_length_km));
       })
       .catch(function () {});
   }
@@ -247,7 +272,8 @@
         var grid  = document.getElementById('roads-grid');
         var count = document.getElementById('roads-count');
         if (count) count.textContent = data.roads.length;
-        setText('roads-scope', scopeName || 'our cities');
+        var rc = document.querySelectorAll('.js-roads');
+        for (var i = 0; i < rc.length; i++) rc[i].textContent = data.roads.length;
         if (!grid) return;
         grid.innerHTML = '';
         data.roads.forEach(function (name) {

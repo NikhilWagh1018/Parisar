@@ -8,7 +8,9 @@
 // ═══════════════════════════════════════════════════════════════
 
 (function () {
-  const PUNE_CENTER = [18.5204, 73.8567];
+  // Only a starting view: the map fits itself to the audited points
+  // straight after, so no city is assumed.
+  const DEFAULT_CENTER = [20.5937, 78.9629];
 
   let map = null;
   let markers = [];
@@ -82,7 +84,7 @@
     if (empty) empty.style.display = 'none';
 
     if (!map) {
-      map = L.map(canvas).setView(PUNE_CENTER, 12);
+      map = L.map(canvas).setView(DEFAULT_CENTER, 5);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,

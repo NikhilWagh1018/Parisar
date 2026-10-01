@@ -204,7 +204,7 @@ $googleUrl = getGoogleAuthUrl();
   </div>
 
   <h2 class="left-headline">Join the<br><span class="hi">Audit Network.</span></h2>
-  <p class="left-sub">Register as a surveyor and contribute to Pune's cycle infrastructure dataset. Your field data drives Parisar's advocacy with municipal bodies.</p>
+  <p class="left-sub">Register as a surveyor and contribute to your city's cycle infrastructure dataset. Your field data drives Parisar's advocacy with municipal bodies.</p>
 
   <div class="feature-pills">
     <div class="pill">

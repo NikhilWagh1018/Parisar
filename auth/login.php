@@ -125,7 +125,7 @@ $googleUrl = getGoogleAuthUrl();
   </div>
 
   <h2 class="left-headline">Welcome back,<br><span class="hi">Surveyor.</span></h2>
-  <p class="left-sub">Log in to access your audit dashboard and continue mapping Pune's cycle track network.</p>
+  <p class="left-sub">Log in to access your audit dashboard and continue mapping your city's cycle track network.</p>
 
   <div class="feature-pills">
     <div class="pill">
