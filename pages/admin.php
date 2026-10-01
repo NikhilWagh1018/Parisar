@@ -185,6 +185,14 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  .assign-select {
+    font-size: 0.78rem; font-family: inherit; padding: 5px 8px; border-radius: 6px;
+    border: 1px solid var(--bd); background: transparent; color: inherit; max-width: 160px;
+  }
+  .assign-select:disabled { opacity: 0.6; }
+  .assign-wrap { display: flex; align-items: center; gap: 6px; }
+  .assign-label { font-size: 0.72rem; color: var(--grl); white-space: nowrap; }
+
   @media (max-width: 600px) {
     .grp-head { flex-wrap: wrap; }
     .grp-head-left { flex: 1 1 100%; }
@@ -336,6 +344,7 @@ document.addEventListener('click', e => {
         <input type="text" id="roadsSearchInput" placeholder="Search roads…" autocomplete="off">
       </div>
       <button class="action-btn" id="exportExcelBtn" type="button">Export Excel</button>
+      <a class="action-btn" href="../api/reports/export-city-excel.php" target="_blank" rel="noopener">⬇ Score Sheet</a>
       <span class="roads-count" id="roadsCountLbl"></span>
     </div>
     <div id="exportMsg" style="font-size:0.78rem;color:var(--gray);margin:-8px 0 12px;display:none;"></div>
@@ -353,7 +362,8 @@ document.addEventListener('click', e => {
   </div>
 </main>
 
-<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';</script>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';
+const IS_NATIONAL_ADMIN = <?= $CURRENT_USER_ROLE === 'national_admin' ? 'true' : 'false' ?>;</script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 (function () {
   'use strict';
@@ -465,16 +475,78 @@ document.addEventListener('click', e => {
     var right = document.createElement('div');
     right.className = 'grp-head-right';
 
+    // Assign-to-surveyor control. Available to any admin (national or
+    // city) — unlike Delete, which is national_admin only. An
+    // unassigned road stays open to any surveyor in the city to
+    // self-select, same as before this feature existed.
+    var assignWrap = document.createElement('div');
+    assignWrap.className = 'assign-wrap';
+    var assignLabel = document.createElement('span');
+    assignLabel.className = 'assign-label';
+    assignLabel.textContent = 'Assigned:';
+    var assignSelect = document.createElement('select');
+    assignSelect.className = 'assign-select';
+    assignSelect.setAttribute('aria-label', 'Assign ' + group.name + ' to a surveyor');
+    var noneOpt = document.createElement('option');
+    noneOpt.value = '0';
+    noneOpt.textContent = 'Unassigned';
+    assignSelect.appendChild(noneOpt);
+    (group.available_surveyors || []).forEach(function (s) {
+      var opt = document.createElement('option');
+      opt.value = String(s.id);
+      opt.textContent = s.name;
+      assignSelect.appendChild(opt);
+    });
+    assignSelect.value = group.assigned_surveyor_id ? String(group.assigned_surveyor_id) : '0';
+    assignSelect.addEventListener('click', function (e) { e.stopPropagation(); });
+    assignSelect.addEventListener('change', function (e) {
+      e.stopPropagation();
+      var surveyorId = parseInt(assignSelect.value, 10) || 0;
+      assignSelect.disabled = true;
+      fetch('../api/admin/roads.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': CSRF,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ id: group.id, action: 'assign', surveyor_id: surveyorId })
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          assignSelect.disabled = false;
+          if (!data.success) {
+            assignSelect.value = group.assigned_surveyor_id ? String(group.assigned_surveyor_id) : '0';
+            showExportMsg(data.error || 'Could not update assignment.', true);
+            return;
+          }
+          group.assigned_surveyor_id = data.assigned_surveyor_id;
+        })
+        .catch(function () {
+          assignSelect.disabled = false;
+          assignSelect.value = group.assigned_surveyor_id ? String(group.assigned_surveyor_id) : '0';
+          showExportMsg('Network error — could not update assignment.', true);
+        });
+    });
+    assignWrap.appendChild(assignLabel);
+    assignWrap.appendChild(assignSelect);
+    right.appendChild(assignWrap);
+
     // Default state: just a Delete affordance. Clicking it opens a danger
     // panel below the row with a type-to-confirm control instead of a
     // browser confirm() — deletion here removes any real audit entries
     // under the road too, so it needs a deliberate, hard-to-fat-finger step.
-    var deleteBtn = document.createElement('button');
-    deleteBtn.className = 'del-btn';
-    deleteBtn.innerHTML = TRASH_ICON + '<span>Delete</span>';
-    deleteBtn.setAttribute('aria-label', 'Delete ' + group.name);
+    // Admin-only (confirmed scope) — a city_admin doesn't get this button
+    // at all, rather than seeing one that would just 403 on click.
+    var deleteBtn = null;
+    if (IS_NATIONAL_ADMIN) {
+      deleteBtn = document.createElement('button');
+      deleteBtn.className = 'del-btn';
+      deleteBtn.innerHTML = TRASH_ICON + '<span>Delete</span>';
+      deleteBtn.setAttribute('aria-label', 'Delete ' + group.name);
+      right.appendChild(deleteBtn);
+    }
 
-    right.appendChild(deleteBtn);
     head.appendChild(left);
     head.appendChild(right);
 
@@ -526,11 +598,13 @@ document.addEventListener('click', e => {
       confirmHint.classList.remove('match');
     }
 
-    deleteBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      var open = panel.classList.toggle('open');
-      if (open) { confirmInput.focus(); } else { resetPanel(); }
-    });
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = panel.classList.toggle('open');
+        if (open) { confirmInput.focus(); } else { resetPanel(); }
+      });
+    }
 
     confirmCancel.addEventListener('click', function (e) {
       e.stopPropagation();

@@ -85,6 +85,24 @@ if (!isAnyAdmin($CURRENT_USER_ROLE) && !$repo->roadGroupExists((string)$data['na
     exit;
 }
 
+// ── Assigned roads are reserved for their assigned surveyor ──────
+// Confirmed scope (Sep 30): City Leader adds roads and assigns them
+// to surveyors. An unassigned road stays open to any surveyor in
+// the city (unchanged self-service behaviour); an assigned one is
+// reserved for that surveyor only. Admins bypass this, same as the
+// check above.
+if (!isAnyAdmin($CURRENT_USER_ROLE)) {
+    $assignedTo = $repo->getAssignedSurveyorId((string)$data['name']);
+    if ($assignedTo !== null && $assignedTo !== $CURRENT_USER_ID) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'error'   => 'This road has been assigned to a different surveyor by your City Leader.',
+        ]);
+        exit;
+    }
+}
+
 try {
     $result = $repo->create($CURRENT_USER_ID, $data);
 
