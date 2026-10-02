@@ -16,6 +16,9 @@ class CityAuditRepository
     /** Audit statuses in which roads can still be added or removed. */
     public const EDITABLE_STATUSES = ['draft'];
 
+    /** Audit statuses in which segments can still be (re)assigned to surveyors. */
+    public const ASSIGNABLE_STATUSES = ['draft', 'active'];
+
     public function __construct(private PDO $pdo) {}
 
     /** @param array{name:string,state:string,audit_year:int,programme_info:?string} $clean */
@@ -79,6 +82,11 @@ class CityAuditRepository
         return in_array($audit['status'], self::EDITABLE_STATUSES, true);
     }
 
+    public function canAssign(array $audit): bool
+    {
+        return in_array($audit['status'], self::ASSIGNABLE_STATUSES, true);
+    }
+
     /** City roads not yet in this audit.
      *  @return list<array{id:int,canonical_name:string}> */
     public function availableRoadGroups(int $cityId, int $auditId): array
@@ -115,8 +123,12 @@ class CityAuditRepository
         $ids  = array_map(static fn(array $r): int => (int)$r['id'], $roads);
         $in   = implode(',', array_fill(0, count($ids), '?'));
         $segs = $this->pdo->prepare(
-            "SELECT road_id, segment_number, start_distance, end_distance, length, status
-               FROM segments WHERE road_id IN ($in) ORDER BY road_id ASC, segment_number ASC"
+            "SELECT s.id AS segment_id, s.road_id, s.segment_number, s.start_distance, s.end_distance,
+                    s.length, s.status, sa.surveyor_id AS assigned_to, u.name AS assigned_name
+               FROM segments s
+               LEFT JOIN segment_assignments sa ON sa.segment_id = s.id
+               LEFT JOIN users u ON u.id = sa.surveyor_id
+              WHERE s.road_id IN ($in) ORDER BY s.road_id ASC, s.segment_number ASC"
         );
         $segs->execute($ids);
         $byRoad = [];
@@ -226,12 +238,194 @@ class CityAuditRepository
 
         $this->pdo->beginTransaction();
         try {
+            $this->pdo->prepare(
+                'DELETE FROM segment_assignments WHERE segment_id IN (SELECT id FROM segments WHERE road_id = ?)'
+            )->execute([$roadId]);
             $this->pdo->prepare('DELETE FROM segments WHERE road_id = ?')->execute([$roadId]);
             $this->pdo->prepare('DELETE FROM roads WHERE id = ?')->execute([$roadId]);
             $this->pdo->commit();
         } catch (Throwable $e) {
             $this->pdo->rollBack();
             throw $e;
+        }
+    }
+
+    // ── Surveyor assignment (Slice 3) ─────────────────────────────
+
+    /** Active surveyors of a city, for the assignment dropdowns.
+     *  @return list<array{id:int,name:string}> */
+    public function assignableSurveyors(int $cityId): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT id, name FROM users
+              WHERE role = 'surveyor' AND is_active = 1 AND city_id = ?
+              ORDER BY name ASC, id ASC"
+        );
+        $stmt->execute([$cityId]);
+        return array_map(
+            static fn(array $r): array => ['id' => (int)$r['id'], 'name' => (string)$r['name']],
+            $stmt->fetchAll(PDO::FETCH_ASSOC)
+        );
+    }
+
+    private function requireCitySurveyor(int $cityId, int $surveyorId): void
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM users
+              WHERE id = ? AND role = 'surveyor' AND is_active = 1 AND city_id = ?"
+        );
+        $stmt->execute([$surveyorId, $cityId]);
+        if ((int)$stmt->fetchColumn() === 0) {
+            throw new DomainException('That surveyor is not an active surveyor in this city.');
+        }
+    }
+
+    /**
+     * Give the segments to one surveyor, or clear them when $surveyorId is null.
+     * Only pending segments of this audit can change.
+     *
+     * @param array<string,mixed> $audit      row from find()
+     * @param list<int>           $segmentIds
+     * @return int number of segments updated
+     */
+    public function assignSegments(array $audit, int $byUserId, array $segmentIds, ?int $surveyorId): int
+    {
+        if (!$this->canAssign($audit)) {
+            throw new DomainException('Surveyors can no longer be assigned in this audit.');
+        }
+        $ids = array_values(array_unique(array_map('intval', $segmentIds)));
+        if (!$ids) {
+            throw new DomainException('Select at least one segment.');
+        }
+        if ($surveyorId !== null) {
+            $this->requireCitySurveyor((int)$audit['city_id'], $surveyorId);
+        }
+
+        $in = implode(',', array_fill(0, count($ids), '?'));
+        $q  = $this->pdo->prepare(
+            "SELECT s.id, s.status FROM segments s
+               JOIN roads r ON r.id = s.road_id
+              WHERE r.audit_id = ? AND s.id IN ($in)"
+        );
+        $q->execute(array_merge([(int)$audit['id']], $ids));
+        $rows = $q->fetchAll(PDO::FETCH_ASSOC);
+        if (count($rows) !== count($ids)) {
+            throw new DomainException('Some of those segments are not part of this audit.');
+        }
+        foreach ($rows as $row) {
+            if ($row['status'] !== 'pending') {
+                throw new DomainException('Auditing has already started on a segment, so it cannot be reassigned.');
+            }
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $this->pdo->prepare("DELETE FROM segment_assignments WHERE segment_id IN ($in)")->execute($ids);
+            if ($surveyorId !== null) {
+                $ins = $this->pdo->prepare(
+                    'INSERT INTO segment_assignments (audit_id, segment_id, surveyor_id, assigned_by)
+                     VALUES (?, ?, ?, ?)'
+                );
+                foreach ($ids as $segId) {
+                    $ins->execute([(int)$audit['id'], $segId, $surveyorId, $byUserId]);
+                }
+            }
+            $this->pdo->commit();
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            if ((string)$e->getCode() === '23000') {
+                throw new DomainException('Someone changed these segments at the same time. Reload and try again.');
+            }
+            throw $e;
+        } catch (Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+        return count($ids);
+    }
+
+    /**
+     * Give every pending segment of a road to one surveyor (null clears them).
+     * Segments where auditing already started are left alone and counted as skipped.
+     *
+     * @return array{assigned:int, skipped:int}
+     */
+    public function assignRoad(array $audit, int $byUserId, int $roadId, ?int $surveyorId): array
+    {
+        $r = $this->pdo->prepare('SELECT id FROM roads WHERE id = ? AND audit_id = ?');
+        $r->execute([$roadId, (int)$audit['id']]);
+        if ($r->fetch(PDO::FETCH_ASSOC) === false) {
+            throw new DomainException('That road is not part of this audit.');
+        }
+        $s = $this->pdo->prepare('SELECT id, status FROM segments WHERE road_id = ? ORDER BY segment_number ASC');
+        $s->execute([$roadId]);
+        $pending = [];
+        $skipped = 0;
+        foreach ($s->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            if ($row['status'] === 'pending') {
+                $pending[] = (int)$row['id'];
+            } else {
+                $skipped++;
+            }
+        }
+        if (!$pending) {
+            throw new DomainException('Auditing has already started on every segment of this road.');
+        }
+        $n = $this->assignSegments($audit, $byUserId, $pending, $surveyorId);
+        return ['assigned' => $n, 'skipped' => $skipped];
+    }
+
+    /** @return array{total:int, assigned:int} segment counts for the whole audit */
+    public function assignmentCounts(int $auditId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(s.id) AS total, COUNT(sa.id) AS assigned
+               FROM roads r
+               JOIN segments s ON s.road_id = r.id
+               LEFT JOIN segment_assignments sa ON sa.segment_id = s.id
+              WHERE r.audit_id = ?'
+        );
+        $stmt->execute([$auditId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        return ['total' => (int)($row['total'] ?? 0), 'assigned' => (int)($row['assigned'] ?? 0)];
+    }
+
+    /**
+     * Move a draft audit to active. Every segment must have an active surveyor
+     * of this city. From then on roads can no longer be added or removed.
+     */
+    public function activate(array $audit): void
+    {
+        if ($audit['status'] !== 'draft') {
+            throw new DomainException('Only a draft audit can be activated.');
+        }
+        $c = $this->assignmentCounts((int)$audit['id']);
+        if ($c['total'] === 0) {
+            throw new DomainException('Add at least one road before activating this audit.');
+        }
+        if ($c['assigned'] < $c['total']) {
+            $left = $c['total'] - $c['assigned'];
+            throw new DomainException($left . ($left === 1 ? ' segment still has' : ' segments still have')
+                . ' no surveyor. Assign every segment before activating.');
+        }
+
+        $bad = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM segment_assignments sa
+               JOIN segments s ON s.id = sa.segment_id
+               JOIN roads r    ON r.id = s.road_id
+               LEFT JOIN users u ON u.id = sa.surveyor_id
+                                AND u.role = 'surveyor' AND u.is_active = 1 AND u.city_id = ?
+              WHERE r.audit_id = ? AND u.id IS NULL"
+        );
+        $bad->execute([(int)$audit['city_id'], (int)$audit['id']]);
+        if ((int)$bad->fetchColumn() > 0) {
+            throw new DomainException('Some segments are assigned to a surveyor who is no longer active in this city. Reassign them first.');
+        }
+
+        $upd = $this->pdo->prepare("UPDATE city_audits SET status = 'active' WHERE id = ? AND status = 'draft'");
+        $upd->execute([(int)$audit['id']]);
+        if ($upd->rowCount() === 0) {
+            throw new DomainException('This audit was already activated.');
         }
     }
 }

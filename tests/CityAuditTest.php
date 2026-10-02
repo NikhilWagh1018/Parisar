@@ -112,4 +112,41 @@ class CityAuditTest extends TestCase
             }
         }
     }
+
+    public function test_assignment_input_for_segments(): void
+    {
+        $r = cityAuditValidateAssignment(['segment_ids' => ['4', 5, 5], 'surveyor_id' => '9']);
+        $this->assertSame([], $r['errors']);
+        $this->assertSame('segments', $r['clean']['mode']);
+        $this->assertSame([4, 5], $r['clean']['segment_ids']);
+        $this->assertSame(9, $r['clean']['surveyor_id']);
+    }
+
+    public function test_assignment_input_for_whole_road_and_unassign(): void
+    {
+        $r = cityAuditValidateAssignment(['road_id' => '3', 'surveyor_id' => 7]);
+        $this->assertSame([], $r['errors']);
+        $this->assertSame('road', $r['clean']['mode']);
+        $this->assertSame(3, $r['clean']['road_id']);
+
+        foreach ([null, '', 0, '0'] as $blank) {
+            $u = cityAuditValidateAssignment(['road_id' => 3, 'surveyor_id' => $blank]);
+            $this->assertSame([], $u['errors']);
+            $this->assertNull($u['clean']['surveyor_id']);
+        }
+    }
+
+    public function test_bad_assignment_input_is_rejected(): void
+    {
+        $this->assertTrue(isset(cityAuditValidateAssignment(['surveyor_id' => 1])['errors']['segment_ids']));
+        $this->assertTrue(isset(cityAuditValidateAssignment(['segment_ids' => [], 'surveyor_id' => 1])['errors']['segment_ids']));
+        $this->assertTrue(isset(cityAuditValidateAssignment(['segment_ids' => [1, 'x'], 'surveyor_id' => 1])['errors']['segment_ids']));
+        $this->assertTrue(isset(cityAuditValidateAssignment(['segment_ids' => [0], 'surveyor_id' => 1])['errors']['segment_ids']));
+        $this->assertTrue(isset(cityAuditValidateAssignment(['segment_ids' => 'abc', 'surveyor_id' => 1])['errors']['segment_ids']));
+        $this->assertTrue(isset(cityAuditValidateAssignment(['segment_ids' => range(1, 501), 'surveyor_id' => 1])['errors']['segment_ids']));
+        $this->assertTrue(isset(cityAuditValidateAssignment(['road_id' => 'x', 'surveyor_id' => 1])['errors']['road_id']));
+        $this->assertTrue(isset(cityAuditValidateAssignment(['road_id' => 2, 'segment_ids' => [1], 'surveyor_id' => 1])['errors']['road_id']));
+        $this->assertTrue(isset(cityAuditValidateAssignment(['road_id' => 2, 'surveyor_id' => 'abc'])['errors']['surveyor_id']));
+        $this->assertTrue(isset(cityAuditValidateAssignment(['road_id' => 2, 'surveyor_id' => -4])['errors']['surveyor_id']));
+    }
 }

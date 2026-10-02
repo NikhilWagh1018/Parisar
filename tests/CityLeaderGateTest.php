@@ -55,7 +55,8 @@ class CityLeaderGateTest extends TestCase
     public function test_audit_screens_are_allowed(): void
     {
         foreach (['/pages/city_audit.php', '/api/city/audit_create.php',
-                  '/api/city/audit_road_add.php', '/api/city/audit_road_remove.php'] as $path) {
+                  '/api/city/audit_road_add.php', '/api/city/audit_road_remove.php',
+                  '/api/city/audit_assign.php', '/api/city/audit_activate.php'] as $path) {
             $this->assertTrue(cityLeaderMayAccess($path), $path);
             $this->assertTrue(cityLeaderMayAccess('/Parisar' . $path), $path);
         }

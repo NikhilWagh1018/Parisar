@@ -24,6 +24,11 @@ if ($audit === null || (!$isNational && (int)$audit['city_id'] !== (int)($CURREN
 $canEdit   = !$isNational && $repo->isEditable($audit);
 $available = $canEdit ? $repo->availableRoadGroups((int)$audit['city_id'], (int)$audit['id']) : [];
 $roads     = $repo->roadsWithSegments((int)$audit['id']);
+$canAssign = !$isNational && $repo->canAssign($audit);
+$surveyors = $canAssign ? $repo->assignableSurveyors((int)$audit['city_id']) : [];
+$counts    = $repo->assignmentCounts((int)$audit['id']);
+$canActivate = !$isNational && $audit['status'] === 'draft';
+$allAssigned = $counts['total'] > 0 && $counts['assigned'] === $counts['total'];
 $backUrl   = 'city_dashboard.php' . ($isNational ? '?city_id=' . (int)$audit['city_id'] : '');
 
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
@@ -69,6 +74,23 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
       </div>
       <?php if ($audit['programme_info']): ?>
         <p style="margin:12px 0 0;font-size:.85rem;white-space:pre-line"><?= $h($audit['programme_info']) ?></p>
+      <?php endif; ?>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Surveyor assignment</h3>
+        <?php if ($canActivate): ?>
+          <button class="ca-btn" type="button" id="caActivate" <?= $allAssigned ? '' : 'disabled' ?>>Activate Audit</button>
+        <?php endif; ?>
+      </div>
+      <p class="ca-assign-sum"><b><?= (int)$counts['assigned'] ?></b> of <b><?= (int)$counts['total'] ?></b> segments have a surveyor.</p>
+      <?php if ($canAssign && !$surveyors): ?>
+        <p class="ca-hint-line">No active surveyors are registered in <?= $h($audit['city_name']) ?> yet, so segments cannot be assigned.</p>
+      <?php elseif ($canActivate && !$allAssigned): ?>
+        <p class="ca-hint-line"><?= $counts['total'] === 0 ? 'Add a road, then assign its segments.' : 'Assign every segment to activate the audit. Roads cannot be added or removed after that.' ?></p>
+      <?php elseif ($audit['status'] === 'active'): ?>
+        <p class="ca-hint-line">This audit is active. Segments can still be reassigned until auditing starts on them.</p>
       <?php endif; ?>
     </div>
 
@@ -128,13 +150,30 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
         <p class="rd-empty"><?= $canEdit ? 'No roads yet. Add the first road above.' : 'No roads in this audit yet.' ?></p>
       <?php endif; ?>
       <?php foreach ($roads as $r): ?>
-        <div class="ca-road">
+        <?php
+          $rAssigned = 0; $rPending = 0;
+          foreach ($r['segments'] as $s0) {
+              if ($s0['assigned_to'] !== null) { $rAssigned++; }
+              if ($s0['status'] === 'pending') { $rPending++; }
+          }
+        ?>
+        <div class="ca-road" data-road-id="<?= (int)$r['id'] ?>">
           <div class="ca-road-head">
             <div>
               <h4><?= $h($r['name']) ?></h4>
-              <small><?= $h($num($r['total_length'])) ?> m · <?= count($r['segments']) ?> segments of <?= $h($num($r['segment_length'])) ?> m</small>
+              <small><?= $h($num($r['total_length'])) ?> m · <?= count($r['segments']) ?> segments of <?= $h($num($r['segment_length'])) ?> m · <?= $rAssigned ?> of <?= count($r['segments']) ?> assigned</small>
             </div>
-            <div style="display:flex;gap:10px;align-items:center">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <?php if ($canAssign && $surveyors && $rPending > 0): ?>
+                <select class="ca-seg-select ca-road-surveyor" aria-label="Surveyor for the whole road <?= $h($r['name']) ?>">
+                  <option value="">— Choose surveyor —</option>
+                  <?php foreach ($surveyors as $sv): ?>
+                    <option value="<?= (int)$sv['id'] ?>"><?= $h($sv['name']) ?></option>
+                  <?php endforeach; ?>
+                  <option value="0">Unassign whole road</option>
+                </select>
+                <button class="ca-btn ghost ca-assign-road" type="button" data-road-id="<?= (int)$r['id'] ?>">Assign whole road</button>
+              <?php endif; ?>
               <button class="ca-toggle" type="button">Show segments</button>
               <?php if ($canEdit): ?>
                 <button class="ca-btn danger ca-remove" type="button"
@@ -145,7 +184,7 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
           <div class="ca-road-body">
             <div class="rd-scroll">
               <table class="rd-table">
-                <thead><tr><th>#</th><th>From</th><th>To</th><th>Length</th><th>Status</th></tr></thead>
+                <thead><tr><th>#</th><th>From</th><th>To</th><th>Length</th><th>Status</th><th>Surveyor</th></tr></thead>
                 <tbody>
                 <?php foreach ($r['segments'] as $s): ?>
                   <tr>
@@ -154,6 +193,24 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
                     <td><?= $h($num($s['end_distance'])) ?> m</td>
                     <td><?= $h($num($s['length'])) ?> m</td>
                     <td><?= $h(ucfirst(str_replace('_', ' ', (string)$s['status']))) ?></td>
+                    <td>
+                    <?php if ($canAssign && $s['status'] === 'pending'): ?>
+                      <?php $cur = $s['assigned_to'] === null ? '' : (string)(int)$s['assigned_to']; $known = false; ?>
+                      <select class="ca-seg-select ca-seg-assign" data-segment-id="<?= (int)$s['segment_id'] ?>" data-current="<?= $h($cur) ?>"
+                              aria-label="Surveyor for segment <?= (int)$s['segment_number'] ?>">
+                        <option value="">— Unassigned —</option>
+                        <?php foreach ($surveyors as $sv): ?>
+                          <?php if ((string)$sv['id'] === $cur) { $known = true; } ?>
+                          <option value="<?= (int)$sv['id'] ?>" <?= (string)$sv['id'] === $cur ? 'selected' : '' ?>><?= $h($sv['name']) ?></option>
+                        <?php endforeach; ?>
+                        <?php if ($cur !== '' && !$known): ?>
+                          <option value="<?= $h($cur) ?>" selected><?= $h($s['assigned_name'] ?? 'Unknown') ?> (not active)</option>
+                        <?php endif; ?>
+                      </select>
+                    <?php else: ?>
+                      <?= $s['assigned_name'] !== null ? $h($s['assigned_name']) : '—' ?>
+                    <?php endif; ?>
+                    </td>
                   </tr>
                 <?php endforeach; ?>
                 </tbody>
