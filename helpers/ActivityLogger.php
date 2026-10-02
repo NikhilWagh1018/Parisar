@@ -21,6 +21,9 @@ class ActivityLogger
     public const ROAD_DELETED      = 'road_deleted';
     public const ROAD_FINALIZED    = 'road_finalized';
     public const USER_CITY_CHANGED = 'user_city_changed';
+    public const AUDIT_CREATED      = 'audit_created';
+    public const AUDIT_ROAD_ADDED   = 'audit_road_added';
+    public const AUDIT_ROAD_REMOVED = 'audit_road_removed';
 
     /**
      * Log an activity.
