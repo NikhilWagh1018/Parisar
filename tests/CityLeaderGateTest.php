@@ -51,4 +51,15 @@ class CityLeaderGateTest extends TestCase
         $this->assertNull(cityLeaderRedirectTarget('/Parisar/api/segments/submit.php'));
         $this->assertNull(cityLeaderRedirectTarget('/something_else.php'));
     }
+
+    public function test_audit_screens_are_allowed(): void
+    {
+        foreach (['/pages/city_audit.php', '/api/city/audit_create.php',
+                  '/api/city/audit_road_add.php', '/api/city/audit_road_remove.php'] as $path) {
+            $this->assertTrue(cityLeaderMayAccess($path), $path);
+            $this->assertTrue(cityLeaderMayAccess('/Parisar' . $path), $path);
+        }
+        $this->assertFalse(cityLeaderMayAccess('/api/city/anything_else.php'));
+        $this->assertFalse(cityLeaderMayAccess('/pages/city_audits.php'));
+    }
 }

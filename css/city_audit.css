@@ -1,0 +1,38 @@
+/* City Leader audit screens (pages/city_dashboard.php, pages/city_audit.php) */
+.ca-badge { display:inline-block; padding:2px 10px; border-radius:99px; font-size:.72rem; font-weight:700; background:#eee; color:#555; text-transform:capitalize; }
+.ca-badge.draft { background:#fef3cd; color:#92600a; }
+.ca-badge.active { background:#e9f5df; color:#1a4a09; }
+.ca-badge.finalised, .ca-badge.published { background:#eef2fb; color:#0c3480; }
+.ca-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px 18px; }
+.ca-form .full { grid-column:1 / -1; }
+.ca-field label { display:block; font-size:.78rem; font-weight:600; margin-bottom:5px; color:var(--ink); }
+.ca-field input, .ca-field select, .ca-field textarea { width:100%; box-sizing:border-box; padding:9px 11px; border:1px solid rgba(0,0,0,.14); border-radius:8px; font:inherit; font-size:.88rem; background:#fff; }
+.ca-field textarea { min-height:84px; resize:vertical; }
+.ca-field .ca-hint { font-size:.72rem; color:var(--grl); margin-top:4px; }
+.ca-field .ca-err { font-size:.72rem; color:#b91c1c; margin-top:4px; display:none; }
+.ca-field.bad input, .ca-field.bad select, .ca-field.bad textarea { border-color:#dc2626; }
+.ca-field.bad .ca-err { display:block; }
+.ca-actions { display:flex; gap:10px; align-items:center; margin-top:4px; }
+.ca-btn { display:inline-flex; align-items:center; gap:6px; background:var(--g); color:#fff; border:none; border-radius:8px; padding:9px 16px; font:inherit; font-size:.82rem; font-weight:700; cursor:pointer; text-decoration:none; }
+.ca-btn:hover { background:var(--gd); }
+.ca-btn:disabled { opacity:.6; cursor:default; }
+.ca-btn.ghost { background:#fff; color:var(--ink); border:1px solid rgba(0,0,0,.14); }
+.ca-btn.ghost:hover { background:#f5f5f2; }
+.ca-btn.danger { background:#fff; color:#dc2626; border:1px solid #fca5a5; padding:6px 12px; font-size:.75rem; }
+.ca-btn.danger:hover { background:#fee2e2; }
+.ca-meta { display:flex; flex-wrap:wrap; gap:8px 22px; font-size:.82rem; color:var(--gray); margin-top:6px; }
+.ca-meta b { color:var(--ink); }
+.ca-preview { background:#f7f4ee; border:1px solid var(--bd); border-radius:10px; padding:10px 14px; font-size:.82rem; display:none; }
+.ca-preview.show { display:block; }
+.ca-preview div { display:flex; justify-content:space-between; padding:3px 0; }
+.ca-road { border:1px solid var(--bd); border-radius:10px; margin-bottom:12px; background:#fff; }
+.ca-road-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; flex-wrap:wrap; }
+.ca-road-head h4 { margin:0; font-size:.92rem; }
+.ca-road-head small { color:var(--gray); }
+.ca-road-body { display:none; padding:0 16px 14px; }
+.ca-road.open .ca-road-body { display:block; }
+.ca-toggle { background:none; border:none; color:var(--g); font:inherit; font-size:.78rem; font-weight:700; cursor:pointer; }
+.ca-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1a1a18; color:#fff; padding:10px 18px; border-radius:99px; font-size:.82rem; opacity:0; pointer-events:none; transition:opacity .2s; z-index:200; }
+.ca-toast.show { opacity:1; }
+.ca-toast.error { background:#b91c1c; }
+@media (max-width:720px) { .ca-form { grid-template-columns:1fr; } }

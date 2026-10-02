@@ -13,6 +13,10 @@ declare(strict_types=1);
 
 const CITY_LEADER_ALLOWED_SCRIPTS = [
     'pages/city_dashboard.php',
+    'pages/city_audit.php',
+    'api/city/audit_create.php',
+    'api/city/audit_road_add.php',
+    'api/city/audit_road_remove.php',
 ];
 
 function cityLeaderNormalize(string $scriptName): string
