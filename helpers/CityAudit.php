@@ -14,6 +14,7 @@ const CITY_AUDIT_MIN_ROAD_LENGTH    = 50.0;
 const CITY_AUDIT_MAX_ROAD_LENGTH    = 100000.0;
 const CITY_AUDIT_MIN_SEGMENT_LENGTH = 10.0;
 const CITY_AUDIT_MAX_SEGMENTS       = 500;
+const CITY_AUDIT_MAX_ASSIGN_BATCH   = 500;
 
 function cityAuditCleanText(mixed $v): string
 {
@@ -138,4 +139,69 @@ function cityAuditSegmentPlan(float $totalLength, float $segmentLength): array
         ];
     }
     return $plan;
+}
+
+/**
+ * Validate an assignment request. Two shapes:
+ *   - segments: { segment_ids: [1,2,3], surveyor_id }
+ *   - whole road: { road_id, surveyor_id }
+ * surveyor_id of null / "" / 0 means "unassign".
+ *
+ * @param array<string,mixed> $in
+ * @return array{errors: array<string,string>, clean: array{mode:string,segment_ids:list<int>,road_id:?int,surveyor_id:?int}}
+ */
+function cityAuditValidateAssignment(array $in): array
+{
+    $errors = [];
+
+    $rawSurveyor = $in['surveyor_id'] ?? null;
+    $surveyorId  = null;
+    if (!($rawSurveyor === null || $rawSurveyor === '' || $rawSurveyor === 0 || $rawSurveyor === '0')) {
+        $sid = filter_var($rawSurveyor, FILTER_VALIDATE_INT);
+        if ($sid === false || $sid === null || $sid <= 0) {
+            $errors['surveyor_id'] = 'Select a surveyor.';
+        } else {
+            $surveyorId = (int)$sid;
+        }
+    }
+
+    $hasRoad = array_key_exists('road_id', $in) && $in['road_id'] !== null && $in['road_id'] !== '';
+    $hasSegs = array_key_exists('segment_ids', $in) && $in['segment_ids'] !== null;
+    $roadId  = null;
+    $segIds  = [];
+    $mode    = 'segments';
+
+    if ($hasRoad && $hasSegs) {
+        $errors['road_id'] = 'Send either a road or a list of segments, not both.';
+    } elseif ($hasRoad) {
+        $mode = 'road';
+        $rid  = filter_var($in['road_id'], FILTER_VALIDATE_INT);
+        if ($rid === false || $rid === null || $rid <= 0) {
+            $errors['road_id'] = 'Invalid road.';
+        } else {
+            $roadId = (int)$rid;
+        }
+    } else {
+        if (!is_array($in['segment_ids'] ?? null) || !$in['segment_ids']) {
+            $errors['segment_ids'] = 'Select at least one segment.';
+        } elseif (count($in['segment_ids']) > CITY_AUDIT_MAX_ASSIGN_BATCH) {
+            $errors['segment_ids'] = 'Too many segments in one request.';
+        } else {
+            foreach ($in['segment_ids'] as $raw) {
+                $id = filter_var($raw, FILTER_VALIDATE_INT);
+                if ($id === false || $id === null || $id <= 0) {
+                    $errors['segment_ids'] = 'Invalid segment.';
+                    $segIds = [];
+                    break;
+                }
+                $segIds[] = (int)$id;
+            }
+            $segIds = array_values(array_unique($segIds));
+        }
+    }
+
+    return [
+        'errors' => $errors,
+        'clean'  => ['mode' => $mode, 'segment_ids' => $segIds, 'road_id' => $roadId, 'surveyor_id' => $surveyorId],
+    ];
 }

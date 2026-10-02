@@ -117,6 +117,29 @@
     });
   }
 
+  // ── Audit page: keep opened roads open across a reload ────────
+  var OPEN_KEY = 'caOpen:' + (app.dataset.auditId || '');
+  function saveOpen() {
+    try {
+      var ids = [];
+      document.querySelectorAll('.ca-road.open').forEach(function (c) { ids.push(c.dataset.roadId); });
+      sessionStorage.setItem(OPEN_KEY, JSON.stringify(ids));
+    } catch (e) { /* storage unavailable: roads just start closed */ }
+  }
+  function restoreOpen() {
+    try {
+      var ids = JSON.parse(sessionStorage.getItem(OPEN_KEY) || '[]');
+      sessionStorage.removeItem(OPEN_KEY);
+      ids.forEach(function (id) {
+        var c = document.querySelector('.ca-road[data-road-id="' + id + '"]');
+        if (!c) return;
+        c.classList.add('open');
+        var t = c.querySelector('.ca-toggle');
+        if (t) t.textContent = 'Hide segments';
+      });
+    } catch (e) { /* ignore */ }
+  }
+
   // ── Audit page: expand / remove road ──────────────────────────
   document.querySelectorAll('.ca-toggle').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -138,4 +161,63 @@
       }
     });
   });
+  // ── Audit page: assign surveyors ──────────────────────────────
+  document.querySelectorAll('.ca-seg-assign').forEach(function (sel) {
+    sel.addEventListener('change', async function () {
+      sel.disabled = true;
+      try {
+        await post('../api/city/audit_assign.php', {
+          audit_id: app.dataset.auditId,
+          segment_ids: [sel.dataset.segmentId],
+          surveyor_id: sel.value
+        });
+        saveOpen();
+        window.location.reload();
+      } catch (e) {
+        toast(e.message, 'error');
+        sel.value = sel.dataset.current || '';
+        sel.disabled = false;
+      }
+    });
+  });
+
+  document.querySelectorAll('.ca-assign-road').forEach(function (b) {
+    b.addEventListener('click', async function () {
+      var sel = b.closest('.ca-road').querySelector('.ca-road-surveyor');
+      if (!sel || sel.value === '') { toast('Choose a surveyor first.', 'error'); return; }
+      var label = sel.value === '0' ? 'Unassign every pending segment of this road?'
+                                    : 'Assign every pending segment of this road to ' + sel.options[sel.selectedIndex].text + '?';
+      if (!window.confirm(label)) return;
+      b.disabled = true;
+      try {
+        await post('../api/city/audit_assign.php', {
+          audit_id: app.dataset.auditId,
+          road_id: b.dataset.roadId,
+          surveyor_id: sel.value
+        });
+        saveOpen();
+        window.location.reload();
+      } catch (e) {
+        toast(e.message, 'error');
+        b.disabled = false;
+      }
+    });
+  });
+
+  var activateBtn = document.getElementById('caActivate');
+  if (activateBtn) {
+    activateBtn.addEventListener('click', async function () {
+      if (!window.confirm('Activate this audit? Roads can no longer be added or removed afterwards.')) return;
+      activateBtn.disabled = true;
+      try {
+        await post('../api/city/audit_activate.php', { audit_id: app.dataset.auditId });
+        window.location.reload();
+      } catch (e) {
+        toast(e.message, 'error');
+        activateBtn.disabled = false;
+      }
+    });
+  }
+
+  restoreOpen();
 })();
