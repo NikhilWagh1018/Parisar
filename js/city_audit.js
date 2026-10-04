@@ -233,14 +233,14 @@
   });
   document.querySelectorAll('.ca-sendback-open').forEach(function (b) {
     b.addEventListener('click', function () {
-      var box = b.closest('.ca-sub-card').querySelector('.ca-sendback');
+      var box = b.closest('.ca-sub-card').querySelector('div.ca-sendback');
       box.style.display = box.style.display === 'none' ? 'flex' : 'none';
       if (box.style.display === 'flex') box.querySelector('.ca-note').focus();
     });
   });
-  document.querySelectorAll('.ca-sendback').forEach(function (b) {
+  document.querySelectorAll('button.ca-sendback').forEach(function (b) {
     b.addEventListener('click', async function () {
-      var box = b.closest('.ca-sendback');
+      var box = b.closest('div.ca-sendback');
       var note = box.querySelector('.ca-note').value.trim();
       if (!note) { toast('Tell the surveyor what needs to be fixed.', 'error'); return; }
       b.disabled = true;
