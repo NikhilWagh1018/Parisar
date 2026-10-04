@@ -142,12 +142,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
       <h1><?= $greet ?>, <?= htmlspecialchars(explode(' ', $CURRENT_USER_NAME)[0]) ?>!</h1>
       <p>Here's your audit overview for today.</p>
     </div>
-    <?php if (!isAnyAdmin($CURRENT_USER_ROLE)): ?>
-    <a href="segment.php" class="btn-new">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      New Road Audit
-    </a>
-    <?php endif; ?>
+    <?php /* Surveyors do not create roads: the City Leader assigns their work. */ ?>
   </div>
 
   <div class="content">
@@ -257,7 +252,6 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     <div class="card">
       <div class="card-head">
         <h3>🛣️ Your Roads</h3>
-        <a href="segment.php">+ Define new road</a>
       </div>
       <div id="roadsContainer">
         <!-- Skeleton loading -->

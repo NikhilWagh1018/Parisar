@@ -81,3 +81,28 @@ function surveyorSubmitBlockReason(
     }
     return null;
 }
+
+/**
+ * Dashboard totals for a surveyor's assigned city-audit segments.
+ * Rows come from SurveyorWorkRepository::forSurveyor().
+ *
+ * @param list<array<string,mixed>> $rows
+ * @return array{roads:int,segments:int,completed:int,in_progress:int}
+ */
+function surveyorAssignedTotals(array $rows): array
+{
+    $roads = [];
+    $out   = ['roads' => 0, 'segments' => 0, 'completed' => 0, 'in_progress' => 0];
+    foreach ($rows as $r) {
+        $roads[(int)($r['road_id'] ?? 0)] = true;
+        $out['segments']++;
+        if (in_array((string)($r['assignment_status'] ?? ''), ['submitted', 'approved'], true)) {
+            $out['completed']++;
+        }
+        if (($r['state_key'] ?? '') === 'in_progress') {
+            $out['in_progress']++;
+        }
+    }
+    $out['roads'] = count($roads);
+    return $out;
+}

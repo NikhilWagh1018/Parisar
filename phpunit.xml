@@ -21,6 +21,7 @@
             <file>tests/CityAuditRepositoryTest.php</file>
             <file>tests/SurveyorWorkTest.php</file>
             <file>tests/AuditReviewTest.php</file>
+            <file>tests/SurveyorAssignedOnlyTest.php</file>
         </testsuite>
         <testsuite name="Integration">
             <file>tests/SegmentRepositoryTest.php</file>

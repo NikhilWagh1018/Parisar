@@ -20,6 +20,12 @@ function getCsrf() {
   return meta ? meta.content : (window.__CSRF__ || '');
 }
 
+// Surveyors cannot define roads (the server also refuses it).
+function canDefineRoad() {
+  const m = document.querySelector('meta[name="can-define-road"]');
+  return !m || m.content === '1';
+}
+
 // ── Boot ─────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('segmentLength')
@@ -106,6 +112,7 @@ async function loadSegmentsFromDB(roadId) {
         method:        data.road.segment_method,
         segmentLength: data.road.segment_length,
         finalizedAt:   data.road.finalized_at || null,
+        assignedOnly:  !!data.assigned_only,
       };
 
       if (data.segments.length > 0) {
@@ -140,6 +147,7 @@ async function loadSegmentsFromDB(roadId) {
 
 // ── Show blank road form ────────────────────────────────────────
 function showRoadForm() {
+  if (!canDefineRoad()) { window.location.href = 'dashboard.php'; return; }
   roadData = {}; segments = []; _currentRoadId = null;
   window._currentSessionId = null;
 
@@ -316,15 +324,18 @@ function displaySegments() {
   const pills = document.getElementById('roadPills');
   pills.innerHTML = `
     <span class="pill">📏 ${roadData.length}m</span>
-    <span class="pill">🔖 ${segments.length} segments</span>
+    <span class="pill">🔖 ${segments.length} ${roadData.assignedOnly ? 'of your segments' : 'segments'}</span>
     <span class="pill">${roadData.method === 'auto' ? '⚡ Auto' : '✏️ Manual'}</span>`;
 
   const isFinalized = !!roadData.finalizedAt;
+  // On a city-audit road the surveyor only audits their assigned segments;
+  // the City Leader reviews and closes, so no road-level final submit here.
+  const ownRoadFlow = !roadData.assignedOnly;
 
   // "Edit Road" (destructive regenerate-segments action) is never
   // available once the road is finalized.
   const editRoadBtn = document.getElementById('editRoadBtn');
-  if (editRoadBtn) editRoadBtn.style.display = isFinalized ? 'none' : '';
+  if (editRoadBtn) editRoadBtn.style.display = (isFinalized || !canDefineRoad()) ? 'none' : '';
 
   const done    = segments.filter(s => s.status === 'completed').length;
   const pending = segments.length - done;
@@ -343,16 +354,16 @@ function displaySegments() {
   //  - not yet fully audited: nothing shown here (use browser back / top nav)
   //  - fully audited, not finalized: Final Submit only
   //  - finalized: Back to Dashboard + Download Road Score PDF only
-  if (finalSubmitBtn)     finalSubmitBtn.style.display     = (allDone && !isFinalized) ? '' : 'none';
+  if (finalSubmitBtn)     finalSubmitBtn.style.display     = (allDone && !isFinalized && ownRoadFlow) ? '' : 'none';
   if (backToDashboardBtn) backToDashboardBtn.style.display = isFinalized ? '' : 'none';
   if (dlPdfBtn)            dlPdfBtn.style.display           = isFinalized ? '' : 'none';
 
   document.getElementById('completionBanner').style.display =
-    (allDone && !isFinalized) ? 'block' : 'none';
+    (allDone && !isFinalized && ownRoadFlow) ? 'block' : 'none';
   document.getElementById('lockedBanner').style.display =
     isFinalized ? 'block' : 'none';
   document.getElementById('blockedBanner').style.display    =
-    (!allDone && !isFinalized && segments.length > 0) ? 'block' : 'none';
+    (!allDone && !isFinalized && segments.length > 0 && ownRoadFlow) ? 'block' : 'none';
 
   if (allDone && !isFinalized) {
     document.getElementById('completionTitle').textContent =
@@ -381,17 +392,17 @@ function displaySegments() {
       const ts = seg.auditData?.completedAt
         ? `<span class="seg-timestamp">Audited ${formatTime(seg.auditData.completedAt)}</span>` : '';
       statusHtml = `<div class="status-col"><span class="status-chip status-completed">✓ Audited</span>${ts}</div>`;
-    } else if (isLastPending) {
+    } else if (isLastPending && ownRoadFlow) {
       statusHtml = `<div class="status-col"><span class="status-chip status-blocking">⚠ Last Remaining</span><span class="seg-timestamp">Blocks final result</span></div>`;
     } else {
-      statusHtml = `<div class="status-col"><span class="status-chip status-pending">Pending</span><span class="seg-timestamp">Needed for final score</span></div>`;
+      statusHtml = `<div class="status-col"><span class="status-chip status-pending">Pending</span><span class="seg-timestamp">${ownRoadFlow ? 'Needed for final score' : 'Assigned to you'}</span></div>`;
     }
 
     // Edit is only offered while the road isn't finalized yet — once
     // finalized, segments are permanently read-only with no actions.
     let actionsHtml;
     if (isDone) {
-      actionsHtml = isFinalized
+      actionsHtml = (isFinalized || !ownRoadFlow)
         ? ''
         : `<button class="btn btn-warning btn-sm" onclick="editAuditedSegment(${seg.id})">✏️ Edit</button>`;
     } else {
