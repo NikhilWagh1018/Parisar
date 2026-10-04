@@ -23,6 +23,7 @@ const CITY_LEADER_ALLOWED_SCRIPTS = [
     'api/city/audit_close.php',
     'pages/city_segment_review.php',
     'pages/city_audit_report.php',
+    'pages/city_audit_report_detail.php',
     'pages/profile.php',
     'api/user/profile.php',
 ];
