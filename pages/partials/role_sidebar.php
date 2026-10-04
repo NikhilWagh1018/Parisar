@@ -1,5 +1,5 @@
 <?php
-// Shared sidebar for the Platform Admin and City Leader dashboards.
+// Shared sidebar for the Admin and City Leader dashboards.
 // Expects: $CURRENT_USER_NAME, $CURRENT_USER_ROLE, $CURRENT_USER_PIC, $activeNav
 $rsInitials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 $rsHome     = roleHomePage($CURRENT_USER_ROLE);

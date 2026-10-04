@@ -250,7 +250,7 @@ document.addEventListener('click', e => {
   }
 
   var ROLE_LABELS = {
-    national_admin: 'Platform Admin',
+    national_admin: 'Admin',
     city_admin: 'City Leader',
     surveyor: 'Surveyor'
   };
@@ -258,15 +258,15 @@ document.addEventListener('click', e => {
   function buildRow(s) {
     var tr = document.createElement('tr');
     var roleBadge = s.role === 'national_admin'
-      ? '<span class="admin-badge">Platform Admin</span>'
+      ? '<span class="admin-badge">Admin</span>'
       : s.role === 'city_admin'
         ? '<span class="admin-badge" style="background:#eef2ff;color:#4338ca;">City Leader</span>'
         : '<span style="color:#6b7280;font-size:.78rem;">Surveyor</span>';
 
-    // Role selector: shown to the Platform Admin only.
+    // Role selector: shown to the Admin only.
     var roleOptions = ['surveyor', 'city_admin', 'national_admin'];
     var roleBtn = '';
-    // Only the Platform Admin changes roles (creates City Leaders); the
+    // Only the Admin changes roles (creates City Leaders); the
     // API enforces this too. City Leaders only manage surveyors.
     if (!s.is_current_user && IS_NATIONAL_ADMIN) {
       roleBtn = ' <select class="role-select" data-id="' + s.id + '" data-role="' + s.role + '">' +
