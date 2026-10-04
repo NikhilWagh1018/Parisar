@@ -17,7 +17,7 @@ class CityLeaderGateTest extends TestCase
     public function test_every_other_page_is_closed(): void
     {
         foreach (['dashboard', 'my_audits', 'map', 'leaderboard', 'admin', 'admin_surveyors',
-                  'admin_activity', 'profile', 'segment', 'form', 'view', 'report',
+                  'admin_activity', 'segment', 'form', 'view', 'report',
                   'road_result', 'platform_dashboard'] as $page) {
             $this->assertFalse(cityLeaderMayAccess('/pages/' . $page . '.php'), $page);
         }
@@ -28,7 +28,8 @@ class CityLeaderGateTest extends TestCase
         $this->assertFalse(cityLeaderMayAccess('/api/admin/roads.php'));
         $this->assertFalse(cityLeaderMayAccess('/api/admin/surveyors.php'));
         $this->assertFalse(cityLeaderMayAccess('/api/dashboard/stats.php'));
-        $this->assertFalse(cityLeaderMayAccess('/api/user/profile.php'));
+        $this->assertFalse(cityLeaderMayAccess('/api/user/audit_history.php'));
+        $this->assertFalse(cityLeaderMayAccess('/api/user/audit_export.php'));
     }
 
     public function test_lookalike_names_do_not_match(): void
@@ -50,6 +51,13 @@ class CityLeaderGateTest extends TestCase
         $this->assertNull(cityLeaderRedirectTarget('/api/admin/roads.php'));
         $this->assertNull(cityLeaderRedirectTarget('/Parisar/api/segments/submit.php'));
         $this->assertNull(cityLeaderRedirectTarget('/something_else.php'));
+    }
+
+    public function test_profile_page_and_its_api_are_allowed(): void
+    {
+        $this->assertTrue(cityLeaderMayAccess('/pages/profile.php'));
+        $this->assertTrue(cityLeaderMayAccess('/Parisar/api/user/profile.php'));
+        $this->assertFalse(cityLeaderMayAccess('/pages/xprofile.php'));
     }
 
     public function test_audit_screens_are_allowed(): void

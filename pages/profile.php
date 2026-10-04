@@ -33,6 +33,12 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
 
   <nav>
     <div class="nav-section">Main</div>
+    <?php if ($CURRENT_USER_ROLE === 'city_admin'): ?>
+    <a href="<?= htmlspecialchars(roleHomePage($CURRENT_USER_ROLE)) ?>" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      City Dashboard
+    </a>
+    <?php else: ?>
     <a href="dashboard.php" class="nav-item">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
       Dashboard
@@ -45,6 +51,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4zM5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
       Reports
     </a>
+    <?php endif; ?>
     <div class="nav-section">Account</div>
     <a href="profile.php" class="nav-item active">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>

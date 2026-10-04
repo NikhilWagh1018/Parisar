@@ -21,6 +21,8 @@ const CITY_LEADER_ALLOWED_SCRIPTS = [
     'api/city/audit_activate.php',
     'api/city/audit_review.php',
     'api/city/audit_close.php',
+    'pages/profile.php',
+    'api/user/profile.php',
 ];
 
 function cityLeaderNormalize(string $scriptName): string
