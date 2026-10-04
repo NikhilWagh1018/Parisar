@@ -42,6 +42,7 @@ if (!$canDefineRoad && empty($_GET['road_id']) && ($_GET['status'] ?? '') !== 'd
 
 <div class="toast" id="toast"></div>
 <div class="container">
+  <a href="dashboard.php" id="backToDashboard" class="btn btn-secondary btn-sm" style="display:inline-block;text-decoration:none;margin:4px 0 14px">← Back to dashboard</a>
 
   <!-- ── SECTION 1: Road Setup ── -->
   <div id="roadSetupSection" style="display:none">
