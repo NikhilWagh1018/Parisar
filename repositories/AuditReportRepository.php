@@ -107,4 +107,60 @@ class AuditReportRepository
         $stmt->execute([$auditId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /**
+     * Everything the detailed report shows for each segment audit: the audit row,
+     * intersection counts and obstruction totals. Keyed by audit id.
+     *
+     * @param  list<int> $auditIds
+     * @return array<int,array<string,mixed>>
+     */
+    public function detailsForAuditIds(array $auditIds): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $auditIds)));
+        if ($ids === []) {
+            return [];
+        }
+        $in = implode(',', array_fill(0, count($ids), '?'));
+
+        $a = $this->pdo->prepare(
+            "SELECT id, surface_material, buffer_zone, light_after_sunset, shade, surface_issues,
+                    overhead_issues, cycle_track_missing, missing_length, people_walking, cyclist_use,
+                    better_surface, signage_count AS seg_signage_count
+               FROM segment_audits WHERE id IN ($in)"
+        );
+        $a->execute($ids);
+        $out = [];
+        foreach ($a->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $out[(int)$row['id']] = [
+                'audit' => $row, 'intersections' => 0, 'no_ramps' => 0, 'no_sign' => 0,
+                'obs_total' => 0, 'obs_partial' => 0, 'cyclist_slowed' => 0,
+            ];
+        }
+
+        $i = $this->pdo->prepare("SELECT audit_id, off_ramp, on_ramp, markings, signage FROM intersections WHERE audit_id IN ($in)");
+        $i->execute($ids);
+        foreach ($i->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $k = (int)$r['audit_id'];
+            if (!isset($out[$k])) { continue; }
+            $out[$k]['intersections']++;
+            if (($r['off_ramp'] ?? '') === 'No Ramp' || ($r['on_ramp'] ?? '') === 'No Ramp') { $out[$k]['no_ramps']++; }
+            if (($r['markings'] ?? '') === 'Absent' || ($r['signage'] ?? '') === 'Absent')   { $out[$k]['no_sign']++; }
+        }
+
+        $o = $this->pdo->prepare(
+            "SELECT audit_id, COALESCE(SUM(total_obstructions),0) AS total,
+                    COALESCE(SUM(partial_obstructions),0) AS partial, COALESCE(SUM(cyclist_slowed),0) AS slowed
+               FROM obstructions WHERE audit_id IN ($in) GROUP BY audit_id"
+        );
+        $o->execute($ids);
+        foreach ($o->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $k = (int)$r['audit_id'];
+            if (!isset($out[$k])) { continue; }
+            $out[$k]['obs_total']      = (int)$r['total'];
+            $out[$k]['obs_partial']    = (int)$r['partial'];
+            $out[$k]['cyclist_slowed'] = (int)$r['slowed'];
+        }
+        return $out;
+    }
 }
