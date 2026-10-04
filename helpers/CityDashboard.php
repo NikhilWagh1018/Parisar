@@ -211,3 +211,136 @@ function cityLocalTime(?string $utc): string
         return $utc;
     }
 }
+
+/** The lifecycle shown as a tracker: label for each stage, in order. */
+const CITY_AUDIT_STAGES = ['Setup', 'Auditing', 'Review', 'Closed', 'With Admin', 'Published'];
+
+/**
+ * Which tracker stage an audit status belongs to (index into CITY_AUDIT_STAGES),
+ * or -1 for a status that is not on the path (e.g. voided).
+ */
+function cityAuditStage(string $status): int
+{
+    return match ($status) {
+        'draft'             => 0,
+        'active'            => 1,
+        'in_review'         => 2,
+        'finalised'         => 3,
+        'awaiting_approval' => 4,
+        'published'         => 5,
+        default             => -1,
+    };
+}
+
+/**
+ * Segment progress as bar parts, in the order approved, submitted, sent back,
+ * with surveyors, unassigned. Each part has key, label, count and a whole-number
+ * width (percent); widths always add up to exactly 100 when there are segments
+ * (the rounding remainder goes to the largest part). Empty list when total is 0.
+ *
+ * @param array<string,int> $c  total, approved, submitted, needs_revisit, assigned, unassigned
+ * @return list<array{key:string,label:string,count:int,pct:int}>
+ */
+function citySegmentMix(array $c): array
+{
+    $total = (int)($c['total'] ?? 0);
+    if ($total <= 0) {
+        return [];
+    }
+    $parts = [
+        ['key' => 'approved',  'label' => 'Approved',        'count' => (int)($c['approved'] ?? 0)],
+        ['key' => 'review',    'label' => 'To review',       'count' => (int)($c['submitted'] ?? 0)],
+        ['key' => 'back',      'label' => 'Sent back',       'count' => (int)($c['needs_revisit'] ?? 0)],
+        ['key' => 'surveyor',  'label' => 'With surveyors',  'count' => (int)($c['assigned'] ?? 0)],
+        ['key' => 'open',      'label' => 'Unassigned',      'count' => (int)($c['unassigned'] ?? 0)],
+    ];
+    $sum = 0;
+    foreach ($parts as $i => $p) {
+        $parts[$i]['count'] = max(0, $p['count']);
+        $parts[$i]['pct']   = (int)floor($parts[$i]['count'] / $total * 100);
+        $sum += $parts[$i]['pct'];
+    }
+    $rest = 100 - $sum;
+    if ($rest > 0) {
+        $big = 0;
+        foreach ($parts as $i => $p) {
+            if ($p['count'] > $parts[$big]['count']) {
+                $big = $i;
+            }
+        }
+        $parts[$big]['pct'] += $rest;
+    }
+    return $parts;
+}
+
+/**
+ * Number of audits in each tracker stage, keyed by stage label (all keys present).
+ *
+ * @param list<array<string,mixed>> $audits
+ * @return array<string,int>
+ */
+function cityPipeline(array $audits): array
+{
+    $out = array_fill_keys(CITY_AUDIT_STAGES, 0);
+    foreach ($audits as $a) {
+        $i = cityAuditStage((string)($a['status'] ?? ''));
+        if ($i >= 0) {
+            $out[CITY_AUDIT_STAGES[$i]]++;
+        }
+    }
+    return $out;
+}
+
+/** "Good evening" style greeting for the hour (0-23) in India time. */
+function cityGreeting(int $hour): string
+{
+    if ($hour < 12) {
+        return 'Good morning';
+    }
+    return $hour < 17 ? 'Good afternoon' : 'Good evening';
+}
+
+/**
+ * The one button that best moves an audit forward, for the "Next step" banner on the
+ * audit page. Returns null when there is nothing for this viewer to click.
+ * $c holds counts: total, unassigned, submitted, needs_revisit, approved.
+ *
+ * @param array<string,int> $c
+ * @return array{label:string,href:string}|null
+ */
+function cityAuditNextAction(string $status, array $c, bool $forAdmin, int $auditId): ?array
+{
+    $total      = (int)($c['total'] ?? 0);
+    $unassigned = (int)($c['unassigned'] ?? 0);
+    $submitted  = (int)($c['submitted'] ?? 0);
+    $approved   = (int)($c['approved'] ?? 0);
+    $report     = 'city_audit_report.php?id=' . $auditId;
+
+    if ($forAdmin) {
+        return $status === 'awaiting_approval' ? ['label' => 'Open report', 'href' => $report] : null;
+    }
+    if ($status === 'draft') {
+        if ($total === 0) {
+            return ['label' => 'Add a road', 'href' => '#caAddRoad'];
+        }
+        return $unassigned > 0
+            ? ['label' => 'Assign surveyors', 'href' => '#caRoads']
+            : ['label' => 'Activate audit', 'href' => '#caAssign'];
+    }
+    if ($status === 'active' || $status === 'in_review') {
+        if ($submitted > 0) {
+            return ['label' => 'Review submissions', 'href' => '#caReview'];
+        }
+        if ($total > 0 && $approved === $total) {
+            return ['label' => 'Close audit', 'href' => '#caReview'];
+        }
+        return null;
+    }
+    if ($status === 'finalised') {
+        return ['label' => 'Send to Admin', 'href' => '#caReview'];
+    }
+    if ($status === 'awaiting_approval' || $status === 'published') {
+        return ['label' => 'Open report', 'href' => $report];
+    }
+    return null;
+}

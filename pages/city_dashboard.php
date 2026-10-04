@@ -14,6 +14,7 @@ require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
 require_once __DIR__ . '/../repositories/CityDashboardRepository.php';
 require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
+require_once __DIR__ . '/partials/cx_icons.php';
 
 $isNational = $CURRENT_USER_ROLE === 'national_admin';
 $cityId     = $isNational ? (int)($_GET['city_id'] ?? 0) : (int)($CURRENT_USER_CITY_ID ?? 0);
@@ -60,6 +61,24 @@ $nonce     = $h($_SESSION['csp_nonce'] ?? '');
 $csrf      = $h($_SESSION['csrf_token'] ?? '');
 $activeNav = 'home';
 $cityName  = $city ? (string)$city['name'] : 'No city assigned';
+
+// ── Summary numbers for the hero, progress card and pipeline ──
+$cityMix = ['total' => 0, 'approved' => 0, 'submitted' => 0, 'needs_revisit' => 0, 'assigned' => 0, 'unassigned' => 0];
+foreach ($audits as $a0) {
+    $cityMix['total']         += (int)$a0['segment_count'];
+    $cityMix['approved']      += (int)$a0['approved_count'];
+    $cityMix['submitted']     += (int)$a0['submitted_count'];
+    $cityMix['needs_revisit'] += (int)$a0['needs_revisit_count'];
+    $cityMix['assigned']      += (int)$a0['assigned_count'];
+    $cityMix['unassigned']    += (int)$a0['unassigned_count'];
+}
+$cityMixParts = citySegmentMix($cityMix);
+$cityPct      = cityDashProgress($cityMix['approved'], $cityMix['total']);
+$pipeline     = cityPipeline($audits);
+$pipeMax      = max(1, max($pipeline));
+$firstName    = trim((string)strtok(trim((string)($CURRENT_USER_NAME ?? '')), ' '));
+$hour         = (int)(new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('G');
+$greeting     = cityGreeting($hour);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -86,7 +105,7 @@ $cityName  = $city ? (string)$city['name'] : 'No city assigned';
       <button class="btn-new" id="caNewBtn" type="button">+ New Audit</button>
     <?php endif; ?>
   </div>
-  <div class="content" id="caApp" data-csrf="<?= $csrf ?>">
+  <div class="content cx-page" id="caApp" data-csrf="<?= $csrf ?>">
   <?php if (!$city): ?>
     <div class="card"><p class="rd-empty">No city is assigned to your account yet. Please ask an Admin to assign one.</p></div>
   <?php else: ?>
@@ -127,11 +146,32 @@ $cityName  = $city ? (string)$city['name'] : 'No city assigned';
     </div>
     <?php endif; ?>
 
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-icon" style="background:#edf7d6">📋</div><div><div class="stat-val"><?= (int)$totals['audits'] ?></div><div class="stat-lbl">Audits (<?= (int)$totals['open'] ?> open)</div></div></div>
-      <div class="stat-card"><div class="stat-icon" style="background:#dcfce7">✅</div><div><div class="stat-val"><?= (int)$totals['approved'] ?> <small style="font-size:.9rem;font-weight:600;color:var(--grl)">/ <?= (int)$totals['segments'] ?></small></div><div class="stat-lbl">Segments approved</div></div></div>
-      <div class="stat-card<?= $totals['submitted'] > 0 ? ' cd-hot' : '' ?>"><div class="stat-icon" style="background:#dbeafe">🔍</div><div><div class="stat-val"><?= (int)$totals['submitted'] ?></div><div class="stat-lbl">Waiting for your review</div></div></div>
-      <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">🚴</div><div><div class="stat-val"><?= (int)$totals['with_surveyors'] ?></div><div class="stat-lbl">With surveyors</div></div></div>
+    <section class="cx-hero">
+      <div class="cx-hero-row">
+        <div>
+          <h2 class="cx-hello"><?= $h($greeting) ?><?= $firstName !== '' && !$isNational ? ', ' . $h($firstName) : '' ?></h2>
+          <p class="cx-hero-sub">
+            <?php if (!$audits): ?>
+              <?= $canCreate ? 'Start your first audit for <b>' . $h($cityName) . '</b> with “+ New Audit”.' : 'No audits in <b>' . $h($cityName) . '</b> yet.' ?>
+            <?php elseif ($attention): ?>
+              <b><?= count($attention) ?></b> <?= count($attention) === 1 ? 'thing needs' : 'things need' ?> your attention in <b><?= $h($cityName) ?></b>.
+            <?php else: ?>
+              You are all caught up in <b><?= $h($cityName) ?></b>.
+            <?php endif; ?>
+          </p>
+        </div>
+        <div class="cx-metas">
+          <span class="cx-meta"><?= cxIcon('pin') ?> <b><?= $h($cityName) ?></b></span>
+          <span class="cx-meta"><?= cxIcon('list') ?> <b><?= (int)$totals['audits'] ?></b> <?= $totals['audits'] === 1 ? 'audit' : 'audits' ?></span>
+        </div>
+      </div>
+    </section>
+
+    <div class="cx-kpis">
+      <div class="cx-kpi"><span class="cx-kpi-ico g"><?= cxIcon('list') ?></span><div><b><?= (int)$totals['audits'] ?></b><span>Audits (<?= (int)$totals['open'] ?> open)</span></div></div>
+      <div class="cx-kpi"><span class="cx-kpi-ico p"><?= cxIcon('check') ?></span><div><b><?= (int)$totals['approved'] ?> <small>/ <?= (int)$totals['segments'] ?></small></b><span>Segments approved</span></div></div>
+      <div class="cx-kpi<?= $totals['submitted'] > 0 ? ' hot' : '' ?>"><span class="cx-kpi-ico o"><?= cxIcon('eye') ?></span><div><b><?= (int)$totals['submitted'] ?></b><span>Waiting for your review</span></div></div>
+      <div class="cx-kpi"><span class="cx-kpi-ico b"><?= cxIcon('users') ?></span><div><b><?= (int)$totals['with_surveyors'] ?></b><span>Segments with surveyors</span></div></div>
     </div>
 
     <div class="cd-layout">
@@ -139,7 +179,7 @@ $cityName  = $city ? (string)$city['name'] : 'No city assigned';
         <div class="card">
           <div class="card-head"><h3>Your audits</h3></div>
           <?php if (!$audits): ?>
-            <div class="cd-empty"><b>No audits yet</b><?= $canCreate ? 'Use “+ New Audit” to start the first one.' : 'This city has no audits yet.' ?></div>
+            <div class="cx-empty"><?= cxIcon('list') ?><b>No audits yet</b><?= $canCreate ? 'Use “+ New Audit” to start the first one.' : 'This city has no audits yet.' ?></div>
           <?php endif; ?>
           <?php foreach ($audits as $a):
               $total    = (int)$a['segment_count'];
@@ -148,7 +188,7 @@ $cityName  = $city ? (string)$city['name'] : 'No city assigned';
               $first    = $a['_next'][0] ?? null;
               $isDraft  = (string)$a['status'] === 'draft';
           ?>
-          <div class="cd-audit">
+          <div class="cd-audit s-<?= $h($a['status']) ?>">
             <div class="cd-audit-head">
               <div>
                 <h4><?= $h($a['name']) ?></h4>
@@ -157,10 +197,26 @@ $cityName  = $city ? (string)$city['name'] : 'No city assigned';
               <span class="ca-badge <?= $h($a['status']) ?>"><?= $h(cityStatusLabel((string)$a['status'])) ?></span>
             </div>
 
-            <?php if ($total > 0): ?>
+            <?php $stg = cityAuditStage((string)$a['status']); ?>
+            <?php if ($stg >= 0): ?>
+            <div class="cx-stagebar" aria-label="Stage <?= $stg + 1 ?> of <?= count(CITY_AUDIT_STAGES) ?>">
+              <?php foreach (CITY_AUDIT_STAGES as $si => $sl): ?><i class="<?= $si <= $stg ? 'on' : '' ?>"></i><?php endforeach; ?>
+              <span>Stage <?= $stg + 1 ?> of <?= count(CITY_AUDIT_STAGES) ?> · <b><?= $h(CITY_AUDIT_STAGES[$stg]) ?></b></span>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($total > 0):
+                $aMix = citySegmentMix([
+                    'total' => $total, 'approved' => $approved, 'submitted' => (int)$a['submitted_count'],
+                    'needs_revisit' => (int)$a['needs_revisit_count'], 'assigned' => (int)$a['assigned_count'],
+                    'unassigned' => (int)$a['unassigned_count'],
+                ]);
+            ?>
             <div class="cd-progress">
               <div class="cd-progress-top"><span><b><?= $approved ?></b> of <?= $total ?> segments approved</span><span><?= $pct ?>%</span></div>
-              <div class="cd-track"><i style="width:<?= $pct ?>%"></i></div>
+              <div class="cx-mix" role="img" aria-label="<?= $h($approved . ' of ' . $total . ' segments approved') ?>">
+                <?php foreach ($aMix as $m): if ($m['pct'] > 0): ?><i class="<?= $h($m['key']) ?>" style="width:<?= (int)$m['pct'] ?>%" title="<?= $h($m['label'] . ': ' . $m['count']) ?>"></i><?php endif; endforeach; ?>
+              </div>
             </div>
             <div class="cd-chips">
               <?php if ((int)$a['submitted_count'] > 0): ?><span class="cd-chip review"><?= (int)$a['submitted_count'] ?> to review</span><?php endif; ?>
@@ -193,7 +249,7 @@ $cityName  = $city ? (string)$city['name'] : 'No city assigned';
         <div class="card">
           <div class="card-head"><h3>Needs your attention</h3></div>
           <?php if (!$attention): ?>
-            <div class="cd-empty"><b>You are all caught up</b>Nothing is waiting for you right now.</div>
+            <div class="cx-empty"><?= cxIcon('check') ?><b>You are all caught up</b>Nothing is waiting for you right now.</div>
           <?php else: ?>
           <ul class="cd-attn">
             <?php foreach (array_slice($attention, 0, 8) as $at):
@@ -213,6 +269,34 @@ $cityName  = $city ? (string)$city['name'] : 'No city assigned';
           </ul>
           <?php endif; ?>
         </div>
+
+        <?php if ($cityMixParts): ?>
+        <div class="card">
+          <div class="card-head"><h3>City progress</h3></div>
+          <div class="cx-mix-top"><span>All audits</span><span><b><?= $cityPct ?>%</b> approved</span></div>
+          <div class="cx-mix" role="img" aria-label="<?= $h($cityMix['approved'] . ' of ' . $cityMix['total'] . ' segments approved') ?>">
+            <?php foreach ($cityMixParts as $m): if ($m['pct'] > 0): ?><i class="<?= $h($m['key']) ?>" style="width:<?= (int)$m['pct'] ?>%" title="<?= $h($m['label'] . ': ' . $m['count']) ?>"></i><?php endif; endforeach; ?>
+          </div>
+          <div class="cx-leg">
+            <?php foreach ($cityMixParts as $m): if ($m['count'] > 0): ?><span class="<?= $h($m['key']) ?>"><b><?= (int)$m['count'] ?></b> <?= $h($m['label']) ?></span><?php endif; endforeach; ?>
+          </div>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($audits): ?>
+        <div class="card">
+          <div class="card-head"><h3>Audit pipeline</h3></div>
+          <ul class="cx-pipe">
+            <?php foreach ($pipeline as $pl => $pc): ?>
+            <li class="<?= $pc === 0 ? 'zero' : '' ?>">
+              <span><?= $h($pl) ?></span>
+              <div class="cd-bar"><i style="width:<?= (int)round($pc / $pipeMax * 100) ?>%"></i></div>
+              <b><?= (int)$pc ?></b>
+            </li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+        <?php endif; ?>
       </div>
     </div>
   <?php endif; ?>
