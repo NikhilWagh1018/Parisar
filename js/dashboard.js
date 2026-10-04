@@ -172,9 +172,11 @@ document.addEventListener('click', e => {
 });
 
 // ── Boot ──────────────────────────────────────────────────────
-loadDashboard();
+// Admins only see the Program Overview; surveyors get their own dashboard data.
 if (document.getElementById('adminOverview')) {
   loadAdminOverview();
+} else {
+  loadDashboard();
 }
 
 // Show toast if returning from a successful audit
@@ -183,7 +185,7 @@ if (new URLSearchParams(location.search).get('audit') === 'done') {
   history.replaceState(null, '', location.pathname);
 }
 
-// ── Admin overview (org-wide stats / pending queue / activity) ──
+// ── Admin overview (org-wide stats / pending verification queue) ──
 async function loadAdminOverview() {
   try {
     const res  = await fetch('../api/admin/dashboard_overview.php', {
@@ -205,30 +207,6 @@ async function loadAdminOverview() {
     document.getElementById('ao-segs').textContent       = s.total_segments;
     document.getElementById('ao-done').textContent       = pct + '%';
     document.getElementById('ao-surveyors').textContent  = s.total_surveyors;
-
-    // ── Recent activity feed ──
-    const activityEl = document.getElementById('recentActivityContainer');
-    if (data.recent_activity.length === 0) {
-      activityEl.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🕒</div>
-          <p>No recent activity yet.</p>
-        </div>`;
-    } else {
-      activityEl.innerHTML = data.recent_activity.map(a => {
-        const verb = a.action === 'segment_edited' ? 'edited' : 'submitted';
-        const what = a.road_name
-          ? `segment ${a.segment_number ?? ''} on <strong>${escHtml(a.road_name)}</strong>`
-          : 'a segment';
-        return `
-          <div class="activity-row">
-            <span class="activity-text">
-              <strong>${escHtml(a.user_name || 'Someone')}</strong> ${verb} ${what}
-            </span>
-            <span class="activity-time">${formatDate(a.created_at)}</span>
-          </div>`;
-      }).join('');
-    }
 
     // ── Pending verification queue ──
     const pendingEl = document.getElementById('pendingQueueContainer');
@@ -253,163 +231,8 @@ async function loadAdminOverview() {
       }
     }
 
-    // ── By surveyor / by organisation breakdowns ──
-    renderBreakdownList('bySurveyorContainer', data.by_surveyor, sv => ({
-      title: sv.name,
-      subtitle: sv.organisation || 'Unspecified',
-      count: sv.total
-    }), '🏆', 'No audits recorded yet.');
-
-    renderBreakdownList('byOrgContainer', data.by_organisation, og => ({
-      title: og.organisation,
-      subtitle: null,
-      count: og.total
-    }), '🏢', 'No audits recorded yet.');
-
-    // ── Audits-over-time trend chart ──
-    renderTrendChart(data.audits_over_time);
-
   } catch {
     // fail quietly — admin section is supplementary, not critical path
   }
 }
 
-// Renders a ranked list (used for by-surveyor / by-organisation cards).
-// getFields(item) -> { title, subtitle|null, count }
-function renderBreakdownList(containerId, items, getFields, emptyIcon, emptyText) {
-  const el = document.getElementById(containerId);
-  if (!items || items.length === 0) {
-    el.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">${emptyIcon}</div>
-        <p>${escHtml(emptyText)}</p>
-      </div>`;
-    return;
-  }
-  el.innerHTML = items.map((item, i) => {
-    const f = getFields(item);
-    return `
-      <div class="breakdown-row">
-        <div class="breakdown-rank">${i + 1}</div>
-        <div class="breakdown-info">
-          <strong>${escHtml(f.title)}</strong>
-          ${f.subtitle ? `<span>${escHtml(f.subtitle)}</span>` : ''}
-        </div>
-        <div class="breakdown-count">${f.count}</div>
-      </div>`;
-  }).join('');
-}
-
-// Builds a smoothed SVG path through a set of {x,y} points using the
-// quadratic-bezier-through-midpoints technique. Chosen over Catmull-Rom
-// because it never overshoots below/above neighboring points — important
-// here since most values sit at (or near) zero.
-function buildSmoothPath(points) {
-  if (points.length === 0) return '';
-  if (points.length === 1) return `M ${points[0].x},${points[0].y}`;
-  let path = `M ${points[0].x},${points[0].y}`;
-  for (let i = 1; i < points.length - 1; i++) {
-    const midX = (points[i].x + points[i + 1].x) / 2;
-    const midY = (points[i].y + points[i + 1].y) / 2;
-    path += ` Q ${points[i].x},${points[i].y} ${midX},${midY}`;
-  }
-  const last = points[points.length - 1];
-  path += ` Q ${last.x},${last.y} ${last.x},${last.y}`;
-  return path;
-}
-
-// Renders a dependency-free SVG gradient area chart for the 30-day audit
-// trend, with an animated draw-in and per-day hover tooltips.
-function renderTrendChart(days) {
-  const el = document.getElementById('trendContainer');
-  if (!days || days.length === 0 || days.every(d => d.total === 0)) {
-    el.innerHTML = `<div class="trend-empty">No audits recorded in the last 30 days.</div>`;
-    return;
-  }
-
-  const W = 700, H = 130, padBottom = 16, padTop = 14;
-  const max = Math.max(...days.map(d => d.total), 1);
-  const scaleY = (H - padBottom - padTop) / max;
-  const step = days.length > 1 ? W / (days.length - 1) : 0;
-  const baseline = H - padBottom;
-
-  const points = days.map((d, i) => ({
-    x: i * step,
-    y: baseline - d.total * scaleY,
-    date: d.date,
-    total: d.total,
-  }));
-
-  const linePath = buildSmoothPath(points);
-  const areaPath = `${linePath} L ${points[points.length - 1].x},${baseline} L ${points[0].x},${baseline} Z`;
-
-  // Show ~6 evenly-spaced date labels along the x-axis
-  const labelStep = Math.ceil(days.length / 6);
-  let labels = '';
-  points.forEach((p, i) => {
-    if (i % labelStep !== 0) return;
-    const label = new Date(p.date + 'T00:00:00')
-      .toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    labels += `<text class="trend-axis-label" x="${p.x.toFixed(1)}" y="${H - 2}" text-anchor="middle">${label}</text>`;
-  });
-
-  let dots = '';
-  points.forEach((p, i) => {
-    const leftPct = (points.length > 1 ? (p.x / W) * 100 : 50).toFixed(2);
-    const topPct = ((p.y / H) * 100).toFixed(2);
-    dots += `<div class="trend-dot" data-i="${i}" style="left:${leftPct}%;top:${topPct}%"></div>`;
-  });
-
-  el.innerHTML = `
-    <svg class="trend-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop class="trend-gradient-start" offset="0%"></stop>
-          <stop class="trend-gradient-end" offset="100%"></stop>
-        </linearGradient>
-      </defs>
-      <path class="trend-area" d="${areaPath}" fill="url(#trendGradient)"></path>
-      <path class="trend-line" d="${linePath}" fill="none" vector-effect="non-scaling-stroke"></path>
-      ${labels}
-    </svg>
-    <div class="trend-dots-layer">${dots}</div>
-    <div class="trend-tooltip"></div>`;
-
-  // Animate the line drawing in via stroke-dasharray/dashoffset.
-  const lineEl = el.querySelector('.trend-line');
-  const areaEl = el.querySelector('.trend-area');
-  if (lineEl) {
-    const len = lineEl.getTotalLength();
-    lineEl.style.strokeDasharray = `${len}`;
-    lineEl.style.strokeDashoffset = `${len}`;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        lineEl.style.strokeDashoffset = '0';
-        if (areaEl) areaEl.classList.add('is-visible');
-      });
-    });
-  }
-
-  // Wire up hover tooltips on the overlay dots (plain HTML divs, not SVG
-  // circles, so they stay perfectly round regardless of the non-uniform
-  // viewBox scaling from preserveAspectRatio="none").
-  const tooltip = el.querySelector('.trend-tooltip');
-  el.querySelectorAll('.trend-dot').forEach((dotEl) => {
-    const p = points[parseInt(dotEl.dataset.i, 10)];
-    const label = new Date(p.date + 'T00:00:00')
-      .toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    const show = () => {
-      tooltip.textContent = `${label}: ${p.total} audit${p.total === 1 ? '' : 's'}`;
-      tooltip.style.left = dotEl.style.left;
-      tooltip.style.top = dotEl.style.top;
-      tooltip.classList.add('is-visible');
-      dotEl.classList.add('is-active');
-    };
-    const hide = () => {
-      tooltip.classList.remove('is-visible');
-      dotEl.classList.remove('is-active');
-    };
-    dotEl.addEventListener('mouseenter', show);
-    dotEl.addEventListener('mouseleave', hide);
-  });
-}

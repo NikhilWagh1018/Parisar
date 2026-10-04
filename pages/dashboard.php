@@ -163,71 +163,16 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
         <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">👥</div><div><div class="stat-val" id="ao-surveyors">—</div><div class="stat-lbl">Surveyors</div></div></div>
       </div>
 
-      <!-- Audits over time (trend chart) + Pending verification queue -->
-      <div class="admin-overview-grid admin-overview-grid-main">
-        <div class="card">
-          <div class="card-head">
-            <h3>📈 Audits Over Time <span style="font-weight:500;color:var(--grl)">(last 30 days)</span></h3>
-          </div>
-          <div id="trendContainer">
-            <div class="skeleton" style="height:120px;width:100%"></div>
-          </div>
+      <!-- Pending verification queue -->
+      <div class="card">
+        <div class="card-head">
+          <h3>⏳ Pending Verification</h3>
+          <a href="admin.php">View all →</a>
         </div>
-
-        <div class="card">
-          <div class="card-head">
-            <h3>⏳ Pending Verification</h3>
-            <a href="admin.php">View all →</a>
-          </div>
-          <div id="pendingQueueContainer">
-            <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
-              <div class="skeleton" style="height:18px;width:80%"></div>
-              <div class="skeleton" style="height:18px;width:60%"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent activity / by surveyor / by organisation -->
-      <div class="admin-overview-grid admin-overview-grid-3col">
-        <!-- Recent activity feed -->
-        <div class="card">
-          <div class="card-head">
-            <h3>🕒 Recent Activity</h3>
-          </div>
-          <div id="recentActivityContainer">
-            <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
-              <div class="skeleton" style="height:18px;width:80%"></div>
-              <div class="skeleton" style="height:18px;width:60%"></div>
-              <div class="skeleton" style="height:18px;width:70%"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Audits by surveyor -->
-        <div class="card">
-          <div class="card-head">
-            <h3>🏆 By Surveyor</h3>
-            <a href="admin_surveyors.php">View all →</a>
-          </div>
-          <div id="bySurveyorContainer">
-            <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
-              <div class="skeleton" style="height:18px;width:80%"></div>
-              <div class="skeleton" style="height:18px;width:60%"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Audits by organisation -->
-        <div class="card">
-          <div class="card-head">
-            <h3>🏢 By Organisation</h3>
-          </div>
-          <div id="byOrgContainer">
-            <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
-              <div class="skeleton" style="height:18px;width:80%"></div>
-              <div class="skeleton" style="height:18px;width:60%"></div>
-            </div>
+        <div id="pendingQueueContainer">
+          <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
+            <div class="skeleton" style="height:18px;width:80%"></div>
+            <div class="skeleton" style="height:18px;width:60%"></div>
           </div>
         </div>
       </div>
