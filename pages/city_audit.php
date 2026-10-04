@@ -36,6 +36,8 @@ $review     = new AuditReviewRepository($pdo);
 $rv         = $review->counts((int)$audit['id']);
 $showReview = $audit['status'] !== 'draft' && $audit['status'] !== 'voided';
 $canReview  = !$isNational && in_array($audit['status'], AUDIT_REVIEW_OPEN_STATUSES, true);
+$adminNote  = $review->adminDecision((int)$audit['id'])['admin_note'];
+$wasReturned = !$isNational && $adminNote !== null && in_array($audit['status'], AUDIT_REVIEW_OPEN_STATUSES, true);
 $submitted  = $showReview ? $review->submissions((int)$audit['id']) : [];
 $sentBack   = $showReview ? $review->sentBack((int)$audit['id']) : [];
 $closeBlock = auditReviewCloseBlockReason((string)$audit['status'], $rv);
@@ -189,7 +191,15 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
       <?php elseif ($audit['status'] === 'finalised'): ?>
         <p class="ca-hint-line">This audit is closed and its report is ready below. Send it to the Admin for approval.</p>
       <?php elseif ($audit['status'] === 'awaiting_approval'): ?>
-        <p class="ca-hint-line">Sent to the Admin. Waiting for approval.</p>
+        <p class="ca-hint-line"><?= $isNational ? 'Waiting for your approval. Open the report to approve or return it.' : 'Sent to the Admin. Waiting for approval.' ?></p>
+      <?php elseif ($audit['status'] === 'published'): ?>
+        <p class="ca-hint-line">Approved by the Admin. The report is final.</p>
+      <?php endif; ?>
+      <?php if ($wasReturned): ?>
+        <div class="rp-returned">
+          <b>The Admin sent this audit back for changes.</b>
+          <p class="rp-returned-note"><?= $h($adminNote) ?></p>
+        </div>
       <?php endif; ?>
 
       <?php if ($submitted): ?>

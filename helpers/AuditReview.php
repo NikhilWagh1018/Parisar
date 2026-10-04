@@ -7,6 +7,9 @@ declare(strict_types=1);
 //  Pure functions (no DB) so they are unit-tested.
 // ═══════════════════════════════════════════════════════════════
 
+/** The Admin can approve or return an audit only while it waits for approval. */
+const AUDIT_ADMIN_DECIDABLE_STATUS = 'awaiting_approval';
+
 /** Audit statuses in which the City Leader can still approve / send back segments. */
 const AUDIT_REVIEW_OPEN_STATUSES = ['active', 'in_review'];
 
@@ -19,11 +22,11 @@ const AUDIT_REVIEW_NOTE_MAX = 500;
  *
  * @return array{note:string, error:?string}
  */
-function auditReviewCleanNote(mixed $raw): array
+function auditReviewCleanNote(mixed $raw, string $who = 'the surveyor'): array
 {
     $note = trim(is_scalar($raw) ? (string)$raw : '');
     if ($note === '') {
-        return ['note' => '', 'error' => 'Tell the surveyor what needs to be fixed.'];
+        return ['note' => '', 'error' => 'Tell ' . $who . ' what needs to be fixed.'];
     }
     if (mb_strlen($note) > AUDIT_REVIEW_NOTE_MAX) {
         return ['note' => $note, 'error' => 'Keep the note under ' . AUDIT_REVIEW_NOTE_MAX . ' characters.'];

@@ -30,6 +30,8 @@ class ActivityLogger
     public const AUDIT_SEGMENT_SENT_BACK = 'audit_segment_sent_back';
     public const AUDIT_CLOSED            = 'audit_closed';
     public const AUDIT_SENT_TO_ADMIN     = 'audit_sent_to_admin';
+    public const AUDIT_APPROVED          = 'audit_approved';
+    public const AUDIT_RETURNED          = 'audit_returned';
 
     /**
      * Log an activity.

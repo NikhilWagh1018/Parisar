@@ -68,7 +68,7 @@ function cityAnswersRecorded(array $data): bool
  * @param array<string,int> $c
  * @return list<array{level:string,text:string}>
  */
-function cityAuditAttention(string $status, array $c): array
+function cityAuditAttention(string $status, array $c, ?string $adminNote = null, bool $forAdmin = false): array
 {
     $total      = (int)($c['total'] ?? 0);
     $unassigned = (int)($c['unassigned'] ?? 0);
@@ -89,6 +89,9 @@ function cityAuditAttention(string $status, array $c): array
     }
 
     if ($status === 'active' || $status === 'in_review') {
+        if ($adminNote !== null && $adminNote !== '' && !$forAdmin) {
+            $items[] = ['level' => 'action', 'text' => 'The Admin sent this audit back: ' . $adminNote];
+        }
         if ($submitted > 0) {
             $items[] = ['level' => 'action', 'text' => cityPlural($submitted, 'segment is', 'segments are') . ' waiting for your review.'];
         }
@@ -108,7 +111,9 @@ function cityAuditAttention(string $status, array $c): array
         return [['level' => 'action', 'text' => 'The audit is closed. Send the report to the Admin.']];
     }
     if ($status === 'awaiting_approval') {
-        return [['level' => 'info', 'text' => 'Sent to the Admin. Waiting for approval.']];
+        return $forAdmin
+            ? [['level' => 'action', 'text' => 'Waiting for your approval. Open the report to approve or return it.']]
+            : [['level' => 'info', 'text' => 'Sent to the Admin. Waiting for approval.']];
     }
     if ($status === 'published') {
         return [['level' => 'done', 'text' => 'Published. The report is final.']];

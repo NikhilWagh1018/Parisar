@@ -38,3 +38,28 @@ function cityApiContext(string $role, ?int $cityId): array
     }
     return $body;
 }
+
+/**
+ * Preamble for the Admin write APIs (api/admin/audit_*.php): a valid POST from
+ * a national_admin with a good CSRF token. Returns the decoded JSON body.
+ *
+ * @return array<string,mixed>
+ */
+function nationalApiContext(string $role): array
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        cityApiFail(405, 'Method not allowed.');
+    }
+    if ($role !== 'national_admin') {
+        cityApiFail(403, 'Only an Admin can decide on audits.');
+    }
+    $csrf = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!hash_equals((string)($_SESSION['csrf_token'] ?? ''), (string)$csrf)) {
+        cityApiFail(403, 'Invalid CSRF token.');
+    }
+    $body = json_decode((string)file_get_contents('php://input'), true);
+    if (!is_array($body)) {
+        cityApiFail(400, 'Invalid request.');
+    }
+    return $body;
+}
