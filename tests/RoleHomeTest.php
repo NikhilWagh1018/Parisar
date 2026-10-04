@@ -26,7 +26,7 @@ class RoleHomeTest extends TestCase
 
     public function test_role_labels(): void
     {
-        $this->assertSame('Platform Admin', roleLabel('national_admin'));
+        $this->assertSame('Admin', roleLabel('national_admin'));
         $this->assertSame('City Leader', roleLabel('city_admin'));
         $this->assertSame('Surveyor', roleLabel('surveyor'));
         $this->assertSame('Something else', roleLabel('something_else'));

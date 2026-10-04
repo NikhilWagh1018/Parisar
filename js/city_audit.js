@@ -264,7 +264,7 @@
   });
   var sendBtn = document.getElementById('caSend');
   if (sendBtn) sendBtn.addEventListener('click', async function () {
-    if (!window.confirm('Send this audit and its report to the Platform Admin?')) return;
+    if (!window.confirm('Send this audit and its report to the Admin?')) return;
     sendBtn.disabled = true;
     try {
       await post('../api/city/audit_close.php', { audit_id: app.dataset.auditId, action: 'send' });

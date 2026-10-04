@@ -20,7 +20,7 @@ function roleHomePage(string $role): string
 function roleLabel(string $role): string
 {
     return match ($role) {
-        'national_admin' => 'Platform Admin',
+        'national_admin' => 'Admin',
         'city_admin'     => 'City Leader',
         'surveyor'       => 'Surveyor',
         default          => ucfirst(str_replace('_', ' ', $role)),

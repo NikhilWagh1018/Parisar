@@ -5,7 +5,7 @@ declare(strict_types=1);
 //  pages/city_audit.php?id=N  —  one city audit
 //  City Leader: add roads from the city's road list, generate their
 //  segments, remove a road while nothing is audited on it.
-//  Platform Admin can open any audit read-only.
+//  Admin can open any audit read-only.
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
@@ -172,7 +172,7 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
         <?php if ($canReview): ?>
           <button class="ca-btn" type="button" id="caClose" <?= $closeBlock === null ? '' : 'disabled' ?>>Close Audit</button>
         <?php elseif ($audit['status'] === 'finalised' && !$isNational): ?>
-          <button class="ca-btn" type="button" id="caSend">Send to Platform Admin</button>
+          <button class="ca-btn" type="button" id="caSend">Send to Admin</button>
         <?php endif; ?>
       </div>
       <p class="ca-assign-sum">
@@ -185,9 +185,9 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
       <?php if ($canReview && $closeBlock !== null): ?>
         <p class="ca-hint-line">Close Audit unlocks when every segment is approved. <?= $h($closeBlock) ?></p>
       <?php elseif ($audit['status'] === 'finalised'): ?>
-        <p class="ca-hint-line">This audit is closed and its report is ready below. Send it to the Platform Admin for approval.</p>
+        <p class="ca-hint-line">This audit is closed and its report is ready below. Send it to the Admin for approval.</p>
       <?php elseif ($audit['status'] === 'awaiting_approval'): ?>
-        <p class="ca-hint-line">Sent to the Platform Admin. Waiting for approval.</p>
+        <p class="ca-hint-line">Sent to the Admin. Waiting for approval.</p>
       <?php endif; ?>
 
       <?php if ($submitted): ?>

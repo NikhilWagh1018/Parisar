@@ -5,8 +5,8 @@ declare(strict_types=1);
 //  helpers/RoleRules.php
 //  Who may change whom. Pure functions (no DB) so they are unit-tested.
 //
-//  - Only the Platform Admin (national_admin) can change roles, so
-//    only the Platform Admin can create City Leaders (city_admin).
+//  - Only the Admin (national_admin) can change roles, so
+//    only the Admin can create City Leaders (city_admin).
 //  - A City Leader manages surveyors in their own city only.
 //  - A City Leader needs a city, otherwise they would see nothing.
 // ═══════════════════════════════════════════════════════════════
@@ -15,7 +15,7 @@ const ROLE_VALUES = ['national_admin', 'city_admin', 'surveyor'];
 
 /**
  * May this actor act on (activate/deactivate/etc.) the target user?
- * Platform Admin: anyone. City Leader: surveyors only.
+ * Admin: anyone. City Leader: surveyors only.
  */
 function canManageUser(string $actorRole, string $targetRole): bool
 {
@@ -39,7 +39,7 @@ function validateRoleChange(
     int $nationalAdminCount
 ): ?string {
     if ($actorRole !== 'national_admin') {
-        return 'Only the Platform Admin can change roles.';
+        return 'Only the Admin can change roles.';
     }
     if (!is_string($newRole) || !in_array($newRole, ROLE_VALUES, true)) {
         return 'Invalid role.';

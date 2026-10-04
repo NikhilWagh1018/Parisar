@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
-//  pages/platform_dashboard.php  —  Platform Admin home
+//  pages/platform_dashboard.php  —  Admin home
 //  national_admin only: every city at a glance.
 // ═══════════════════════════════════════════════════════════════
 

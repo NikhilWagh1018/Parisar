@@ -5,7 +5,7 @@ declare(strict_types=1);
 //  api/city/audit_close.php
 //  POST { audit_id, action: "close" | "send" }
 //  close: every segment approved -> audit becomes finalised (report ready).
-//  send:  finalised audit goes to the Platform Admin (awaiting_approval).
+//  send:  finalised audit goes to the Admin (awaiting_approval).
 // ═══════════════════════════════════════════════════════════════
 
 header('Content-Type: application/json');

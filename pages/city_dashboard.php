@@ -62,7 +62,7 @@ $statusLabel = static fn(string $s): string => ucfirst(str_replace('_', ' ', $s)
   </div>
   <div class="content" id="caApp" data-csrf="<?= $csrf ?>">
   <?php if (!$city): ?>
-    <div class="card"><p class="rd-empty">No city is assigned to your account yet. Please ask a Platform Admin to assign one.</p></div>
+    <div class="card"><p class="rd-empty">No city is assigned to your account yet. Please ask an Admin to assign one.</p></div>
   <?php else: ?>
 
     <?php if ($canCreate): ?>

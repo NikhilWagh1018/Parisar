@@ -4,7 +4,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  repositories/AuditReviewRepository.php
 //  City Leader review loop: approve or send back submitted segments,
-//  close the audit, send it to the Platform Admin.
+//  close the audit, send it to the Admin.
 //  SQL is kept portable (MySQL in production, SQLite in tests).
 //  User-facing problems are thrown as DomainException (safe to show).
 // ═══════════════════════════════════════════════════════════════
@@ -239,11 +239,11 @@ class AuditReviewRepository
         }
     }
 
-    /** Send a closed audit and its report to the Platform Admin. */
+    /** Send a closed audit and its report to the Admin. */
     public function sendToAdmin(array $audit): void
     {
         if ($audit['status'] !== 'finalised') {
-            throw new DomainException('Close the audit before sending it to the Platform Admin.');
+            throw new DomainException('Close the audit before sending it to the Admin.');
         }
         $upd = $this->pdo->prepare("UPDATE city_audits SET status = 'awaiting_approval' WHERE id = ? AND status = 'finalised'");
         $upd->execute([(int)$audit['id']]);
