@@ -131,7 +131,7 @@ $statusText = ['approved' => 'Approved', 'submitted' => 'To review', 'needs_revi
         <button class="ca-btn" type="button" id="rpApprove">Approve audit</button>
         <button class="ca-btn ghost" type="button" id="rpReturnOpen">Return to City Leader…</button>
       <?php endif; ?>
-      <button class="ca-btn ghost" type="button" id="rpPrint">Print report</button>
+      <a class="ca-btn ghost" href="city_audit_report_detail.php?id=<?= (int)$auditId ?>" target="_blank" rel="noopener">Detailed report (print / PDF)</a>
       <?php if (!$isFinal && !$canClose): ?>
         <?php $why = auditReviewCloseBlockReason($status, $rv); ?>
         <?php if ($why !== null): ?><span class="cd-sub">Close audit unlocks when every segment is approved. <?= $h($why) ?></span><?php endif; ?>
