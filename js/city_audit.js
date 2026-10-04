@@ -220,4 +220,55 @@
   }
 
   restoreOpen();
+
+  // ── Audit page: review submissions, close, send ───────────────
+  document.querySelectorAll('.ca-approve').forEach(function (b) {
+    b.addEventListener('click', async function () {
+      b.disabled = true;
+      try {
+        await post('../api/city/audit_review.php', { audit_id: app.dataset.auditId, segment_id: b.dataset.segmentId, action: 'approve' });
+        window.location.reload();
+      } catch (e) { toast(e.message, 'error'); b.disabled = false; }
+    });
+  });
+  document.querySelectorAll('.ca-sendback-open').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var box = b.closest('.ca-sub-card').querySelector('.ca-sendback');
+      box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+      if (box.style.display === 'flex') box.querySelector('.ca-note').focus();
+    });
+  });
+  document.querySelectorAll('.ca-sendback').forEach(function (b) {
+    b.addEventListener('click', async function () {
+      var box = b.closest('.ca-sendback');
+      var note = box.querySelector('.ca-note').value.trim();
+      if (!note) { toast('Tell the surveyor what needs to be fixed.', 'error'); return; }
+      b.disabled = true;
+      try {
+        await post('../api/city/audit_review.php', {
+          audit_id: app.dataset.auditId, segment_id: b.dataset.segmentId, action: 'send_back',
+          note: note, surveyor_id: box.querySelector('.ca-new-surveyor').value
+        });
+        window.location.reload();
+      } catch (e) { toast(e.message, 'error'); b.disabled = false; }
+    });
+  });
+  var closeBtn = document.getElementById('caClose');
+  if (closeBtn) closeBtn.addEventListener('click', async function () {
+    if (!window.confirm('Close this audit? Surveyors can no longer submit, and the report is generated.')) return;
+    closeBtn.disabled = true;
+    try {
+      await post('../api/city/audit_close.php', { audit_id: app.dataset.auditId, action: 'close' });
+      window.location.reload();
+    } catch (e) { toast(e.message, 'error'); closeBtn.disabled = false; }
+  });
+  var sendBtn = document.getElementById('caSend');
+  if (sendBtn) sendBtn.addEventListener('click', async function () {
+    if (!window.confirm('Send this audit and its report to the Platform Admin?')) return;
+    sendBtn.disabled = true;
+    try {
+      await post('../api/city/audit_close.php', { audit_id: app.dataset.auditId, action: 'send' });
+      window.location.reload();
+    } catch (e) { toast(e.message, 'error'); sendBtn.disabled = false; }
+  });
 })();

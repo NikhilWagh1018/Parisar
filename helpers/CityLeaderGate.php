@@ -19,6 +19,8 @@ const CITY_LEADER_ALLOWED_SCRIPTS = [
     'api/city/audit_road_remove.php',
     'api/city/audit_assign.php',
     'api/city/audit_activate.php',
+    'api/city/audit_review.php',
+    'api/city/audit_close.php',
 ];
 
 function cityLeaderNormalize(string $scriptName): string

@@ -42,3 +42,18 @@
 .ca-assign-sum { margin:0; font-size:.88rem; }
 .ca-hint-line { margin:8px 0 0; font-size:.78rem; color:var(--gray); }
 @media (max-width:720px) { .ca-form { grid-template-columns:1fr; } }
+
+/* ── Review & close (slice 4) ───────────────────────────── */
+.ca-badge.in_review { background:#fff1dc; color:#8a4b00; }
+.ca-badge.awaiting_approval { background:#efe6fb; color:#4b2a85; }
+.ca-sub { margin:18px 0 8px; font-size:.9rem; }
+.ca-sub-card { border:1px solid rgba(0,0,0,.1); border-radius:10px; padding:12px 14px; margin-bottom:10px; background:#fff; }
+.ca-sub-head { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap; }
+.ca-sub-head small { display:block; color:#666; margin-top:2px; }
+.ca-score { background:#e9f5df; color:#1a4a09; font-weight:700; font-size:.78rem; padding:3px 10px; border-radius:99px; }
+.ca-sub-data { display:flex; flex-wrap:wrap; gap:6px 16px; font-size:.8rem; margin:10px 0; color:#444; }
+.ca-sub-note { font-size:.8rem; margin:0 0 10px; white-space:pre-line; }
+.ca-sub-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.ca-sendback { flex-direction:column; gap:8px; margin-top:10px; align-items:flex-start; }
+.ca-sendback textarea { width:100%; max-width:520px; font:inherit; font-size:.82rem; padding:8px; border:1px solid rgba(0,0,0,.18); border-radius:8px; }
+.ca-sub-line { font-size:.82rem; margin:4px 0; }

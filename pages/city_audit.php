@@ -11,6 +11,8 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../repositories/CityAuditRepository.php';
+require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
+require_once __DIR__ . '/../services/ScoreService.php';
 
 $isNational = $CURRENT_USER_ROLE === 'national_admin';
 $repo       = new CityAuditRepository($pdo);
@@ -29,6 +31,25 @@ $surveyors = $canAssign ? $repo->assignableSurveyors((int)$audit['city_id']) : [
 $counts    = $repo->assignmentCounts((int)$audit['id']);
 $canActivate = !$isNational && $audit['status'] === 'draft';
 $allAssigned = $counts['total'] > 0 && $counts['assigned'] === $counts['total'];
+$review     = new AuditReviewRepository($pdo);
+$rv         = $review->counts((int)$audit['id']);
+$showReview = $audit['status'] !== 'draft' && $audit['status'] !== 'voided';
+$canReview  = !$isNational && in_array($audit['status'], AUDIT_REVIEW_OPEN_STATUSES, true);
+$submitted  = $showReview ? $review->submissions((int)$audit['id']) : [];
+$sentBack   = $showReview ? $review->sentBack((int)$audit['id']) : [];
+$closeBlock = auditReviewCloseBlockReason((string)$audit['status'], $rv);
+$isClosed   = in_array($audit['status'], ['finalised', 'awaiting_approval', 'published'], true);
+$roadScores = [];
+if ($isClosed) {
+    foreach ($roads as $r0) {
+        try { $roadScores[(int)$r0['id']] = calculateRoadScore((int)$r0['id'], $pdo); }
+        catch (Throwable $e) { $roadScores[(int)$r0['id']] = null; }
+    }
+}
+$segScore = static function (?int $auditRowId) use ($pdo): ?array {
+    if ($auditRowId === null) { return null; }
+    try { return calculateSegmentScore($auditRowId, $pdo); } catch (Throwable $e) { return null; }
+};
 $backUrl   = 'city_dashboard.php' . ($isNational ? '?city_id=' . (int)$audit['city_id'] : '');
 
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
@@ -140,6 +161,113 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
           <button class="ca-btn" type="submit">+ Generate &amp; Save Segments</button>
         </div>
       </form>
+      <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($showReview): ?>
+    <div class="card" id="caReview">
+      <div class="card-head">
+        <h3>Review &amp; close</h3>
+        <?php if ($canReview): ?>
+          <button class="ca-btn" type="button" id="caClose" <?= $closeBlock === null ? '' : 'disabled' ?>>Close Audit</button>
+        <?php elseif ($audit['status'] === 'finalised' && !$isNational): ?>
+          <button class="ca-btn" type="button" id="caSend">Send to Platform Admin</button>
+        <?php endif; ?>
+      </div>
+      <p class="ca-assign-sum">
+        <b><?= (int)$rv['approved'] ?></b> approved ·
+        <b><?= (int)$rv['submitted'] ?></b> waiting for review ·
+        <b><?= (int)$rv['needs_revisit'] ?></b> sent back ·
+        <b><?= (int)$rv['assigned'] ?></b> still with surveyors
+        (of <b><?= (int)$rv['total'] ?></b> segments)
+      </p>
+      <?php if ($canReview && $closeBlock !== null): ?>
+        <p class="ca-hint-line">Close Audit unlocks when every segment is approved. <?= $h($closeBlock) ?></p>
+      <?php elseif ($audit['status'] === 'finalised'): ?>
+        <p class="ca-hint-line">This audit is closed and its report is ready below. Send it to the Platform Admin for approval.</p>
+      <?php elseif ($audit['status'] === 'awaiting_approval'): ?>
+        <p class="ca-hint-line">Sent to the Platform Admin. Waiting for approval.</p>
+      <?php endif; ?>
+
+      <?php if ($submitted): ?>
+        <h4 class="ca-sub">Waiting for your review</h4>
+        <?php foreach ($submitted as $sb): ?>
+          <?php $sc = $segScore(isset($sb['latest_audit_id']) ? (int)$sb['latest_audit_id'] : null); $d = $sb['data']; ?>
+          <div class="ca-sub-card" data-segment-id="<?= (int)$sb['segment_id'] ?>">
+            <div class="ca-sub-head">
+              <div>
+                <b><?= $h($sb['road_name']) ?> · Segment <?= (int)$sb['segment_number'] ?></b>
+                <small><?= $h($num($sb['length'])) ?> m · by <?= $h($sb['surveyor_name'] ?? 'Unknown') ?><?= $sb['submitted_at'] ? ' · ' . $h($sb['submitted_at']) : '' ?></small>
+              </div>
+              <?php if ($sc !== null && isset($sc['final'])): ?>
+                <span class="ca-score">Score <?= $h($num($sc['final'])) ?></span>
+              <?php endif; ?>
+            </div>
+            <div class="ca-sub-data">
+              <?php foreach ([
+                'Cycle track missing' => $d['cycle_track_missing'] ?? null,
+                'Cyclist use'         => $d['cyclist_use'] ?? null,
+                'Surface'             => $d['surface_material'] ?? null,
+                'Width (m)'           => $d['segment_width'] ?? null,
+                'Shade'               => $d['shade'] ?? null,
+                'Buffer zone'         => $d['buffer_zone'] ?? null,
+                'Signage count'       => $d['signage_count'] ?? null,
+              ] as $label => $val): ?>
+                <span><?= $h($label) ?>: <b><?= ($val === null || $val === '') ? '—' : $h($val) ?></b></span>
+              <?php endforeach; ?>
+            </div>
+            <?php if (!empty($d['comments'])): ?><p class="ca-sub-note">Surveyor's comments: <?= $h($d['comments']) ?></p><?php endif; ?>
+            <?php if ($canReview): ?>
+            <div class="ca-sub-actions">
+              <button class="ca-btn ca-approve" type="button" data-segment-id="<?= (int)$sb['segment_id'] ?>">Approve</button>
+              <button class="ca-btn ghost ca-sendback-open" type="button">Send back…</button>
+            </div>
+            <div class="ca-sendback" style="display:none">
+              <textarea class="ca-note" rows="2" maxlength="500" placeholder="What does the surveyor need to fix? (required)"></textarea>
+              <select class="ca-seg-select ca-new-surveyor" aria-label="Surveyor for the re-audit">
+                <option value="">Same surveyor (<?= $h($sb['surveyor_name'] ?? 'Unknown') ?>)</option>
+                <?php foreach ($review->citySurveyors((int)$audit['city_id']) as $sv): ?>
+                  <?php if ((int)$sv['id'] !== (int)$sb['surveyor_id']): ?>
+                    <option value="<?= (int)$sv['id'] ?>">Assign to <?= $h($sv['name']) ?></option>
+                  <?php endif; ?>
+                <?php endforeach; ?>
+              </select>
+              <button class="ca-btn danger ca-sendback" type="button" data-segment-id="<?= (int)$sb['segment_id'] ?>">Send back for re-audit</button>
+            </div>
+            <?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+      <?php elseif ($canReview): ?>
+        <p class="rd-empty">Nothing is waiting for review right now.</p>
+      <?php endif; ?>
+
+      <?php if ($sentBack): ?>
+        <h4 class="ca-sub">Sent back for re-audit</h4>
+        <?php foreach ($sentBack as $sbk): ?>
+          <p class="ca-sub-line"><b><?= $h($sbk['road_name']) ?> · Segment <?= (int)$sbk['segment_number'] ?></b>
+            with <?= $h($sbk['surveyor_name'] ?? 'Unknown') ?> — <?= $h($sbk['review_note'] ?? '') ?></p>
+        <?php endforeach; ?>
+      <?php endif; ?>
+
+      <?php if ($isClosed): ?>
+        <h4 class="ca-sub">Audit report</h4>
+        <div class="rd-scroll"><table class="rd-table">
+          <thead><tr><th>Road</th><th>Segments</th><th>Score</th><th>Safety</th><th>Continuity</th><th>Comfort</th><th>Condition</th></tr></thead>
+          <tbody>
+          <?php foreach ($roads as $r1): $rs = $roadScores[(int)$r1['id']] ?? null; ?>
+            <tr>
+              <td><?= $h($r1['name']) ?></td>
+              <td><?= count($r1['segments']) ?></td>
+              <?php if ($rs): ?>
+                <td><b><?= $h($num($rs['score'])) ?></b></td><td><?= $h($num($rs['safety_score'])) ?></td>
+                <td><?= $h($num($rs['continuity_score'])) ?></td><td><?= $h($num($rs['comfort_score'])) ?></td>
+                <td><?= $h($rs['condition']) ?></td>
+              <?php else: ?><td colspan="5">Not available</td><?php endif; ?>
+            </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table></div>
       <?php endif; ?>
     </div>
     <?php endif; ?>
