@@ -101,110 +101,126 @@ if ($oauthKey !== '' && isset($oauthErrors[$oauthKey])) {
 }
 
 $googleUrl = getGoogleAuthUrl();
+
+// Values used by the template
+$prefillEmail  = (string)($_POST['email'] ?? '');
+$focusPassword = ($error !== '' && $prefillEmail !== '');
+$focusEmail    = ($error !== '' && $prefillEmail === '');
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In — CycleAudit</title>
+  <meta name="theme-color" content="#f6efe0">
+  <title>Sign in — CycleAudit</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/auth.css">
-  <link rel="stylesheet" href="../css/login-inline.css">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/login.css?v=1">
 </head>
-<body>
+<body class="login">
 
-<!-- LEFT PANEL -->
-<div class="left-panel">
-  <div class="brand">
-    <div class="brand-mark">
+<div class="stage">
+
+  <a class="brand" href="../index.html" aria-label="CycleAudit home">
+    <span class="brand-mark" aria-hidden="true">
       <svg viewBox="0 0 24 24"><path d="M12 2C8.5 2 6 5 6 8.5c0 4.5 6 11.5 6 11.5s6-7 6-11.5C18 5 15.5 2 12 2zm0 9.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
-    </div>
+    </span>
     <span class="brand-name">CycleAudit</span>
-  </div>
+  </a>
 
-  <h2 class="left-headline">Welcome back,<br><span class="hi">Surveyor.</span></h2>
-  <p class="left-sub">Log in to access your audit dashboard and continue mapping your city's cycle track network.</p>
+  <main class="card-wrap">
 
-  <div class="feature-pills">
-    <div class="pill">
-      <div class="pill-icon">🗺️</div>
-      <div class="pill-text"><strong>Segment Mapping</strong><span>Define and audit road segments precisely</span></div>
-    </div>
-    <div class="pill">
-      <div class="pill-icon">📊</div>
-      <div class="pill-text"><strong>Live Scoring</strong><span>Safety, Continuity &amp; Comfort scores</span></div>
-    </div>
-    <div class="pill">
-      <div class="pill-icon">📄</div>
-      <div class="pill-text"><strong>PDF Reports</strong><span>Export professional audit reports</span></div>
-    </div>
-  </div>
+    <!-- Decorative wheel: sits behind the card, hub aligned to the card centre -->
+    <svg class="wheel" viewBox="-280 -280 560 560" aria-hidden="true" focusable="false">
+      <circle class="wheel-tread" r="266"/>
+      <circle class="wheel-rim" r="246"/>
+      <circle class="wheel-rim-line" r="232"/>
+      <g class="wheel-spokes"><line x1="26.0" y1="0.0" x2="230.3" y2="27.8"/><line x1="25.6" y1="4.5" x2="222.0" y2="67.3"/><line x1="24.4" y1="8.9" x2="206.9" y2="104.9"/><line x1="22.5" y1="13.0" x2="185.6" y2="139.2"/><line x1="19.9" y1="16.7" x2="158.6" y2="169.3"/><line x1="16.7" y1="19.9" x2="126.8" y2="194.3"/><line x1="13.0" y1="22.5" x2="91.1" y2="213.4"/><line x1="8.9" y1="24.4" x2="52.7" y2="225.9"/><line x1="4.5" y1="25.6" x2="12.6" y2="231.7"/><line x1="0.0" y1="26.0" x2="-27.8" y2="230.3"/><line x1="-4.5" y1="25.6" x2="-67.3" y2="222.0"/><line x1="-8.9" y1="24.4" x2="-104.9" y2="206.9"/><line x1="-13.0" y1="22.5" x2="-139.2" y2="185.6"/><line x1="-16.7" y1="19.9" x2="-169.3" y2="158.6"/><line x1="-19.9" y1="16.7" x2="-194.3" y2="126.8"/><line x1="-22.5" y1="13.0" x2="-213.4" y2="91.1"/><line x1="-24.4" y1="8.9" x2="-225.9" y2="52.7"/><line x1="-25.6" y1="4.5" x2="-231.7" y2="12.6"/><line x1="-26.0" y1="0.0" x2="-230.3" y2="-27.8"/><line x1="-25.6" y1="-4.5" x2="-222.0" y2="-67.3"/><line x1="-24.4" y1="-8.9" x2="-206.9" y2="-104.9"/><line x1="-22.5" y1="-13.0" x2="-185.6" y2="-139.2"/><line x1="-19.9" y1="-16.7" x2="-158.6" y2="-169.3"/><line x1="-16.7" y1="-19.9" x2="-126.8" y2="-194.3"/><line x1="-13.0" y1="-22.5" x2="-91.1" y2="-213.4"/><line x1="-8.9" y1="-24.4" x2="-52.7" y2="-225.9"/><line x1="-4.5" y1="-25.6" x2="-12.6" y2="-231.7"/><line x1="-0.0" y1="-26.0" x2="27.8" y2="-230.3"/><line x1="4.5" y1="-25.6" x2="67.3" y2="-222.0"/><line x1="8.9" y1="-24.4" x2="104.9" y2="-206.9"/><line x1="13.0" y1="-22.5" x2="139.2" y2="-185.6"/><line x1="16.7" y1="-19.9" x2="169.3" y2="-158.6"/><line x1="19.9" y1="-16.7" x2="194.3" y2="-126.8"/><line x1="22.5" y1="-13.0" x2="213.4" y2="-91.1"/><line x1="24.4" y1="-8.9" x2="225.9" y2="-52.7"/><line x1="25.6" y1="-4.5" x2="231.7" y2="-12.6"/></g>
+      <circle class="wheel-hub" r="26"/>
+      <circle class="wheel-hub-core" r="11"/>
+    </svg>
 
-  <div style="margin-top:auto;padding-top:28px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:12px;">
-    <img src="../assets/parisar-logo.png" alt="Parisar" style="height:24px;width:auto;filter:brightness(0) invert(1);opacity:.75;">
-    <span style="font-size:.72rem;color:rgba(255,255,255,.45);line-height:1.5;">An initiative by Parisar,<br>Pune, Maharashtra</span>
-  </div>
-</div>
+    <section class="card<?= $error !== '' ? ' card--error' : '' ?>" aria-labelledby="login-title">
+      <h1 class="card-title" id="login-title">Sign in</h1>
+      <p class="card-sub">Don't have an account? <a href="register.php">Register here</a></p>
 
-<!-- RIGHT PANEL -->
-<div class="right-panel">
-  <div class="form-box">
-    <h1 class="form-title">Sign In</h1>
-    <p class="form-subtitle">Don't have an account? <a href="register.php">Register here</a></p>
-
-    <?php if ($error !== ''): ?>
-    <div class="alert alert-error">⚠️ <?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
-
-    <!-- Google Sign-In -->
-    <a href="<?= htmlspecialchars($googleUrl) ?>" class="btn-google">
-      <svg width="20" height="20" viewBox="0 0 48 48">
-        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-        <path fill="none" d="M0 0h48v48H0z"/>
-      </svg>
-      Continue with Google
-    </a>
-
-    <div class="divider-row">or sign in with email</div>
-
-    <form method="POST" novalidate>
-      <div class="form-group">
-        <label for="email">Email Address</label>
-        <div class="input-icon-wrap">
-          <span class="icon">✉️</span>
-          <input type="email" id="email" name="email"
-                 value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
-                 placeholder="you@example.com" autocomplete="email">
-        </div>
+      <?php if ($error !== ''): ?>
+      <div class="alert" id="login-error" role="alert">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        <span><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></span>
       </div>
+      <?php endif; ?>
 
-      <div class="form-group">
-        <label for="password">Password</label>
-        <div class="input-icon-wrap">
-          <span class="icon">🔒</span>
-          <input type="password" id="password" name="password"
-                 placeholder="Enter your password" autocomplete="current-password">
-          <button type="button" class="toggle-pass" onclick="togglePass('password', this)">Show</button>
-        </div>
-      </div>
-
-      <button type="submit" class="btn-submit">
-        Sign In
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <polyline points="13 17 18 12 13 7"/><path d="M6 12h12"/>
+      <!-- Google Sign-In -->
+      <a href="<?= htmlspecialchars($googleUrl, ENT_QUOTES, 'UTF-8') ?>" class="btn-google">
+        <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
         </svg>
-      </button>
-    </form>
+        Continue with Google
+      </a>
 
-    <div class="back-link"><a href="../index.html">← Back to Home</a></div>
-  </div>
+      <div class="divider-row"><span>or sign in with email</span></div>
+
+      <form method="POST" novalidate id="login-form">
+        <div class="field">
+          <label for="email">Email address</label>
+          <div class="control">
+            <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input type="email" id="email" name="email"
+                   value="<?= htmlspecialchars($prefillEmail, ENT_QUOTES, 'UTF-8') ?>"
+                   placeholder="you@example.com" autocomplete="email" inputmode="email"
+                   <?= $error !== '' ? 'aria-describedby="login-error"' : '' ?>
+                   <?= $focusEmail ? 'autofocus' : '' ?>>
+          </div>
+          <p class="field-msg" id="email-msg" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="control">
+            <svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <input type="password" id="password" name="password"
+                   placeholder="Enter your password" autocomplete="current-password"
+                   <?= $error !== '' ? 'aria-describedby="login-error"' : '' ?>
+                   <?= $focusPassword ? 'autofocus' : '' ?>>
+            <button type="button" class="toggle-pass" data-toggle-pass="password" aria-controls="password" aria-pressed="false">Show</button>
+          </div>
+          <p class="field-msg" id="password-msg" hidden></p>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          <span class="btn-label">Sign in</span>
+          <svg class="btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="13 17 18 12 13 7"/><path d="M6 12h12"/>
+          </svg>
+        </button>
+      </form>
+
+      <div class="back-link"><a href="../index.html">&larr; Back to home</a></div>
+    </section>
+  </main>
+
+  <section class="pitch">
+    <p class="pitch-title"><span>Ride.</span><span>Measure.</span><span>Improve.</span></p>
+    <p class="pitch-sub">Audit every street, score every segment, and publish reports your city can act on.</p>
+    <span class="tag">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3zM9 3v15M15 6v15"/></svg>
+      Cycle infrastructure audits
+    </span>
+  </section>
+
+  <footer class="credit">
+    <img src="../assets/parisar-logo.png" alt="Parisar" width="60" height="20">
+    <span>An initiative by Parisar, Pune, Maharashtra</span>
+  </footer>
+
 </div>
 
-<script src="../js/login.js"></script>
+<script src="../js/login.js?v=1"></script>
 </body>
 </html>
