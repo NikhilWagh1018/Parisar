@@ -4,6 +4,16 @@
 (function () {
   'use strict';
 
+  // ── Entrance animation: start once the web fonts are in, so text never shifts mid-animation.
+  // Falls back after 700 ms so a slow font request can't hold the page back.
+  var root = document.documentElement;
+  var go = function () { root.classList.add('ready'); };
+  if (document.fonts && document.fonts.ready) {
+    Promise.race([document.fonts.ready, new Promise(function (r) { setTimeout(r, 700); })]).then(function () {
+      requestAnimationFrame(go);
+    });
+  } else { go(); }
+
   var form = document.getElementById('login-form');
   if (!form) return;
 

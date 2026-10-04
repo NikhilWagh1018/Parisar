@@ -117,26 +117,27 @@ $focusEmail    = ($error !== '' && $prefillEmail === '');
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/login.css?v=3">
+  <link rel="stylesheet" href="../css/login.css?v=4">
+  <script>document.documentElement.classList.add('js')</script>
 </head>
 <body class="login">
 
 <div class="stage">
 
-  <a class="brand" href="../index.html" aria-label="CycleAudit home">
+  <a class="brand rise" style="--i:0" href="../index.html" aria-label="CycleAudit home">
     <span class="brand-mark"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /> <path d="M19 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /> <path d="M12 19l0 -4l-3 -3l5 -4l2 3l3 0" /> <path d="M17 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg></span>CycleAudit
   </a>
 
   <section class="pitch">
-    <p class="pitch-title"><span>Ride.</span> <span>Measure.</span> <span class="accent">Improve.</span></p>
-    <p class="pitch-sub">Audit every street, score every segment, and publish reports your city can act on.</p>
-    <span class="tag"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3l6 -3v7.5" /> <path d="M9 4v13" /> <path d="M15 7v5.5" /> <path d="M21.121 20.121a3 3 0 1 0 -4.242 0c.418 .419 1.125 1.045 2.121 1.879c1.051 -.89 1.759 -1.516 2.121 -1.879z" /> <path d="M19 18v.01" /></svg>Cycle infrastructure audits</span>
+    <p class="pitch-title"><span class="rise" style="--i:1">Ride.</span> <span class="rise" style="--i:2">Measure.</span> <span class="accent rise" style="--i:3">Improve.</span></p>
+    <p class="pitch-sub rise" style="--i:4">Audit every street, score every segment, and publish reports your city can act on.</p>
+    <span class="tag rise" style="--i:5"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3l6 -3v7.5" /> <path d="M9 4v13" /> <path d="M15 7v5.5" /> <path d="M21.121 20.121a3 3 0 1 0 -4.242 0c.418 .419 1.125 1.045 2.121 1.879c1.051 -.89 1.759 -1.516 2.121 -1.879z" /> <path d="M19 18v.01" /></svg>Cycle infrastructure audits</span>
   </section>
 
   <main class="zone">
 
     <!-- Large bicycle wheel: hub sits behind the card, rim bleeds off the right edge -->
-    <svg class="wheel" viewBox="-280 -280 560 560" aria-hidden="true" focusable="false">
+    <svg class="wheel wheel-in" viewBox="-280 -280 560 560" aria-hidden="true" focusable="false">
       <g class="rot">
         <circle r="262" fill="none" stroke="#1f4d14" stroke-width="8" stroke-dasharray="3 9"/>
         <circle r="246" fill="none" stroke="#3d8a24" stroke-width="18"/>
@@ -147,7 +148,7 @@ $focusEmail    = ($error !== '' && $prefillEmail === '');
       </g>
     </svg>
 
-    <section class="card" aria-labelledby="login-title">
+    <section class="card card-in" aria-labelledby="login-title">
       <h1 class="card-title" id="login-title">Sign in</h1>
 
       <?php if ($error !== ''): ?>
@@ -197,13 +198,13 @@ $focusEmail    = ($error !== '' && $prefillEmail === '');
     </section>
   </main>
 
-  <footer class="credit">
+  <footer class="credit rise" style="--i:7">
     <img src="../assets/parisar-logo.png" alt="Parisar" width="60" height="20">
     <span>An initiative by Parisar, Pune, Maharashtra</span>
   </footer>
 
 </div>
 
-<script src="../js/login.js?v=3"></script>
+<script src="../js/login.js?v=4"></script>
 </body>
 </html>
