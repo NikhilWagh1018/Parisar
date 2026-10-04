@@ -71,4 +71,14 @@ class CityLeaderGateTest extends TestCase
         $this->assertFalse(cityLeaderMayAccess('/api/city/anything_else.php'));
         $this->assertFalse(cityLeaderMayAccess('/pages/city_audits.php'));
     }
+
+    public function test_review_and_report_pages_are_allowed(): void
+    {
+        foreach (['/pages/city_segment_review.php', '/pages/city_audit_report.php'] as $path) {
+            $this->assertTrue(cityLeaderMayAccess($path), $path);
+            $this->assertTrue(cityLeaderMayAccess('/Parisar' . $path), $path);
+        }
+        $this->assertFalse(cityLeaderMayAccess('/pages/city_segment_reviews.php'));
+        $this->assertFalse(cityLeaderMayAccess('/pages/city_audit_report.php.bak'));
+    }
 }

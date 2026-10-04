@@ -13,6 +13,7 @@ require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../repositories/CityAuditRepository.php';
 require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 require_once __DIR__ . '/../services/ScoreService.php';
+require_once __DIR__ . '/../helpers/CityDashboard.php';
 
 $isNational = $CURRENT_USER_ROLE === 'national_admin';
 $repo       = new CityAuditRepository($pdo);
@@ -69,6 +70,7 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
 <link nonce="<?= $nonce ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/dashboard.css?v=<?= filemtime(__DIR__ . '/../css/dashboard.css') ?>">
 <link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/city_audit.css?v=<?= filemtime(__DIR__ . '/../css/city_audit.css') ?>">
+<link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/city_dashboard.css?v=<?= filemtime(__DIR__ . '/../css/city_dashboard.css') ?>">
 </head>
 <body>
 <?php require __DIR__ . '/partials/role_sidebar.php'; ?>
@@ -168,7 +170,7 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
     <?php if ($showReview): ?>
     <div class="card" id="caReview">
       <div class="card-head">
-        <h3>Review &amp; close</h3>
+        <h3>Review &amp; close <a class="cd-back" style="margin:0 0 0 10px" href="city_audit_report.php?id=<?= (int)$audit['id'] ?>">View full report →</a></h3>
         <?php if ($canReview): ?>
           <button class="ca-btn" type="button" id="caClose" <?= $closeBlock === null ? '' : 'disabled' ?>>Close Audit</button>
         <?php elseif ($audit['status'] === 'finalised' && !$isNational): ?>
@@ -197,7 +199,7 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
           <div class="ca-sub-card" data-segment-id="<?= (int)$sb['segment_id'] ?>">
             <div class="ca-sub-head">
               <div>
-                <b><?= $h($sb['road_name']) ?> · Segment <?= (int)$sb['segment_number'] ?></b>
+                <b><a href="city_segment_review.php?audit_id=<?= (int)$audit['id'] ?>&amp;segment_id=<?= (int)$sb['segment_id'] ?>"><?= $h($sb['road_name']) ?> · Segment <?= (int)$sb['segment_number'] ?></a></b>
                 <small><?= $h($num($sb['length'])) ?> m · by <?= $h($sb['surveyor_name'] ?? 'Unknown') ?><?= $sb['submitted_at'] ? ' · ' . $h($sb['submitted_at']) : '' ?></small>
               </div>
               <?php if ($sc !== null && isset($sc['final'])): ?>
@@ -220,7 +222,12 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
             <?php if (!empty($d['comments'])): ?><p class="ca-sub-note">Surveyor's comments: <?= $h($d['comments']) ?></p><?php endif; ?>
             <?php if ($canReview): ?>
             <div class="ca-sub-actions">
+              <?php if (cityAnswersRecorded($d)): ?>
               <button class="ca-btn ca-approve" type="button" data-segment-id="<?= (int)$sb['segment_id'] ?>">Approve</button>
+              <?php else: ?>
+              <button class="ca-btn ca-approve" type="button" disabled title="No answers were recorded. Send it back for a re-audit.">Approve</button>
+              <?php endif; ?>
+              <a class="ca-btn ghost" href="city_segment_review.php?audit_id=<?= (int)$audit['id'] ?>&amp;segment_id=<?= (int)$sb['segment_id'] ?>">Full review</a>
               <button class="ca-btn ghost ca-sendback-open" type="button">Send back…</button>
             </div>
             <div class="ca-sendback" style="display:none">

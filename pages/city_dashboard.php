@@ -2,14 +2,17 @@
 declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
-//  pages/city_dashboard.php  —  City Leader home: the city's audits
+//  pages/city_dashboard.php  —  City Leader home
+//  Headline numbers, what needs attention, and one card per audit
+//  with its progress and the next step.
 //  city_admin sees their own city and can create audits.
 //  national_admin can open any city with ?city_id=N (read only).
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
-require_once __DIR__ . '/../repositories/CityAuditRepository.php';
+require_once __DIR__ . '/../helpers/CityDashboard.php';
+require_once __DIR__ . '/../repositories/CityDashboardRepository.php';
 
 $isNational = $CURRENT_USER_ROLE === 'national_admin';
 $cityId     = $isNational ? (int)($_GET['city_id'] ?? 0) : (int)($CURRENT_USER_CITY_ID ?? 0);
@@ -26,15 +29,35 @@ if ($cityId > 0) {
     $city = $s->fetch(PDO::FETCH_ASSOC) ?: null;
 }
 
-$audits = $city ? (new CityAuditRepository($pdo))->listForCity((int)$city['id']) : [];
+$audits    = $city ? (new CityDashboardRepository($pdo))->auditSummaries((int)$city['id']) : [];
+$totals    = cityDashTotals($audits);
 $canCreate = $city && !$isNational;
+
+// Per-audit counts in the shape cityAuditAttention() expects, plus the attention list.
+$attention = [];
+foreach ($audits as $k => $a) {
+    $counts = [
+        'total'         => (int)$a['segment_count'],
+        'unassigned'    => (int)$a['unassigned_count'],
+        'assigned'      => (int)$a['assigned_count'],
+        'submitted'     => (int)$a['submitted_count'],
+        'needs_revisit' => (int)$a['needs_revisit_count'],
+        'approved'      => (int)$a['approved_count'],
+    ];
+    $items = cityAuditAttention((string)$a['status'], $counts);
+    $audits[$k]['_next'] = $items;
+    foreach ($items as $it) {
+        if ($it['level'] === 'action') {
+            $attention[] = ['audit' => $a, 'item' => $it];
+        }
+    }
+}
 
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $nonce     = $h($_SESSION['csp_nonce'] ?? '');
 $csrf      = $h($_SESSION['csrf_token'] ?? '');
 $activeNav = 'home';
 $cityName  = $city ? (string)$city['name'] : 'No city assigned';
-$statusLabel = static fn(string $s): string => ucfirst(str_replace('_', ' ', $s));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -46,6 +69,7 @@ $statusLabel = static fn(string $s): string => ucfirst(str_replace('_', ' ', $s)
 <link nonce="<?= $nonce ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/dashboard.css?v=<?= filemtime(__DIR__ . '/../css/dashboard.css') ?>">
 <link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/city_audit.css?v=<?= filemtime(__DIR__ . '/../css/city_audit.css') ?>">
+<link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/city_dashboard.css?v=<?= filemtime(__DIR__ . '/../css/city_dashboard.css') ?>">
 </head>
 <body>
 <?php require __DIR__ . '/partials/role_sidebar.php'; ?>
@@ -101,28 +125,92 @@ $statusLabel = static fn(string $s): string => ucfirst(str_replace('_', ' ', $s)
     </div>
     <?php endif; ?>
 
-    <div class="card">
-      <div class="card-head"><h3>Audits</h3></div>
-      <div class="rd-scroll">
-        <table class="rd-table">
-          <thead><tr><th>Audit</th><th>Year</th><th>State</th><th>Status</th><th>Roads</th><th>Segments</th><th></th></tr></thead>
-          <tbody>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-icon" style="background:#edf7d6">📋</div><div><div class="stat-val"><?= (int)$totals['audits'] ?></div><div class="stat-lbl">Audits (<?= (int)$totals['open'] ?> open)</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#dcfce7">✅</div><div><div class="stat-val"><?= (int)$totals['approved'] ?> <small style="font-size:.9rem;font-weight:600;color:var(--grl)">/ <?= (int)$totals['segments'] ?></small></div><div class="stat-lbl">Segments approved</div></div></div>
+      <div class="stat-card<?= $totals['submitted'] > 0 ? ' cd-hot' : '' ?>"><div class="stat-icon" style="background:#dbeafe">🔍</div><div><div class="stat-val"><?= (int)$totals['submitted'] ?></div><div class="stat-lbl">Waiting for your review</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">🚴</div><div><div class="stat-val"><?= (int)$totals['with_surveyors'] ?></div><div class="stat-lbl">With surveyors</div></div></div>
+    </div>
+
+    <div class="cd-layout">
+      <div class="cd-stack">
+        <div class="card">
+          <div class="card-head"><h3>Your audits</h3></div>
           <?php if (!$audits): ?>
-            <tr><td colspan="7" class="rd-empty"><?= $canCreate ? 'No audits yet. Use “+ New Audit” to start one.' : 'No audits yet.' ?></td></tr>
+            <div class="cd-empty"><b>No audits yet</b><?= $canCreate ? 'Use “+ New Audit” to start the first one.' : 'This city has no audits yet.' ?></div>
           <?php endif; ?>
-          <?php foreach ($audits as $a): ?>
-            <tr>
-              <td><strong><?= $h($a['name']) ?></strong></td>
-              <td><?= (int)$a['audit_year'] ?></td>
-              <td><?= $h($a['state']) ?></td>
-              <td><span class="ca-badge <?= $h($a['status']) ?>"><?= $h($statusLabel((string)$a['status'])) ?></span></td>
-              <td><?= (int)$a['road_count'] ?></td>
-              <td><?= (int)$a['segment_count'] ?></td>
-              <td><a href="city_audit.php?id=<?= (int)$a['id'] ?>">Open →</a></td>
-            </tr>
+          <?php foreach ($audits as $a):
+              $total    = (int)$a['segment_count'];
+              $approved = (int)$a['approved_count'];
+              $pct      = cityDashProgress($approved, $total);
+              $first    = $a['_next'][0] ?? null;
+              $isDraft  = (string)$a['status'] === 'draft';
+          ?>
+          <div class="cd-audit">
+            <div class="cd-audit-head">
+              <div>
+                <h4><?= $h($a['name']) ?></h4>
+                <div class="cd-audit-meta"><?= (int)$a['audit_year'] ?> · <?= $h($a['state']) ?> · <?= $h(cityPlural((int)$a['road_count'], 'road', 'roads')) ?> · <?= $h(cityPlural($total, 'segment', 'segments')) ?></div>
+              </div>
+              <span class="ca-badge <?= $h($a['status']) ?>"><?= $h(cityStatusLabel((string)$a['status'])) ?></span>
+            </div>
+
+            <?php if ($total > 0): ?>
+            <div class="cd-progress">
+              <div class="cd-progress-top"><span><b><?= $approved ?></b> of <?= $total ?> segments approved</span><span><?= $pct ?>%</span></div>
+              <div class="cd-track"><i style="width:<?= $pct ?>%"></i></div>
+            </div>
+            <div class="cd-chips">
+              <?php if ((int)$a['submitted_count'] > 0): ?><span class="cd-chip review"><?= (int)$a['submitted_count'] ?> to review</span><?php endif; ?>
+              <?php if ((int)$a['needs_revisit_count'] > 0): ?><span class="cd-chip back"><?= (int)$a['needs_revisit_count'] ?> sent back</span><?php endif; ?>
+              <?php if ((int)$a['assigned_count'] > 0): ?><span class="cd-chip"><?= (int)$a['assigned_count'] ?> with surveyors</span><?php endif; ?>
+              <?php if ((int)$a['unassigned_count'] > 0): ?><span class="cd-chip"><?= (int)$a['unassigned_count'] ?> unassigned</span><?php endif; ?>
+              <?php if ($approved === $total): ?><span class="cd-chip ok">All approved</span><?php endif; ?>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($first): ?>
+              <p class="cd-next <?= $h($first['level']) ?>"><?= $h($first['text']) ?></p>
+            <?php endif; ?>
+
+            <div class="cd-actions">
+              <a class="ca-btn" href="city_audit.php?id=<?= (int)$a['id'] ?>"><?= $isDraft ? 'Set up audit' : 'Open audit' ?></a>
+              <?php if (!$isDraft && (int)$a['submitted_count'] > 0): ?>
+                <a class="ca-btn ghost" href="city_audit.php?id=<?= (int)$a['id'] ?>#caReview">Review submissions</a>
+              <?php endif; ?>
+              <?php if (!$isDraft): ?>
+                <a class="ca-btn ghost" href="city_audit_report.php?id=<?= (int)$a['id'] ?>">View report</a>
+              <?php endif; ?>
+            </div>
+          </div>
           <?php endforeach; ?>
-          </tbody>
-        </table>
+        </div>
+      </div>
+
+      <div class="cd-stack">
+        <div class="card">
+          <div class="card-head"><h3>Needs your attention</h3></div>
+          <?php if (!$attention): ?>
+            <div class="cd-empty"><b>You are all caught up</b>Nothing is waiting for you right now.</div>
+          <?php else: ?>
+          <ul class="cd-attn">
+            <?php foreach (array_slice($attention, 0, 8) as $at):
+                $link = $at['audit']['status'] === 'finalised'
+                    ? 'city_audit_report.php?id=' . (int)$at['audit']['id']
+                    : 'city_audit.php?id=' . (int)$at['audit']['id'] . ((int)$at['audit']['submitted_count'] > 0 ? '#caReview' : '');
+            ?>
+            <li>
+              <span class="cd-dot action"></span>
+              <div style="flex:1;min-width:0">
+                <?= $h($at['item']['text']) ?>
+                <small><?= $h($at['audit']['name']) ?></small>
+              </div>
+              <a href="<?= $h($link) ?>">Open →</a>
+            </li>
+            <?php endforeach; ?>
+          </ul>
+          <?php endif; ?>
+        </div>
       </div>
     </div>
   <?php endif; ?>
