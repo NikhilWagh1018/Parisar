@@ -250,6 +250,8 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     </div>
     <?php endif; ?>
 
+    <?php if (!isAnyAdmin($CURRENT_USER_ROLE)) { require __DIR__ . '/partials/surveyor_work.php'; } ?>
+
     <?php if (!isAnyAdmin($CURRENT_USER_ROLE)): ?>
     <!-- Roads table -->
     <div class="card">

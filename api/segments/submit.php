@@ -25,6 +25,7 @@ require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
 require_once __DIR__ . '/../../repositories/AuditSessionRepository.php';
+require_once __DIR__ . '/../../repositories/SurveyorWorkRepository.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -127,6 +128,15 @@ try {
         $pdo->rollBack();
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => 'Session not found or not owned by you.']);
+        exit;
+    }
+
+    // ── 2b. City-audit roads: only the assigned surveyor may submit ──
+    $blockReason = (new SurveyorWorkRepository($pdo))->submitBlockReason($segmentId, (int)$CURRENT_USER_ID);
+    if ($blockReason !== null) {
+        $pdo->rollBack();
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => $blockReason]);
         exit;
     }
 
@@ -349,6 +359,9 @@ try {
     $pdo->prepare(
         'UPDATE segments SET status = \'completed\', completed_at = NOW() WHERE id = ?'
     )->execute([$segmentId]);
+
+    // ── 6-assign. Mark the surveyor's assignment as submitted (city audits) ──
+    (new SurveyorWorkRepository($pdo))->markSubmitted($segmentId, (int)$CURRENT_USER_ID);
 
     // ── 6a. Auto-complete the session if all its segments are now done ──
     // Mirrors api/segments/complete.php, which already does this on the
