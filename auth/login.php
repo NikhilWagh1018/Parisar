@@ -117,7 +117,7 @@ $focusEmail    = ($error !== '' && $prefillEmail === '');
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/login.css?v=2">
+  <link rel="stylesheet" href="../css/login.css?v=3">
 </head>
 <body class="login">
 
@@ -155,7 +155,7 @@ $focusEmail    = ($error !== '' && $prefillEmail === '');
       <?php endif; ?>
 
       <!-- Google Sign-In -->
-      <a href="<?= htmlspecialchars($googleUrl, ENT_QUOTES, 'UTF-8') ?>" class="f f--google"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.945 11a9 9 0 1 1 -3.284 -5.997l-2.655 2.392a5.5 5.5 0 1 0 2.119 6.605h-4.125v-3h7.945z" /></svg>Continue with Google</a>
+      <a href="<?= htmlspecialchars($googleUrl, ENT_QUOTES, 'UTF-8') ?>" class="f f--google"><svg class="ti g-logo" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Continue with Google</a>
 
       <form method="POST" novalidate id="login-form" class="card-form">
         <div class="field">
@@ -204,6 +204,6 @@ $focusEmail    = ($error !== '' && $prefillEmail === '');
 
 </div>
 
-<script src="../js/login.js?v=2"></script>
+<script src="../js/login.js?v=3"></script>
 </body>
 </html>
