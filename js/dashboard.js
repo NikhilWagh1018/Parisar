@@ -31,12 +31,9 @@ async function loadDashboard() {
     if (!container) return;
 
     if (data.roads.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🗺️</div>
-          <p>No roads defined yet.<br>
-          <a href="segment.php">Define your first road →</a></p>
-        </div>`;
+      // Nothing older to show: assigned work is in "My Assigned Segments".
+      const roadsCard = container.closest('.card');
+      if (roadsCard) roadsCard.style.display = 'none';
       return;
     }
 
@@ -81,7 +78,6 @@ async function loadDashboard() {
             ${road.is_finalized
               ? `<a class="action-btn btn-report" href="report.php?session_id=${road.session_id}"><span>📄</span> Report</a>`
               : '<a class="action-btn btn-report" style="opacity:.4;pointer-events:none" title="Available after Final Submit">📄 Report</a>'}
-            <button class="action-btn btn-delete" onclick="promptDelete(${road.road_id}, \`${escHtml(road.road_name)}\`)">🗑</button>
           </div>
         </div>`;
     }).join('');

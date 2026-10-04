@@ -1,6 +1,14 @@
 <?php
 require_once __DIR__ . '/../config/auth_guard.php';
 require_once __DIR__ . '/../config/permissions.php';
+
+// Only admins define roads. A surveyor opens this page for an assigned road
+// (?road_id=) or when returning from a submitted audit (?status=done).
+$canDefineRoad = isAnyAdmin($CURRENT_USER_ROLE);
+if (!$canDefineRoad && empty($_GET['road_id']) && ($_GET['status'] ?? '') !== 'done') {
+    header('Location: dashboard.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -8,6 +16,7 @@ require_once __DIR__ . '/../config/permissions.php';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+  <meta name="can-define-road" content="<?= $canDefineRoad ? '1' : '0' ?>">
   <title>Road Setup — CycleAudit</title>
   <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" rel="stylesheet" href="../css/segment.css?v=<?= filemtime(__DIR__ . '/../css/segment.css') ?>">

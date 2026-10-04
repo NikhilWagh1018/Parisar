@@ -36,6 +36,9 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfHeader)) {
     exit;
 }
 
+// Surveyors cannot define roads; they audit what a City Leader assigns.
+gate('create_road', $CURRENT_USER_ID, $CURRENT_USER_ROLE);
+
 $raw  = file_get_contents('php://input');
 $data = json_decode($raw, true);
 

@@ -9,6 +9,15 @@ require_once __DIR__ . '/../config/db.php';
 
 $segmentIdParam = isset($_GET['segment_id']) ? (int)$_GET['segment_id'] : 0;
 
+// Surveyors may only open segments assigned to them in a city audit.
+if ($segmentIdParam > 0 && $CURRENT_USER_ROLE === 'surveyor') {
+    require_once __DIR__ . '/../repositories/SurveyorWorkRepository.php';
+    if (!(new SurveyorWorkRepository($pdo))->mayOpenSegment($segmentIdParam, (int)$CURRENT_USER_ID)) {
+        header('Location: dashboard.php');
+        exit;
+    }
+}
+
 // Fetch segment + road context for the header
 $roadIdForForm = 0;
 $segNum        = 0;

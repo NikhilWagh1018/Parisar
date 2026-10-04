@@ -26,6 +26,7 @@ set_exception_handler(function (Throwable $e) {
 
 require_once __DIR__ . '/../../../config/auth_guard.php';
 require_once __DIR__ . '/../../../config/db.php';
+require_once __DIR__ . '/../../../repositories/SurveyorWorkRepository.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
@@ -75,6 +76,25 @@ try {
     $stmtSegs->execute([$roadId]);
     $segments = $stmtSegs->fetchAll(PDO::FETCH_ASSOC);
 
+    // A surveyor on a city-audit road sees only the segments assigned to them.
+    $assignedOnly = false;
+    if ($CURRENT_USER_ROLE === 'surveyor') {
+        $work = new SurveyorWorkRepository($pdo);
+        if ($work->roadIsInCityAudit($roadId)) {
+            if (!$work->mayOpenRoad($roadId, (int)$CURRENT_USER_ID)) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'error' => 'This road is not assigned to you.']);
+                exit;
+            }
+            $mine     = $work->assignedSegmentIds($roadId, (int)$CURRENT_USER_ID);
+            $segments = array_values(array_filter(
+                $segments,
+                static fn(array $s): bool => in_array((int)$s['id'], $mine, true)
+            ));
+            $assignedOnly = true;
+        }
+    }
+
     // MySQL DATETIME values come back as "Y-m-d H:i:s" with no timezone
     // marker. NOW() on this server writes UTC, but a bare string like that
     // gets parsed as LOCAL time by JS's `new Date()` — on a UTC+5:30
@@ -109,6 +129,7 @@ try {
         'success'  => true,
         'road'     => $road,
         'segments' => $segments,
+        'assigned_only' => $assignedOnly,
     ]);
 
 } catch (PDOException $e) {

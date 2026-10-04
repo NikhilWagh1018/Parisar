@@ -104,6 +104,57 @@ class SurveyorWorkRepository
         return (int)$q->fetchColumn() > 0;
     }
 
+    /** Does the road belong to a city audit (as opposed to an older stand-alone road)? */
+    public function roadIsInCityAudit(int $roadId): bool
+    {
+        $q = $this->pdo->prepare('SELECT audit_id FROM roads WHERE id = ?');
+        $q->execute([$roadId]);
+        $auditId = $q->fetchColumn();
+        return $auditId !== false && $auditId !== null;
+    }
+
+    /**
+     * Ids of the segments on this road that are assigned to the surveyor.
+     *
+     * @return list<int>
+     */
+    public function assignedSegmentIds(int $roadId, int $userId): array
+    {
+        $q = $this->pdo->prepare(
+            'SELECT sa.segment_id FROM segment_assignments sa
+               JOIN segments s ON s.id = sa.segment_id
+              WHERE s.road_id = ? AND sa.surveyor_id = ?'
+        );
+        $q->execute([$roadId, $userId]);
+        return array_map('intval', $q->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    /**
+     * May this user open the audit form for this exact segment?
+     * Segments on roads outside city audits are unchanged. Segments in a
+     * city audit need a workable audit and an assignment to this user.
+     */
+    public function mayOpenSegment(int $segmentId, int $userId): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT r.audit_id, a.status AS audit_status, sa.surveyor_id
+               FROM segments s
+               JOIN roads r ON r.id = s.road_id
+               LEFT JOIN city_audits a ON a.id = r.audit_id
+               LEFT JOIN segment_assignments sa ON sa.segment_id = s.id
+              WHERE s.id = ?'
+        );
+        $stmt->execute([$segmentId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row === false || $row['audit_id'] === null) {
+            return true; // unknown segment (the page handles it) or an older road
+        }
+        if (!in_array((string)$row['audit_status'], SURVEYOR_WORKABLE_AUDIT_STATUSES, true)) {
+            return false;
+        }
+        return $row['surveyor_id'] !== null && (int)$row['surveyor_id'] === $userId;
+    }
+
     /** The surveyor submitted the segment: mark their assignment as submitted. */
     public function markSubmitted(int $segmentId, int $userId): void
     {

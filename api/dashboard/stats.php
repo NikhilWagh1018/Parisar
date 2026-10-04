@@ -22,6 +22,7 @@ require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../repositories/SegmentRepository.php';
 require_once __DIR__ . '/../../helpers/StreakCalculator.php';
+require_once __DIR__ . '/../../repositories/SurveyorWorkRepository.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
@@ -30,6 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 try {
+    // Surveyors: roads that belong to a city audit are not listed here. Their
+    // assigned segments are shown (and counted) from segment_assignments instead.
+    $auditFilter = ($CURRENT_USER_ROLE === 'surveyor') ? ' AND r.audit_id IS NULL' : '';
+
     // ── FIX: Include roads the user created OR has a session on ──
     $stmt = $pdo->prepare(
         'SELECT
@@ -56,10 +61,10 @@ try {
                      ORDER  BY id DESC
                      LIMIT  1
                    )
-         WHERE r.creator_id = ?
+         WHERE (r.creator_id = ?
             OR r.id IN (
                  SELECT road_id FROM audit_sessions WHERE user_id = ?
-               )
+               ))' . $auditFilter . '
          GROUP BY r.id, sess.id
          ORDER BY r.created_at DESC'
     );
@@ -92,6 +97,17 @@ try {
         }
     }
     unset($road);
+
+    // ── Surveyors: add their assigned city-audit segments to the totals ──
+    if ($CURRENT_USER_ROLE === 'surveyor') {
+        $assigned = surveyorAssignedTotals(
+            (new SurveyorWorkRepository($pdo))->forSurveyor((int)$CURRENT_USER_ID)
+        );
+        $totalRoads        += $assigned['roads'];
+        $totalSegments     += $assigned['segments'];
+        $completedSegments += $assigned['completed'];
+        $activeSessions    += $assigned['in_progress'];
+    }
 
     // ── Current streak (consecutive days with a segment audit) ───
     $streakRepo    = new SegmentRepository($pdo);

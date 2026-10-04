@@ -13,9 +13,8 @@ declare(strict_types=1);
 //                       city (users.city_id). Pass the resource's
 //                       city_id via $ctx['city_id'] so this can be
 //                       checked — see USAGE below.
-//    surveyor        — Default. Can create roads, run audits on any
-//                       road, but can only modify/delete their OWN
-//                       roads & segments.
+//    surveyor        — Audits only the segments a City Leader assigns.
+//                       Cannot create or delete roads.
 //
 //  USAGE
 //  ─────
@@ -87,8 +86,9 @@ $PERMISSIONS = [
 
     // ── Roads ─────────────────────────────────────────────────
     'create_road' => static function (int $userId, string $role, array $ctx): bool {
-        // Any authenticated user may create roads.
-        return true;
+        // Roads are set up by admins (City Leaders add roads to an audit
+        // through api/city/audit_road_add.php). Surveyors only audit.
+        return isAnyAdmin($role);
     },
 
     'edit_road' => static function (int $userId, string $role, array $ctx): bool {
@@ -98,12 +98,9 @@ $PERMISSIONS = [
     },
 
     'delete_road' => static function (int $userId, string $role, array $ctx): bool {
-        // Data deletion is Admin-only in this phase (confirmed scope) —
-        // a city_admin does NOT get elevated delete rights the way it
-        // does for edit/view. Only national_admin, or the resource's
-        // own owner (pre-existing surveyor self-delete), may delete.
-        if ($role === 'national_admin') return true;
-        return isset($ctx['owner_id']) && (int)$ctx['owner_id'] === $userId;
+        // Data deletion is Admin-only. Surveyors and City Leaders cannot
+        // delete roads (test data is removed by an Admin).
+        return $role === 'national_admin';
     },
 
     'save_segments' => static function (int $userId, string $role, array $ctx): bool {
