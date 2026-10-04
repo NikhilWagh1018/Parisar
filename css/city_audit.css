@@ -1,5 +1,5 @@
 /* City Leader audit screens (pages/city_dashboard.php, pages/city_audit.php) */
-.ca-badge { display:inline-block; padding:2px 10px; border-radius:99px; font-size:.72rem; font-weight:700; background:#eee; color:#555; text-transform:capitalize; }
+.ca-badge { display:inline-block; padding:2px 10px; border-radius:99px; font-size:.72rem; font-weight:700; background:#eee; color:#555; }
 .ca-badge.draft { background:#fef3cd; color:#92600a; }
 .ca-badge.active { background:#e9f5df; color:#1a4a09; }
 .ca-badge.finalised, .ca-badge.published { background:#eef2fb; color:#0c3480; }

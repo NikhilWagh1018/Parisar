@@ -23,6 +23,7 @@
             <file>tests/AuditReviewTest.php</file>
             <file>tests/SurveyorAssignedOnlyTest.php</file>
             <file>tests/CityDashboardTest.php</file>
+            <file>tests/AdminApprovalTest.php</file>
         </testsuite>
         <testsuite name="Integration">
             <file>tests/SegmentRepositoryTest.php</file>

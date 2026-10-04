@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
+require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 
 if ($CURRENT_USER_ROLE !== 'national_admin') {
     header('Location: ' . roleHomePage($CURRENT_USER_ROLE));
@@ -39,6 +40,7 @@ foreach ($cities as $c) {
     $tot['segs']      += (int)$c['segs'];
     $tot['done']      += (int)$c['done'];
 }
+$awaiting = (new AuditReviewRepository($pdo))->awaitingApproval();
 $pct = static fn(int $d, int $t): string => $t > 0 ? (string)round($d * 100 / $t) . '%' : '—';
 
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
@@ -71,6 +73,33 @@ $activeNav = 'home';
       <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">🧑‍💼</div><div><div class="stat-val"><?= $tot['leaders'] ?></div><div class="stat-lbl">City Leaders</div></div></div>
       <div class="stat-card"><div class="stat-icon" style="background:#edf7d6">👥</div><div><div class="stat-val"><?= $tot['surveyors'] ?></div><div class="stat-lbl">Surveyors</div></div></div>
       <div class="stat-card"><div class="stat-icon" style="background:#dcfce7">✅</div><div><div class="stat-val"><?= $pct($tot['done'], $tot['segs']) ?></div><div class="stat-lbl">Segments Done</div></div></div>
+    </div>
+
+    <div class="card" id="awaitingApproval">
+      <div class="card-head">
+        <h3>📝 Awaiting your approval<?= $awaiting ? ' (' . count($awaiting) . ')' : '' ?></h3>
+      </div>
+      <?php if (!$awaiting): ?>
+        <p class="rd-empty" style="padding:14px 4px">Nothing is waiting for your approval.</p>
+      <?php else: ?>
+      <div class="rd-scroll">
+        <table class="rd-table">
+          <thead><tr><th>Audit</th><th>City</th><th>Year</th><th>Roads</th><th>Segments</th><th></th></tr></thead>
+          <tbody>
+          <?php foreach ($awaiting as $a): ?>
+            <tr>
+              <td><strong><?= $h($a['name']) ?></strong></td>
+              <td><?= $h($a['city_name']) ?></td>
+              <td><?= (int)$a['audit_year'] ?></td>
+              <td><?= (int)$a['road_count'] ?></td>
+              <td><?= (int)$a['segment_count'] ?></td>
+              <td><a href="city_audit_report.php?id=<?= (int)$a['id'] ?>">Review →</a></td>
+            </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+      <?php endif; ?>
     </div>
 
     <div class="card">

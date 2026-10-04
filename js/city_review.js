@@ -80,6 +80,35 @@
     } catch (e) { toast(e.message, 'error'); sendBtn.disabled = false; }
   });
 
+  // ── Admin decision on the report page ─────────────────────────
+  var approveAuditBtn = document.getElementById('rpApprove');
+  if (approveAuditBtn) approveAuditBtn.addEventListener('click', async function () {
+    if (!window.confirm('Approve this audit? The report becomes final.')) return;
+    approveAuditBtn.disabled = true;
+    try {
+      await post('../api/admin/audit_decide.php', { audit_id: app.dataset.auditId, action: 'approve' });
+      window.location.reload();
+    } catch (e) { toast(e.message, 'error'); approveAuditBtn.disabled = false; }
+  });
+
+  var returnOpen = document.getElementById('rpReturnOpen');
+  var returnBox = document.getElementById('rpReturnBox');
+  if (returnOpen && returnBox) returnOpen.addEventListener('click', function () {
+    returnBox.classList.toggle('open');
+    if (returnBox.classList.contains('open')) document.getElementById('rpNote').focus();
+  });
+
+  var returnBtn = document.getElementById('rpReturn');
+  if (returnBtn) returnBtn.addEventListener('click', async function () {
+    var note = document.getElementById('rpNote').value.trim();
+    if (!note) { toast('Tell the City Leader what needs to change.', 'error'); return; }
+    returnBtn.disabled = true;
+    try {
+      await post('../api/admin/audit_decide.php', { audit_id: app.dataset.auditId, action: 'return', note: note });
+      window.location.reload();
+    } catch (e) { toast(e.message, 'error'); returnBtn.disabled = false; }
+  });
+
   var printBtn = document.getElementById('rpPrint');
   if (printBtn) printBtn.addEventListener('click', function () { window.print(); });
 })();

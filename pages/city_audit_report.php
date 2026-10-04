@@ -39,6 +39,9 @@ $rv       = $review->counts($auditId);
 $isFinal  = in_array($status, ['finalised', 'awaiting_approval', 'published'], true);
 $canClose = !$isNational && auditReviewCanClose($status, $rv);
 $canSend  = !$isNational && $status === 'finalised';
+$canDecide = $isNational && $status === AUDIT_ADMIN_DECIDABLE_STATUS;   // Admin: approve or return
+$adminNote = $review->adminDecision($auditId)['admin_note'];
+$wasReturned = !$isNational && $adminNote !== null && in_array($status, AUDIT_REVIEW_OPEN_STATUSES, true);
 
 // ── one row per segment, scored when approved ─────────────────
 $rows = (new AuditReportRepository($pdo))->reportSegments($auditId);
@@ -98,9 +101,9 @@ $statusText = ['approved' => 'Approved', 'submitted' => 'To review', 'needs_revi
     <button class="sb-hamburger" id="sb-toggle" aria-label="Menu">&#9776;</button>
     <div class="topbar-left">
       <h1><?= $h($audit['name']) ?> — Report</h1>
-      <p><a href="<?= $h($auditUrl) ?>">← Back to audit</a></p>
+      <p class="no-print"><a href="<?= $h($auditUrl) ?>">← Back to audit</a></p>
     </div>
-    <span class="ca-badge <?= $h($status) ?>"><?= $h(cityStatusLabel($status)) ?></span>
+    <span class="ca-badge no-print <?= $h($status) ?>"><?= $h(cityStatusLabel($status)) ?></span>
   </div>
 
   <div class="content" id="caApp" data-csrf="<?= $csrf ?>" data-audit-id="<?= $auditId ?>">
@@ -109,15 +112,38 @@ $statusText = ['approved' => 'Approved', 'submitted' => 'To review', 'needs_revi
       <p class="rp-prov"><b>Provisional report.</b> The audit is still open. Only approved segments are scored (<?= (int)$rv['approved'] ?> of <?= (int)$rv['total'] ?> so far), and the numbers can still change.</p>
     <?php endif; ?>
 
+    <?php if ($wasReturned): ?>
+      <div class="rp-returned">
+        <b>The Admin sent this audit back for changes.</b>
+        <p class="rp-returned-note"><?= $h($adminNote) ?></p>
+        <span class="cd-sub">Fix what is asked, send segments back to surveyors if needed, then close the audit and send it to the Admin again.</span>
+      </div>
+    <?php elseif ($canDecide && $adminNote !== null): ?>
+      <p class="rp-prov"><b>Sent again.</b> You returned this audit earlier with this note: <?= $h($adminNote) ?></p>
+    <?php elseif ($status === 'published'): ?>
+      <p class="rp-done"><b>Approved by the Admin.</b> This report is final.</p>
+    <?php endif; ?>
+
     <div class="cd-actions no-print" style="margin-bottom:16px">
       <?php if ($canClose): ?><button class="ca-btn" type="button" id="rpClose">Close audit</button><?php endif; ?>
       <?php if ($canSend): ?><button class="ca-btn" type="button" id="rpSend">Send to Admin</button><?php endif; ?>
+      <?php if ($canDecide): ?>
+        <button class="ca-btn" type="button" id="rpApprove">Approve audit</button>
+        <button class="ca-btn ghost" type="button" id="rpReturnOpen">Return to City Leader…</button>
+      <?php endif; ?>
       <button class="ca-btn ghost" type="button" id="rpPrint">Print report</button>
       <?php if (!$isFinal && !$canClose): ?>
         <?php $why = auditReviewCloseBlockReason($status, $rv); ?>
         <?php if ($why !== null): ?><span class="cd-sub">Close audit unlocks when every segment is approved. <?= $h($why) ?></span><?php endif; ?>
       <?php endif; ?>
     </div>
+
+    <?php if ($canDecide): ?>
+    <div class="rv-sendback no-print" id="rpReturnBox">
+      <textarea id="rpNote" rows="3" maxlength="<?= (int)AUDIT_REVIEW_NOTE_MAX ?>" placeholder="What does the City Leader need to change? (required)"></textarea>
+      <button class="ca-btn" type="button" id="rpReturn">Return to City Leader</button>
+    </div>
+    <?php endif; ?>
 
     <div class="rp-top">
       <div class="card">

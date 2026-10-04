@@ -4,7 +4,8 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  repositories/AuditReviewRepository.php
 //  City Leader review loop: approve or send back submitted segments,
-//  close the audit, send it to the Admin.
+//  close the audit, send it to the Admin. Also the Admin's decision:
+//  approve the audit or return it to the City Leader with a note.
 //  SQL is kept portable (MySQL in production, SQLite in tests).
 //  User-facing problems are thrown as DomainException (safe to show).
 // ═══════════════════════════════════════════════════════════════
@@ -249,6 +250,118 @@ class AuditReviewRepository
         $upd->execute([(int)$audit['id']]);
         if ($upd->rowCount() === 0) {
             throw new DomainException('This audit was already sent.');
+        }
+    }
+
+    // ── Admin decision (national_admin) ─────────────────────────
+
+    /**
+     * The Admin's last note on an audit and when it was decided (null note when none).
+     *
+     * @return array{admin_note:?string,admin_decided_at:?string}
+     */
+    public function adminDecision(int $auditId): array
+    {
+        try {
+            $q = $this->pdo->prepare('SELECT admin_note, admin_decided_at FROM city_audits WHERE id = ?');
+            $q->execute([$auditId]);
+            $row = $q->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            $row = false;   // migration 014 not run yet: pages keep working, just without notes
+        }
+        return [
+            'admin_note'       => ($row !== false && $row['admin_note'] !== null && $row['admin_note'] !== '') ? (string)$row['admin_note'] : null,
+            'admin_decided_at' => $row !== false ? ($row['admin_decided_at'] ?? null) : null,
+        ];
+    }
+
+    /**
+     * Admin notes for several audits at once: audit_id => note (audits without a note are left out).
+     *
+     * @return array<int,string>
+     */
+    public function adminNotesForCity(int $cityId): array
+    {
+        $out = [];
+        try {
+            $q = $this->pdo->prepare("SELECT id, admin_note FROM city_audits WHERE city_id = ? AND admin_note IS NOT NULL AND admin_note <> ''");
+            $q->execute([$cityId]);
+            $rows = $q->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return $out;   // migration 014 not run yet
+        }
+        foreach ($rows as $r) {
+            $out[(int)$r['id']] = (string)$r['admin_note'];
+        }
+        return $out;
+    }
+
+    /**
+     * Audits waiting for the Admin, oldest first, with city name and segment counts.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function awaitingApproval(): array
+    {
+        $rows = $this->pdo->query(
+            "SELECT a.id, a.name, a.audit_year, a.city_id, c.name AS city_name, a.updated_at,
+                    COUNT(DISTINCT r.id) AS road_count,
+                    COUNT(s.id)          AS segment_count
+               FROM city_audits a
+               JOIN cities c ON c.id = a.city_id
+               LEFT JOIN roads r    ON r.audit_id = a.id
+               LEFT JOIN segments s ON s.road_id  = r.id
+              WHERE a.status = 'awaiting_approval'
+              GROUP BY a.id, a.name, a.audit_year, a.city_id, c.name, a.updated_at
+              ORDER BY a.updated_at ASC, a.id ASC"
+        )->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$r) {
+            $r['road_count']    = (int)$r['road_count'];
+            $r['segment_count'] = (int)$r['segment_count'];
+        }
+        unset($r);
+        return $rows;
+    }
+
+    /** Admin approves an audit that is waiting for approval: it becomes published. */
+    public function approveAudit(array $audit, int $adminId): void
+    {
+        if ($audit['status'] !== AUDIT_ADMIN_DECIDABLE_STATUS) {
+            throw new DomainException('This audit is not waiting for approval.');
+        }
+        $upd = $this->pdo->prepare(
+            "UPDATE city_audits
+                SET status = 'published', admin_note = NULL, admin_decided_at = CURRENT_TIMESTAMP, admin_decided_by = ?
+              WHERE id = ? AND status = 'awaiting_approval'"
+        );
+        $upd->execute([$adminId, (int)$audit['id']]);
+        if ($upd->rowCount() === 0) {
+            throw new DomainException('This audit was already decided. Reload the page.');
+        }
+    }
+
+    /**
+     * Admin returns an audit to the City Leader with a required note saying what to change.
+     * The audit goes back to in_review: the City Leader can send segments back to surveyors,
+     * then close the audit and send it to the Admin again.
+     */
+    public function returnAudit(array $audit, int $adminId, string $note): void
+    {
+        if ($audit['status'] !== AUDIT_ADMIN_DECIDABLE_STATUS) {
+            throw new DomainException('This audit is not waiting for approval.');
+        }
+        $clean = auditReviewCleanNote($note, 'the City Leader');
+        if ($clean['error'] !== null) {
+            throw new DomainException($clean['error']);
+        }
+        $upd = $this->pdo->prepare(
+            "UPDATE city_audits
+                SET status = 'in_review', admin_note = ?, admin_decided_at = CURRENT_TIMESTAMP, admin_decided_by = ?
+              WHERE id = ? AND status = 'awaiting_approval'"
+        );
+        $upd->execute([$clean['note'], $adminId, (int)$audit['id']]);
+        if ($upd->rowCount() === 0) {
+            throw new DomainException('This audit was already decided. Reload the page.');
         }
     }
 }

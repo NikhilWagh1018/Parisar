@@ -13,6 +13,7 @@ require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
 require_once __DIR__ . '/../repositories/CityDashboardRepository.php';
+require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 
 $isNational = $CURRENT_USER_ROLE === 'national_admin';
 $cityId     = $isNational ? (int)($_GET['city_id'] ?? 0) : (int)($CURRENT_USER_CITY_ID ?? 0);
@@ -30,6 +31,7 @@ if ($cityId > 0) {
 }
 
 $audits    = $city ? (new CityDashboardRepository($pdo))->auditSummaries((int)$city['id']) : [];
+$adminNotes = $city ? (new AuditReviewRepository($pdo))->adminNotesForCity((int)$city['id']) : [];
 $totals    = cityDashTotals($audits);
 $canCreate = $city && !$isNational;
 
@@ -44,7 +46,7 @@ foreach ($audits as $k => $a) {
         'needs_revisit' => (int)$a['needs_revisit_count'],
         'approved'      => (int)$a['approved_count'],
     ];
-    $items = cityAuditAttention((string)$a['status'], $counts);
+    $items = cityAuditAttention((string)$a['status'], $counts, $adminNotes[(int)$a['id']] ?? null, $isNational);
     $audits[$k]['_next'] = $items;
     foreach ($items as $it) {
         if ($it['level'] === 'action') {
@@ -179,7 +181,7 @@ $cityName  = $city ? (string)$city['name'] : 'No city assigned';
                 <a class="ca-btn ghost" href="city_audit.php?id=<?= (int)$a['id'] ?>#caReview">Review submissions</a>
               <?php endif; ?>
               <?php if (!$isDraft): ?>
-                <a class="ca-btn ghost" href="city_audit_report.php?id=<?= (int)$a['id'] ?>">View report</a>
+                <a class="ca-btn<?= ($isNational && (string)$a['status'] === 'awaiting_approval') ? '' : ' ghost' ?>" href="city_audit_report.php?id=<?= (int)$a['id'] ?>"><?= ($isNational && (string)$a['status'] === 'awaiting_approval') ? 'Review &amp; decide' : 'View report' ?></a>
               <?php endif; ?>
             </div>
           </div>
@@ -195,7 +197,7 @@ $cityName  = $city ? (string)$city['name'] : 'No city assigned';
           <?php else: ?>
           <ul class="cd-attn">
             <?php foreach (array_slice($attention, 0, 8) as $at):
-                $link = $at['audit']['status'] === 'finalised'
+                $link = in_array($at['audit']['status'], $isNational ? ['awaiting_approval'] : ['finalised'], true)
                     ? 'city_audit_report.php?id=' . (int)$at['audit']['id']
                     : 'city_audit.php?id=' . (int)$at['audit']['id'] . ((int)$at['audit']['submitted_count'] > 0 ? '#caReview' : '');
             ?>

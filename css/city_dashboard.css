@@ -135,4 +135,7 @@
 .rv-sendback.open { display:flex; }
 .rv-sendback textarea { width:100%; max-width:560px; box-sizing:border-box; font:inherit; font-size:.84rem; padding:9px 11px; border:1px solid rgba(0,0,0,.18); border-radius:8px; }
 .rp-prov { margin:0 0 14px; padding:11px 14px; border-radius:10px; background:#e6eefc; color:#1e3a8a; font-size:.84rem; }
+.rp-returned { margin:0 0 14px; padding:12px 14px; border-radius:10px; background:#fff4e0; border:1px solid #f0b35a; color:#7c2d12; font-size:.84rem; }
+.rp-returned-note { margin:6px 0 8px; padding:9px 11px; background:#fff; border-radius:8px; color:var(--ink); white-space:pre-line; }
+.rp-done { margin:0 0 14px; padding:11px 14px; border-radius:10px; background:#e3f4e6; color:#14532d; font-size:.84rem; }
 .rp-num { font-variant-numeric:tabular-nums; }
