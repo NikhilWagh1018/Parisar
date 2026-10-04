@@ -254,4 +254,60 @@ class CityDashboardTest extends TestCase
         $this->assertNull($rows[0]['latest_audit_id']);
         $this->assertSame(2, (int)$rows[1]['latest_audit_id']);
     }
+
+    // ── tracker, progress mix, next action ────────────────────
+
+    public function test_audit_stage_follows_the_lifecycle(): void
+    {
+        $this->assertSame(0, cityAuditStage('draft'));
+        $this->assertSame(1, cityAuditStage('active'));
+        $this->assertSame(2, cityAuditStage('in_review'));
+        $this->assertSame(3, cityAuditStage('finalised'));
+        $this->assertSame(4, cityAuditStage('awaiting_approval'));
+        $this->assertSame(5, cityAuditStage('published'));
+        $this->assertSame(-1, cityAuditStage('voided'));
+        $this->assertCount(6, CITY_AUDIT_STAGES);
+    }
+
+    public function test_segment_mix_adds_up_to_exactly_100(): void
+    {
+        $this->assertSame([], citySegmentMix(['total' => 0]));
+        $mix = citySegmentMix(['total' => 7, 'approved' => 2, 'submitted' => 2, 'needs_revisit' => 1, 'assigned' => 1, 'unassigned' => 1]);
+        $this->assertSame(100, array_sum(array_column($mix, 'pct')));
+        $this->assertSame(['approved', 'review', 'back', 'surveyor', 'open'], array_column($mix, 'key'));
+        $all = citySegmentMix(['total' => 4, 'approved' => 4]);
+        $this->assertSame(100, $all[0]['pct']);
+        $this->assertSame(0, $all[4]['pct']);
+    }
+
+    public function test_pipeline_counts_audits_per_stage(): void
+    {
+        $p = cityPipeline([['status' => 'draft'], ['status' => 'published'], ['status' => 'published'], ['status' => 'voided']]);
+        $this->assertSame(1, $p['Setup']);
+        $this->assertSame(2, $p['Published']);
+        $this->assertSame(0, $p['Auditing']);
+        $this->assertSame(array_values(CITY_AUDIT_STAGES), array_keys($p));
+    }
+
+    public function test_greeting_by_hour(): void
+    {
+        $this->assertSame('Good morning', cityGreeting(6));
+        $this->assertSame('Good afternoon', cityGreeting(12));
+        $this->assertSame('Good evening', cityGreeting(17));
+    }
+
+    public function test_next_action_button(): void
+    {
+        $none = ['total' => 0];
+        $this->assertSame('Add a road', cityAuditNextAction('draft', $none, false, 5)['label']);
+        $this->assertSame('Assign surveyors', cityAuditNextAction('draft', ['total' => 4, 'unassigned' => 1], false, 5)['label']);
+        $this->assertSame('Activate audit', cityAuditNextAction('draft', ['total' => 4, 'unassigned' => 0], false, 5)['label']);
+        $this->assertSame('Review submissions', cityAuditNextAction('active', ['total' => 4, 'submitted' => 1], false, 5)['label']);
+        $this->assertSame('Close audit', cityAuditNextAction('in_review', ['total' => 4, 'approved' => 4], false, 5)['label']);
+        $this->assertNull(cityAuditNextAction('active', ['total' => 4, 'approved' => 1], false, 5));
+        $this->assertSame('Send to Admin', cityAuditNextAction('finalised', ['total' => 4], false, 5)['label']);
+        $this->assertSame('city_audit_report.php?id=5', cityAuditNextAction('published', ['total' => 4], false, 5)['href']);
+        $this->assertSame('Open report', cityAuditNextAction('awaiting_approval', ['total' => 4], true, 5)['label']);
+        $this->assertNull(cityAuditNextAction('draft', $none, true, 5));
+    }
 }

@@ -14,6 +14,7 @@ require_once __DIR__ . '/../repositories/CityAuditRepository.php';
 require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 require_once __DIR__ . '/../services/ScoreService.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
+require_once __DIR__ . '/partials/cx_icons.php';
 
 $isNational = $CURRENT_USER_ROLE === 'national_admin';
 $repo       = new CityAuditRepository($pdo);
@@ -61,6 +62,50 @@ $csrf      = $h($_SESSION['csrf_token'] ?? '');
 $activeNav = 'home';
 $num       = static fn($v): string => rtrim(rtrim(number_format((float)$v, 2, '.', ''), '0'), '.');
 $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
+
+// ── Dashboard-style summary: stage tracker, progress mix, next step, scores ──
+$stage      = cityAuditStage((string)$audit['status']);
+$published  = $audit['status'] === 'published';
+$segCounts  = [
+    'total'         => (int)$rv['total'],
+    'unassigned'    => (int)$rv['unassigned'],
+    'assigned'      => (int)$rv['assigned'],
+    'submitted'     => (int)$rv['submitted'],
+    'needs_revisit' => (int)$rv['needs_revisit'],
+    'approved'      => (int)$rv['approved'],
+];
+$mix        = citySegmentMix($segCounts);
+$approvedPct = cityDashProgress($segCounts['approved'], $segCounts['total']);
+$attnItems  = cityAuditAttention((string)$audit['status'], $segCounts, $adminNote, $isNational);
+$nextItem   = $attnItems[0] ?? null;
+foreach ($attnItems as $it0) {
+    if ($it0['level'] === 'action') { $nextItem = $it0; break; }
+}
+$nextCta    = cityAuditNextAction((string)$audit['status'], $segCounts, $isNational, (int)$audit['id']);
+$overall    = null;
+$roadConds  = [];
+if ($isClosed) {
+    $wSum = 0.0; $fSum = 0.0; $sSum = 0.0; $cSum = 0.0; $mSum = 0.0;
+    foreach ($roads as $r0) {
+        $rs0 = $roadScores[(int)$r0['id']] ?? null;
+        if (!$rs0) { continue; }
+        $w0 = max(0.0, (float)$r0['total_length']);
+        $wSum += $w0;
+        $fSum += (float)$rs0['score'] * $w0;
+        $sSum += (float)$rs0['safety_score'] * $w0;
+        $cSum += (float)$rs0['continuity_score'] * $w0;
+        $mSum += (float)$rs0['comfort_score'] * $w0;
+        $roadConds[] = ['condition' => $rs0['condition'] ?? ''];
+    }
+    if ($wSum > 0.0) {
+        $sc0 = round($fSum / $wSum, 2);
+        $overall = [
+            'score' => $sc0, 'condition' => ScoreHelpers::scoreToCondition($sc0),
+            'bars'  => ['Safety' => round($sSum / $wSum, 2), 'Continuity' => round($cSum / $wSum, 2), 'Comfort' => round($mSum / $wSum, 2)],
+        ];
+    }
+}
+$barClass = static fn(float $v): string => $v < 40 ? 'bad' : ($v < 70 ? 'mid' : '');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -84,25 +129,66 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
       <p><a href="<?= $h($backUrl) ?>">← All audits</a></p>
     </div>
   </div>
-  <div class="content" id="caApp" data-csrf="<?= $csrf ?>" data-audit-id="<?= (int)$audit['id'] ?>">
+  <div class="content cx-page" id="caApp" data-csrf="<?= $csrf ?>" data-audit-id="<?= (int)$audit['id'] ?>">
 
-    <div class="card">
-      <div class="card-head">
-        <h3>Audit details</h3>
+    <section class="cx-hero">
+      <div class="cx-metas">
         <span class="ca-badge <?= $h($audit['status']) ?>"><?= $h($statusLabel) ?></span>
-      </div>
-      <div class="ca-meta">
-        <span>City: <b><?= $h($audit['city_name']) ?></b></span>
-        <span>State: <b><?= $h($audit['state']) ?></b></span>
-        <span>Year: <b><?= (int)$audit['audit_year'] ?></b></span>
-        <?php if ($audit['created_by_name']): ?><span>Created by: <b><?= $h($audit['created_by_name']) ?></b></span><?php endif; ?>
+        <span class="cx-meta"><?= cxIcon('pin') ?> <b><?= $h($audit['city_name']) ?></b></span>
+        <span class="cx-meta"><?= cxIcon('flag') ?> <b><?= $h($audit['state']) ?></b></span>
+        <span class="cx-meta"><?= cxIcon('calendar') ?> <b><?= (int)$audit['audit_year'] ?></b></span>
+        <?php if ($audit['created_by_name']): ?><span class="cx-meta"><?= cxIcon('user') ?> Created by <b><?= $h($audit['created_by_name']) ?></b></span><?php endif; ?>
       </div>
       <?php if ($audit['programme_info']): ?>
-        <p style="margin:12px 0 0;font-size:.85rem;white-space:pre-line"><?= $h($audit['programme_info']) ?></p>
+        <p class="cx-prog-info"><?= $h($audit['programme_info']) ?></p>
+      <?php endif; ?>
+      <?php if ($stage >= 0): ?>
+      <div class="cx-track" role="list" aria-label="Audit progress">
+        <?php foreach (CITY_AUDIT_STAGES as $i => $label):
+            $cls = ($published || $i < $stage) ? 'done' : ($i === $stage ? 'now' : '');
+        ?>
+          <div class="cx-step <?= $cls ?>" role="listitem"<?= $cls === 'now' ? ' aria-current="step"' : '' ?>>
+            <i><?= $cls === 'done' ? cxIcon('tick') : ($i + 1) ?></i>
+            <span><?= $h($label) ?></span>
+          </div>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+    </section>
+
+    <?php if ($nextItem): ?>
+    <div class="cx-next <?= $h($nextItem['level']) ?>">
+      <span class="cx-next-ico"><?= cxIcon($nextItem['level'] === 'done' ? 'check' : ($nextItem['level'] === 'info' ? 'clock' : 'alert')) ?></span>
+      <div class="cx-next-txt">
+        <small><?= $nextItem['level'] === 'action' ? 'Your next step' : ($nextItem['level'] === 'done' ? 'All done' : 'Status') ?></small>
+        <p><?= $h($nextItem['text']) ?></p>
+      </div>
+      <?php if ($nextCta): ?>
+        <a class="ca-btn" href="<?= $h($nextCta['href']) ?>"><?= $h($nextCta['label']) ?> <?= cxIcon('arrow') ?></a>
       <?php endif; ?>
     </div>
+    <?php endif; ?>
 
+    <div class="cx-kpis">
+      <div class="cx-kpi"><span class="cx-kpi-ico g"><?= cxIcon('road') ?></span><div><b><?= count($roads) ?></b><span><?= count($roads) === 1 ? 'Road' : 'Roads' ?> in this audit</span></div></div>
+      <div class="cx-kpi"><span class="cx-kpi-ico b"><?= cxIcon('route') ?></span><div><b><?= (int)$segCounts['total'] ?></b><span>Segments</span></div></div>
+      <div class="cx-kpi"><span class="cx-kpi-ico o"><?= cxIcon('users') ?></span><div><b><?= (int)$counts['assigned'] ?> <small>/ <?= (int)$counts['total'] ?></small></b><span>Have a surveyor</span></div></div>
+      <div class="cx-kpi"><span class="cx-kpi-ico p"><?= cxIcon('check') ?></span><div><b><?= (int)$segCounts['approved'] ?> <small>/ <?= (int)$segCounts['total'] ?></small></b><span>Approved (<?= $approvedPct ?>%)</span></div></div>
+    </div>
+
+    <?php if ($mix): ?>
     <div class="card">
+      <div class="cx-mix-top"><span>Segment progress</span><span><b><?= $approvedPct ?>%</b> approved</span></div>
+      <div class="cx-mix" role="img" aria-label="<?= $h($segCounts['approved'] . ' of ' . $segCounts['total'] . ' segments approved') ?>">
+        <?php foreach ($mix as $m): if ($m['pct'] > 0): ?><i class="<?= $h($m['key']) ?>" style="width:<?= (int)$m['pct'] ?>%" title="<?= $h($m['label'] . ': ' . $m['count']) ?>"></i><?php endif; endforeach; ?>
+      </div>
+      <div class="cx-leg">
+        <?php foreach ($mix as $m): if ($m['count'] > 0): ?><span class="<?= $h($m['key']) ?>"><b><?= (int)$m['count'] ?></b> <?= $h($m['label']) ?></span><?php endif; endforeach; ?>
+      </div>
+    </div>
+    <?php endif; ?>
+
+    <div class="card" id="caAssign">
       <div class="card-head">
         <h3>Surveyor assignment</h3>
         <?php if ($canActivate): ?>
@@ -110,6 +196,9 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
         <?php endif; ?>
       </div>
       <p class="ca-assign-sum"><b><?= (int)$counts['assigned'] ?></b> of <b><?= (int)$counts['total'] ?></b> segments have a surveyor.</p>
+      <?php if ($counts['total'] > 0): ?>
+        <div class="cd-track" style="margin-top:10px"><i style="width:<?= cityDashProgress((int)$counts['assigned'], (int)$counts['total']) ?>%"></i></div>
+      <?php endif; ?>
       <?php if ($canAssign && !$surveyors): ?>
         <p class="ca-hint-line">No active surveyors are registered in <?= $h($audit['city_name']) ?> yet, so segments cannot be assigned.</p>
       <?php elseif ($canActivate && !$allAssigned): ?>
@@ -120,7 +209,7 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
     </div>
 
     <?php if ($canEdit): ?>
-    <div class="card">
+    <div class="card" id="caAddRoad">
       <div class="card-head"><h3>Add a road</h3></div>
       <?php if (!$available): ?>
         <p class="rd-empty">Every road in this city is already part of this audit.</p>
@@ -179,13 +268,13 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
           <button class="ca-btn" type="button" id="caSend">Send to Admin</button>
         <?php endif; ?>
       </div>
-      <p class="ca-assign-sum">
-        <b><?= (int)$rv['approved'] ?></b> approved ·
-        <b><?= (int)$rv['submitted'] ?></b> waiting for review ·
-        <b><?= (int)$rv['needs_revisit'] ?></b> sent back ·
-        <b><?= (int)$rv['assigned'] ?></b> still with surveyors
-        (of <b><?= (int)$rv['total'] ?></b> segments)
-      </p>
+      <div class="cd-chips" style="margin:0 0 4px">
+        <span class="cd-chip ok"><?= (int)$rv['approved'] ?> approved</span>
+        <span class="cd-chip review"><?= (int)$rv['submitted'] ?> waiting for review</span>
+        <span class="cd-chip back"><?= (int)$rv['needs_revisit'] ?> sent back</span>
+        <span class="cd-chip"><?= (int)$rv['assigned'] ?> still with surveyors</span>
+        <span class="cd-chip">of <?= (int)$rv['total'] ?> segments</span>
+      </div>
       <?php if ($canReview && $closeBlock !== null): ?>
         <p class="ca-hint-line">Close Audit unlocks when every segment is approved. <?= $h($closeBlock) ?></p>
       <?php elseif ($audit['status'] === 'finalised'): ?>
@@ -269,6 +358,21 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
 
       <?php if ($isClosed): ?>
         <h4 class="ca-sub">Audit report</h4>
+        <?php if ($overall): ?>
+        <div class="cx-score">
+          <div class="rv-score cond-<?= $h(cityConditionClass($overall['condition'])) ?>"><b><?= $h($num($overall['score'])) ?></b><span><?= $h($overall['condition']) ?></span></div>
+          <div class="rv-bars">
+            <?php foreach ($overall['bars'] as $bl => $bv): ?>
+            <div class="rv-bar-row"><span><?= $h($bl) ?></span><div class="cd-bar"><i class="<?= $h($barClass((float)$bv)) ?>" style="width:<?= (int)max(0, min(100, round((float)$bv))) ?>%"></i></div><b><?= $h($num($bv)) ?></b></div>
+            <?php endforeach; ?>
+          </div>
+        </div>
+        <?php $cc = cityConditionCounts($roadConds); if (count($roadConds) > 1): ?>
+        <div class="rp-legend" style="margin-bottom:8px">
+          <?php foreach ($cc as $cn => $cv): if ($cv > 0): ?><span class="<?= $h(cityConditionClass($cn)) ?>"><?= $h($cn) ?>: <?= $h(cityPlural((int)$cv, 'road', 'roads')) ?></span><?php endif; endforeach; ?>
+        </div>
+        <?php endif; ?>
+        <?php endif; ?>
         <div class="rd-scroll"><table class="rd-table">
           <thead><tr><th>Road</th><th>Segments</th><th>Score</th><th>Safety</th><th>Continuity</th><th>Comfort</th><th>Condition</th></tr></thead>
           <tbody>
@@ -279,7 +383,7 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
               <?php if ($rs): ?>
                 <td><b><?= $h($num($rs['score'])) ?></b></td><td><?= $h($num($rs['safety_score'])) ?></td>
                 <td><?= $h($num($rs['continuity_score'])) ?></td><td><?= $h($num($rs['comfort_score'])) ?></td>
-                <td><?= $h($rs['condition']) ?></td>
+                <td><span class="rp-cond <?= $h(cityConditionClass($rs['condition'])) ?>"><?= $h($rs['condition']) ?></span></td>
               <?php else: ?><td colspan="5">Not available</td><?php endif; ?>
             </tr>
           <?php endforeach; ?>
@@ -289,10 +393,10 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
     </div>
     <?php endif; ?>
 
-    <div class="card">
+    <div class="card" id="caRoads">
       <div class="card-head"><h3>Roads in this audit (<?= count($roads) ?>)</h3></div>
       <?php if (!$roads): ?>
-        <p class="rd-empty"><?= $canEdit ? 'No roads yet. Add the first road above.' : 'No roads in this audit yet.' ?></p>
+        <div class="cx-empty"><?= cxIcon('road') ?><b>No roads yet</b><?= $canEdit ? 'Add the first road using the form above.' : 'No roads have been added to this audit.' ?></div>
       <?php endif; ?>
       <?php foreach ($roads as $r): ?>
         <?php
@@ -307,6 +411,14 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
             <div>
               <h4><?= $h($r['name']) ?></h4>
               <small><?= $h($num($r['total_length'])) ?> m · <?= count($r['segments']) ?> segments of <?= $h($num($r['segment_length'])) ?> m · <?= $rAssigned ?> of <?= count($r['segments']) ?> assigned</small>
+              <?php if ($r['segments']): ?>
+              <div class="cx-dots" aria-hidden="true">
+                <?php foreach ($r['segments'] as $sd):
+                    $dCls = $sd['status'] === 'in_progress' ? 'in_progress' : ($sd['status'] === 'completed' ? 'completed' : ($sd['assigned_to'] === null ? 'un' : ''));
+                    $dTip = 'Segment ' . (int)$sd['segment_number'] . ' · ' . $num($sd['length']) . ' m · ' . ($sd['assigned_name'] ?? 'Unassigned') . ' · ' . ucfirst(str_replace('_', ' ', (string)$sd['status']));
+                ?><span class="cx-dot <?= $h($dCls) ?>" title="<?= $h($dTip) ?>"><?= (int)$sd['segment_number'] ?></span><?php endforeach; ?>
+              </div>
+              <?php endif; ?>
             </div>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
               <?php if ($canAssign && $surveyors && $rPending > 0): ?>
@@ -337,7 +449,7 @@ $statusLabel = ucfirst(str_replace('_', ' ', (string)$audit['status']));
                     <td><?= $h($num($s['start_distance'])) ?> m</td>
                     <td><?= $h($num($s['end_distance'])) ?> m</td>
                     <td><?= $h($num($s['length'])) ?> m</td>
-                    <td><?= $h(ucfirst(str_replace('_', ' ', (string)$s['status']))) ?></td>
+                    <td><span class="cx-pill st-<?= $h($s['status']) ?>"><?= $h(ucfirst(str_replace('_', ' ', (string)$s['status']))) ?></span></td>
                     <td>
                     <?php if ($canAssign && $s['status'] === 'pending'): ?>
                       <?php $cur = $s['assigned_to'] === null ? '' : (string)(int)$s['assigned_to']; $known = false; ?>
