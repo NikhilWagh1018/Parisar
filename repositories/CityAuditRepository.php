@@ -17,7 +17,7 @@ class CityAuditRepository
     public const EDITABLE_STATUSES = ['draft'];
 
     /** Audit statuses in which segments can still be (re)assigned to surveyors. */
-    public const ASSIGNABLE_STATUSES = ['draft', 'active'];
+    public const ASSIGNABLE_STATUSES = ['draft', 'active', 'in_review'];
 
     public function __construct(private PDO $pdo) {}
 

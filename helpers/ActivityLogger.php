@@ -26,6 +26,10 @@ class ActivityLogger
     public const AUDIT_ROAD_REMOVED = 'audit_road_removed';
     public const AUDIT_SEGMENTS_ASSIGNED = 'audit_segments_assigned';
     public const AUDIT_ACTIVATED    = 'audit_activated';
+    public const AUDIT_SEGMENT_APPROVED  = 'audit_segment_approved';
+    public const AUDIT_SEGMENT_SENT_BACK = 'audit_segment_sent_back';
+    public const AUDIT_CLOSED            = 'audit_closed';
+    public const AUDIT_SENT_TO_ADMIN     = 'audit_sent_to_admin';
 
     /**
      * Log an activity.
