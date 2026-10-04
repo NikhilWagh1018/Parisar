@@ -7,17 +7,28 @@
   var form = document.getElementById('login-form');
   if (!form) return;
 
-  // ── Show / hide password ────────────────────────────────────
+  // ── Show / hide password (eye icon) ─────────────────────────
   document.querySelectorAll('[data-toggle-pass]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var input = document.getElementById(btn.getAttribute('data-toggle-pass'));
       if (!input) return;
       var show = input.type === 'password';
       input.type = show ? 'text' : 'password';
-      btn.textContent = show ? 'Hide' : 'Show';
       btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
     });
   });
+
+  // ── Forgot password: there is no reset page yet ─────────────
+  var forgot = document.getElementById('forgot-link');
+  var note = document.getElementById('forgot-note');
+  if (forgot && note) {
+    forgot.addEventListener('click', function (e) {
+      e.preventDefault();
+      note.hidden = !note.hidden;
+      forgot.setAttribute('aria-expanded', note.hidden ? 'false' : 'true');
+    });
+  }
 
   // ── Inline checks ───────────────────────────────────────────
   var email = document.getElementById('email');
