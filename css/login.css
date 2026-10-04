@@ -215,6 +215,31 @@ body.login {
 }
 .credit img { height: calc(20px * var(--s)); width: auto; opacity: .8; }
 
+/* ── Page hand-off + entrance ────────────────────────────────────
+   The landing page fades out, this page fades in, then each part eases
+   in (opacity + transform only, so it stays on the GPU and never jitters).
+   The sequence starts once fonts are ready (js/login.js adds .ready). */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: vtOut .22s cubic-bezier(.4, 0, 1, 1) both; }
+::view-transition-new(root) { animation: vtIn .4s cubic-bezier(0, 0, .2, 1) both; }
+@keyframes vtOut { to { opacity: 0; } }
+@keyframes vtIn { from { opacity: 0; } }
+
+:root { --ease-out: cubic-bezier(.22, 1, .36, 1); }
+
+@keyframes rise   { from { opacity: 0; transform: translate3d(0, 18px, 0); } to { opacity: 1; transform: none; } }
+@keyframes cardIn { from { opacity: 0; transform: translate3d(0, 26px, 0) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes wheelIn { from { opacity: 0; transform: scale(.9) rotate(-14deg); } to { opacity: 1; transform: none; } }
+
+.rise    { animation: rise .7s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 80ms + 60ms); }
+.card-in { animation: cardIn .8s var(--ease-out) both; animation-delay: .22s; }
+.wheel-in { animation: wheelIn 1.1s var(--ease-out) both; animation-delay: .05s; }
+
+/* Hold everything invisible (paused) until fonts are ready; without JS nothing is held */
+html.js:not(.ready) .rise,
+html.js:not(.ready) .card-in,
+html.js:not(.ready) .wheel-in { animation-play-state: paused; }
+
 /* ── Keyboard focus ──────────────────────────────────────────── */
 .brand:focus-visible, .btn-submit:focus-visible, .eye:focus-visible,
 .card-links a:focus-visible, .f--google:focus-visible {
@@ -251,6 +276,8 @@ body.login {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .rise, .card-in, .wheel-in { animation: none; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .01s; }
   .rot { animation: none; }
   .btn-submit.is-loading .ti { animation: none; }
   .f, .btn-submit { transition: none; }

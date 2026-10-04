@@ -2,6 +2,12 @@
 
 :root{--g:#3d7a1f;--gm:#5a9e2f;--gl:#86B93B;--gp:#edf7d6;--gd:#1e3d0d;--cream:#f7f4ee;--ink:#181f10;--gray:#5e6b54;--grl:#9aaa88;--bd:rgba(61,122,31,.13);--r:12px;--T:.28s cubic-bezier(.4,0,.2,1)}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
+/* Smooth hand-off to the sign-in page (Chrome/Edge/Safari; others just navigate normally) */
+@view-transition{navigation:auto}
+::view-transition-old(root){animation:vtOut .22s cubic-bezier(.4,0,1,1) both}
+::view-transition-new(root){animation:vtIn .4s cubic-bezier(0,0,.2,1) both}
+@keyframes vtOut{to{opacity:0}}
+@keyframes vtIn{from{opacity:0}}
 body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);overflow-x:hidden}
 nav{position:fixed;inset:0 0 auto;z-index:900;height:64px;padding:0 6%;display:flex;align-items:center;justify-content:space-between;background:rgba(247,244,238,.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--bd);transition:box-shadow var(--T)}
 nav.sc{box-shadow:0 4px 24px rgba(24,31,16,.08)}
