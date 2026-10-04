@@ -19,6 +19,7 @@ require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
 require_once __DIR__ . '/../../repositories/RoadRepository.php';
+require_once __DIR__ . '/../../repositories/SurveyorWorkRepository.php';
 
 require_once __DIR__ . '/../../config/rate_limit.php';
 
@@ -61,6 +62,13 @@ $roadId = (int)$data['road_id'];
 
 try {
     $repo = new RoadRepository($pdo);
+
+    // City-audit roads: only a surveyor assigned to a segment of the road may start a session.
+    if (!(new SurveyorWorkRepository($pdo))->mayOpenRoad($roadId, (int)$CURRENT_USER_ID)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'This road is not assigned to you.']);
+        exit;
+    }
 
     // Finalized roads are locked — never spin up a new session for
     // them (this is what "View" on the dashboard hits). Doing so would
