@@ -211,35 +211,72 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-/* ── Admin overview ── */
-.admin-overview { margin-bottom: 28px; }
-.admin-overview-head {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
-}
-.admin-overview-head h2 {
-  font-size: 1.05rem; font-weight: 800; color: var(--ink);
-}
+/* Small pill used on the Users page */
 .admin-badge {
   background: var(--gd); color: #fff; font-size: .68rem; font-weight: 700;
   padding: 3px 10px; border-radius: 20px; letter-spacing: .03em;
 }
-.pending-row {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0f4e8;
+
+/* ── Admin dashboard ── */
+.ad-attn { list-style: none; display: flex; flex-direction: column; }
+.ad-attn-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 0; border-bottom: 1px solid #f0f4e8;
 }
-.pending-row:last-child { border-bottom: none; }
-.pending-row .road-name-info { display: flex; flex-direction: column; gap: 2px; }
-.pending-row .road-name-info strong {
-  font-size: .88rem; font-weight: 700; color: var(--ink);
+.ad-attn-row:last-child { border-bottom: none; padding-bottom: 2px; }
+.ad-attn-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--grl); }
+.ad-urgent .ad-attn-dot { background: #dc2626; box-shadow: 0 0 0 4px rgba(220,38,38,.12); }
+.ad-warn   .ad-attn-dot { background: #d97706; box-shadow: 0 0 0 4px rgba(217,119,6,.12); }
+.ad-info   .ad-attn-dot { background: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,.10); }
+.ad-attn-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ad-attn-text strong { font-size: .88rem; font-weight: 700; color: var(--ink); }
+.ad-attn-text span   { font-size: .78rem; color: var(--gray); line-height: 1.45; }
+.ad-clear { padding: 14px 4px 6px; font-size: .88rem; color: var(--gray); }
+
+.ad-btn {
+  flex: none; font-size: .78rem; font-weight: 700; color: var(--g);
+  text-decoration: none; padding: 7px 14px; border-radius: 8px;
+  border: 1px solid var(--bd); background: #fff; white-space: nowrap;
+  transition: background .15s, border-color .15s;
 }
-.pending-row .road-name-info span { font-size: .72rem; color: var(--grl); }
-.btn-link {
-  font-size: .75rem; font-weight: 600; color: var(--g);
-  text-decoration: none; white-space: nowrap;
+.ad-btn:hover { background: var(--gp); border-color: var(--gl); }
+.ad-btn-solid { background: var(--g); color: #fff; border-color: var(--g); }
+.ad-btn-solid:hover { background: var(--gd); border-color: var(--gd); }
+
+.ad-scroll { overflow-x: auto; }
+.ad-table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+.ad-table th {
+  text-align: left; font-size: .68rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--grl);
+  padding: 0 14px 10px 0; border-bottom: 1px solid var(--bd); white-space: nowrap;
 }
-.btn-link:hover { text-decoration: underline; }
-.pending-more {
-  font-size: .75rem; color: var(--grl); padding-top: 8px; text-align: center;
+.ad-table td { padding: 13px 14px 13px 0; border-bottom: 1px solid #f0f4e8; vertical-align: middle; color: var(--ink); }
+.ad-table tbody tr:last-child td { border-bottom: none; }
+.ad-table tbody tr:hover td { background: #fafcf6; }
+.ad-sub { display: block; font-size: .72rem; color: var(--grl); margin-top: 2px; }
+.ad-nowrap { white-space: nowrap; color: var(--gray); font-size: .78rem; }
+.ad-empty { text-align: center; color: var(--grl); padding: 28px 10px !important; }
+.ad-warn-text { color: #b45309; font-weight: 700; }
+.ad-link { font-size: .78rem; font-weight: 700; color: var(--g); text-decoration: none; white-space: nowrap; }
+.ad-link:hover { text-decoration: underline; }
+
+.ad-chip {
+  display: inline-block; font-size: .7rem; font-weight: 700; white-space: nowrap;
+  padding: 3px 10px; border-radius: 20px; background: #f1f5e8; color: var(--gray);
+}
+.ad-chip-awaiting-approval { background: #fee2e2; color: #b91c1c; }
+.ad-chip-in-review         { background: #fef3c7; color: #92600a; }
+.ad-chip-active            { background: #dbeafe; color: #1e40af; }
+.ad-chip-finalised         { background: #ede9fe; color: #5b21b6; }
+.ad-chip-published         { background: #dcfce7; color: #15803d; }
+
+.ad-bar { width: 140px; max-width: 100%; height: 7px; border-radius: 99px; background: #e8f0da; overflow: hidden; }
+.ad-bar i { display: block; height: 100%; border-radius: 99px; background: var(--g); }
+
+@media (max-width: 700px) {
+  .ad-attn-row { flex-wrap: wrap; }
+  .ad-attn-text { flex-basis: calc(100% - 30px); }
+  .ad-btn { margin-left: 23px; }
 }
 
 /* ── Toast ── */
