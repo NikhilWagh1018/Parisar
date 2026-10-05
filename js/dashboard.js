@@ -172,67 +172,10 @@ document.addEventListener('click', e => {
 });
 
 // ── Boot ──────────────────────────────────────────────────────
-// Admins only see the Program Overview; surveyors get their own dashboard data.
-if (document.getElementById('adminOverview')) {
-  loadAdminOverview();
-} else {
-  loadDashboard();
-}
+loadDashboard();
 
 // Show toast if returning from a successful audit
 if (new URLSearchParams(location.search).get('audit') === 'done') {
   showToast('✅ Audit submitted successfully!', 'success');
   history.replaceState(null, '', location.pathname);
 }
-
-// ── Admin overview (org-wide stats / pending verification queue) ──
-async function loadAdminOverview() {
-  try {
-    const res  = await fetch('../api/admin/dashboard_overview.php', {
-      headers: { 'Accept': 'application/json', 'X-CSRF-Token': CSRF }
-    });
-    const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); }
-    catch { return; } // fail quietly — admin section is supplementary
-
-    if (!data.success) return;
-
-    const s = data.org_stats;
-    const pct = s.total_segments > 0
-      ? Math.round((s.completed_segments / s.total_segments) * 100)
-      : 0;
-
-    document.getElementById('ao-roads').textContent      = s.total_roads;
-    document.getElementById('ao-segs').textContent       = s.total_segments;
-    document.getElementById('ao-done').textContent       = pct + '%';
-    document.getElementById('ao-surveyors').textContent  = s.total_surveyors;
-
-    // ── Pending verification queue ──
-    const pendingEl = document.getElementById('pendingQueueContainer');
-    if (data.pending_queue.length === 0) {
-      pendingEl.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">✅</div>
-          <p>Nothing waiting on verification.</p>
-        </div>`;
-    } else {
-      pendingEl.innerHTML = data.pending_queue.map(p => `
-        <div class="pending-row">
-          <div class="road-name-info">
-            <strong>${escHtml(p.canonical_name)}</strong>
-            <span>${p.member_count} road${p.member_count === 1 ? '' : 's'} · added ${formatDate(p.created_at)}</span>
-          </div>
-          <a class="btn-link" href="admin.php">Review →</a>
-        </div>`).join('');
-      if (s.pending_roads > data.pending_queue.length) {
-        pendingEl.innerHTML += `
-          <div class="pending-more">+ ${s.pending_roads - data.pending_queue.length} more waiting</div>`;
-      }
-    }
-
-  } catch {
-    // fail quietly — admin section is supplementary, not critical path
-  }
-}
-

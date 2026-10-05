@@ -12,13 +12,11 @@ require_once __DIR__ . '/../config/permissions.php';
 require_once __DIR__ . '/../config/constants.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
 
-// Admins land on their own dashboard; ?overview=1 keeps the old admin view.
-if (!isset($_GET['overview'])) {
-    $roleHome = roleHomePage($CURRENT_USER_ROLE);
-    if ($roleHome !== 'dashboard.php') {
-        header('Location: ' . $roleHome);
-        exit;
-    }
+// Admins and City Leaders have their own dashboards; this page is the surveyor's.
+$roleHome = roleHomePage($CURRENT_USER_ROLE);
+if ($roleHome !== 'dashboard.php') {
+    header('Location: ' . $roleHome);
+    exit;
 }
 
 $hour     = (int)(new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('H');
@@ -146,38 +144,6 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   </div>
 
   <div class="content">
-
-    <?php if (isAnyAdmin($CURRENT_USER_ROLE)): ?>
-    <!-- ════════════════ ADMIN OVERVIEW ════════════════ -->
-    <section class="admin-overview" id="adminOverview">
-      <div class="admin-overview-head">
-        <h2>Program Overview</h2>
-        <span class="admin-badge">Admin</span>
-      </div>
-
-      <!-- Org-wide KPI strip -->
-      <div class="stat-grid" id="adminStatGrid">
-        <div class="stat-card"><div class="stat-icon" style="background:#edf7d6">🛣️</div><div><div class="stat-val" id="ao-roads">—</div><div class="stat-lbl">Total Roads</div></div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:#dbeafe">📍</div><div><div class="stat-val" id="ao-segs">—</div><div class="stat-lbl">Total Segments</div></div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:#dcfce7">✅</div><div><div class="stat-val" id="ao-done">—</div><div class="stat-lbl">Completion Rate</div></div></div>
-        <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">👥</div><div><div class="stat-val" id="ao-surveyors">—</div><div class="stat-lbl">Surveyors</div></div></div>
-      </div>
-
-      <!-- Pending verification queue -->
-      <div class="card">
-        <div class="card-head">
-          <h3>⏳ Pending Verification</h3>
-          <a href="admin.php">View all →</a>
-        </div>
-        <div id="pendingQueueContainer">
-          <div style="display:flex;flex-direction:column;gap:14px;padding:8px 0">
-            <div class="skeleton" style="height:18px;width:80%"></div>
-            <div class="skeleton" style="height:18px;width:60%"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <?php endif; ?>
 
     <?php if (!isAnyAdmin($CURRENT_USER_ROLE)): ?>
     <!-- Stat cards — populated by JS -->

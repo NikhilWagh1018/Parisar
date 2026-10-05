@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (array_key_exists('role', $body)) {
         $newRole = $body['role'];
 
-        // Only the Admin changes roles (so only the Platform
+        // Only the Admin changes roles (so only the
         // Admin creates City Leaders), and a City Leader needs a city.
         $adminCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'national_admin'")->fetchColumn();
         $roleError  = validateRoleChange(
