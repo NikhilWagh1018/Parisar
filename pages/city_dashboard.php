@@ -12,6 +12,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
+require_once __DIR__ . '/../helpers/Cities.php';
 require_once __DIR__ . '/../repositories/CityDashboardRepository.php';
 require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 require_once __DIR__ . '/partials/cx_icons.php';
@@ -61,6 +62,7 @@ $nonce     = $h($_SESSION['csp_nonce'] ?? '');
 $csrf      = $h($_SESSION['csrf_token'] ?? '');
 $activeNav = 'home';
 $cityName  = $city ? (string)$city['name'] : 'No city assigned';
+$cityState = $city ? cityStateFor($cityName) : null; // known city -> State fills in by itself
 
 // ── Summary numbers for the hero, progress card and pipeline ──
 $cityMix = ['total' => 0, 'approved' => 0, 'submitted' => 0, 'needs_revisit' => 0, 'assigned' => 0, 'unassigned' => 0];
@@ -130,7 +132,7 @@ $greeting     = cityGreeting($hour);
         </div>
         <div class="ca-field">
           <label for="caState">State *</label>
-          <input id="caState" name="state" type="text" maxlength="100" placeholder="e.g. Maharashtra">
+          <input id="caState" name="state" type="text" maxlength="100" placeholder="e.g. Maharashtra"<?= $cityState !== null ? ' value="' . $h($cityState) . '" readonly' : '' ?>>
           <div class="ca-err"></div>
         </div>
         <div class="ca-field full">

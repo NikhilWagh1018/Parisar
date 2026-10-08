@@ -97,3 +97,48 @@ function validateUserCityChange(array $cities, string $targetRole, mixed $posted
     }
     return [null, 'Please choose a valid city.'];
 }
+
+/**
+ * The state a city is in, for the New Audit form (so a City Leader never types it).
+ * Lookup is case-insensitive and ignores extra spaces. Returns null for a city that
+ * is not in the list, in which case the form falls back to asking for the state.
+ */
+function cityStateFor(string $cityName): ?string
+{
+    static $map = null;
+    if ($map === null) {
+        $byState = [
+            'Maharashtra'       => ['Pune', 'Mumbai', 'Nagpur', 'Nashik', 'Aurangabad', 'Chhatrapati Sambhajinagar', 'Thane', 'Kolhapur', 'Solapur', 'Navi Mumbai', 'Pimpri-Chinchwad', 'Amravati', 'Satara', 'Sangli'],
+            'Karnataka'         => ['Bengaluru', 'Bangalore', 'Mysuru', 'Mysore', 'Hubballi', 'Mangaluru', 'Belagavi'],
+            'Tamil Nadu'        => ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli'],
+            'Telangana'         => ['Hyderabad', 'Warangal'],
+            'Andhra Pradesh'    => ['Visakhapatnam', 'Vijayawada', 'Tirupati', 'Guntur'],
+            'Kerala'            => ['Kochi', 'Thiruvananthapuram', 'Kozhikode', 'Thrissur'],
+            'Gujarat'           => ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Gandhinagar'],
+            'Rajasthan'         => ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Ajmer'],
+            'Delhi'             => ['Delhi', 'New Delhi'],
+            'Uttar Pradesh'     => ['Lucknow', 'Kanpur', 'Varanasi', 'Agra', 'Noida', 'Ghaziabad', 'Prayagraj', 'Meerut'],
+            'West Bengal'       => ['Kolkata', 'Howrah', 'Siliguri', 'Durgapur'],
+            'Madhya Pradesh'    => ['Bhopal', 'Indore', 'Jabalpur', 'Gwalior', 'Ujjain'],
+            'Punjab'            => ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala'],
+            'Haryana'           => ['Gurugram', 'Gurgaon', 'Faridabad', 'Panipat'],
+            'Bihar'             => ['Patna', 'Gaya'],
+            'Odisha'            => ['Bhubaneswar', 'Cuttack', 'Rourkela'],
+            'Jharkhand'         => ['Ranchi', 'Jamshedpur'],
+            'Chhattisgarh'      => ['Raipur', 'Bilaspur'],
+            'Assam'             => ['Guwahati'],
+            'Uttarakhand'       => ['Dehradun'],
+            'Himachal Pradesh'  => ['Shimla'],
+            'Goa'               => ['Panaji', 'Margao'],
+            'Chandigarh'        => ['Chandigarh'],
+        ];
+        $map = [];
+        foreach ($byState as $state => $names) {
+            foreach ($names as $n) {
+                $map[mb_strtolower($n)] = $state;
+            }
+        }
+    }
+    $key = mb_strtolower(trim((string)preg_replace('/\\s+/u', ' ', $cityName)));
+    return $map[$key] ?? null;
+}

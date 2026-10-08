@@ -84,4 +84,18 @@ class CitiesTest extends TestCase
             validateUserCityChange(listCities($this->pdo), 'national_admin', 1)
         );
     }
+
+    public function test_cityStateFor_maps_known_cities_and_ignores_case_and_spacing(): void
+    {
+        $this->assertSame('Maharashtra', cityStateFor('Pune'));
+        $this->assertSame('Maharashtra', cityStateFor('  pune '));
+        $this->assertSame('Karnataka', cityStateFor('BENGALURU'));
+        $this->assertSame('Maharashtra', cityStateFor('Navi  Mumbai'));
+    }
+
+    public function test_cityStateFor_returns_null_for_an_unknown_city(): void
+    {
+        $this->assertNull(cityStateFor('Atlantis'));
+        $this->assertNull(cityStateFor(''));
+    }
 }

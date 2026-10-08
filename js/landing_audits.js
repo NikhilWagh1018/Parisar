@@ -47,7 +47,7 @@
     b.appendChild(el('span', 'ax-card-title', title));
     if (sub) b.appendChild(el('span', 'ax-card-sub', sub));
     b.appendChild(el('span', 'ax-card-count', plural(count, 'audit', 'audits')));
-    b.appendChild(el('span', 'ax-card-meta', meta));
+    if (meta) b.appendChild(el('span', 'ax-card-meta', meta));
     b.appendChild(el('span', 'ax-card-go', 'Open →'));
     b.addEventListener('click', onClick);
     return b;
@@ -72,6 +72,21 @@
       dl.appendChild(d);
     });
     c.appendChild(dl);
+
+    var acts = el('div', 'ax-audit-actions');
+    var base = 'pages/public_audit_report.php?id=' + encodeURIComponent(a.id);
+    var view = el('a', 'ax-btn', 'View report');
+    view.href = base;
+    view.target = '_blank';
+    view.rel = 'noopener';
+    var dlb = el('a', 'ax-btn ax-btn-ghost', 'Download');
+    dlb.href = base + '&download=1';
+    dlb.target = '_blank';
+    dlb.rel = 'noopener';
+    dlb.title = 'Opens the report and the print dialog: choose "Save as PDF"';
+    acts.appendChild(view);
+    acts.appendChild(dlb);
+    c.appendChild(acts);
     return c;
   }
 
@@ -122,7 +137,7 @@
       list.filter(function (a) { return a.year === state.year; })
           .forEach(function (a) { (months[a.month] = months[a.month] || []).push(a); });
       Object.keys(months).sort(function (a, b) { return b - a; }).forEach(function (m) {
-        grid.appendChild(card(MONTHS[m - 1], String(state.year), months[m].length, totals(months[m]), function () {
+        grid.appendChild(card(MONTHS[m - 1], String(state.year), months[m].length, '', function () {
           state.month = Number(m); render();
         }));
       });
