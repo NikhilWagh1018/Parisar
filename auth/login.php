@@ -117,7 +117,7 @@ $focusEmail    = ($error !== '' && $prefillEmail === '');
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/login.css?v=4">
+  <link rel="stylesheet" href="../css/login.css?v=5">
   <script>document.documentElement.classList.add('js')</script>
 </head>
 <body class="login">
@@ -126,6 +126,11 @@ $focusEmail    = ($error !== '' && $prefillEmail === '');
 
   <a class="brand rise" style="--i:0" href="../index.html" aria-label="CycleAudit home">
     <span class="brand-mark"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /> <path d="M19 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /> <path d="M12 19l0 -4l-3 -3l5 -4l2 3l3 0" /> <path d="M17 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg></span>CycleAudit
+  </a>
+
+  <a class="back-home rise" style="--i:0" href="../index.html">
+    <svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M5 12l6 6"/><path d="M5 12l6 -6"/></svg>
+    Back to home
   </a>
 
   <section class="pitch">
