@@ -173,7 +173,7 @@ $statusText = ['approved' => 'Approved', 'submitted' => 'To review', 'needs_revi
         <div class="card-head"><h3>The audit at a glance</h3></div>
         <dl class="rv-dl">
           <div><dt>City</dt><dd><?= $h($audit['city_name']) ?></dd></div>
-          <div><dt>Year</dt><dd><?= (int)$audit['audit_year'] ?></dd></div>
+          <div><dt>Audit date</dt><dd><?= $h(cityAuditDateLabel($audit['audit_date'] ?? null, (int)$audit['audit_year'])) ?></dd></div>
           <div><dt>Roads</dt><dd><?= count($roads) ?></dd></div>
           <div><dt>Segments</dt><dd><?= (int)$rv['approved'] ?> approved of <?= (int)$rv['total'] ?></dd></div>
           <div><dt>Total length</dt><dd><?= $h($num($totalLen / 1000)) ?> km</dd></div>

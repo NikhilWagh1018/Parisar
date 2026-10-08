@@ -197,6 +197,22 @@ function cityConditionCounts(array $rows): array
     return $out;
 }
 
+/**
+ * An audit's date for display: "4 Oct 2026". Audits created before audit dates existed
+ * (no date stored yet) show just their year.
+ */
+function cityAuditDateLabel(?string $date, int $year): string
+{
+    if ($date !== null && preg_match('/^\d{4}-\d{2}-\d{2}/', $date)) {
+        try {
+            return (new DateTimeImmutable(substr($date, 0, 10)))->format('j M Y');
+        } catch (Exception $e) {
+            // fall through to the year
+        }
+    }
+    return (string)$year;
+}
+
 /** Database times are UTC; show them in India time. "2026-10-04 13:35:05" -> "4 Oct 2026, 7:05 PM". */
 function cityLocalTime(?string $utc): string
 {

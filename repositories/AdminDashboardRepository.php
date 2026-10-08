@@ -54,7 +54,7 @@ class AdminDashboardRepository
     public function audits(): array
     {
         $rows = $this->pdo->query(
-            "SELECT a.id, a.name, a.audit_year, a.status, a.city_id, c.name AS city_name, a.updated_at,
+            "SELECT a.id, a.name, a.audit_year, a.audit_date, a.status, a.city_id, c.name AS city_name, a.updated_at,
                     COUNT(DISTINCT r.id) AS road_count,
                     COUNT(s.id)          AS segment_count,
                     SUM(CASE WHEN s.status = 'completed' THEN 1 ELSE 0 END) AS done_count
@@ -63,7 +63,7 @@ class AdminDashboardRepository
                LEFT JOIN roads r    ON r.audit_id = a.id
                LEFT JOIN segments s ON s.road_id  = r.id
               WHERE a.status <> 'voided'
-              GROUP BY a.id, a.name, a.audit_year, a.status, a.city_id, c.name, a.updated_at"
+              GROUP BY a.id, a.name, a.audit_year, a.audit_date, a.status, a.city_id, c.name, a.updated_at"
         )->fetchAll(PDO::FETCH_ASSOC);
 
         $last = [];

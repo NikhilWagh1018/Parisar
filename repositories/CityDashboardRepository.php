@@ -21,7 +21,7 @@ class CityDashboardRepository
     public function auditSummaries(int $cityId): array
     {
         $stmt = $this->pdo->prepare(
-            "SELECT a.id, a.name, a.state, a.audit_year, a.status, a.created_at,
+            "SELECT a.id, a.name, a.state, a.audit_year, a.audit_date, a.status, a.created_at,
                     COUNT(DISTINCT r.id) AS road_count,
                     COUNT(s.id)          AS segment_count,
                     SUM(CASE WHEN sa.status = 'approved'      THEN 1 ELSE 0 END) AS approved_count,
@@ -34,7 +34,7 @@ class CityDashboardRepository
                LEFT JOIN segments s ON s.road_id  = r.id
                LEFT JOIN segment_assignments sa ON sa.segment_id = s.id
               WHERE a.city_id = ?
-              GROUP BY a.id, a.name, a.state, a.audit_year, a.status, a.created_at
+              GROUP BY a.id, a.name, a.state, a.audit_year, a.audit_date, a.status, a.created_at
               ORDER BY a.created_at DESC, a.id DESC"
         );
         $stmt->execute([$cityId]);

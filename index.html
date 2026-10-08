@@ -11,7 +11,7 @@
 <meta property="og:image" content="https://cycleaudit.parisar.org/assets/parisar-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/landing.css?v=2">
+<link rel="stylesheet" href="css/landing.css?v=3">
 <script type="speculationrules">{"prerender":[{"where":{"href_matches":"/auth/login.php"},"eagerness":"moderate"}]}</script>
 </head>
 <body>
@@ -21,7 +21,7 @@
     <span class="ln-sep" style="width:1px;height:22px;background:var(--bd);margin:0 4px;display:inline-block;vertical-align:middle;"></span>
     <span class="ln">CycleAudit</span>
   </a>
-  <div class="nl" id="nl"><a href="#about">About</a><a href="#findings">Findings</a><a href="#features">Features</a><a href="#how">How It Works</a><a href="#scoring">Scoring</a><a href="#cities">Cities</a><a href="auth/login.php" class="cta">Sign In</a></div>
+  <div class="nl" id="nl"><a href="#about">About</a><a href="#findings">Findings</a><a href="#features">Features</a><a href="#how">How It Works</a><a href="#scoring">Scoring</a><a href="#cities">Cities</a><a href="#audits">Audit Data</a><a href="auth/login.php" class="cta">Sign In</a></div>
   <div class="ham" id="ham" onclick="document.getElementById('nl').classList.toggle('open')"><span></span><span></span><span></span></div>
 </nav>
 <section id="hero">
@@ -171,6 +171,19 @@
   <p class="cg-msg" id="cities-msg" aria-live="polite"></p>
   <p class="cg-note" id="cities-note" aria-live="polite"></p>
 </div></section>
+<section id="audits"><div class="mw">
+  <div class="ey">Published audits</div><h2>Explore the Audit Data</h2>
+  <p class="sub">Every approved city audit, by year and month. Pick a year, then a month, to see the audits. Use the filters to narrow them down.</p>
+  <div class="ax-filters" id="ax-filters" hidden>
+    <label>City<select id="ax-city" aria-label="Filter by city"><option value="">All cities</option></select></label>
+    <label>Condition<select id="ax-cond" aria-label="Filter by condition"><option value="">All conditions</option><option>Good</option><option>OK</option><option>Poor</option><option>Bad</option><option>Very Bad</option></select></label>
+    <label class="ax-search">Search<input id="ax-q" type="search" placeholder="Audit or city name" aria-label="Search audits"></label>
+    <button type="button" id="ax-clear" class="ax-clear">Clear filters</button>
+  </div>
+  <div class="ax-crumbs" id="ax-crumbs" role="navigation" aria-label="Audit data navigation"></div>
+  <div class="ax-grid" id="ax-grid"><p class="ax-empty">Loading audits…</p></div>
+  <p class="ax-msg" id="ax-msg" aria-live="polite"></p>
+</div></section>
 <section id="cta"><div class="mw"><div class="cta-inner">
 <div class="ey" style="justify-content:center">Audit Teams</div>
 <h2>Part of a City Audit Team?</h2>
@@ -186,12 +199,13 @@
     </div>
     <div class="fcol"><h5>Platform</h5><a href="auth/login.php">Login</a><a href="pages/segment.php">Start Audit</a><a href="pages/road_result.php">View Results</a></div>
     <div class="fcol"><h5>Parisar</h5><a href="https://parisar.org" target="_blank">parisar.org</a><a href="https://parisar.org/what-we-do/urban-transport" target="_blank">Urban Transport</a><a href="https://parisar.org/contact-us" target="_blank">Contact</a></div>
-    <div class="fcol"><h5>Audit Scope</h5><a href="#cities">Cities</a><a href="#scoring">Scoring Method</a><a href="#findings">2024–25 Findings</a></div>
+    <div class="fcol"><h5>Audit Scope</h5><a href="#cities">Cities</a><a href="#audits">Audit Data</a><a href="#scoring">Scoring Method</a><a href="#findings">2024–25 Findings</a></div>
   </div>
   <div class="fb-bot"><span>2026 CycleAudit — Built for <span class="pb-cr">Parisar</span></span><span>PHP · MySQL · Vanilla JS</span></div>
 </div></footer>
 <button id="topBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script src="js/landing.js"></script>
+<script src="js/landing_audits.js?v=1"></script>
 <script>
 (function () {
   var cityEl  = document.getElementById('stat-city');
