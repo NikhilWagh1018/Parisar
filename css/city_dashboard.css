@@ -142,7 +142,16 @@
 
 /* ═══ City Leader polish: hero, stage tracker, KPIs, progress mix ═══
    Used by pages/city_dashboard.php and pages/city_audit.php. Class names start with cx-. */
-.content.cx-page { max-width: 1240px; width: 100%; margin: 0 auto; }
+.content.cx-page { width: 100%; max-width: none; margin: 0; }
+
+/* City audit page: use the full width. On wide screens the two related cards
+   (segment progress + surveyor assignment) sit side by side; everything else spans the row. */
+.content.cx-audit .ca-form { max-width: 960px; }
+@media (min-width: 1100px) {
+  .content.cx-audit { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 18px; align-items: start; }
+  .content.cx-audit > * { grid-column: 1 / -1; }
+  .content.cx-audit > .cx-half { grid-column: auto; align-self: stretch; }
+}
 .cx-i { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; }
 
 /* hero */
