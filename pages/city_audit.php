@@ -129,7 +129,7 @@ $barClass = static fn(float $v): string => $v < 40 ? 'bad' : ($v < 70 ? 'mid' : 
       <p><a href="<?= $h($backUrl) ?>">← All audits</a></p>
     </div>
   </div>
-  <div class="content cx-page" id="caApp" data-csrf="<?= $csrf ?>" data-audit-id="<?= (int)$audit['id'] ?>">
+  <div class="content cx-page cx-audit" id="caApp" data-csrf="<?= $csrf ?>" data-audit-id="<?= (int)$audit['id'] ?>">
 
     <section class="cx-hero">
       <div class="cx-metas">
@@ -176,8 +176,9 @@ $barClass = static fn(float $v): string => $v < 40 ? 'bad' : ($v < 70 ? 'mid' : 
       <div class="cx-kpi"><span class="cx-kpi-ico p"><?= cxIcon('check') ?></span><div><b><?= (int)$segCounts['approved'] ?> <small>/ <?= (int)$segCounts['total'] ?></small></b><span>Approved (<?= $approvedPct ?>%)</span></div></div>
     </div>
 
+    <?php $half = $mix ? ' cx-half' : ''; /* progress + assignment sit side by side on wide screens */ ?>
     <?php if ($mix): ?>
-    <div class="card">
+    <div class="card cx-half">
       <div class="cx-mix-top"><span>Segment progress</span><span><b><?= $approvedPct ?>%</b> approved</span></div>
       <div class="cx-mix" role="img" aria-label="<?= $h($segCounts['approved'] . ' of ' . $segCounts['total'] . ' segments approved') ?>">
         <?php foreach ($mix as $m): if ($m['pct'] > 0): ?><i class="<?= $h($m['key']) ?>" style="width:<?= (int)$m['pct'] ?>%" title="<?= $h($m['label'] . ': ' . $m['count']) ?>"></i><?php endif; endforeach; ?>
@@ -188,7 +189,7 @@ $barClass = static fn(float $v): string => $v < 40 ? 'bad' : ($v < 70 ? 'mid' : 
     </div>
     <?php endif; ?>
 
-    <div class="card" id="caAssign">
+    <div class="card<?= $half ?>" id="caAssign">
       <div class="card-head">
         <h3>Surveyor assignment</h3>
         <?php if ($canActivate): ?>
