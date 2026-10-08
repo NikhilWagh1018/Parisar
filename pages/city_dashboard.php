@@ -120,8 +120,8 @@ $greeting     = cityGreeting($hour);
           <div class="ca-err"></div>
         </div>
         <div class="ca-field">
-          <label for="caYear">Audit year *</label>
-          <input id="caYear" name="audit_year" type="number" min="2000" max="2100" value="<?= (int)date('Y') ?>">
+          <label for="caDate">Audit date *</label>
+          <input id="caDate" name="audit_date" type="date" min="2000-01-01" max="2100-12-31" value="<?= $h((new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d')) ?>">
           <div class="ca-err"></div>
         </div>
         <div class="ca-field">
@@ -192,7 +192,7 @@ $greeting     = cityGreeting($hour);
             <div class="cd-audit-head">
               <div>
                 <h4><?= $h($a['name']) ?></h4>
-                <div class="cd-audit-meta"><?= (int)$a['audit_year'] ?> · <?= $h($a['state']) ?> · <?= $h(cityPlural((int)$a['road_count'], 'road', 'roads')) ?> · <?= $h(cityPlural($total, 'segment', 'segments')) ?></div>
+                <div class="cd-audit-meta"><?= $h(cityAuditDateLabel($a['audit_date'] ?? null, (int)$a['audit_year'])) ?> · <?= $h($a['state']) ?> · <?= $h(cityPlural((int)$a['road_count'], 'road', 'roads')) ?> · <?= $h(cityPlural($total, 'segment', 'segments')) ?></div>
               </div>
               <span class="ca-badge <?= $h($a['status']) ?>"><?= $h(cityStatusLabel((string)$a['status'])) ?></span>
             </div>

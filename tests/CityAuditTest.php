@@ -11,35 +11,47 @@ class CityAuditTest extends TestCase
     {
         $r = cityAuditValidate([
             'name' => "  Pune   <b>Cycle</b> Audit ", 'state' => ' Maharashtra ',
-            'audit_year' => '2026', 'programme_info' => '  Funded by X  ',
+            'audit_date' => '2026-10-04', 'programme_info' => '  Funded by X  ',
         ]);
         $this->assertSame([], $r['errors']);
         $this->assertSame('Pune Cycle Audit', $r['clean']['name']);
         $this->assertSame('Maharashtra', $r['clean']['state']);
-        $this->assertSame(2026, $r['clean']['audit_year']);
+        $this->assertSame('2026-10-04', $r['clean']['audit_date']);
+        $this->assertSame(2026, $r['clean']['audit_year'], 'the year comes from the date');
         $this->assertSame('Funded by X', $r['clean']['programme_info']);
     }
 
     public function test_programme_info_is_optional(): void
     {
-        $r = cityAuditValidate(['name' => 'Audit one', 'state' => 'Goa', 'audit_year' => 2026]);
+        $r = cityAuditValidate(['name' => 'Audit one', 'state' => 'Goa', 'audit_date' => '2026-02-28']);
         $this->assertSame([], $r['errors']);
         $this->assertNull($r['clean']['programme_info']);
     }
 
     public function test_bad_audit_input_is_rejected(): void
     {
-        $r = cityAuditValidate(['name' => 'ab', 'state' => 'M4harashtra', 'audit_year' => '1999']);
+        $r = cityAuditValidate(['name' => 'ab', 'state' => 'M4harashtra', 'audit_date' => '1999-12-31']);
         $this->assertTrue(isset($r['errors']['name']));
         $this->assertTrue(isset($r['errors']['state']));
-        $this->assertTrue(isset($r['errors']['audit_year']));
+        $this->assertTrue(isset($r['errors']['audit_date']));
 
-        $r = cityAuditValidate(['name' => 'Valid name', 'state' => 'Goa', 'audit_year' => 'abc']);
-        $this->assertTrue(isset($r['errors']['audit_year']));
+        $r = cityAuditValidate(['name' => 'Valid name', 'state' => 'Goa', 'audit_date' => 'abc']);
+        $this->assertTrue(isset($r['errors']['audit_date']));
 
-        $r = cityAuditValidate(['name' => 'Valid name', 'state' => 'Goa', 'audit_year' => 2026,
+        $r = cityAuditValidate(['name' => 'Valid name', 'state' => 'Goa', 'audit_date' => '2026-10-04',
                                 'programme_info' => str_repeat('x', 2001)]);
         $this->assertTrue(isset($r['errors']['programme_info']));
+    }
+
+    public function test_audit_date_must_be_a_real_calendar_date(): void
+    {
+        $base = ['name' => 'Valid name', 'state' => 'Goa'];
+        foreach (['', '2026-02-30', '2026-13-01', '2026-1-5', '04/10/2026', '2026-10-04 10:00', '2101-01-01', '2026'] as $bad) {
+            $r = cityAuditValidate($base + ['audit_date' => $bad]);
+            $this->assertTrue(isset($r['errors']['audit_date']), "should reject '$bad'");
+        }
+        $this->assertSame([], cityAuditValidate($base + ['audit_date' => '2024-02-29'])['errors'], 'leap day is valid');
+        $this->assertTrue(isset(cityAuditValidate($base)['errors']['audit_date']), 'a missing date is rejected');
     }
 
     public function test_road_input_validation(): void

@@ -10,7 +10,7 @@ class CityAuditRepositoryTest extends TestCase
 {
     private PDO $pdo;
     private CityAuditRepository $repo;
-    private array $clean = ['name' => 'Pune Audit', 'state' => 'Maharashtra', 'audit_year' => 2026, 'programme_info' => null];
+    private array $clean = ['name' => 'Pune Audit', 'state' => 'Maharashtra', 'audit_year' => 2026, 'audit_date' => '2026-10-04', 'programme_info' => null];
 
     protected function setUp(): void
     {
@@ -22,7 +22,7 @@ class CityAuditRepositoryTest extends TestCase
         $this->pdo->exec('CREATE TABLE road_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, canonical_name TEXT NOT NULL,
             city_id INTEGER NOT NULL, is_flagged INTEGER NOT NULL DEFAULT 0)');
         $this->pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY AUTOINCREMENT, city_id INTEGER NOT NULL,
-            state TEXT NOT NULL, name TEXT NOT NULL, audit_year INTEGER NOT NULL, programme_info TEXT NULL,
+            state TEXT NOT NULL, name TEXT NOT NULL, audit_year INTEGER NOT NULL, audit_date TEXT NULL, programme_info TEXT NULL,
             status TEXT NOT NULL DEFAULT \'draft\', created_by INTEGER NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE (city_id, audit_year, name))');
         $this->pdo->exec('CREATE TABLE roads (id INTEGER PRIMARY KEY AUTOINCREMENT, public_id TEXT NOT NULL UNIQUE,
@@ -244,7 +244,7 @@ class CityAuditRepositoryTest extends TestCase
         $ids = $this->segmentIds($this->repo->addRoad($a, 2, 1, 1000.0, 500.0)['road_id']);
 
         // a segment of another audit
-        $b      = $this->repo->find($this->repo->createAudit(1, 2, ['name' => 'Second', 'state' => 'Maharashtra', 'audit_year' => 2026, 'programme_info' => null]));
+        $b      = $this->repo->find($this->repo->createAudit(1, 2, ['name' => 'Second', 'state' => 'Maharashtra', 'audit_year' => 2026, 'audit_date' => '2026-11-02', 'programme_info' => null]));
         $other  = $this->segmentIds($this->repo->addRoad($b, 2, 1, 500.0, 500.0)['road_id']);
         $this->pdo->exec("UPDATE segments SET status = 'completed' WHERE id = " . $ids[1]);
 
@@ -363,5 +363,14 @@ class CityAuditRepositoryTest extends TestCase
         $this->repo->assignSegments($a, 2, $this->segmentIds($res['road_id']), 10);
         $this->repo->removeRoad($a, $res['road_id']);
         $this->assertSame(0, (int)$this->pdo->query('SELECT COUNT(*) FROM segment_assignments')->fetchColumn());
+    }
+
+    public function test_the_audit_date_is_stored_and_listed(): void
+    {
+        $id    = $this->repo->createAudit(1, 2, $this->clean);
+        $found = $this->repo->find($id);
+        $this->assertSame('2026-10-04', $found['audit_date']);
+        $this->assertSame(2026, (int)$found['audit_year']);
+        $this->assertSame('2026-10-04', $this->repo->listForCity(1)[0]['audit_date']);
     }
 }

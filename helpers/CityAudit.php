@@ -23,7 +23,7 @@ function cityAuditCleanText(mixed $v): string
 }
 
 /**
- * @param array<string,mixed> $in  name, state, audit_year, programme_info
+ * @param array<string,mixed> $in  name, state, audit_date (YYYY-MM-DD), programme_info
  * @return array{errors: array<string,string>, clean: array<string,mixed>}
  */
 function cityAuditValidate(array $in): array
@@ -41,9 +41,16 @@ function cityAuditValidate(array $in): array
         $errors['state'] = 'Enter a valid state name.';
     }
 
-    $year = filter_var($in['audit_year'] ?? null, FILTER_VALIDATE_INT);
-    if ($year === false || $year === null || $year < 2000 || $year > 2100) {
-        $errors['audit_year'] = 'Enter a year between 2000 and 2100.';
+    // The audit date is a real calendar date between 2000 and 2100. The year is taken from it.
+    $date = trim((string)($in['audit_date'] ?? ''));
+    $year = 0;
+    if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $m)
+        && checkdate((int)$m[2], (int)$m[3], (int)$m[1])
+        && (int)$m[1] >= 2000 && (int)$m[1] <= 2100) {
+        $year = (int)$m[1];
+    } else {
+        $errors['audit_date'] = 'Enter a valid audit date.';
+        $date = '';
     }
 
     $info = trim(strip_tags((string)($in['programme_info'] ?? '')));
@@ -56,7 +63,8 @@ function cityAuditValidate(array $in): array
         'clean'  => [
             'name'           => $name,
             'state'          => $state,
-            'audit_year'     => (int)$year,
+            'audit_date'     => $date,
+            'audit_year'     => $year,
             'programme_info' => $info === '' ? null : $info,
         ],
     ];

@@ -105,7 +105,7 @@ $orgName   = defined('APP_ORG') ? APP_ORG : 'Parisar';
       <div>
         <div class="rpt-org"><?= $h($orgName) ?> — Cycle Track Audit Programme<?= $cityLabel !== '' ? ', ' . $h($cityLabel) : '' ?></div>
         <div class="rpt-title"><?= $h($audit['name']) ?></div>
-        <div class="rpt-sub"><?= (int)$audit['audit_year'] ?> · <?= $h($audit['state'] ?? '') ?></div>
+        <div class="rpt-sub"><?= $h(cityAuditDateLabel($audit['audit_date'] ?? null, (int)$audit['audit_year'])) ?> · <?= $h($audit['state'] ?? '') ?></div>
       </div>
       <?php if ($logoB64): ?>
       <div class="rpt-logo"><img src="<?= $logoB64 ?>" alt="Parisar"><div class="rpt-logo-text">parisar.org</div></div>

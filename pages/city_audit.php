@@ -136,7 +136,7 @@ $barClass = static fn(float $v): string => $v < 40 ? 'bad' : ($v < 70 ? 'mid' : 
         <span class="ca-badge <?= $h($audit['status']) ?>"><?= $h($statusLabel) ?></span>
         <span class="cx-meta"><?= cxIcon('pin') ?> <b><?= $h($audit['city_name']) ?></b></span>
         <span class="cx-meta"><?= cxIcon('flag') ?> <b><?= $h($audit['state']) ?></b></span>
-        <span class="cx-meta"><?= cxIcon('calendar') ?> <b><?= (int)$audit['audit_year'] ?></b></span>
+        <span class="cx-meta"><?= cxIcon('calendar') ?> <b><?= $h(cityAuditDateLabel($audit['audit_date'] ?? null, (int)$audit['audit_year'])) ?></b></span>
         <?php if ($audit['created_by_name']): ?><span class="cx-meta"><?= cxIcon('user') ?> Created by <b><?= $h($audit['created_by_name']) ?></b></span><?php endif; ?>
       </div>
       <?php if ($audit['programme_info']): ?>

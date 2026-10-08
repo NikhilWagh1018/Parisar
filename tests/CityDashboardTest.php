@@ -146,7 +146,7 @@ class CityDashboardTest extends TestCase
         $pdo = new PDO('sqlite::memory:');
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)');
-        $pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY, city_id INTEGER, name TEXT, state TEXT, audit_year INTEGER,
+        $pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY, city_id INTEGER, name TEXT, state TEXT, audit_year INTEGER, audit_date TEXT NULL,
             status TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)');
         $pdo->exec('CREATE TABLE roads (id INTEGER PRIMARY KEY, name TEXT, audit_id INTEGER)');
         $pdo->exec('CREATE TABLE segments (id INTEGER PRIMARY KEY, road_id INTEGER, segment_number INTEGER, length REAL,

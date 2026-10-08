@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  api/city/audit_create.php
-//  POST { name, state, audit_year, programme_info? }
+//  POST { name, state, audit_date (YYYY-MM-DD), programme_info? }
 //  City Leader creates a new city audit for their own city.
 // ═══════════════════════════════════════════════════════════════
 
@@ -38,7 +38,7 @@ try {
 }
 
 ActivityLogger::log($pdo, ActivityLogger::AUDIT_CREATED, $CURRENT_USER_ID, [
-    'audit_id' => $auditId, 'name' => $v['clean']['name'], 'year' => $v['clean']['audit_year'],
+    'audit_id' => $auditId, 'name' => $v['clean']['name'], 'year' => $v['clean']['audit_year'], 'date' => $v['clean']['audit_date'],
 ]);
 
 echo json_encode(['success' => true, 'audit_id' => $auditId]);

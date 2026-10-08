@@ -106,7 +106,7 @@ $activeNav = 'home';
           <?php foreach ($audits as $a):
               $p = cityDashProgress($a['done_count'], $a['segment_count']); ?>
             <tr>
-              <td><strong><?= $h($a['name']) ?></strong><span class="ad-sub"><?= (int)$a['audit_year'] ?> · <?= $h(cityPlural($a['road_count'], 'road', 'roads')) ?></span></td>
+              <td><strong><?= $h($a['name']) ?></strong><span class="ad-sub"><?= $h(cityAuditDateLabel($a['audit_date'] ?? null, (int)$a['audit_year'])) ?> · <?= $h(cityPlural($a['road_count'], 'road', 'roads')) ?></span></td>
               <td><?= $h($a['city_name']) ?></td>
               <td><span class="ad-chip ad-chip-<?= $h(adminAuditStatusClass((string)$a['status'])) ?>"><?= $h(adminAuditStatusLabel((string)$a['status'])) ?></span></td>
               <td>

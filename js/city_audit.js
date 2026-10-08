@@ -59,7 +59,7 @@
       try {
         var d = await post('../api/city/audit_create.php', {
           name: form.name.value, state: form.state.value,
-          audit_year: form.audit_year.value, programme_info: form.programme_info.value
+          audit_date: form.audit_date.value, programme_info: form.programme_info.value
         });
         window.location.href = 'city_audit.php?id=' + encodeURIComponent(d.audit_id);
       } catch (e) {

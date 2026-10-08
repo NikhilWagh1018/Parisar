@@ -21,15 +21,15 @@ class CityAuditRepository
 
     public function __construct(private PDO $pdo) {}
 
-    /** @param array{name:string,state:string,audit_year:int,programme_info:?string} $clean */
+    /** @param array{name:string,state:string,audit_date:string,audit_year:int,programme_info:?string} $clean */
     public function createAudit(int $cityId, int $userId, array $clean): int
     {
         try {
             $this->pdo->prepare(
-                'INSERT INTO city_audits (city_id, state, name, audit_year, programme_info, created_by)
-                 VALUES (?, ?, ?, ?, ?, ?)'
+                'INSERT INTO city_audits (city_id, state, name, audit_year, audit_date, programme_info, created_by)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
             )->execute([
-                $cityId, $clean['state'], $clean['name'], $clean['audit_year'],
+                $cityId, $clean['state'], $clean['name'], $clean['audit_year'], $clean['audit_date'],
                 $clean['programme_info'], $userId,
             ]);
         } catch (PDOException $e) {
@@ -45,7 +45,7 @@ class CityAuditRepository
     public function listForCity(int $cityId): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT a.id, a.name, a.state, a.audit_year, a.status, a.created_at,
+            'SELECT a.id, a.name, a.state, a.audit_year, a.audit_date, a.status, a.created_at,
                     COUNT(DISTINCT r.id) AS road_count,
                     COUNT(s.id)          AS segment_count,
                     SUM(CASE WHEN s.status = \'completed\' THEN 1 ELSE 0 END) AS done_count
@@ -53,7 +53,7 @@ class CityAuditRepository
                LEFT JOIN roads r    ON r.audit_id = a.id
                LEFT JOIN segments s ON s.road_id  = r.id
               WHERE a.city_id = ?
-              GROUP BY a.id, a.name, a.state, a.audit_year, a.status, a.created_at
+              GROUP BY a.id, a.name, a.state, a.audit_year, a.audit_date, a.status, a.created_at
               ORDER BY a.created_at DESC, a.id DESC'
         );
         $stmt->execute([$cityId]);
@@ -64,7 +64,7 @@ class CityAuditRepository
     public function find(int $auditId): ?array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT a.id, a.city_id, a.state, a.name, a.audit_year, a.programme_info,
+            'SELECT a.id, a.city_id, a.state, a.name, a.audit_year, a.audit_date, a.programme_info,
                     a.status, a.created_by, a.created_at,
                     c.name AS city_name, u.name AS created_by_name
                FROM city_audits a

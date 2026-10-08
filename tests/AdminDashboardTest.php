@@ -113,7 +113,7 @@ class AdminDashboardTest extends TestCase
         $pdo->exec('CREATE TABLE cities (id INTEGER PRIMARY KEY, name TEXT)');
         $pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, city_id INTEGER NULL, role TEXT)');
         $pdo->exec('CREATE TABLE road_groups (id INTEGER PRIMARY KEY, city_id INTEGER, is_verified INTEGER NOT NULL DEFAULT 1)');
-        $pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY, city_id INTEGER, name TEXT, audit_year INTEGER, status TEXT,
+        $pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY, city_id INTEGER, name TEXT, audit_year INTEGER, audit_date TEXT NULL, status TEXT,
                     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
         $pdo->exec('CREATE TABLE roads (id INTEGER PRIMARY KEY, road_group_id INTEGER, audit_id INTEGER NULL)');
         $pdo->exec('CREATE TABLE segments (id INTEGER PRIMARY KEY, road_id INTEGER, status TEXT)');
