@@ -219,5 +219,10 @@ footer{background:var(--ink);color:rgba(255,255,255,.55);padding:56px 6% 28px}
 .ax-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)}
 .ax-facts dt{font-size:.64rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--grl)}
 .ax-facts dd{margin-top:2px;font-size:.95rem;font-weight:700;color:var(--ink)}
+.ax-audit-actions{display:flex;gap:10px;margin-top:16px}
+.ax-btn{flex:1;text-align:center;font-size:.82rem;font-weight:700;text-decoration:none;color:#fff;background:var(--g);border:1px solid var(--g);border-radius:9px;padding:9px 12px;transition:background var(--T)}
+.ax-btn:hover,.ax-btn:focus-visible{background:var(--gd);outline:none}
+.ax-btn-ghost{color:var(--g);background:transparent;border-color:var(--bd)}
+.ax-btn-ghost:hover,.ax-btn-ghost:focus-visible{background:var(--gp)}
 @media(max-width:640px){.ax-filters label,.ax-filters select,.ax-filters input,.ax-search input{width:100%;min-width:0}.ax-clear{width:100%}.ax-facts{grid-template-columns:repeat(2,1fr)}}
 @media(prefers-reduced-motion:reduce){.ax-card{transition:none}.ax-card:hover{transform:none}}

@@ -19,10 +19,19 @@ set_exception_handler(function (Throwable $e) {
 require_once __DIR__ . '/../../config/admin_guard.php';
 require_once __DIR__ . '/../../helpers/CityApi.php';
 require_once __DIR__ . '/../../helpers/CityAudit.php';
+require_once __DIR__ . '/../../helpers/Cities.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 require_once __DIR__ . '/../../repositories/CityAuditRepository.php';
 
 $body = cityApiContext($CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID);
+
+// The state follows the leader's city, so a posted value is ignored when the city is known.
+$cityRow = $pdo->prepare('SELECT name FROM cities WHERE id = ?');
+$cityRow->execute([(int)$CURRENT_USER_CITY_ID]);
+$knownState = cityStateFor((string)($cityRow->fetchColumn() ?: ''));
+if ($knownState !== null) {
+    $body['state'] = $knownState;
+}
 
 $v = cityAuditValidate($body);
 if ($v['errors']) {
