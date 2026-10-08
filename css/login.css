@@ -67,6 +67,23 @@ body.login {
   color: var(--ink); text-decoration: none;
   z-index: 2;
 }
+/* ── Back to the landing page (top right) ───────────────────── */
+.back-home {
+  position: absolute;
+  right: calc(34px * var(--s)); top: calc(36px * var(--s));
+  display: inline-flex; align-items: center; gap: calc(7px * var(--s));
+  font-size: calc(14px * var(--s)); font-weight: 500;
+  color: var(--ink); text-decoration: none;
+  padding: calc(8px * var(--s)) calc(16px * var(--s));
+  border: 1px solid rgba(24, 31, 16, .18); border-radius: 999px;
+  background: rgba(255, 255, 255, .55);
+  z-index: 3;
+  transition: background .2s, border-color .2s, color .2s;
+}
+.back-home .ti { transition: transform .2s; }
+.back-home:hover { background: #fff; border-color: var(--green); color: var(--green); }
+.back-home:hover .ti { transform: translateX(-3px); }
+
 .brand-mark {
   width: calc(28px * var(--s)); height: calc(28px * var(--s));
   border-radius: calc(8px * var(--s));
@@ -241,7 +258,7 @@ html.js:not(.ready) .card-in,
 html.js:not(.ready) .wheel-in { animation-play-state: paused; }
 
 /* ── Keyboard focus ──────────────────────────────────────────── */
-.brand:focus-visible, .btn-submit:focus-visible, .eye:focus-visible,
+.brand:focus-visible, .back-home:focus-visible, .btn-submit:focus-visible, .eye:focus-visible,
 .card-links a:focus-visible, .f--google:focus-visible {
   outline: 3px solid #86B93B; outline-offset: 2px;
 }
@@ -256,6 +273,7 @@ html.js:not(.ready) .wheel-in { animation-play-state: paused; }
     padding: 68px 22px 52px;
   }
   .brand { left: 22px; top: 22px; }
+  .back-home { right: 22px; top: 20px; font-size: 13px; padding: 7px 13px; gap: 6px; }
   .pitch { max-width: none; }
   .pitch-title { font-size: clamp(30px, 9.5vw, 42px); }
   .pitch-title span { display: inline-block; }
@@ -277,6 +295,7 @@ html.js:not(.ready) .wheel-in { animation-play-state: paused; }
 
 @media (prefers-reduced-motion: reduce) {
   .rise, .card-in, .wheel-in { animation: none; }
+  .back-home, .back-home .ti { transition: none; }
   ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .01s; }
   .rot { animation: none; }
   .btn-submit.is-loading .ti { animation: none; }
