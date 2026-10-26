@@ -152,7 +152,7 @@ if (empty($_SESSION['csrf_token'])) {
 
 // Multi-city: a user with no city yet picks one. A brand-new Google user
 // gets the only city automatically while just one exists. Once there are
-// two or more, send anyone still without a city (national admins are
+// two or more, send anyone still without a city (Admins are
 // city-less by design) to choose one.
 if (
     ($user['city_id'] ?? null) === null

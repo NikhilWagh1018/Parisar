@@ -77,7 +77,7 @@ Parisar audits the quality of cycling infrastructure across Pune. CycleAudit rep
 
 **Accounts and administration**
 - Email and password sign-up, plus **Google OAuth** sign-in
-- Role-based access control: national admin, city admin, surveyor
+- Role-based access control: Admin, City Leader, Surveyor
 - Admin dashboard, road manager, surveyor manager (activate or deactivate accounts), activity log
 - Excel exports of users and roads for admins
 
@@ -185,13 +185,13 @@ Supporting tables: `login_attempts` and `activity_log` (migrations 001 and 002).
 
 ## Roles and permissions
 
-| Role | Can do |
-| --- | --- |
-| `national_admin` | Everything, across all cities |
-| `city_admin` | Everything a national admin can, but only for resources in their own city |
-| `surveyor` | Create roads, audit any road, edit or delete only their own roads and segments |
+| Role (shown in the app) | Stored value | Can do |
+| --- | --- | --- |
+| Admin | `national_admin` | Everything, across all cities |
+| City Leader | `city_admin` | Everything an Admin can, but only for resources in their own city |
+| Surveyor | `surveyor` | Create roads, audit any road, edit or delete only their own roads and segments |
 
-Permissions live in `config/permissions.php` and fail closed: an endpoint that forgets to pass a city context grants a city admin nothing extra.
+Permissions live in `config/permissions.php` and fail closed: an endpoint that forgets to pass a city context grants a City Leader nothing extra.
 
 ## Local setup
 

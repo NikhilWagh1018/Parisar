@@ -80,7 +80,7 @@ class CitiesTest extends TestCase
     {
         $this->addCities('Pune', 'Mumbai');
         $this->assertSame(
-            [null, 'National admins are not tied to a city.'],
+            [null, 'Admins are not tied to a city.'],
             validateUserCityChange(listCities($this->pdo), 'national_admin', 1)
         );
     }

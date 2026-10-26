@@ -69,7 +69,7 @@ if ($isNationalAdmin) {
     $cityId = $CURRENT_USER_CITY_ID;
     if ($cityId === null) {
         http_response_code(400);
-        echo 'Your account has no city assigned — contact a national admin.';
+        echo 'Your account has no city assigned — contact an Admin.';
         exit;
     }
 }
