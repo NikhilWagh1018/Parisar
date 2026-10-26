@@ -5,6 +5,20 @@ on:
   pull_request:
     branches: [main]
 jobs:
+  audit:
+    name: Dependency security audit
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+      - name: Check composer.lock for known vulnerabilities
+        # Fails on known vulnerabilities only; abandoned packages are listed but do not fail the build.
+        run: composer audit --locked --no-interaction --abandoned=report
   test:
     name: PHP Lint & PHPUnit
     runs-on: ubuntu-22.04

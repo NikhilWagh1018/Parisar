@@ -24,8 +24,10 @@ RewriteRule ^ index.html [L]
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
-    Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
+    # GPS capture on the audit form needs geolocation for our own origin only.
+    Header set Permissions-Policy "geolocation=(self), camera=(), microphone=(), payment=(), usb=()"
+    Header set X-Permitted-Cross-Domain-Policies "none"
     # Safe to set unconditionally: browsers ignore HSTS on plain HTTP
     # responses, so this only takes effect once already on HTTPS.
     Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
