@@ -93,8 +93,8 @@ document.addEventListener('click', e => {
         <input type="text" id="survSearch" class="surv-search" placeholder="Search by name or email…">
         <select id="roleFilter" class="surv-role-filter">
           <option value="all">All roles</option>
-          <option value="national_admin">National admins only</option>
-          <option value="city_admin">City admins only</option>
+          <option value="national_admin">Admins only</option>
+          <option value="city_admin">City Leaders only</option>
           <option value="surveyor">Surveyors only</option>
         </select>
         <select id="cityFilter" class="surv-role-filter" aria-label="Filter by city" style="display:none;">
@@ -190,8 +190,8 @@ document.addEventListener('click', e => {
         }).join('') +
         '</select>';
     }
-    // City column - national admins only. With 2+ cities each row gets a
-    // dropdown to move the user; national admins span every city.
+    // City column - Admins only. With 2+ cities each row gets a
+    // dropdown to move the user; Admins span every city.
     var cityCell = '';
     if (IS_NATIONAL_ADMIN) {
       var cityInner;
@@ -264,7 +264,7 @@ document.addEventListener('click', e => {
   document.getElementById('roleFilter').addEventListener('change', applyFilter);
   document.getElementById('cityFilter').addEventListener('change', applyFilter);
 
-  // The city filter only appears for national admins once there is more
+  // The city filter only appears for Admins once there is more
   // than one city to filter by.
   function setupCityFilter() {
     var f = document.getElementById('cityFilter');

@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$isNationalAdmin) {
             if ($cityId === null) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'error' => 'Your account has no city assigned — contact a national admin.']);
+                echo json_encode(['success' => false, 'error' => 'Your account has no city assigned — contact an Admin.']);
                 exit;
             }
             $newCityId = $cityId;
@@ -211,7 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // delete them; only national_admin may.
         if (!$isNationalAdmin) {
             http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'Only a national admin can delete roads.']);
+            echo json_encode(['success' => false, 'error' => 'Only an Admin can delete roads.']);
             exit;
         }
 

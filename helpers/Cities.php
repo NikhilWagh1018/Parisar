@@ -70,7 +70,7 @@ function resolveSignupCity(array $cities, mixed $posted): array
 /**
  * Validate an admin moving a user to another city.
  *
- *   - national admins have no city, so they cannot be moved;
+ *   - Admins have no city, so they cannot be moved;
  *   - the target must be one of the real cities (an int id, not a
  *     bool/array/string like "1 OR 1=1");
  *   - a user cannot be left without a city this way.
@@ -83,7 +83,7 @@ function resolveSignupCity(array $cities, mixed $posted): array
 function validateUserCityChange(array $cities, string $targetRole, mixed $posted): array
 {
     if ($targetRole === 'national_admin') {
-        return [null, 'National admins are not tied to a city.'];
+        return [null, 'Admins are not tied to a city.'];
     }
     if (!is_bool($posted) && !is_array($posted)) {
         $id = filter_var($posted, FILTER_VALIDATE_INT);

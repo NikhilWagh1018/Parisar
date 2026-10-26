@@ -77,14 +77,14 @@ $repo = new RoadRepository($pdo);
 
 // ── Which city is this audit in? ─────────────────────────────────
 // Road names are only unique within a city, so every name lookup below
-// is scoped to one city. Surveyors and city admins always use their own
-// city. A national admin has no fixed city: they may pass city_id in the
+// is scoped to one city. Surveyors and City Leaders always use their own
+// city. An Admin has no fixed city: they may pass city_id in the
 // body, otherwise the same default as road creation applies (their own
 // city, or the only city if exactly one exists).
 $cityScope = resolveViewerCityScope($pdo, $CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID);
 if ($cityScope === 0) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Your account has no city assigned — contact a national admin.']);
+    echo json_encode(['success' => false, 'error' => 'Your account has no city assigned — contact an Admin.']);
     exit;
 }
 if ($cityScope === null) {

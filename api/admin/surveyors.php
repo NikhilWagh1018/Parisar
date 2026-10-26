@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     echo json_encode([
         'success'   => true,
         'surveyors' => $surveyors,
-        // Only national admins can move users, so only they need the list.
+        // Only Admins can move users, so only they need the list.
         'cities'    => $isNationalAdmin ? listCities($pdo) : [],
     ]);
     exit;
@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (array_key_exists('city_id', $body)) {
         if (!$isNationalAdmin) {
             http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'Only a national admin can move a user to another city.']);
+            echo json_encode(['success' => false, 'error' => 'Only an Admin can move a user to another city.']);
             exit;
         }
         [$newCityId, $cityError] = validateUserCityChange(listCities($pdo), (string)$target['role'], $body['city_id']);
