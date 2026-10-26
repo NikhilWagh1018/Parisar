@@ -13,6 +13,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../config/constants.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
+require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../helpers/CityDetailedReport.php';
 require_once __DIR__ . '/../repositories/CityAuditRepository.php';
 require_once __DIR__ . '/../repositories/AuditReportRepository.php';
@@ -31,6 +32,8 @@ if ($audit['status'] === 'draft' || $audit['status'] === 'voided') {
 }
 
 $isPublic  = false;
+$viewerName = (string)$CURRENT_USER_NAME;
+$viewerRole = roleLabel((string)$CURRENT_USER_ROLE);
 $backUrl   = 'city_audit_report.php?id=' . (int)$audit['id'];
 $backLabel = '← Back to report';
 $autoPrint = false;

@@ -122,3 +122,27 @@ if (!function_exists('cityDetailValue')) {
         return [(string)$v, ''];
     }
 }
+
+if (!function_exists('cityReportDownloadLine')) {
+    /**
+     * Who downloaded the report and when, for its footer. A person is shown as
+     * "Name (City Leader)"; an anonymous public download as "Public download".
+     *
+     * @param string|null $name  null/'' for the public page
+     */
+    function cityReportDownloadLine(?string $name, ?string $roleLabel, string $when): string
+    {
+        $name = trim((string)$name);
+        $who  = $name === '' ? 'Public download' : $name . (trim((string)$roleLabel) !== '' ? ' (' . trim((string)$roleLabel) . ')' : '');
+        return $who . ' · ' . $when;
+    }
+}
+
+if (!function_exists('cityReportStatusLine')) {
+    /** "Published · 5 of 5 segments approved" or "Closed · 3 of 5 segments approved (partial)". */
+    function cityReportStatusLine(string $statusLabel, int $approved, int $total): string
+    {
+        $line = $statusLabel . ' · ' . $approved . ' of ' . $total . ' segments approved';
+        return ($total > 0 && $approved < $total) ? $line . ' (partial)' : $line;
+    }
+}
