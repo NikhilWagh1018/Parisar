@@ -17,6 +17,7 @@ declare(strict_types=1);
 //                (who prepared the audit, who surveyed each segment)
 //    $backUrl / $backLabel   the toolbar's back link
 //    $nonce      CSP nonce, already HTML-escaped
+//    $viewerName / $viewerRole   who is viewing (not set on the public page)
 //    $autoPrint  true to open the print dialog on load
 // ═══════════════════════════════════════════════════════════════
 
@@ -52,6 +53,7 @@ $totalLen   = array_sum(array_column($roads, 'length'));
 
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $printDate = date('d M Y');
+$printWhen = cityLocalTime(gmdate('Y-m-d H:i:s')) . ' IST';
 $cityLabel = (string)($audit['city_name'] ?? '');
 $logoPath  = __DIR__ . '/../../assets/parisar-logo.png';
 $logoB64   = is_file($logoPath) ? 'data:image/png;base64,' . base64_encode((string)file_get_contents($logoPath)) : '';
@@ -313,7 +315,8 @@ $orgName   = defined('APP_ORG') ? APP_ORG : 'Parisar';
     <div class="footer-right">
       <div>Audit: <strong><?= $h($audit['name']) ?></strong></div>
       <?php if ($overall): ?><div>Overall Score: <strong><?= $h($overall['score']) ?>/100</strong> (<?= $h(scoreToCondition((float)$overall['score'])) ?>)</div><?php endif; ?>
-      <div style="margin-top:4px">Printed <?= $h($printDate) ?></div>
+      <div>Status: <strong><?= $h(cityReportStatusLine(cityStatusLabel($status), $approvedSegs, $totalSegs)) ?></strong></div>
+      <div>Downloaded by: <strong><?= $h(cityReportDownloadLine($isPublic ? null : ($viewerName ?? ''), $isPublic ? null : ($viewerRole ?? ''), $printWhen)) ?></strong></div>
     </div>
   </div>
 </div>

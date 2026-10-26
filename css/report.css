@@ -300,12 +300,14 @@ body {
   .seg-cards            { grid-template-columns:1fr 1fr; }
   .dim-breakdown-grid   { grid-template-columns:1fr 1fr 1fr; }
   .seg-card, .dim-breakdown-card { break-inside:avoid; }
+  * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 }
+@page { size:A4; margin:12mm 10mm; }
 /* ═══════════════════════════════════════════════════════════════
-   Mobile — report.css  (Zomato/Swiggy card patterns)
+   Mobile — report.css  (screen only; a printed A4 page is under 768px wide and must keep the desktop layout)
    All mobile-only: desktop is untouched above.
    ═══════════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
 
   body { padding: 0 0 40px; font-size: 13px; }
 

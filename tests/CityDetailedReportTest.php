@@ -121,4 +121,18 @@ class CityDetailedReportTest extends TestCase
         $this->assertSame(0, $d[2]['intersections']);
         $this->assertSame(0, $d[2]['obs_total']);
     }
+
+    public function test_download_line_names_the_person_or_says_public(): void
+    {
+        $this->assertSame('Nick (City Leader) · 1 Jan 2026, 9:00 AM IST', cityReportDownloadLine('Nick', 'City Leader', '1 Jan 2026, 9:00 AM IST'));
+        $this->assertSame('Public download · x', cityReportDownloadLine(null, null, 'x'));
+        $this->assertSame('Asha · x', cityReportDownloadLine('Asha', '', 'x'));
+    }
+
+    public function test_status_line_flags_partial_reports(): void
+    {
+        $this->assertSame('Published · 5 of 5 segments approved', cityReportStatusLine('Published', 5, 5));
+        $this->assertSame('Closed · 3 of 5 segments approved (partial)', cityReportStatusLine('Closed', 3, 5));
+        $this->assertSame('Draft · 0 of 0 segments approved', cityReportStatusLine('Draft', 0, 0));
+    }
 }
