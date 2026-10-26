@@ -192,7 +192,7 @@ $orgName   = defined('APP_ORG') ? APP_ORG : 'Parisar';
       <!-- Segment-wise Scores -->
       <div class="section-h"><span class="sec-num"><?= $sec() ?></span> Segment-wise Scores</div>
       <table class="segs-table">
-        <thead><tr><th>#</th><th>Route</th><th>Length</th><?php if (!$isPublic): ?><th>Surveyor</th><?php endif; ?><th>Safety</th><th>Continuity</th><th>Comfort</th><th>Final</th><th>Rating</th></tr></thead>
+        <thead><tr><th>#</th><th>Route</th><th>Length</th><?php if (!$isPublic): ?><th>Surveyed by</th><?php endif; ?><th>Safety</th><th>Continuity</th><th>Comfort</th><th>Final</th><th>Rating</th></tr></thead>
         <tbody>
         <?php $cum = 0.0; foreach ($road['rows'] as $sr):
             $start = $cum; $cum += (float)$sr['length'];
@@ -278,7 +278,8 @@ $orgName   = defined('APP_ORG') ? APP_ORG : 'Parisar';
           <div class="seg-card-header" style="background:<?= $col ?>12;border-bottom:2px solid <?= $col ?>33;">
             <div>
               <div class="seg-card-title">Segment <?= (int)$sr['segment_number'] ?></div>
-              <div class="seg-card-sub">Length: <?= number_format((float)$sr['length']) ?>m<?= $isPublic ? '' : ' · Surveyor: ' . $h($sr['surveyor_name'] ?? '—') ?></div>
+              <div class="seg-card-sub">Length: <?= number_format((float)$sr['length']) ?>m</div>
+              <?php if (!$isPublic): ?><div class="seg-card-sub" style="margin-top:3px;color:#3d7a1f">Surveyed by: <strong style="color:#1f3d10"><?= $h($sr['surveyor_name'] ?? 'Not assigned') ?></strong></div><?php endif; ?>
             </div>
             <div class="seg-card-score">
               <div class="val" style="color:<?= $col ?>"><?= $h($sr['final']) ?>/100</div>
