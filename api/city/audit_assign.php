@@ -23,6 +23,8 @@ require_once __DIR__ . '/../../helpers/CityApi.php';
 require_once __DIR__ . '/../../helpers/CityAudit.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 require_once __DIR__ . '/../../repositories/CityAuditRepository.php';
+require_once __DIR__ . '/../../repositories/NotificationRepository.php';
+require_once __DIR__ . '/../../helpers/Notifications.php';
 
 $body = cityApiContext($CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID);
 $repo = new CityAuditRepository($pdo);
@@ -55,5 +57,23 @@ ActivityLogger::log($pdo, ActivityLogger::AUDIT_SEGMENTS_ASSIGNED, $CURRENT_USER
     'road_id'     => $c['road_id'],
     'segments'    => $res['assigned'],
 ]);
+
+// Tell the surveyor about it. A failure here must never undo or fail the assignment.
+if ($c['surveyor_id'] !== null && (int)$res['assigned'] > 0) {
+    try {
+        $roadName = null;
+        if ($c['mode'] === 'road') {
+            $rn = $pdo->prepare('SELECT name FROM roads WHERE id = ?');
+            $rn->execute([(int)$c['road_id']]);
+            $roadName = ($rn->fetchColumn() ?: null);
+        }
+        $text = assignmentNotificationText((string)$audit['name'], (string)$audit['status'], (int)$res['assigned'], $roadName);
+        (new NotificationRepository($pdo))->create(
+            (int)$c['surveyor_id'], NOTIFY_ASSIGNED, $text['title'], $text['body'], 'dashboard.php'
+        );
+    } catch (Throwable $e) {
+        error_log('api/city/audit_assign.php notification failed: ' . $e->getMessage());
+    }
+}
 
 echo json_encode(['success' => true] + $res);
