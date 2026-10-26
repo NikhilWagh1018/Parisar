@@ -14,6 +14,9 @@
     setTimeout(function () { toastEl.className = 'ca-toast'; }, 3200);
   }
 
+  // Styled confirmation dialog (js/confirm_box.js), instead of the browser's window.confirm.
+  var confirmBox = window.caConfirm;
+
   async function post(url, payload) {
     var res = await fetch(url, {
       method: 'POST',
@@ -62,7 +65,7 @@
   // ── Audit report page ─────────────────────────────────────────
   var closeBtn = document.getElementById('rpClose');
   if (closeBtn) closeBtn.addEventListener('click', async function () {
-    if (!window.confirm('Close this audit? Surveyors can no longer submit, and the report becomes final.')) return;
+    if (!(await confirmBox({ title: 'Close audit', message: 'Close this audit? Surveyors can no longer submit, and the report becomes final.', confirmText: 'Close audit' }))) return;
     closeBtn.disabled = true;
     try {
       await post('../api/city/audit_close.php', { audit_id: app.dataset.auditId, action: 'close' });
@@ -72,7 +75,7 @@
 
   var sendBtn = document.getElementById('rpSend');
   if (sendBtn) sendBtn.addEventListener('click', async function () {
-    if (!window.confirm('Send this audit and its report to the Admin?')) return;
+    if (!(await confirmBox({ title: 'Send to Admin', message: 'Send this audit and its report to the Admin?', confirmText: 'Send' }))) return;
     sendBtn.disabled = true;
     try {
       await post('../api/city/audit_close.php', { audit_id: app.dataset.auditId, action: 'send' });
@@ -83,7 +86,7 @@
   // ── Admin decision on the report page ─────────────────────────
   var approveAuditBtn = document.getElementById('rpApprove');
   if (approveAuditBtn) approveAuditBtn.addEventListener('click', async function () {
-    if (!window.confirm('Approve this audit? The report becomes final.')) return;
+    if (!(await confirmBox({ title: 'Approve audit', message: 'Approve this audit? The report becomes final.', confirmText: 'Approve' }))) return;
     approveAuditBtn.disabled = true;
     try {
       await post('../api/admin/audit_decide.php', { audit_id: app.dataset.auditId, action: 'approve' });

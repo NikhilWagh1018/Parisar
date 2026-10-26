@@ -5,8 +5,9 @@
 --  Additions only: nothing existing is changed or deleted.
 --  Notifications are removed automatically if their user is deleted.
 --
---  users.id is INT UNSIGNED, so user_id must be too (the foreign key
---  fails otherwise). Check first if unsure:
+--  user_id must have exactly the same type as users.id or the foreign key
+--  fails ("incompatible"). In production users.id is a signed INT, so
+--  user_id is INT here. Check first if unsure:
 --      SHOW COLUMNS FROM users LIKE 'id';
 --
 --  Railway's query console runs ONE statement per query. This file has one.
@@ -17,7 +18,7 @@
 
 CREATE TABLE notifications (
   id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id    INT UNSIGNED NOT NULL,
+  user_id    INT          NOT NULL,
   type       VARCHAR(40)  NOT NULL,
   title      VARCHAR(150) NOT NULL,
   body       VARCHAR(500) NOT NULL DEFAULT '',

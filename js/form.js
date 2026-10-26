@@ -477,20 +477,22 @@ async function submitFullAudit() {
 
     if (result.success) {
         FormStateManager.clear();
-      alert('Audit saved successfully!');
-      // Back to segment.php — segment.js picks up ?status=done
+      showFormToast('✅ Audit saved.');
+      // Back to segment.php — segment.js picks up ?status=done.
+      // A short pause lets the surveyor see the confirmation before the page changes.
       const roadId = getRoadId();
-      window.location.href =
+      const next =
         `segment.php?segment_id=${segmentId}&status=done` +
         (sessionId ? `&session_id=${sessionId}` : '') +
         (roadId    ? `&road_id=${roadId}`        : '');
+      setTimeout(() => { window.location.href = next; }, 900);
     } else {
-      alert('Error: ' + (result.error || result.message || 'Unknown error'));
+      showFormToast('Could not save: ' + (result.error || result.message || 'Unknown error'), 'error', 6000);
       console.error('Submit error:', result);
     }
   } catch (error) {
     console.error('Fetch failed:', error);
-    alert('Network error. Please try again.');
+    showFormToast('Network error. Please try again.', 'error', 6000);
   }
 }
 
@@ -587,7 +589,7 @@ async function doReset() {
       const result = await resp.json();
       if (!result.success) {
         console.error('Reset failed:', result.error);
-        alert('Reset failed: ' + (result.error || 'Unknown error'));
+        showFormToast('Reset failed: ' + (result.error || 'Unknown error'), 'error', 6000);
         if (resetBtn) { resetBtn.textContent = origText; resetBtn.disabled = false; }
         return;
       }
@@ -646,32 +648,38 @@ async function doReset() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Show a brief success toast
-    showResetToast('🔄 Form cleared — all data has been reset.');
+    showFormToast('🔄 Form cleared — all data has been reset.');
 
   } catch (err) {
     console.error('doReset error:', err);
-    alert('An unexpected error occurred during reset. Please try again.');
+    showFormToast('An unexpected error occurred during reset. Please try again.', 'error', 6000);
   } finally {
     if (resetBtn) { resetBtn.textContent = origText; resetBtn.disabled = false; }
   }
 }
 
-function showResetToast(msg) {
-  let toast = document.getElementById('resetToast');
+// Non-blocking message at the bottom of the screen (replaces alert()).
+// type: 'success' (green, default) or 'error' (red). Text is set with textContent.
+function showFormToast(msg, type = 'success', ms = 3000) {
+  let toast = document.getElementById('formToast');
   if (!toast) {
     toast = document.createElement('div');
-    toast.id = 'resetToast';
+    toast.id = 'formToast';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
     toast.style.cssText =
       'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
-      'background:#2d6a2d;color:#fff;padding:12px 24px;border-radius:8px;' +
+      'max-width:calc(100% - 32px);text-align:center;' +
+      'color:#fff;padding:12px 24px;border-radius:8px;' +
       'font-size:14px;font-weight:500;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.25);' +
       'transition:opacity .3s ease;';
     document.body.appendChild(toast);
   }
+  toast.style.background = type === 'error' ? '#b91c1c' : '#2d6a2d';
   toast.textContent = msg;
   toast.style.opacity = '1';
   clearTimeout(toast._hideTimer);
-  toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+  toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, ms);
 }
 
 // ── Scroll to top ──────────────────────────────────────────────

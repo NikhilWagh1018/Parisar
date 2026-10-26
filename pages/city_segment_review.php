@@ -12,6 +12,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
+require_once __DIR__ . '/../helpers/SurveyLabels.php';
 require_once __DIR__ . '/../repositories/CityAuditRepository.php';
 require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 require_once __DIR__ . '/../repositories/AuditReportRepository.php';
@@ -83,7 +84,7 @@ $show = static function (mixed $v) use ($h): string {
     return '<dd>' . $h($s) . '</dd>';
 };
 /** Bar colour for a 0-100 penalty score (lower is better). */
-$barClass = static fn(float $v): string => $v <= 20 ? '' : ($v <= 60 ? 'mid' : 'bad');
+$barClass = static fn(float $v): string => cityScoreBarClass($v);
 
 $statusText = [
     'submitted'     => 'Waiting for your review',
@@ -195,7 +196,11 @@ $pageTitle = $seg['road_name'] . ' · Segment ' . (int)$seg['segment_number'];
             'Signage count' => 'signage_count', 'Surface issues' => 'surface_issues',
             'Overhead issues' => 'overhead_issues', 'Footpath rating' => 'footpath_rating',
         ] as $label => $key): ?>
-          <div><dt><?= $h($label) ?></dt><?= $show($data[$key] ?? null) ?></div>
+          <?php if (isset(SURVEY_ANSWER_LABELS[$key])): $answers = surveyAnswerLabels($key, $data[$key] ?? null); ?>
+            <div><dt><?= $h($label) ?></dt><?= $answers ? '<dd>' . $h(implode(' · ', $answers)) . '</dd>' : '<dd class="empty">Not recorded</dd>' ?></div>
+          <?php else: ?>
+            <div><dt><?= $h($label) ?></dt><?= $show($data[$key] ?? null) ?></div>
+          <?php endif; ?>
         <?php endforeach; ?>
       </dl>
       <?php if (!empty($data['comments'])): ?>
@@ -212,7 +217,7 @@ $pageTitle = $seg['road_name'] . ' · Segment ' . (int)$seg['segment_number'];
         <thead><tr><th>Category</th><th>Type</th><th>Partial</th><th>Total</th><th>Cyclists slowed</th></tr></thead>
         <tbody>
         <?php foreach ($seg['obstructions'] as $o): ?>
-          <tr><td><?= $h($o['obstruction_category'] ?? '—') ?></td><td><?= $h($o['obstruction_type'] ?? '—') ?></td>
+          <tr><td><?= $h(surveyHumanize((string)($o['obstruction_category'] ?? '')) ?: '—') ?></td><td><?= $h(surveyHumanize((string)($o['obstruction_type'] ?? '')) ?: '—') ?></td>
               <td><?= $h($o['partial_obstructions'] ?? 0) ?></td><td><?= $h($o['total_obstructions'] ?? 0) ?></td>
               <td><?= $h($o['cyclist_slowed'] ?? 0) ?></td></tr>
         <?php endforeach; ?>
@@ -274,6 +279,7 @@ const tog = document.getElementById('sb-toggle'), ovl = document.getElementById(
 tog.addEventListener('click', () => { aside.classList.add('open'); ovl.classList.add('show'); });
 ovl.addEventListener('click', () => { aside.classList.remove('open'); ovl.classList.remove('show'); });
 </script>
+<script nonce="<?= $nonce ?>" src="../js/confirm_box.js?v=<?= filemtime(__DIR__ . '/../js/confirm_box.js') ?>"></script>
 <script nonce="<?= $nonce ?>" src="../js/city_review.js?v=<?= filemtime(__DIR__ . '/../js/city_review.js') ?>"></script>
 </body>
 </html>

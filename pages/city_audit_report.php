@@ -77,7 +77,7 @@ $nonce     = $h($_SESSION['csp_nonce'] ?? '');
 $csrf      = $h($_SESSION['csrf_token'] ?? '');
 $activeNav = 'home';
 $auditUrl  = 'city_audit.php?id=' . $auditId;
-$barClass  = static fn(float $v): string => $v <= 20 ? '' : ($v <= 60 ? 'mid' : 'bad');
+$barClass  = static fn(float $v): string => cityScoreBarClass($v);
 $totalLen  = array_sum(array_column($roads, 'length'));
 $reviewUrl = static fn(array $r): string => 'city_segment_review.php?audit_id=' . $auditId . '&segment_id=' . (int)$r['segment_id'];
 $statusText = ['approved' => 'Approved', 'submitted' => 'To review', 'needs_revisit' => 'Sent back', 'assigned' => 'With surveyor'];
@@ -244,6 +244,7 @@ const tog = document.getElementById('sb-toggle'), ovl = document.getElementById(
 tog.addEventListener('click', () => { aside.classList.add('open'); ovl.classList.add('show'); });
 ovl.addEventListener('click', () => { aside.classList.remove('open'); ovl.classList.remove('show'); });
 </script>
+<script nonce="<?= $nonce ?>" src="../js/confirm_box.js?v=<?= filemtime(__DIR__ . '/../js/confirm_box.js') ?>"></script>
 <script nonce="<?= $nonce ?>" src="../js/city_review.js?v=<?= filemtime(__DIR__ . '/../js/city_review.js') ?>"></script>
 </body>
 </html>

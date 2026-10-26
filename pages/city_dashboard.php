@@ -311,6 +311,7 @@ const tog = document.getElementById('sb-toggle'), ovl = document.getElementById(
 tog.addEventListener('click', () => { aside.classList.add('open'); ovl.classList.add('show'); });
 ovl.addEventListener('click', () => { aside.classList.remove('open'); ovl.classList.remove('show'); });
 </script>
+<script nonce="<?= $nonce ?>" src="../js/confirm_box.js?v=<?= filemtime(__DIR__ . '/../js/confirm_box.js') ?>"></script>
 <script nonce="<?= $nonce ?>" src="../js/city_audit.js?v=<?= filemtime(__DIR__ . '/../js/city_audit.js') ?>"></script>
 </body>
 </html>

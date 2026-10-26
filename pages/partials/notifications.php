@@ -3,6 +3,7 @@
 // Expects: $pdo, $CURRENT_USER_ID. Renders nothing when there is nothing new,
 // and never breaks the dashboard if the notifications table is not there yet.
 require_once __DIR__ . '/../../repositories/NotificationRepository.php';
+require_once __DIR__ . '/../../helpers/CityDashboard.php'; // cityLocalTime(): UTC -> India time
 
 $ntRows = [];
 try {
@@ -23,7 +24,7 @@ if ($ntRows):
       <li class="nt-item">
         <b><?= $ntH($n['title']) ?></b>
         <span><?= $ntH($n['body']) ?></span>
-        <small><?= $ntH($n['created_at']) ?></small>
+        <small><?= $ntH(cityLocalTime($n['created_at'])) ?></small>
       </li>
     <?php endforeach; ?>
   </ul>

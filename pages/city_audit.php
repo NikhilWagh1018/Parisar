@@ -105,7 +105,7 @@ if ($isClosed) {
         ];
     }
 }
-$barClass = static fn(float $v): string => $v < 40 ? 'bad' : ($v < 70 ? 'mid' : '');
+$barClass = static fn(float $v): string => cityScoreBarClass($v);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -300,7 +300,7 @@ $barClass = static fn(float $v): string => $v < 40 ? 'bad' : ($v < 70 ? 'mid' : 
             <div class="ca-sub-head">
               <div>
                 <b><a href="city_segment_review.php?audit_id=<?= (int)$audit['id'] ?>&amp;segment_id=<?= (int)$sb['segment_id'] ?>"><?= $h($sb['road_name']) ?> · Segment <?= (int)$sb['segment_number'] ?></a></b>
-                <small><?= $h($num($sb['length'])) ?> m · by <?= $h($sb['surveyor_name'] ?? 'Unknown') ?><?= $sb['submitted_at'] ? ' · ' . $h($sb['submitted_at']) : '' ?></small>
+                <small><?= $h($num($sb['length'])) ?> m · by <?= $h($sb['surveyor_name'] ?? 'Unknown') ?><?= $sb['submitted_at'] ? ' · ' . $h(cityLocalTime($sb['submitted_at'])) : '' ?></small>
               </div>
               <?php if ($sc !== null && isset($sc['final'])): ?>
                 <span class="ca-score">Score <?= $h($num($sc['final'])) ?></span>
@@ -488,6 +488,7 @@ const tog = document.getElementById('sb-toggle'), ovl = document.getElementById(
 tog.addEventListener('click', () => { aside.classList.add('open'); ovl.classList.add('show'); });
 ovl.addEventListener('click', () => { aside.classList.remove('open'); ovl.classList.remove('show'); });
 </script>
+<script nonce="<?= $nonce ?>" src="../js/confirm_box.js?v=<?= filemtime(__DIR__ . '/../js/confirm_box.js') ?>"></script>
 <script nonce="<?= $nonce ?>" src="../js/city_audit.js?v=<?= filemtime(__DIR__ . '/../js/city_audit.js') ?>"></script>
 </body>
 </html>
