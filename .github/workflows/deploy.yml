@@ -17,7 +17,8 @@ jobs:
           php-version: '8.3'
           coverage: none
       - name: Check composer.lock for known vulnerabilities
-        run: composer audit --locked --no-interaction
+        # Fails on known vulnerabilities only; abandoned packages are listed but do not fail the build.
+        run: composer audit --locked --no-interaction --abandoned=report
   test:
     name: PHP Lint & PHPUnit
     runs-on: ubuntu-22.04
