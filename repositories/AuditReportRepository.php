@@ -95,7 +95,12 @@ class AuditReportRepository
         $stmt = $this->pdo->prepare(
             "SELECT r.id AS road_id, r.name AS road_name,
                     s.id AS segment_id, s.segment_number, s.length,
-                    sa.status AS assignment_status, u.name AS surveyor_name,
+                    sa.status AS assignment_status,
+                    COALESCE(
+                        (SELECT su.name FROM segment_audits sx JOIN users su ON su.id = sx.surveyor_id
+                          WHERE sx.id = (SELECT MAX(x.id) FROM segment_audits x WHERE x.segment_id = s.id)),
+                        u.name
+                    ) AS surveyor_name,
                     (SELECT MAX(x.id) FROM segment_audits x WHERE x.segment_id = s.id) AS latest_audit_id
                FROM roads r
                JOIN segments s ON s.road_id = r.id
