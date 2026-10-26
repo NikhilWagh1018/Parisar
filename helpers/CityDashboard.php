@@ -228,6 +228,15 @@ function cityLocalTime(?string $utc): string
     }
 }
 
+/**
+ * Bar colour class for a 0-100 penalty score. Scores run LOWER IS BETTER, so a low
+ * number is good (default green) and a high number is bad. One rule for every screen.
+ */
+function cityScoreBarClass(float $score): string
+{
+    return $score <= 20 ? '' : ($score <= 60 ? 'mid' : 'bad');
+}
+
 /** The lifecycle shown as a tracker: label for each stage, in order. */
 const CITY_AUDIT_STAGES = ['Setup', 'Auditing', 'Review', 'Closed', 'With Admin', 'Published'];
 
