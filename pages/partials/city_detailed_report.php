@@ -65,7 +65,7 @@ $orgName   = defined('APP_ORG') ? APP_ORG : 'Parisar';
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Audit Report — <?= $h($audit['name']) ?></title>
-<link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/report.css">
+<link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/report.css?v=<?= (int)@filemtime(__DIR__ . '/../../css/report.css') ?>">
 <style nonce="<?= $nonce ?>">
 /* Keep headings with their content and small blocks in one piece when printed. */
 @media print {
