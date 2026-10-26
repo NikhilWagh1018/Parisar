@@ -156,7 +156,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
     </div>
     <?php endif; ?>
 
-    <?php if (!isAnyAdmin($CURRENT_USER_ROLE)) { require __DIR__ . '/partials/surveyor_work.php'; } ?>
+    <?php if (!isAnyAdmin($CURRENT_USER_ROLE)) { require __DIR__ . '/partials/notifications.php'; require __DIR__ . '/partials/surveyor_work.php'; } ?>
 
     <?php if (!isAnyAdmin($CURRENT_USER_ROLE)): ?>
     <!-- Roads table -->
@@ -195,6 +195,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';</script>
+<script src="../js/notifications.js?v=<?= filemtime(__DIR__ . '/../js/notifications.js') ?>"></script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/dashboard.js?v=<?= filemtime(__DIR__ . '/../js/dashboard.js') ?>"></script>
 <div class="sb-overlay" id="sb-overlay"></div>
 <script>
