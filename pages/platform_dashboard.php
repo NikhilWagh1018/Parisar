@@ -75,17 +75,17 @@ $activeNav = 'home';
         <h3>Needs your attention<?= $attention ? ' (' . count($attention) . ')' : '' ?></h3>
       </div>
       <?php if (!$attention): ?>
-        <p class="ad-clear">✅ All clear. Nothing needs your attention right now.</p>
+        <p class="pd-clear">✅ All clear. Nothing needs your attention right now.</p>
       <?php else: ?>
-      <ul class="ad-attn">
+      <ul class="pd-attn">
         <?php foreach ($attention as $it): ?>
-        <li class="ad-attn-row ad-<?= $h($it['tone']) ?>">
-          <span class="ad-attn-dot" aria-hidden="true"></span>
-          <div class="ad-attn-text">
+        <li class="pd-attn-row pd-<?= $h($it['tone']) ?>">
+          <span class="pd-attn-dot" aria-hidden="true"></span>
+          <div class="pd-attn-text">
             <strong><?= $h($it['title']) ?></strong>
             <span><?= $h($it['detail']) ?></span>
           </div>
-          <a class="ad-btn<?= $it['tone'] === 'urgent' ? ' ad-btn-solid' : '' ?>" href="<?= $h($it['href']) ?>"><?= $h($it['cta']) ?> →</a>
+          <a class="pd-btn<?= $it['tone'] === 'urgent' ? ' pd-btn-solid' : '' ?>" href="<?= $h($it['href']) ?>"><?= $h($it['cta']) ?> →</a>
         </li>
         <?php endforeach; ?>
       </ul>
@@ -96,27 +96,27 @@ $activeNav = 'home';
       <div class="card-head">
         <h3>Audits across all cities</h3>
       </div>
-      <div class="ad-scroll">
-        <table class="ad-table">
+      <div class="pd-scroll">
+        <table class="pd-table">
           <thead><tr><th>Audit</th><th>City</th><th>Status</th><th>Progress</th><th>Last activity</th><th></th></tr></thead>
           <tbody>
           <?php if (!$audits): ?>
-            <tr><td colspan="6" class="ad-empty">No audits yet. City Leaders create audits from their own dashboard.</td></tr>
+            <tr><td colspan="6" class="pd-empty">No audits yet. City Leaders create audits from their own dashboard.</td></tr>
           <?php endif; ?>
           <?php foreach ($audits as $a):
               $p = cityDashProgress($a['done_count'], $a['segment_count']); ?>
             <tr>
-              <td><strong><?= $h($a['name']) ?></strong><span class="ad-sub"><?= $h(cityAuditDateLabel($a['audit_date'] ?? null, (int)$a['audit_year'])) ?> · <?= $h(cityPlural($a['road_count'], 'road', 'roads')) ?></span></td>
+              <td><strong><?= $h($a['name']) ?></strong><span class="pd-sub"><?= $h(cityAuditDateLabel($a['audit_date'] ?? null, (int)$a['audit_year'])) ?> · <?= $h(cityPlural($a['road_count'], 'road', 'roads')) ?></span></td>
               <td><?= $h($a['city_name']) ?></td>
-              <td><span class="ad-chip ad-chip-<?= $h(adminAuditStatusClass((string)$a['status'])) ?>"><?= $h(adminAuditStatusLabel((string)$a['status'])) ?></span></td>
+              <td><span class="pd-chip pd-chip-<?= $h(adminAuditStatusClass((string)$a['status'])) ?>"><?= $h(adminAuditStatusLabel((string)$a['status'])) ?></span></td>
               <td>
                 <?php if ($a['segment_count'] > 0): ?>
-                <div class="ad-bar" role="img" aria-label="<?= $p ?>% of segments done"><i style="width:<?= $p ?>%"></i></div>
-                <span class="ad-sub"><?= (int)$a['done_count'] ?> of <?= (int)$a['segment_count'] ?> segments</span>
-                <?php else: ?><span class="ad-sub">No segments yet</span><?php endif; ?>
+                <div class="pd-bar" role="img" aria-label="<?= $p ?>% of segments done"><i style="width:<?= $p ?>%"></i></div>
+                <span class="pd-sub"><?= (int)$a['done_count'] ?> of <?= (int)$a['segment_count'] ?> segments</span>
+                <?php else: ?><span class="pd-sub">No segments yet</span><?php endif; ?>
               </td>
-              <td class="ad-nowrap"><?= $h(cityLocalTime($a['last_activity'])) ?></td>
-              <td><a class="ad-link" href="<?= $h(adminAuditLink($a)) ?>"><?= $a['status'] === 'awaiting_approval' ? 'Review' : 'Open' ?> →</a></td>
+              <td class="pd-nowrap"><?= $h(cityLocalTime($a['last_activity'])) ?></td>
+              <td><a class="pd-link" href="<?= $h(adminAuditLink($a)) ?>"><?= $a['status'] === 'awaiting_approval' ? 'Review' : 'Open' ?> →</a></td>
             </tr>
           <?php endforeach; ?>
           </tbody>
@@ -129,21 +129,21 @@ $activeNav = 'home';
         <h3>Cities</h3>
         <a href="admin_surveyors.php">Manage users →</a>
       </div>
-      <div class="ad-scroll">
-        <table class="ad-table">
+      <div class="pd-scroll">
+        <table class="pd-table">
           <thead><tr><th>City</th><th>City Leaders</th><th>Surveyors</th><th>Roads</th><th>Segments done</th><th></th></tr></thead>
           <tbody>
           <?php if (!$cities): ?>
-            <tr><td colspan="6" class="ad-empty">No cities yet.</td></tr>
+            <tr><td colspan="6" class="pd-empty">No cities yet.</td></tr>
           <?php endif; ?>
           <?php foreach ($cities as $c): ?>
             <tr>
               <td><strong><?= $h($c['name']) ?></strong></td>
-              <td><?= $c['leaders'] > 0 ? (int)$c['leaders'] : '<span class="ad-warn-text">None</span>' ?></td>
+              <td><?= $c['leaders'] > 0 ? (int)$c['leaders'] : '<span class="pd-warn-text">None</span>' ?></td>
               <td><?= (int)$c['surveyors'] ?></td>
               <td><?= (int)$c['road_groups'] ?></td>
-              <td><?= $h($pct($c['done'], $c['segs'])) ?> <span class="ad-sub"><?= (int)$c['done'] ?> of <?= (int)$c['segs'] ?></span></td>
-              <td><a class="ad-link" href="city_dashboard.php?city_id=<?= (int)$c['id'] ?>">Open →</a></td>
+              <td><?= $h($pct($c['done'], $c['segs'])) ?> <span class="pd-sub"><?= (int)$c['done'] ?> of <?= (int)$c['segs'] ?></span></td>
+              <td><a class="pd-link" href="city_dashboard.php?city_id=<?= (int)$c['id'] ?>">Open →</a></td>
             </tr>
           <?php endforeach; ?>
           </tbody>
