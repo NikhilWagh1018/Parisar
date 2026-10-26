@@ -13,6 +13,54 @@
     setTimeout(function () { toastEl.className = 'ca-toast'; }, 3200);
   }
 
+  // Styled confirmation dialog (replaces window.confirm). Resolves true on confirm, false otherwise.
+  // opts: { title, message, confirmText, danger }. Text is set with textContent, never as HTML.
+  function confirmBox(opts) {
+    return new Promise(function (resolve) {
+      var prev = document.activeElement;
+      var bg = document.createElement('div');
+      bg.className = 'ca-modal-bg';
+      var box = document.createElement('div');
+      box.className = 'ca-modal';
+      box.setAttribute('role', 'dialog');
+      box.setAttribute('aria-modal', 'true');
+      var h = document.createElement('h3');
+      h.textContent = opts.title || 'Please confirm';
+      var p = document.createElement('p');
+      p.textContent = opts.message || '';
+      var row = document.createElement('div');
+      row.className = 'ca-modal-actions';
+      var no = document.createElement('button');
+      no.type = 'button'; no.className = 'ca-btn ghost'; no.textContent = 'Cancel';
+      var yes = document.createElement('button');
+      yes.type = 'button'; yes.className = 'ca-btn' + (opts.danger ? ' ca-btn-danger' : '');
+      yes.textContent = opts.confirmText || 'Confirm';
+      row.appendChild(no); row.appendChild(yes);
+      box.appendChild(h); box.appendChild(p); box.appendChild(row);
+      bg.appendChild(box);
+      document.body.appendChild(bg);
+
+      function done(v) {
+        document.removeEventListener('keydown', onKey, true);
+        bg.remove();
+        if (prev && prev.focus) prev.focus();
+        resolve(v);
+      }
+      function onKey(ev) {
+        if (ev.key === 'Escape') { ev.preventDefault(); done(false); }
+        else if (ev.key === 'Tab') {
+          ev.preventDefault();
+          (document.activeElement === no ? yes : no).focus();
+        }
+      }
+      document.addEventListener('keydown', onKey, true);
+      no.addEventListener('click', function () { done(false); });
+      yes.addEventListener('click', function () { done(true); });
+      bg.addEventListener('mousedown', function (ev) { if (ev.target === bg) done(false); });
+      (opts.danger ? no : yes).focus();
+    });
+  }
+
   async function post(url, payload) {
     var res = await fetch(url, {
       method: 'POST',
@@ -150,7 +198,7 @@
   });
   document.querySelectorAll('.ca-remove').forEach(function (b) {
     b.addEventListener('click', async function () {
-      if (!window.confirm('Remove ' + b.dataset.name + ' and its segments from this audit?')) return;
+      if (!(await confirmBox({ title: 'Remove road', message: 'Remove ' + b.dataset.name + ' and its segments from this audit?', confirmText: 'Remove', danger: true }))) return;
       b.disabled = true;
       try {
         await post('../api/city/audit_road_remove.php', { audit_id: app.dataset.auditId, road_id: b.dataset.roadId });
@@ -164,6 +212,19 @@
   // ── Audit page: assign surveyors ──────────────────────────────
   document.querySelectorAll('.ca-seg-assign').forEach(function (sel) {
     sel.addEventListener('change', async function () {
+      var roadEl = sel.closest('.ca-road');
+      var roadName = roadEl && roadEl.querySelector('h4') ? roadEl.querySelector('h4').textContent.trim() : 'this road';
+      var row = sel.closest('tr');
+      var segNo = row && row.cells[0] ? row.cells[0].textContent.trim() : '';
+      var where = 'segment ' + segNo + ' of ' + roadName;
+      var clearing = sel.value === '' || sel.value === '0';
+      var ok = await confirmBox({
+        title: clearing ? 'Unassign segment' : 'Assign segment',
+        message: clearing ? 'Remove the surveyor from ' + where + '?'
+                          : 'Assign ' + where + ' to ' + sel.options[sel.selectedIndex].text + '?',
+        confirmText: clearing ? 'Unassign' : 'Assign'
+      });
+      if (!ok) { sel.value = sel.dataset.current || ''; return; }
       sel.disabled = true;
       try {
         await post('../api/city/audit_assign.php', {
@@ -187,7 +248,8 @@
       if (!sel || sel.value === '') { toast('Choose a surveyor first.', 'error'); return; }
       var label = sel.value === '0' ? 'Unassign every pending segment of this road?'
                                     : 'Assign every pending segment of this road to ' + sel.options[sel.selectedIndex].text + '?';
-      if (!window.confirm(label)) return;
+      var unassign = sel.value === '0';
+      if (!(await confirmBox({ title: unassign ? 'Unassign road' : 'Assign road', message: label, confirmText: unassign ? 'Unassign' : 'Assign' }))) return;
       b.disabled = true;
       try {
         await post('../api/city/audit_assign.php', {
@@ -207,7 +269,7 @@
   var activateBtn = document.getElementById('caActivate');
   if (activateBtn) {
     activateBtn.addEventListener('click', async function () {
-      if (!window.confirm('Activate this audit? Roads can no longer be added or removed afterwards.')) return;
+      if (!(await confirmBox({ title: 'Activate audit', message: 'Activate this audit? Roads can no longer be added or removed afterwards.', confirmText: 'Activate' }))) return;
       activateBtn.disabled = true;
       try {
         await post('../api/city/audit_activate.php', { audit_id: app.dataset.auditId });
@@ -255,7 +317,7 @@
   });
   var closeBtn = document.getElementById('caClose');
   if (closeBtn) closeBtn.addEventListener('click', async function () {
-    if (!window.confirm('Close this audit? Surveyors can no longer submit, and the report is generated.')) return;
+    if (!(await confirmBox({ title: 'Close audit', message: 'Close this audit? Surveyors can no longer submit, and the report is generated.', confirmText: 'Close audit' }))) return;
     closeBtn.disabled = true;
     try {
       await post('../api/city/audit_close.php', { audit_id: app.dataset.auditId, action: 'close' });
@@ -264,7 +326,7 @@
   });
   var sendBtn = document.getElementById('caSend');
   if (sendBtn) sendBtn.addEventListener('click', async function () {
-    if (!window.confirm('Send this audit and its report to the Admin?')) return;
+    if (!(await confirmBox({ title: 'Send to Admin', message: 'Send this audit and its report to the Admin?', confirmText: 'Send' }))) return;
     sendBtn.disabled = true;
     try {
       await post('../api/city/audit_close.php', { audit_id: app.dataset.auditId, action: 'send' });
