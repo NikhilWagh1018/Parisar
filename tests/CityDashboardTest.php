@@ -153,21 +153,21 @@ class CityDashboardTest extends TestCase
             start_distance REAL, end_distance REAL)');
         $pdo->exec('CREATE TABLE segment_assignments (id INTEGER PRIMARY KEY AUTOINCREMENT, audit_id INTEGER, segment_id INTEGER UNIQUE,
             surveyor_id INTEGER, status TEXT, submitted_at TEXT, reviewed_at TEXT, review_note TEXT)');
-        $pdo->exec('CREATE TABLE segment_audits (id INTEGER PRIMARY KEY AUTOINCREMENT, segment_id INTEGER, shade TEXT, comments TEXT)');
+        $pdo->exec('CREATE TABLE segment_audits (id INTEGER PRIMARY KEY AUTOINCREMENT, segment_id INTEGER, surveyor_id INTEGER, shade TEXT, comments TEXT)');
         $pdo->exec('CREATE TABLE obstructions (id INTEGER PRIMARY KEY AUTOINCREMENT, audit_id INTEGER, obstruction_category TEXT,
             obstruction_type TEXT, partial_obstructions INTEGER, total_obstructions INTEGER, cyclist_slowed INTEGER)');
         $pdo->exec('CREATE TABLE intersections (id INTEGER PRIMARY KEY AUTOINCREMENT, audit_id INTEGER, intersection_num INTEGER,
             landmark_name TEXT, off_ramp TEXT, on_ramp TEXT, markings TEXT, signage TEXT, traffic_calming TEXT,
             discontinuity TEXT, tapering TEXT)');
 
-        $pdo->exec("INSERT INTO users VALUES (10,'Asha')");
+        $pdo->exec("INSERT INTO users VALUES (10,'Asha'),(11,'Ravi')");
         $pdo->exec("INSERT INTO city_audits (id, city_id, name, state, audit_year, status) VALUES
             (1,1,'A1','MH',2026,'in_review'),(2,1,'A2','MH',2025,'draft'),(3,2,'Other city','MH',2026,'active')");
         $pdo->exec("INSERT INTO roads VALUES (1,'F.C. Road',1),(2,'JM Road',1),(3,'Empty',2),(4,'Elsewhere',3)");
         $pdo->exec("INSERT INTO segments VALUES (1,1,1,300,0,300),(2,1,2,300,300,600),(3,2,1,500,0,500),(4,4,1,100,0,100)");
         $pdo->exec("INSERT INTO segment_assignments (audit_id, segment_id, surveyor_id, status, submitted_at) VALUES
             (1,1,10,'approved','2026-10-04 10:00:00'),(1,2,10,'submitted','2026-10-04 11:00:00')");
-        $pdo->exec("INSERT INTO segment_audits (segment_id, shade, comments) VALUES (2,'No','old'),(2,'Yes','new')");
+        $pdo->exec("INSERT INTO segment_audits (segment_id, surveyor_id, shade, comments) VALUES (2,10,'No','old'),(2,11,'Yes','new')");
         $pdo->exec("INSERT INTO obstructions (audit_id, obstruction_category, obstruction_type, partial_obstructions, total_obstructions, cyclist_slowed)
             VALUES (2,'fixed','Pole',1,0,1)");
         $pdo->exec("INSERT INTO intersections (audit_id, intersection_num, landmark_name) VALUES (2,2,'B'),(2,1,'A')");
@@ -253,6 +253,8 @@ class CityDashboardTest extends TestCase
         $this->assertNull($rows[2]['assignment_status']);
         $this->assertNull($rows[0]['latest_audit_id']);
         $this->assertSame(2, (int)$rows[1]['latest_audit_id']);
+        // The person who submitted the latest audit is named, even if the assignment points elsewhere.
+        $this->assertSame('Ravi', $rows[1]['surveyor_name']);
     }
 
     // ── tracker, progress mix, next action ────────────────────
