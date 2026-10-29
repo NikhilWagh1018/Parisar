@@ -5,7 +5,7 @@ declare(strict_types=1);
 //  pages/city_dashboard.php  —  City Leader home
 //  Headline numbers, what needs attention, and one card per audit
 //  with its progress and the next step.
-//  city_admin sees their own city and can create audits.
+//  city_admin sees their own city (audits are created by an Admin).
 //  national_admin can open any city with ?city_id=N (read only).
 // ═══════════════════════════════════════════════════════════════
 
@@ -35,7 +35,6 @@ if ($cityId > 0) {
 $audits    = $city ? (new CityDashboardRepository($pdo))->auditSummaries((int)$city['id']) : [];
 $adminNotes = $city ? (new AuditReviewRepository($pdo))->adminNotesForCity((int)$city['id']) : [];
 $totals    = cityDashTotals($audits);
-$canCreate = $city && !$isNational;
 
 // Per-audit counts in the shape cityAuditAttention() expects, plus the attention list.
 $attention = [];
@@ -62,7 +61,6 @@ $nonce     = $h($_SESSION['csp_nonce'] ?? '');
 $csrf      = $h($_SESSION['csrf_token'] ?? '');
 $activeNav = 'home';
 $cityName  = $city ? (string)$city['name'] : 'No city assigned';
-$cityState = $city ? cityStateFor($cityName) : null; // known city -> State fills in by itself
 
 // ── Summary numbers for the hero, progress card and pipeline ──
 $cityMix = ['total' => 0, 'approved' => 0, 'submitted' => 0, 'needs_revisit' => 0, 'assigned' => 0, 'unassigned' => 0];
@@ -103,50 +101,12 @@ $greeting     = cityGreeting($hour);
       <h1><?= $h($cityName) ?></h1>
       <p><?= $isNational ? '<a href="platform_dashboard.php">← All cities</a>' : 'City Leader workspace' ?></p>
     </div>
-    <?php if ($canCreate): ?>
-      <button class="btn-new" id="caNewBtn" type="button">+ New Audit</button>
-    <?php endif; ?>
   </div>
   <div class="content cx-page" id="caApp" data-csrf="<?= $csrf ?>">
   <?php if (!$city): ?>
     <div class="card"><p class="rd-empty">No city is assigned to your account yet. Please ask an Admin to assign one.</p></div>
   <?php else: ?>
 
-    <?php if ($canCreate): ?>
-    <div class="card" id="caNewCard" style="display:none">
-      <div class="card-head"><h3>New audit for <?= $h($cityName) ?></h3></div>
-      <form id="caNewForm" class="ca-form" novalidate>
-        <div class="ca-field">
-          <label for="caName">Audit name *</label>
-          <input id="caName" name="name" type="text" maxlength="150" placeholder="e.g. Pune Cycle Infrastructure Audit">
-          <div class="ca-err"></div>
-        </div>
-        <div class="ca-field">
-          <label for="caDate">Audit date *</label>
-          <input id="caDate" name="audit_date" type="date" min="2000-01-01" max="2100-12-31" value="<?= $h((new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d')) ?>">
-          <div class="ca-err"></div>
-        </div>
-        <div class="ca-field">
-          <label for="caCity">City</label>
-          <input id="caCity" type="text" value="<?= $h($cityName) ?>" disabled>
-        </div>
-        <div class="ca-field">
-          <label for="caState">State *</label>
-          <input id="caState" name="state" type="text" maxlength="100" placeholder="e.g. Maharashtra"<?= $cityState !== null ? ' value="' . $h($cityState) . '" readonly' : '' ?>>
-          <div class="ca-err"></div>
-        </div>
-        <div class="ca-field full">
-          <label for="caInfo">Programme info</label>
-          <textarea id="caInfo" name="programme_info" maxlength="2000" placeholder="Programme, funder or scope notes (optional)"></textarea>
-          <div class="ca-err"></div>
-        </div>
-        <div class="ca-actions full">
-          <button class="ca-btn" type="submit">Create audit</button>
-          <button class="ca-btn ghost" type="button" id="caNewCancel">Cancel</button>
-        </div>
-      </form>
-    </div>
-    <?php endif; ?>
 
     <section class="cx-hero">
       <div class="cx-hero-row">
@@ -154,7 +114,7 @@ $greeting     = cityGreeting($hour);
           <h2 class="cx-hello"><?= $h($greeting) ?><?= $firstName !== '' && !$isNational ? ', ' . $h($firstName) : '' ?></h2>
           <p class="cx-hero-sub">
             <?php if (!$audits): ?>
-              <?= $canCreate ? 'Start your first audit for <b>' . $h($cityName) . '</b> with “+ New Audit”.' : 'No audits in <b>' . $h($cityName) . '</b> yet.' ?>
+              No audits in <b><?= $h($cityName) ?></b> yet. An Admin will set up the next project for your city.
             <?php elseif ($attention): ?>
               <b><?= count($attention) ?></b> <?= count($attention) === 1 ? 'thing needs' : 'things need' ?> your attention in <b><?= $h($cityName) ?></b>.
             <?php else: ?>
@@ -181,7 +141,7 @@ $greeting     = cityGreeting($hour);
         <div class="card">
           <div class="card-head"><h3>Your audits</h3></div>
           <?php if (!$audits): ?>
-            <div class="cx-empty"><?= cxIcon('list') ?><b>No audits yet</b><?= $canCreate ? 'Use “+ New Audit” to start the first one.' : 'This city has no audits yet.' ?></div>
+            <div class="cx-empty"><?= cxIcon('list') ?><b>No audits yet</b>An Admin creates projects. Once one is set up for your city, you add its roads here.</div>
           <?php endif; ?>
           <?php foreach ($audits as $a):
               $total    = (int)$a['segment_count'];

@@ -44,35 +44,6 @@
     });
   }
 
-  // ── New audit form (city dashboard) ───────────────────────────
-  var openBtn = document.getElementById('caNewBtn');
-  var newCard = document.getElementById('caNewCard');
-  if (openBtn && newCard) {
-    openBtn.addEventListener('click', function () {
-      newCard.style.display = newCard.style.display === 'none' ? 'block' : 'none';
-      if (newCard.style.display === 'block') newCard.querySelector('input[name="name"]').focus();
-    });
-    document.getElementById('caNewCancel').addEventListener('click', function () { newCard.style.display = 'none'; });
-    var form = document.getElementById('caNewForm');
-    form.addEventListener('submit', async function (ev) {
-      ev.preventDefault();
-      var btn = form.querySelector('button[type="submit"]');
-      btn.disabled = true;
-      showFieldErrors(form, {});
-      try {
-        var d = await post('../api/city/audit_create.php', {
-          name: form.name.value, state: form.state.value,
-          audit_date: form.audit_date.value, programme_info: form.programme_info.value
-        });
-        window.location.href = 'city_audit.php?id=' + encodeURIComponent(d.audit_id);
-      } catch (e) {
-        showFieldErrors(form, e.fields);
-        toast(e.message, 'error');
-        btn.disabled = false;
-      }
-    });
-  }
-
   // ── Audit page: add road with live preview ────────────────────
   var roadForm = document.getElementById('caRoadForm');
   if (roadForm) {
