@@ -226,6 +226,38 @@ function cityFindOrCreate(PDO $pdo, string $name): array
     if ($id !== false) {
         return [(int)$id, false];
     }
-    $pdo->prepare('INSERT INTO cities (name) VALUES (?)')->execute([$name]);
+    // The live table also needs a unique URL-style slug ("pune") and a creation time (UTC).
+    $pdo->prepare('INSERT INTO cities (name, slug, created_at) VALUES (?, ?, ?)')
+        ->execute([$name, citySlugUnique($pdo, $name), gmdate('Y-m-d H:i:s')]);
     return [(int)$pdo->lastInsertId(), true];
+}
+
+/** "Navi Mumbai" -> "navi-mumbai": lower case, letters and digits, single dashes. */
+function citySlug(string $name): string
+{
+    $s = mb_strtolower(cityNameClean($name));
+    if (function_exists('iconv')) {
+        $t = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s);
+        if (is_string($t) && $t !== '') {
+            $s = $t;
+        }
+    }
+    $s = trim((string)preg_replace('/[^a-z0-9]+/', '-', $s), '-');
+    return $s !== '' ? substr($s, 0, 140) : 'city';
+}
+
+/** A slug no other city uses yet: "pune", then "pune-2", "pune-3"... */
+function citySlugUnique(PDO $pdo, string $name): string
+{
+    $base = citySlug($name);
+    $slug = $base;
+    $check = $pdo->prepare('SELECT 1 FROM cities WHERE slug = ? LIMIT 1');
+    for ($i = 2; $i < 100; $i++) {
+        $check->execute([$slug]);
+        if ($check->fetchColumn() === false) {
+            return $slug;
+        }
+        $slug = $base . '-' . $i;
+    }
+    return $base . '-' . bin2hex(random_bytes(3));
 }
