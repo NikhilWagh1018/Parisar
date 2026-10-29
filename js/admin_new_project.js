@@ -28,15 +28,34 @@
   }
 
   // The state follows the chosen city when we know it; otherwise the Admin types it.
-  var citySel = form.city_id, stateInput = form.state, noLeader = document.getElementById('npNoLeader');
-  function syncCity() {
-    var opt = citySel.options[citySel.selectedIndex];
-    var known = opt ? (opt.getAttribute('data-state') || '') : '';
-    if (known) { stateInput.value = known; stateInput.readOnly = true; }
-    else { stateInput.readOnly = false; if (!citySel.value) stateInput.value = ''; }
-    if (noLeader) noLeader.style.display = opt && opt.getAttribute('data-leaders') === '0' ? 'block' : 'none';
+  var cityInput = form.city_name, stateInput = form.state, hint = document.getElementById('npCityHint');
+  var byName = {};
+  document.querySelectorAll('#npCityList option').forEach(function (o) {
+    byName[o.value.trim().toLowerCase()] = {
+      id: parseInt(o.getAttribute('data-id'), 10) || 0,
+      state: o.getAttribute('data-state') || '',
+      leaders: parseInt(o.getAttribute('data-leaders'), 10)
+    };
+  });
+  var selectedId = 0;
+  function say(text, warn) {
+    hint.style.display = text ? 'block' : 'none';
+    hint.textContent = text || '';
+    hint.style.color = warn ? '#b45309' : '';
   }
-  citySel.addEventListener('change', syncCity);
+  function syncCity() {
+    var typed = cityInput.value.trim();
+    var c = byName[typed.toLowerCase()];
+    selectedId = c ? c.id : 0;
+    if (c && c.state) { stateInput.value = c.state; stateInput.readOnly = true; }
+    else { if (stateInput.readOnly) stateInput.value = ''; stateInput.readOnly = false; }
+    if (!typed) say('');
+    else if (c && c.id && c.leaders === 0) say('This city has no City Leader yet. Add one under Users, or nobody can add its roads.', true);
+    else if (!c || !c.id) say('New city: it is added to CycleAudit with this project, and its City Leader and surveyors can then sign up.', false);
+    else say('');
+  }
+  cityInput.addEventListener('input', syncCity);
+  cityInput.addEventListener('change', syncCity);
   syncCity();
 
   openBtn.addEventListener('click', function () {
@@ -55,7 +74,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': app.dataset.csrf || '', 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify({
-          city_id: citySel.value, name: form.name.value, state: stateInput.value,
+          city_id: selectedId || '', city_name: cityInput.value, name: form.name.value, state: stateInput.value,
           audit_date: form.audit_date.value, programme_info: form.programme_info.value
         })
       });

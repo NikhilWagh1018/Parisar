@@ -99,7 +99,73 @@ function validateUserCityChange(array $cities, string $targetRole, mixed $posted
 }
 
 /**
- * The state a city is in, for the New Audit form (so a City Leader never types it).
+ * Cities an Admin can pick when creating a project, grouped by state. Names the
+ * app already knew by another spelling live in CITY_ALIASES (below) and are not
+ * offered twice.
+ *
+ * @return array<string, list<string>>  state => city names
+ */
+function indianCitiesByState(): array
+{
+    return [
+        'Maharashtra'       => ['Pune', 'Mumbai', 'Nagpur', 'Nashik', 'Chhatrapati Sambhajinagar', 'Thane', 'Kolhapur', 'Solapur', 'Navi Mumbai', 'Pimpri-Chinchwad', 'Amravati', 'Satara', 'Sangli', 'Akola', 'Latur', 'Jalgaon', 'Dhule', 'Nanded', 'Ahilyanagar', 'Panvel', 'Kalyan-Dombivli', 'Vasai-Virar', 'Mira-Bhayandar', 'Ichalkaranji', 'Baramati'],
+        'Karnataka'         => ['Bengaluru', 'Mysuru', 'Hubballi', 'Dharwad', 'Mangaluru', 'Belagavi', 'Kalaburagi', 'Davanagere', 'Ballari', 'Shivamogga', 'Tumakuru', 'Udupi', 'Vijayapura'],
+        'Tamil Nadu'        => ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli', 'Erode', 'Vellore', 'Thoothukudi', 'Thanjavur', 'Tiruppur', 'Hosur', 'Kanchipuram'],
+        'Telangana'         => ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar', 'Khammam', 'Secunderabad'],
+        'Andhra Pradesh'    => ['Visakhapatnam', 'Vijayawada', 'Tirupati', 'Guntur', 'Nellore', 'Kurnool', 'Rajahmundry', 'Kakinada', 'Amaravati'],
+        'Kerala'            => ['Kochi', 'Thiruvananthapuram', 'Kozhikode', 'Thrissur', 'Kollam', 'Kannur', 'Alappuzha', 'Palakkad'],
+        'Gujarat'           => ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Gandhinagar', 'Bhavnagar', 'Jamnagar', 'Junagadh', 'Anand'],
+        'Rajasthan'         => ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Ajmer', 'Bikaner', 'Alwar', 'Bhilwara'],
+        'Delhi'             => ['Delhi', 'New Delhi'],
+        'Uttar Pradesh'     => ['Lucknow', 'Kanpur', 'Varanasi', 'Agra', 'Noida', 'Ghaziabad', 'Prayagraj', 'Meerut', 'Bareilly', 'Aligarh', 'Moradabad', 'Gorakhpur', 'Jhansi', 'Mathura'],
+        'West Bengal'       => ['Kolkata', 'Howrah', 'Siliguri', 'Durgapur', 'Asansol', 'Kharagpur'],
+        'Madhya Pradesh'    => ['Bhopal', 'Indore', 'Jabalpur', 'Gwalior', 'Ujjain', 'Sagar', 'Rewa'],
+        'Punjab'            => ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda', 'Mohali'],
+        'Haryana'           => ['Gurugram', 'Faridabad', 'Panipat', 'Ambala', 'Rohtak', 'Hisar', 'Karnal', 'Sonipat'],
+        'Bihar'             => ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Darbhanga', 'Purnia'],
+        'Odisha'            => ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Puri', 'Sambalpur', 'Berhampur'],
+        'Jharkhand'         => ['Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro Steel City', 'Hazaribagh'],
+        'Chhattisgarh'      => ['Raipur', 'Bilaspur', 'Bhilai', 'Durg', 'Korba'],
+        'Assam'             => ['Guwahati', 'Dibrugarh', 'Silchar', 'Jorhat'],
+        'Uttarakhand'       => ['Dehradun', 'Haridwar', 'Rishikesh', 'Haldwani'],
+        'Himachal Pradesh'  => ['Shimla', 'Dharamshala', 'Manali', 'Solan'],
+        'Goa'               => ['Panaji', 'Margao', 'Vasco da Gama', 'Mapusa'],
+        'Chandigarh'        => ['Chandigarh'],
+        'Jammu and Kashmir' => ['Srinagar', 'Jammu'],
+        'Puducherry'        => ['Puducherry'],
+        'Tripura'           => ['Agartala'],
+        'Meghalaya'         => ['Shillong'],
+        'Manipur'           => ['Imphal'],
+        'Sikkim'            => ['Gangtok'],
+        'Arunachal Pradesh' => ['Itanagar'],
+        'Nagaland'          => ['Kohima'],
+        'Mizoram'           => ['Aizawl'],
+    ];
+}
+
+/** Other spellings of cities above (lookup only; not offered in the picker). */
+const CITY_ALIASES = [
+    'Bangalore' => 'Bengaluru', 'Mysore' => 'Mysuru', 'Gurgaon' => 'Gurugram', 'Aurangabad' => 'Chhatrapati Sambhajinagar',
+    'Ahmednagar' => 'Ahilyanagar', 'Bombay' => 'Mumbai', 'Poona' => 'Pune', 'Calcutta' => 'Kolkata', 'Madras' => 'Chennai',
+    'Trivandrum' => 'Thiruvananthapuram', 'Cochin' => 'Kochi', 'Vizag' => 'Visakhapatnam', 'Baroda' => 'Vadodara',
+    'Allahabad' => 'Prayagraj', 'Pondicherry' => 'Puducherry', 'Mangalore' => 'Mangaluru', 'Belgaum' => 'Belagavi',
+];
+
+/** Every city the picker offers, as [name => state], sorted by name. */
+function indianCityList(): array
+{
+    $out = [];
+    foreach (indianCitiesByState() as $state => $names) {
+        foreach ($names as $n) {
+            $out[$n] = $state;
+        }
+    }
+    ksort($out, SORT_NATURAL | SORT_FLAG_CASE);
+    return $out;
+}
+
+/**
+ * The state a city is in, for the New Project form (so nobody types it).
  * Lookup is case-insensitive and ignores extra spaces. Returns null for a city that
  * is not in the list, in which case the form falls back to asking for the state.
  */
@@ -107,38 +173,59 @@ function cityStateFor(string $cityName): ?string
 {
     static $map = null;
     if ($map === null) {
-        $byState = [
-            'Maharashtra'       => ['Pune', 'Mumbai', 'Nagpur', 'Nashik', 'Aurangabad', 'Chhatrapati Sambhajinagar', 'Thane', 'Kolhapur', 'Solapur', 'Navi Mumbai', 'Pimpri-Chinchwad', 'Amravati', 'Satara', 'Sangli'],
-            'Karnataka'         => ['Bengaluru', 'Bangalore', 'Mysuru', 'Mysore', 'Hubballi', 'Mangaluru', 'Belagavi'],
-            'Tamil Nadu'        => ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli'],
-            'Telangana'         => ['Hyderabad', 'Warangal'],
-            'Andhra Pradesh'    => ['Visakhapatnam', 'Vijayawada', 'Tirupati', 'Guntur'],
-            'Kerala'            => ['Kochi', 'Thiruvananthapuram', 'Kozhikode', 'Thrissur'],
-            'Gujarat'           => ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Gandhinagar'],
-            'Rajasthan'         => ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Ajmer'],
-            'Delhi'             => ['Delhi', 'New Delhi'],
-            'Uttar Pradesh'     => ['Lucknow', 'Kanpur', 'Varanasi', 'Agra', 'Noida', 'Ghaziabad', 'Prayagraj', 'Meerut'],
-            'West Bengal'       => ['Kolkata', 'Howrah', 'Siliguri', 'Durgapur'],
-            'Madhya Pradesh'    => ['Bhopal', 'Indore', 'Jabalpur', 'Gwalior', 'Ujjain'],
-            'Punjab'            => ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala'],
-            'Haryana'           => ['Gurugram', 'Gurgaon', 'Faridabad', 'Panipat'],
-            'Bihar'             => ['Patna', 'Gaya'],
-            'Odisha'            => ['Bhubaneswar', 'Cuttack', 'Rourkela'],
-            'Jharkhand'         => ['Ranchi', 'Jamshedpur'],
-            'Chhattisgarh'      => ['Raipur', 'Bilaspur'],
-            'Assam'             => ['Guwahati'],
-            'Uttarakhand'       => ['Dehradun'],
-            'Himachal Pradesh'  => ['Shimla'],
-            'Goa'               => ['Panaji', 'Margao'],
-            'Chandigarh'        => ['Chandigarh'],
-        ];
         $map = [];
-        foreach ($byState as $state => $names) {
-            foreach ($names as $n) {
-                $map[mb_strtolower($n)] = $state;
-            }
+        foreach (indianCityList() as $n => $state) {
+            $map[mb_strtolower($n)] = $state;
+        }
+        foreach (CITY_ALIASES as $alias => $canonical) {
+            $map[mb_strtolower($alias)] = $map[mb_strtolower($canonical)] ?? null;
         }
     }
-    $key = mb_strtolower(trim((string)preg_replace('/\\s+/u', ' ', $cityName)));
+    $key = mb_strtolower(trim((string)preg_replace('/\s+/u', ' ', $cityName)));
     return $map[$key] ?? null;
+}
+
+/** Tidy a typed city name: trim, collapse spaces. */
+function cityNameClean(string $name): string
+{
+    return trim((string)preg_replace('/\s+/u', ' ', $name));
+}
+
+/** A usable city name: 2-100 characters, letters, spaces and . - ' ( ) only. */
+function cityNameIsValid(string $name): bool
+{
+    $n = cityNameClean($name);
+    $len = mb_strlen($n);
+    return $len >= 2 && $len <= 100 && preg_match("/^[\\p{L}][\\p{L}\\s.'()\\-]*$/u", $n) === 1;
+}
+
+/**
+ * The id of the city with this name (case-insensitive), creating it when it does
+ * not exist yet. Known alternative spellings (Bangalore) map to the usual name.
+ *
+ * @return array{0:int, 1:bool}  [city id, true when it was just created]
+ */
+function cityFindOrCreate(PDO $pdo, string $name): array
+{
+    $name = cityNameClean($name);
+    foreach (CITY_ALIASES as $alias => $canonical) {
+        if (mb_strtolower($alias) === mb_strtolower($name)) {
+            $name = $canonical;
+            break;
+        }
+    }
+    foreach (indianCityList() as $known => $_) {
+        if (mb_strtolower($known) === mb_strtolower($name)) {
+            $name = $known;
+            break;
+        }
+    }
+    $find = $pdo->prepare('SELECT id FROM cities WHERE LOWER(name) = LOWER(?) ORDER BY id LIMIT 1');
+    $find->execute([$name]);
+    $id = $find->fetchColumn();
+    if ($id !== false) {
+        return [(int)$id, false];
+    }
+    $pdo->prepare('INSERT INTO cities (name) VALUES (?)')->execute([$name]);
+    return [(int)$pdo->lastInsertId(), true];
 }

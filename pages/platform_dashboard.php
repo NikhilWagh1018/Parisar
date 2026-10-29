@@ -42,6 +42,17 @@ $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, '
 $nonce     = $h($_SESSION['csp_nonce'] ?? '');
 $activeNav = 'home';
 $csrf      = $h($_SESSION['csrf_token'] ?? '');
+// Cities in the picker: every city already in the app, plus the known Indian cities.
+$pickCities = [];
+foreach (indianCityList() as $n => $st) {
+    $pickCities[mb_strtolower($n)] = ['id' => 0, 'name' => $n, 'state' => $st, 'leaders' => -1];
+}
+foreach ($cities as $c) {
+    $k = mb_strtolower((string)$c['name']);
+    $pickCities[$k] = ['id' => (int)$c['id'], 'name' => (string)$c['name'],
+                       'state' => cityStateFor((string)$c['name']) ?? ($pickCities[$k]['state'] ?? ''), 'leaders' => (int)$c['leaders']];
+}
+uasort($pickCities, static fn(array $a, array $b): int => strcasecmp($a['name'], $b['name']));
 $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d');
 ?>
 <!DOCTYPE html>
@@ -73,14 +84,14 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
       <form id="npNewForm" class="ca-form" novalidate>
         <div class="ca-field">
           <label for="npCity">City *</label>
-          <select id="npCity" name="city_id">
-            <option value="">— Select a city —</option>
-            <?php foreach ($cities as $c): ?>
-              <option value="<?= (int)$c['id'] ?>" data-state="<?= $h(cityStateFor((string)$c['name']) ?? '') ?>" data-leaders="<?= (int)$c['leaders'] ?>"><?= $h($c['name']) ?></option>
+          <input id="npCity" name="city_name" type="text" list="npCityList" maxlength="100" autocomplete="off" placeholder="Start typing to search, e.g. Pune">
+          <datalist id="npCityList">
+            <?php foreach ($pickCities as $pc): ?>
+              <option value="<?= $h($pc['name']) ?>" label="<?= $h($pc['state']) ?>" data-id="<?= (int)$pc['id'] ?>" data-state="<?= $h($pc['state']) ?>" data-leaders="<?= (int)$pc['leaders'] ?>"></option>
             <?php endforeach; ?>
-          </select>
+          </datalist>
           <div class="ca-err"></div>
-          <div class="ca-hint" id="npNoLeader" style="display:none;color:#b45309">This city has no City Leader yet. Add one under Users, or nobody can add its roads.</div>
+          <div class="ca-hint" id="npCityHint" style="display:none"></div>
         </div>
         <div class="ca-field">
           <label for="npState">State *</label>

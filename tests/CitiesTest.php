@@ -98,4 +98,57 @@ class CitiesTest extends TestCase
         $this->assertNull(cityStateFor('Atlantis'));
         $this->assertNull(cityStateFor(''));
     }
+
+    public function test_city_picker_list_is_sorted_and_has_a_state_for_every_city(): void
+    {
+        $list = indianCityList();
+        $this->assertGreaterThan(150, count($list));
+        $this->assertSame('Maharashtra', $list['Pune']);
+        $this->assertSame('Karnataka', $list['Bengaluru']);
+        $this->assertArrayNotHasKey('Bangalore', $list);
+        $names = array_keys($list);
+        $sorted = $names;
+        natcasesort($sorted);
+        $this->assertSame(array_values($sorted), $names);
+        foreach ($list as $city => $state) {
+            $this->assertSame($state, cityStateFor($city), $city);
+        }
+    }
+
+    public function test_alternative_spellings_find_the_same_state(): void
+    {
+        $this->assertSame('Karnataka', cityStateFor('Bangalore'));
+        $this->assertSame('Maharashtra', cityStateFor('aurangabad'));
+        $this->assertNull(cityStateFor('Nowhereville'));
+    }
+
+    public function test_city_names_are_checked_and_tidied(): void
+    {
+        $this->assertSame('Navi Mumbai', cityNameClean("  Navi \t Mumbai "));
+        $this->assertTrue(cityNameIsValid('Pimpri-Chinchwad'));
+        $this->assertTrue(cityNameIsValid("St. John's (East)"));
+        $this->assertFalse(cityNameIsValid('A'));
+        $this->assertFalse(cityNameIsValid('Pune<script>'));
+        $this->assertFalse(cityNameIsValid('12345'));
+        $this->assertFalse(cityNameIsValid(str_repeat('a', 101)));
+    }
+
+    public function test_cityFindOrCreate_reuses_an_existing_city_ignoring_case(): void
+    {
+        $this->addCities('Pune');
+        $this->assertSame([1, false], cityFindOrCreate($this->pdo, ' pune '));
+        $this->assertCount(1, listCities($this->pdo));
+    }
+
+    public function test_cityFindOrCreate_adds_a_new_city_with_its_usual_spelling(): void
+    {
+        $this->addCities('Pune');
+        [$id, $created] = cityFindOrCreate($this->pdo, 'bangalore');
+        $this->assertTrue($created);
+        $this->assertSame('Bengaluru', $this->pdo->query("SELECT name FROM cities WHERE id = $id")->fetchColumn());
+        $this->assertSame([$id, false], cityFindOrCreate($this->pdo, 'BENGALURU'));
+        [, $c2] = cityFindOrCreate($this->pdo, 'Some Small Town');
+        $this->assertTrue($c2);
+        $this->assertCount(3, listCities($this->pdo));
+    }
 }
