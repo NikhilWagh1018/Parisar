@@ -20,14 +20,14 @@ function cityLeaderAssignError(?array $user, int $cityId): ?string
     if ((int)$user['is_active'] !== 1) {
         return 'This user is inactive.';
     }
-    if ((string)$user['role'] === 'national_admin') {
+    if ((string)$user['role'] === 'admin') {
         return 'An Admin cannot be a City Leader.';
     }
     $userCity = $user['city_id'] !== null ? (int)$user['city_id'] : null;
     if ($userCity !== null && $userCity !== $cityId) {
         return 'This user belongs to another city. Move them to this city first on the Users page.';
     }
-    if ((string)$user['role'] === 'city_admin' && $userCity === $cityId) {
+    if ((string)$user['role'] === 'city_leader' && $userCity === $cityId) {
         return 'This user is already the City Leader of this city.';
     }
     return null;

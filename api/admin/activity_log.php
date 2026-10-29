@@ -30,10 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
-$isNationalAdmin = $CURRENT_USER_ROLE === 'national_admin';
+$isNationalAdmin = $CURRENT_USER_ROLE === 'admin';
 $cityId          = $isNationalAdmin ? null : $CURRENT_USER_CITY_ID;
 
-// A city_admin with no city assigned sees an empty log rather than
+// A city_leader with no city assigned sees an empty log rather than
 // falling through to every city's entries.
 if (!$isNationalAdmin && $cityId === null) {
     echo json_encode(['success' => true, 'entries' => []]);
@@ -45,11 +45,11 @@ if (!$isNationalAdmin && $cityId === null) {
 // small forever. Page filters/searches client-side, same convention
 // as pages/admin.php and pages/admin_surveyors.php.
 //
-// LEFT JOIN so a city_admin still sees log entries whose road_group
+// LEFT JOIN so a city_leader still sees log entries whose road_group
 // has since been deleted (rg will be NULL) rather than silently
 // losing them — but those NULL-city rows are excluded for a
-// city_admin (unknowable which city they belonged to), while a
-// national_admin sees everything as before.
+// city_leader (unknowable which city they belonged to), while a
+// admin sees everything as before.
 $stmt = $pdo->prepare(
     'SELECT al.id, al.actor_id, al.actor_name, al.action, al.road_group_id, al.road_group_name, al.created_at
        FROM audit_log al

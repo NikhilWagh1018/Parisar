@@ -6,7 +6,7 @@ declare(strict_types=1);
 //  One segment, in full: its score, the Safety / Continuity / Comfort
 //  breakdown, everything the surveyor recorded, obstructions and
 //  intersections. City Leader approves it or sends it back from here.
-//  national_admin can open it read only.
+//  admin can open it read only.
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
@@ -18,7 +18,7 @@ require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 require_once __DIR__ . '/../repositories/AuditReportRepository.php';
 require_once __DIR__ . '/../services/ScoreService.php';
 
-$isNational = $CURRENT_USER_ROLE === 'national_admin';
+$isNational = $CURRENT_USER_ROLE === 'admin';
 $auditRepo  = new CityAuditRepository($pdo);
 $audit      = $auditRepo->find((int)($_GET['audit_id'] ?? 0));
 

@@ -7,7 +7,7 @@ declare(strict_types=1);
 //  (summary, segment scores, dimension breakdown, observations,
 //  critical issues, recommendations, segment detail cards), once
 //  for every road in the audit. Only approved segments are scored.
-//  city_admin: own city. national_admin: any city, read only.
+//  city_leader: own city. admin: any city, read only.
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
@@ -19,7 +19,7 @@ require_once __DIR__ . '/../repositories/CityAuditRepository.php';
 require_once __DIR__ . '/../repositories/AuditReportRepository.php';
 require_once __DIR__ . '/../services/ScoreService.php';
 
-$isNational = $CURRENT_USER_ROLE === 'national_admin';
+$isNational = $CURRENT_USER_ROLE === 'admin';
 $audit      = (new CityAuditRepository($pdo))->find((int)($_GET['id'] ?? 0));
 
 if ($audit === null || (!$isNational && (int)$audit['city_id'] !== (int)($CURRENT_USER_CITY_ID ?? 0))) {

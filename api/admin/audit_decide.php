@@ -8,7 +8,7 @@ declare(strict_types=1);
 //  approve: audit becomes published (the report is final).
 //  return:  audit goes back to the City Leader (in_review) with the
 //           Admin's note saying what has to change.
-//  national_admin only.
+//  admin only.
 // ═══════════════════════════════════════════════════════════════
 
 header('Content-Type: application/json');

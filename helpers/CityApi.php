@@ -22,7 +22,7 @@ function cityApiContext(string $role, ?int $cityId): array
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
         cityApiFail(405, 'Method not allowed.');
     }
-    if ($role !== 'city_admin') {
+    if ($role !== 'city_leader') {
         cityApiFail(403, 'Only a City Leader can change audits.');
     }
     if ($cityId === null || $cityId <= 0) {
@@ -41,7 +41,7 @@ function cityApiContext(string $role, ?int $cityId): array
 
 /**
  * Preamble for the Admin write APIs (api/admin/audit_*.php): a valid POST from
- * a national_admin with a good CSRF token. Returns the decoded JSON body.
+ * an admin with a good CSRF token. Returns the decoded JSON body.
  *
  * @return array<string,mixed>
  */
@@ -50,7 +50,7 @@ function nationalApiContext(string $role): array
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
         cityApiFail(405, 'Method not allowed.');
     }
-    if ($role !== 'national_admin') {
+    if ($role !== 'admin') {
         cityApiFail(403, 'Only an Admin can decide on audits.');
     }
     $csrf = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';

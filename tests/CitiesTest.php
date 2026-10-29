@@ -70,18 +70,18 @@ class CitiesTest extends TestCase
         $this->addCities('Pune', 'Mumbai');
         $cities = listCities($this->pdo);
         $this->assertSame([2, null], validateUserCityChange($cities, 'surveyor', 2));
-        $this->assertSame([1, null], validateUserCityChange($cities, 'city_admin', '1'));
+        $this->assertSame([1, null], validateUserCityChange($cities, 'city_leader', '1'));
         foreach (['', '0', '3', 'abc', '1 OR 1=1', null, [1], true, 1.5] as $bad) {
             $this->assertSame([null, 'Please choose a valid city.'], validateUserCityChange($cities, 'surveyor', $bad));
         }
     }
 
-    public function test_user_city_change_refuses_national_admins(): void
+    public function test_user_city_change_refuses_admins(): void
     {
         $this->addCities('Pune', 'Mumbai');
         $this->assertSame(
             [null, 'Admins are not tied to a city.'],
-            validateUserCityChange(listCities($this->pdo), 'national_admin', 1)
+            validateUserCityChange(listCities($this->pdo), 'admin', 1)
         );
     }
 

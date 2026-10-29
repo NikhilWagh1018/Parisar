@@ -5,8 +5,8 @@ declare(strict_types=1);
 //  pages/city_dashboard.php  —  City Leader home
 //  Headline numbers, what needs attention, and one card per audit
 //  with its progress and the next step.
-//  city_admin sees their own city (audits are created by an Admin).
-//  national_admin can open any city with ?city_id=N (read only).
+//  city_leader sees their own city (audits are created by an Admin).
+//  admin can open any city with ?city_id=N (read only).
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
@@ -17,7 +17,7 @@ require_once __DIR__ . '/../repositories/CityDashboardRepository.php';
 require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 require_once __DIR__ . '/partials/cx_icons.php';
 
-$isNational = $CURRENT_USER_ROLE === 'national_admin';
+$isNational = $CURRENT_USER_ROLE === 'admin';
 $cityId     = $isNational ? (int)($_GET['city_id'] ?? 0) : (int)($CURRENT_USER_CITY_ID ?? 0);
 
 if ($isNational && $cityId <= 0) {

@@ -6,7 +6,7 @@ declare(strict_types=1);
 //  POST { city_id, user_id }
 //  The Admin makes an existing user the City Leader of a city.
 //  The user must be active, not an Admin, and in that city (or in none).
-//  national_admin only.
+//  admin only.
 // ═══════════════════════════════════════════════════════════════
 
 header('Content-Type: application/json');
@@ -46,9 +46,9 @@ if ($error !== null) {
     cityApiFail($user === null ? 404 : 409, $error);
 }
 
-$pdo->prepare("UPDATE users SET role = 'city_admin', city_id = ? WHERE id = ?")->execute([(int)$cityId, (int)$userId]);
+$pdo->prepare("UPDATE users SET role = 'city_leader', city_id = ? WHERE id = ?")->execute([(int)$cityId, (int)$userId]);
 ActivityLogger::log($pdo, ActivityLogger::USER_ROLE_CHANGED, $CURRENT_USER_ID, [
-    'user_id' => (int)$userId, 'from_role' => (string)$user['role'], 'to_role' => 'city_admin', 'city_id' => (int)$cityId,
+    'user_id' => (int)$userId, 'from_role' => (string)$user['role'], 'to_role' => 'city_leader', 'city_id' => (int)$cityId,
 ]);
 
 echo json_encode(['success' => true]);

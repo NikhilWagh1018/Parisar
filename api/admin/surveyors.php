@@ -12,11 +12,11 @@ require_once __DIR__ . '/../../helpers/Cities.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 require_once __DIR__ . '/../../helpers/RoleRules.php';
 
-$isNationalAdmin = $CURRENT_USER_ROLE === 'national_admin';
+$isNationalAdmin = $CURRENT_USER_ROLE === 'admin';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // national_admin sees everyone; city_admin sees only users in their
-    // own city (a city_admin with no city_id set sees nobody, rather
+    // admin sees everyone; city_leader sees only users in their
+    // own city (a city_leader with no city_id set sees nobody, rather
     // than silently falling through to "see everyone").
     $where  = '';
     $params = [];
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
          FROM users u
          LEFT JOIN cities c ON c.id = u.city_id
          $where
-        ORDER BY u.is_active DESC, u.role = 'national_admin' DESC, u.role = 'city_admin' DESC, u.name ASC"
+        ORDER BY u.is_active DESC, u.role = 'admin' DESC, u.role = 'city_leader' DESC, u.name ASC"
     );
     $stmt->execute($params);
     $surveyors = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -96,8 +96,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // A city_admin may only act on users within their own city, and
-    // may never act on a national_admin account (theirs or anyone else's).
+    // A city_leader may only act on users within their own city, and
+    // may never act on an admin account (theirs or anyone else's).
     if (!$isNationalAdmin) {
         if ($target['city_id'] === null || (int)$target['city_id'] !== $CURRENT_USER_CITY_ID) {
             http_response_code(403);
@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // ── City change (national_admin only) ───────────────────────
+    // ── City change (admin only) ───────────────────────
     if (array_key_exists('city_id', $body)) {
         if (!$isNationalAdmin) {
             http_response_code(403);
@@ -143,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Only the Admin changes roles (so only the
         // Admin creates City Leaders), and a City Leader needs a city.
-        $adminCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'national_admin'")->fetchColumn();
+        $adminCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
         $roleError  = validateRoleChange(
             $CURRENT_USER_ROLE,
             (string)$target['role'],
@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $adminCount
         );
         if ($roleError !== null) {
-            http_response_code($CURRENT_USER_ROLE === 'national_admin' ? 400 : 403);
+            http_response_code($CURRENT_USER_ROLE === 'admin' ? 400 : 403);
             echo json_encode(['success' => false, 'error' => $roleError]);
             exit;
         }
@@ -180,9 +180,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if (!$active && $target['role'] === 'national_admin') {
+        if (!$active && $target['role'] === 'admin') {
             $activeAdminCount = (int)$pdo->query(
-                "SELECT COUNT(*) FROM users WHERE role = 'national_admin' AND is_active = 1"
+                "SELECT COUNT(*) FROM users WHERE role = 'admin' AND is_active = 1"
             )->fetchColumn();
             if ($activeAdminCount <= 1) {
                 http_response_code(400);

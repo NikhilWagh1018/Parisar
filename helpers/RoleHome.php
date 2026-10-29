@@ -10,19 +10,19 @@ declare(strict_types=1);
 function roleHomePage(string $role): string
 {
     return match ($role) {
-        'national_admin' => 'platform_dashboard.php',
-        'city_admin'     => 'city_dashboard.php',
-        default          => 'dashboard.php',
+        'admin'       => 'platform_dashboard.php',
+        'city_leader' => 'city_dashboard.php',
+        default       => 'dashboard.php',
     };
 }
 
-// Display name for a role. Stored values stay national_admin / city_admin.
+// Display name for a role. Stored values: admin / city_leader / surveyor.
 function roleLabel(string $role): string
 {
     return match ($role) {
-        'national_admin' => 'Admin',
-        'city_admin'     => 'City Leader',
-        'surveyor'       => 'Surveyor',
-        default          => ucfirst(str_replace('_', ' ', $role)),
+        'admin'       => 'Admin',
+        'city_leader' => 'City Leader',
+        'surveyor'    => 'Surveyor',
+        default       => ucfirst(str_replace('_', ' ', $role)),
     };
 }

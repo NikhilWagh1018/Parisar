@@ -253,7 +253,7 @@ class AuditReviewRepository
         }
     }
 
-    // ── Admin decision (national_admin) ─────────────────────────
+    // ── Admin decision (admin) ─────────────────────────
 
     /**
      * The Admin's last note on an audit and when it was decided (null note when none).

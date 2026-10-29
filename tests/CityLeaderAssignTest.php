@@ -30,18 +30,18 @@ class CityLeaderAssignTest extends TestCase
     {
         $this->assertSame('User not found.', cityLeaderAssignError(null, 1));
         $this->assertSame('This user is inactive.', cityLeaderAssignError($this->user('surveyor', 1, 0), 1));
-        $this->assertSame('An Admin cannot be a City Leader.', cityLeaderAssignError($this->user('national_admin', null), 1));
+        $this->assertSame('An Admin cannot be a City Leader.', cityLeaderAssignError($this->user('admin', null), 1));
     }
 
     public function test_someone_in_another_city_must_be_moved_first(): void
     {
         $this->assertStringContainsString('another city', (string)cityLeaderAssignError($this->user('surveyor', 2), 1));
-        $this->assertStringContainsString('another city', (string)cityLeaderAssignError($this->user('city_admin', 2), 1));
+        $this->assertStringContainsString('another city', (string)cityLeaderAssignError($this->user('city_leader', 2), 1));
     }
 
     public function test_the_current_leader_cannot_be_assigned_again(): void
     {
-        $this->assertStringContainsString('already', (string)cityLeaderAssignError($this->user('city_admin', 1), 1));
+        $this->assertStringContainsString('already', (string)cityLeaderAssignError($this->user('city_leader', 1), 1));
     }
 
     public function test_the_no_leader_alert_points_at_the_assign_picker(): void

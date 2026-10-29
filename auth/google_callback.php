@@ -156,7 +156,7 @@ if (empty($_SESSION['csrf_token'])) {
 // city-less by design) to choose one.
 if (
     ($user['city_id'] ?? null) === null
-    && ($user['role'] ?? 'surveyor') !== 'national_admin'
+    && ($user['role'] ?? 'surveyor') !== 'admin'
     && count(listCities($pdo)) > 1
 ) {
     header('Location: choose_city.php');

@@ -96,12 +96,12 @@ class SurveyorAssignedOnlyTest extends TestCase
         require_once __DIR__ . '/../config/permissions.php';
 
         $this->assertFalse(can('create_road', 10, 'surveyor'));
-        $this->assertTrue(can('create_road', 1, 'national_admin'));
-        $this->assertTrue(can('create_road', 2, 'city_admin'));
+        $this->assertTrue(can('create_road', 1, 'admin'));
+        $this->assertTrue(can('create_road', 2, 'city_leader'));
 
         // Even the owner of a road cannot delete it as a surveyor.
         $this->assertFalse(can('delete_road', 10, 'surveyor', ['owner_id' => 10, 'city_id' => 1]));
-        $this->assertFalse(can('delete_road', 2, 'city_admin', ['owner_id' => 2, 'city_id' => 1]));
-        $this->assertTrue(can('delete_road', 1, 'national_admin', ['owner_id' => 10, 'city_id' => 1]));
+        $this->assertFalse(can('delete_road', 2, 'city_leader', ['owner_id' => 2, 'city_id' => 1]));
+        $this->assertTrue(can('delete_road', 1, 'admin', ['owner_id' => 10, 'city_id' => 1]));
     }
 }

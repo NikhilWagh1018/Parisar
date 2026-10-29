@@ -16,7 +16,7 @@ require_once __DIR__ . '/../services/ScoreService.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
 require_once __DIR__ . '/partials/cx_icons.php';
 
-$isNational = $CURRENT_USER_ROLE === 'national_admin';
+$isNational = $CURRENT_USER_ROLE === 'admin';
 $repo       = new CityAuditRepository($pdo);
 $audit      = $repo->find((int)($_GET['id'] ?? 0));
 

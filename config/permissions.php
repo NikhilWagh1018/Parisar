@@ -7,8 +7,8 @@ declare(strict_types=1);
 //
 //  ROLES
 //  ─────
-//    national_admin — Parisar staff. Can do everything, everywhere.
-//    city_admin      — Scoped staff. Everything national_admin can do,
+//    admin — Parisar staff. Can do everything, everywhere.
+//    city_leader      — Scoped staff. Everything admin can do,
 //                       but only for resources belonging to their own
 //                       city (users.city_id). Pass the resource's
 //                       city_id via $ctx['city_id'] so this can be
@@ -27,17 +27,17 @@ declare(strict_types=1);
 //  Context keys accepted per permission (all optional unless noted):
 //    owner_id   int     — the creator_id / user_id of the resource
 //    city_id    int|null — the city the resource belongs to. REQUIRED
-//                          for a city_admin's elevated access to apply —
-//                          without it, a city_admin is treated as a
+//                          for a city_leader's elevated access to apply —
+//                          without it, a city_leader is treated as a
 //                          plain surveyor (falls through to the
 //                          owner_id check) for that permission. This is
 //                          a deliberate fail-closed default: an endpoint
 //                          that forgets to pass city_id simply doesn't
-//                          grant city_admin anything extra, rather than
+//                          grant city_leader anything extra, rather than
 //                          accidentally granting it everywhere.
 //    status     string  — resource status (e.g. 'active', 'completed')
 //
-//  $CURRENT_USER_CITY_ID (from auth_guard.php) is what a city_admin's
+//  $CURRENT_USER_CITY_ID (from auth_guard.php) is what a city_leader's
 //  own city_id is compared against — pass it in as part of building
 //  $ctx at the call site, not as a separate function argument.
 // ═══════════════════════════════════════════════════════════════
@@ -50,23 +50,23 @@ declare(strict_types=1);
  */
 function isAnyAdmin(string $role): bool
 {
-    return $role === 'national_admin' || $role === 'city_admin';
+    return $role === 'admin' || $role === 'city_leader';
 }
 
 /**
  * True if $role has elevated access to a resource in $ctx['city_id']:
- *   - national_admin: always (city-less, global scope)
- *   - city_admin: only if $ctx['city_id'] is present AND matches the
+ *   - admin: always (city-less, global scope)
+ *   - city_leader: only if $ctx['city_id'] is present AND matches the
  *     admin's own city ($GLOBALS['CURRENT_USER_CITY_ID'], set by
  *     auth_guard.php on every request)
  *   - surveyor: never
  */
 function hasAdminAccessToCity(string $role, array $ctx): bool
 {
-    if ($role === 'national_admin') {
+    if ($role === 'admin') {
         return true;
     }
-    if ($role === 'city_admin') {
+    if ($role === 'city_leader') {
         $resourceCityId = $ctx['city_id'] ?? null;
         $adminCityId    = $GLOBALS['CURRENT_USER_CITY_ID'] ?? null;
         return $resourceCityId !== null
@@ -100,7 +100,7 @@ $PERMISSIONS = [
     'delete_road' => static function (int $userId, string $role, array $ctx): bool {
         // Data deletion is Admin-only. Surveyors and City Leaders cannot
         // delete roads (test data is removed by an Admin).
-        return $role === 'national_admin';
+        return $role === 'admin';
     },
 
     'save_segments' => static function (int $userId, string $role, array $ctx): bool {
@@ -149,8 +149,8 @@ $PERMISSIONS = [
     // ── Admin-only ────────────────────────────────────────────
     // These two are checked as a coarse "is this user any kind of
     // admin at all" gate — the actual city-scoping of WHICH users/
-    // roads a city_admin sees happens in the calling endpoint's SQL
-    // (filter by city_id when role === 'city_admin'), not here,
+    // roads a city_leader sees happens in the calling endpoint's SQL
+    // (filter by city_id when role === 'city_leader'), not here,
     // since this returns a single bool, not a filtered list.
     'manage_users' => static function (int $userId, string $role, array $ctx): bool {
         return isAnyAdmin($role);
@@ -168,7 +168,7 @@ $PERMISSIONS = [
  *
  * @param  string              $permission  Key from PERMISSIONS above.
  * @param  int                 $userId      Current user's ID.
- * @param  string              $role        Current user's role ('national_admin'|'city_admin'|'surveyor').
+ * @param  string              $role        Current user's role ('admin'|'city_leader'|'surveyor').
  * @param  array<string,mixed> $ctx         Optional context (owner_id, city_id, status, …).
  * @return bool
  */

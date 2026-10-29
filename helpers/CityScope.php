@@ -6,7 +6,7 @@ declare(strict_types=1);
 //  Resolves which city a logged-in user's read access is scoped to.
 //
 //  Returns:
-//    null  — unscoped (national_admin sees every city)
+//    null  — unscoped (admin sees every city)
 //    int>0 — scoped to that city_id
 //    0     — no city can be determined; matches no rows (fail closed)
 //
@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 function resolveViewerCityScope(PDO $pdo, string $role, ?int $userCityId): ?int
 {
-    if ($role === 'national_admin') {
+    if ($role === 'admin') {
         return null;
     }
     if ($userCityId !== null && $userCityId > 0) {
