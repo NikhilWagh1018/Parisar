@@ -3,19 +3,6 @@
   /* ── Registration-specific overrides ── */
   body { grid-template-columns: 400px 1fr; }
 
-  .btn-google {
-    display: flex; align-items: center; justify-content: center;
-    gap: 12px; width: 100%; padding: 12px 16px;
-    background: #fff; color: #3c4043; border: 1.5px solid #dadce0;
-    border-radius: 10px; font-family: 'DM Sans', sans-serif;
-    font-size: .92rem; font-weight: 600; cursor: pointer;
-    text-decoration: none; transition: all .22s ease;
-    box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 4px;
-  }
-  .btn-google:hover { background: #f8fafc; border-color: #c0c8d0; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
-  .divider-row { display: flex; align-items: center; gap: 12px; margin: 18px 0; font-size: .78rem; color: #b8c9a8; }
-  .divider-row::before, .divider-row::after { content: ''; flex: 1; height: 1px; background: #e0ead4; }
-
   .sbox { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 28px; text-align: center; }
   .sbox .si { font-size: 2.6rem; margin-bottom: 10px; }
   .sbox h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: #15803d; margin-bottom: 6px; }

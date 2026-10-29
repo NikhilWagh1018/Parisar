@@ -12,7 +12,6 @@ declare(strict_types=1);
 //    $CURRENT_USER_NAME (string)
 //    $CURRENT_USER_ROLE (string)
 //    $CURRENT_USER_PIC  (string|null)
-//    $CURRENT_USER_AUTH (string)
 //    $_SESSION['csrf_token'] — generated on first use
 // ═══════════════════════════════════════════════════════════════
 
@@ -23,7 +22,6 @@ startSecureSession();
 enforceSessionTimeout();
 
 // ── Content-Security-Policy ────────────────────────────────────
-// Allow Google's CDN for profile pictures on all protected pages.
 $nonce = base64_encode(random_bytes(16));
 $_SESSION['csp_nonce'] = $nonce;
 header(
@@ -32,7 +30,7 @@ header(
     "script-src 'self' 'unsafe-inline'; " .
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
     "font-src 'self' https://fonts.gstatic.com; " .
-    "img-src 'self' data: https://lh3.googleusercontent.com https://*.googleusercontent.com https://*.tile.openstreetmap.org; " .
+    "img-src 'self' data: https://*.tile.openstreetmap.org; " .
     "connect-src 'self';"
 );
 
@@ -67,7 +65,6 @@ if (empty($_SESSION['csrf_token'])) {
 // ── Convenience variables available in every protected file ───
 $CURRENT_USER_ID   = (int)$_SESSION['user_id'];
 $CURRENT_USER_NAME = (string)($_SESSION['user_name']       ?? '');
-$CURRENT_USER_AUTH = (string)($_SESSION['auth_provider']   ?? 'local');
 
 // Always verify role + active status fresh from the DB on every request —
 // don't trust the session cache for these. This makes role changes
@@ -134,8 +131,8 @@ $CURRENT_USER_CITY_ID     = $freshUser['city_id'] !== null ? (int)$freshUser['ci
 $_SESSION['user_city_id'] = $CURRENT_USER_CITY_ID;
 
 // Belt-and-suspenders: if the session profile_picture is missing, always
-// re-fetch it from the DB (covers local users whose Google pic was linked,
-// session loss after session_regenerate_id, etc.) and restore for next request.
+// re-fetch it from the DB (covers session loss after session_regenerate_id,
+// etc.) and restore for next request.
 $CURRENT_USER_PIC = $_SESSION['profile_picture'] ?? null;
 if ($CURRENT_USER_PIC === null && !empty($freshUser['profile_picture'])) {
     $CURRENT_USER_PIC            = $freshUser['profile_picture'];

@@ -150,7 +150,7 @@ body.login {
 }
 .card-form { display: flex; flex-direction: column; gap: calc(8px * var(--s)); }
 
-/* ── Fields (Google button, email, password share one look) ──── */
+/* ── Fields (email and password share one look) ──────────────── */
 .f {
   display: flex; align-items: center; gap: calc(8px * var(--s));
   height: calc(36px * var(--s));
@@ -163,9 +163,6 @@ body.login {
   text-decoration: none;
   transition: border-color .15s, box-shadow .15s, background .15s;
 }
-.g-logo { width: 1.5em; height: 1.5em; }
-.f--google { justify-content: center; color: var(--ink); font-weight: 500; }
-.f--google:hover { background: #fff; border-color: var(--green); }
 .f input {
   flex: 1; min-width: 0; height: 100%;
   border: 0; outline: 0; background: transparent;
@@ -259,7 +256,7 @@ html.js:not(.ready) .wheel-in { animation-play-state: paused; }
 
 /* ── Keyboard focus ──────────────────────────────────────────── */
 .brand:focus-visible, .back-home:focus-visible, .btn-submit:focus-visible, .eye:focus-visible,
-.card-links a:focus-visible, .f--google:focus-visible {
+.card-links a:focus-visible {
   outline: 3px solid #86B93B; outline-offset: 2px;
 }
 
