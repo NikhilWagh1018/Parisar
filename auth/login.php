@@ -81,6 +81,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Shown after a successful password reset (auth/reset_password.php)
+$notice = ($error === '' && ($_GET['reset'] ?? '') === '1')
+    ? 'Your password has been changed. Please sign in with the new password.'
+    : '';
+
 // Values used by the template
 $prefillEmail  = (string)($_POST['email'] ?? '');
 $focusPassword = ($error !== '' && $prefillEmail !== '');
@@ -96,7 +101,7 @@ $focusEmail    = ($error !== '' && $prefillEmail === '');
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/login.css?v=5">
+  <link rel="stylesheet" href="../css/login.css?v=<?= filemtime(__DIR__ . '/../css/login.css') ?>">
   <script>document.documentElement.classList.add('js')</script>
 </head>
 <body class="login">
@@ -120,23 +125,17 @@ $focusEmail    = ($error !== '' && $prefillEmail === '');
 
   <main class="zone">
 
-    <!-- Large bicycle wheel: hub sits behind the card, rim bleeds off the right edge -->
-    <svg class="wheel wheel-in" viewBox="-280 -280 560 560" aria-hidden="true" focusable="false">
-      <g class="rot">
-        <circle r="262" fill="none" stroke="#1f4d14" stroke-width="8" stroke-dasharray="3 9"/>
-        <circle r="246" fill="none" stroke="#3d8a24" stroke-width="18"/>
-        <circle r="232" fill="none" stroke="#1f4d14" stroke-width="2"/>
-        <g stroke="#1f4d14" stroke-width="1.6" stroke-opacity=".55"><line x1="26.0" y1="0.0" x2="230.3" y2="27.8"/><line x1="25.6" y1="4.5" x2="222.0" y2="67.3"/><line x1="24.4" y1="8.9" x2="206.9" y2="104.9"/><line x1="22.5" y1="13.0" x2="185.6" y2="139.2"/><line x1="19.9" y1="16.7" x2="158.6" y2="169.3"/><line x1="16.7" y1="19.9" x2="126.8" y2="194.3"/><line x1="13.0" y1="22.5" x2="91.1" y2="213.4"/><line x1="8.9" y1="24.4" x2="52.7" y2="225.9"/><line x1="4.5" y1="25.6" x2="12.6" y2="231.7"/><line x1="0.0" y1="26.0" x2="-27.8" y2="230.3"/><line x1="-4.5" y1="25.6" x2="-67.3" y2="222.0"/><line x1="-8.9" y1="24.4" x2="-104.9" y2="206.9"/><line x1="-13.0" y1="22.5" x2="-139.2" y2="185.6"/><line x1="-16.7" y1="19.9" x2="-169.3" y2="158.6"/><line x1="-19.9" y1="16.7" x2="-194.3" y2="126.8"/><line x1="-22.5" y1="13.0" x2="-213.4" y2="91.1"/><line x1="-24.4" y1="8.9" x2="-225.9" y2="52.7"/><line x1="-25.6" y1="4.5" x2="-231.7" y2="12.6"/><line x1="-26.0" y1="0.0" x2="-230.3" y2="-27.8"/><line x1="-25.6" y1="-4.5" x2="-222.0" y2="-67.3"/><line x1="-24.4" y1="-8.9" x2="-206.9" y2="-104.9"/><line x1="-22.5" y1="-13.0" x2="-185.6" y2="-139.2"/><line x1="-19.9" y1="-16.7" x2="-158.6" y2="-169.3"/><line x1="-16.7" y1="-19.9" x2="-126.8" y2="-194.3"/><line x1="-13.0" y1="-22.5" x2="-91.1" y2="-213.4"/><line x1="-8.9" y1="-24.4" x2="-52.7" y2="-225.9"/><line x1="-4.5" y1="-25.6" x2="-12.6" y2="-231.7"/><line x1="-0.0" y1="-26.0" x2="27.8" y2="-230.3"/><line x1="4.5" y1="-25.6" x2="67.3" y2="-222.0"/><line x1="8.9" y1="-24.4" x2="104.9" y2="-206.9"/><line x1="13.0" y1="-22.5" x2="139.2" y2="-185.6"/><line x1="16.7" y1="-19.9" x2="169.3" y2="-158.6"/><line x1="19.9" y1="-16.7" x2="194.3" y2="-126.8"/><line x1="22.5" y1="-13.0" x2="213.4" y2="-91.1"/><line x1="24.4" y1="-8.9" x2="225.9" y2="-52.7"/><line x1="25.6" y1="-4.5" x2="231.7" y2="-12.6"/></g>
-        <circle r="26" fill="#1f4d14"/>
-        <circle r="11" fill="#f6efe0"/>
-      </g>
-    </svg>
+    <?php require __DIR__ . '/partials/wheel.php'; ?>
 
     <section class="card card-in" aria-labelledby="login-title">
       <h1 class="card-title" id="login-title">Sign in</h1>
 
       <?php if ($error !== ''): ?>
       <div class="alert" id="login-error" role="alert"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
+      <?php endif; ?>
+
+      <?php if ($notice !== ''): ?>
+      <div class="alert alert--ok" role="status"><?= htmlspecialchars($notice, ENT_QUOTES, 'UTF-8') ?></div>
       <?php endif; ?>
 
       <form method="POST" novalidate id="login-form" class="card-form">
@@ -172,10 +171,9 @@ $focusEmail    = ($error !== '' && $prefillEmail === '');
       </form>
 
       <div class="card-links">
-        <a href="#" id="forgot-link" aria-controls="forgot-note">Forgot password?</a>
+        <a href="forgot_password.php">Forgot password?</a>
         <a href="register.php">Register</a>
       </div>
-      <p class="forgot-note" id="forgot-note" hidden>Password reset isn't available yet. Please contact your City Leader or an administrator.</p>
     </section>
   </main>
 
@@ -186,6 +184,6 @@ $focusEmail    = ($error !== '' && $prefillEmail === '');
 
 </div>
 
-<script src="../js/login.js?v=4"></script>
+<script src="../js/login.js?v=<?= filemtime(__DIR__ . '/../js/login.js') ?>"></script>
 </body>
 </html>

@@ -29,17 +29,6 @@
     });
   });
 
-  // ── Forgot password: there is no reset page yet ─────────────
-  var forgot = document.getElementById('forgot-link');
-  var note = document.getElementById('forgot-note');
-  if (forgot && note) {
-    forgot.addEventListener('click', function (e) {
-      e.preventDefault();
-      note.hidden = !note.hidden;
-      forgot.setAttribute('aria-expanded', note.hidden ? 'false' : 'true');
-    });
-  }
-
   // ── Inline checks ───────────────────────────────────────────
   var email = document.getElementById('email');
   var password = document.getElementById('password');

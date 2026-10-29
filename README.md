@@ -76,7 +76,7 @@ Parisar audits the quality of cycling infrastructure across Pune. CycleAudit rep
 - Public landing page with live stats
 
 **Accounts and administration**
-- Email and password sign-up and sign-in
+- Email and password sign-up and sign-in, with an emailed one-time link to reset a forgotten password
 - Role-based access control: Admin, City Leader, Surveyor
 - Admin dashboard, road manager, surveyor manager (activate or deactivate accounts), activity log
 - Excel exports of users and roads for admins
@@ -228,7 +228,11 @@ Settings are read from environment variables first, then a local `.env` (via php
 | `MYSQLDATABASE` / `DB_NAME` | Database name | `parisar_db` |
 | `MYSQLUSER` / `DB_USER` | Database user | `root` |
 | `MYSQLPASSWORD` / `DB_PASS` | Database password | empty |
-| `BASE_URL` | Public URL of the app | `http://localhost/Parisar` |
+| `BASE_URL` | Public URL of the app (also used in the password reset link) | `http://localhost/Parisar` |
+| `MAIL_PROVIDER` | Email service for password reset: `brevo` or `resend` | empty (reset emails are not sent) |
+| `MAIL_API_KEY` | The email service's API key | empty |
+| `MAIL_FROM` | Sender address, verified with the email service | empty |
+| `MAIL_FROM_NAME` | Sender name | `CycleAudit` |
 
 The `MYSQL*` names are the ones Railway injects, so the same code runs locally and in production.
 
