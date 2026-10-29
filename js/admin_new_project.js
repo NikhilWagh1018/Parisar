@@ -14,7 +14,7 @@
   function candidatesFor(cityId) {
     return candidates.filter(function (u) { return u.city_id === null || u.city_id === cityId; });
   }
-  function personLabel(u) { return u.name + (u.email ? ' (' + u.email + ')' : ''); }
+  function personLabel(u) { return u.name + (u.email ? ' (' + u.email + ')' : '') + (u.home ? ' \u2014 ' + u.home : ''); }
 
   var toastEl = document.getElementById('caToast');
   function toast(msg, type) {

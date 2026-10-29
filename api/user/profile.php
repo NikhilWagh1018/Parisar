@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../helpers/Cities.php';
 
 header('Content-Type: application/json');
 
@@ -29,7 +30,7 @@ function json_out(bool $ok, array $data = [], string $error = ''): never
 // ── GET — return profile ────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $stmt = $pdo->prepare(
-        'SELECT public_id, name, email, phone, organisation, gender, age,
+        'SELECT public_id, name, email, phone, organisation, home_city, home_state, gender, age,
                 address, role, profile_picture, email_verified,
                 last_login, created_at
          FROM users WHERE id = ? LIMIT 1'
@@ -64,7 +65,9 @@ if (!hash_equals((string)$_SESSION['csrf_token'], $csrf)) {
 if ($action === 'update_profile') {
     $name   = trim($body['name']         ?? '');
     $phone  = trim($body['phone']        ?? '');
-    $org    = trim($body['organisation'] ?? '');
+    $org    = cityNameClean((string)($body['organisation'] ?? ''));
+    $cityIn = (string)($body['home_city']  ?? '');
+    $stateIn = (string)($body['home_state'] ?? '');
     $gender = $body['gender']            ?? null;
     $age    = isset($body['age']) && $body['age'] !== '' ? (int)$body['age'] : null;
     $addr   = trim($body['address']      ?? '');
@@ -77,8 +80,14 @@ if ($action === 'update_profile') {
         json_out(false, error: 'Phone number must be exactly 10 digits.');
     }
 
-    if ($org !== '' && !preg_match('/^[A-Za-z ]+$/', $org)) {
-        json_out(false, error: 'Organisation must contain letters only.');
+    $orgError = organisationError($org);
+    if ($orgError !== null) {
+        json_out(false, error: $orgError);
+    }
+
+    [$homeCity, $homeState, $locErrors] = validateHomeLocation($cityIn, $stateIn);
+    if ($locErrors !== []) {
+        json_out(false, error: reset($locErrors));
     }
 
     $allowedGenders = ['Male', 'Female', 'Other', null, ''];
@@ -93,14 +102,16 @@ if ($action === 'update_profile') {
     try {
         $stmt = $pdo->prepare(
             'UPDATE users
-             SET name = ?, phone = ?, organisation = ?, gender = ?,
+             SET name = ?, phone = ?, organisation = ?, home_city = ?, home_state = ?, gender = ?,
                  age = ?, address = ?
              WHERE id = ?'
         );
         $stmt->execute([
             $name,
             $phone ?: null,
-            $org   ?: null,
+            $org,
+            $homeCity,
+            $homeState,
             $gender ?: null,
             $age,
             $addr  ?: null,

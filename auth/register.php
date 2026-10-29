@@ -49,7 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$rateLimited) {
     $name   = trim($_POST['name']           ?? '');
     $email  = trim($_POST['email']          ?? '');
     $phone  = trim($_POST['phone']          ?? '');
-    $org    = trim($_POST['organisation']   ?? '');
+    $org    = cityNameClean((string)($_POST['organisation'] ?? ''));
+    $cityIn = (string)($_POST['city']       ?? '');
+    $stateIn = (string)($_POST['state']     ?? '');
     $gender = $_POST['gender']              ?? '';
     $age    = trim($_POST['age']            ?? '');
     $pass   = $_POST['password']            ?? '';
@@ -86,16 +88,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$rateLimited) {
         $errors['age'] = 'Age must be between 16 and 80.';
     }
 
-    if ($org !== '' && strlen($org) > 200) {
-        $errors['organisation'] = 'Organisation name must be under 200 characters.';
+    $orgError = organisationError($org);
+    if ($orgError !== null) {
+        $errors['organisation'] = $orgError;
     }
 
-    // City: asked only once there are two or more cities; with a single
-    // city the account is put in it automatically.
-    [$signupCityId, $cityError] = resolveSignupCity($cities, $_POST['city_id'] ?? '');
-    if ($cityError !== null) {
-        $errors['city_id'] = $cityError;
-    }
+    // City and State: where the person says they are. Information for the Admin;
+    // access to a city's data still comes only from users.city_id, which is set
+    // here only when the typed city already exists in CycleAudit (else the Admin
+    // places the person later).
+    [$homeCity, $homeState, $locErrors] = validateHomeLocation($cityIn, $stateIn);
+    $errors = array_merge($errors, $locErrors);
+    $signupCityId = $homeCity !== null ? signupCityId($cities, $homeCity) : null;
 
     if (strlen($pass) < 8) {
         $errors['password'] = 'Password must be at least 8 characters.';
@@ -122,17 +126,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$rateLimited) {
         $pdo->prepare(
             'INSERT INTO users
                (name, email, phone, organisation, gender, age, password,
-                city_id, role, auth_provider, email_verified, last_login)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, \'surveyor\', \'local\', 1, NOW())'
+                city_id, home_city, home_state, role, auth_provider, email_verified, last_login)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \'surveyor\', \'local\', 1, NOW())'
         )->execute([
             $name,
             $email,
             $phone  ?: null,
-            $org    ?: null,
+            $org,
             $gender,
             (int)$age,
             $hash,
             $signupCityId,
+            $homeCity,
+            $homeState,
         ]);
 
         $newId = (int)$pdo->lastInsertId();
@@ -270,18 +276,23 @@ function fc(string $k, array $e): string
         </div>
       </div>
 
-      <?php if (count($cities) > 1): ?>
-      <div class="form-group<?= fc('city_id', $errors) ?>">
-        <label for="inp-city">City <span style="color:var(--red)">*</span></label>
-        <select name="city_id" id="inp-city">
-          <option value="">— Select your city —</option>
-          <?php foreach ($cities as $c): ?>
-          <option value="<?= (int)$c['id'] ?>" <?= (string)($_POST['city_id'] ?? '') === (string)$c['id'] ? 'selected' : '' ?>><?= htmlspecialchars($c['name']) ?></option>
-          <?php endforeach; ?>
-        </select>
-        <?= fe('city_id', $errors) ?>
+      <div class="form-row-2">
+        <div class="form-group<?= fc('city', $errors) ?>">
+          <label for="inp-city">City <span style="color:var(--red)">*</span></label>
+          <input type="text" name="city" id="inp-city" list="cityList"
+                 value="<?= htmlspecialchars($_POST['city'] ?? '') ?>"
+                 placeholder="Start typing your city" maxlength="100" autocomplete="off">
+          <?= fe('city', $errors) ?>
+        </div>
+        <div class="form-group<?= fc('state', $errors) ?>">
+          <label for="inp-state">State <span style="color:var(--red)">*</span></label>
+          <input type="text" name="state" id="inp-state" list="stateList"
+                 value="<?= htmlspecialchars($_POST['state'] ?? '') ?>"
+                 placeholder="Fills in for known cities" maxlength="100" autocomplete="off">
+          <?= fe('state', $errors) ?>
+        </div>
       </div>
-      <?php endif; ?>
+      <?= locationDatalistsHtml() ?>
 
       <div class="sdiv">Contact Details</div>
 
@@ -302,7 +313,7 @@ function fc(string $k, array $e): string
           <?= fe('phone', $errors) ?>
         </div>
         <div class="form-group<?= fc('organisation', $errors) ?>">
-          <label for="inp-org">Organisation <small style="color:#a0b090;font-weight:400">optional</small></label>
+          <label for="inp-org">Organisation <span style="color:var(--red)">*</span></label>
           <input type="text" name="organisation" id="inp-org"
                  value="<?= htmlspecialchars($_POST['organisation'] ?? '') ?>"
                  placeholder="Your NGO or institute" maxlength="200">
@@ -343,6 +354,8 @@ function fc(string $k, array $e): string
   </div>
 </div>
 
+<script src="../js/location_fields.js"></script>
 <script src="../js/register.js"></script>
+<script>initLocationFields('inp-city', 'inp-state');</script>
 </body>
 </html>

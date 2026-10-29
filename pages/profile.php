@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/auth_guard.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
+require_once __DIR__ . '/../helpers/Cities.php';
 require_once __DIR__ . '/../config/constants.php';
 
 $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
@@ -137,8 +138,17 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
             <input type="tel" inputmode="numeric" id="f-phone" placeholder="e.g. 9876543210" maxlength="10" oninput="sanitizePhoneInput(this)">
           </div>
           <div class="field">
-            <label>Organisation</label>
-            <input type="text" id="f-org" placeholder="e.g. Parisar, KSE" maxlength="200" oninput="sanitizeAlphaInput(this)">
+            <label>Organisation *</label>
+            <input type="text" id="f-org" placeholder="e.g. Parisar, KSE" maxlength="200" required>
+          </div>
+          <div class="field">
+            <label>City *</label>
+            <input type="text" id="f-city" list="cityList" placeholder="Start typing your city" maxlength="100" autocomplete="off" required>
+          </div>
+          <div class="field">
+            <label>State *</label>
+            <input type="text" id="f-state" list="stateList" placeholder="Fills in for known cities" maxlength="100" autocomplete="off" required>
+            <?= locationDatalistsHtml() ?>
           </div>
           <div class="field">
             <label>Gender</label>
@@ -240,6 +250,7 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
 </main>
 
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = <?= json_encode($_SESSION['csrf_token'] ?? '') ?>;</script>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/location_fields.js"></script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/profile.js"></script>
 <button class="sb-hamburger" id="sb-toggle" aria-label="Menu">&#9776;</button>
 <div class="sb-overlay" id="sb-overlay"></div>
