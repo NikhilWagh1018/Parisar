@@ -122,11 +122,10 @@ function adminCitiesWithoutLeader(array $cities): array
  *
  * @param list<array<string,mixed>> $awaiting   audits waiting for approval
  * @param list<array<string,mixed>> $stalled    from adminStalledAudits()
- * @param int                       $roadsToVerify
  * @param list<array<string,mixed>> $noLeader   from adminCitiesWithoutLeader()
  * @return list<array{tone:string,title:string,detail:string,href:string,cta:string}>
  */
-function adminAttentionItems(array $awaiting, array $stalled, int $roadsToVerify, array $noLeader): array
+function adminAttentionItems(array $awaiting, array $stalled, array $noLeader): array
 {
     $items = [];
     foreach ($awaiting as $a) {
@@ -148,15 +147,6 @@ function adminAttentionItems(array $awaiting, array $stalled, int $roadsToVerify
                         . cityPlural((int)$a['idle_days'], 'day', 'days') . '.',
             'href'   => adminAuditLink($a),
             'cta'    => 'Open',
-        ];
-    }
-    if ($roadsToVerify > 0) {
-        $items[] = [
-            'tone'   => 'info',
-            'title'  => cityPlural($roadsToVerify, 'road', 'roads') . ' to verify',
-            'detail' => 'New roads are waiting to be verified in the Roads page.',
-            'href'   => 'admin.php',
-            'cta'    => 'Verify',
         ];
     }
     foreach ($noLeader as $c) {

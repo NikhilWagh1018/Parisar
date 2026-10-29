@@ -18,9 +18,11 @@ $rsItem = static function (string $key, string $href, string $label) use ($activ
   <nav>
     <div class="nav-section">Main</div>
     <?= $rsItem('home', $rsHome, $CURRENT_USER_ROLE === 'admin' ? 'Dashboard' : 'City Dashboard') ?>
-    <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
-    <div class="nav-section">Admin</div>
+    <?php if ($CURRENT_USER_ROLE === 'city_leader'): ?>
+    <div class="nav-section">Manage</div>
     <?= $rsItem('roads', 'admin.php', 'Roads') ?>
+    <?php elseif ($CURRENT_USER_ROLE === 'admin'): ?>
+    <div class="nav-section">Admin</div>
     <?= $rsItem('users', 'admin_surveyors.php', 'Users') ?>
     <?= $rsItem('activity', 'admin_activity.php', 'Activity Log') ?>
     <?php endif; ?>

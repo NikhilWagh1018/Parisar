@@ -78,7 +78,7 @@ class AdminDashboardTest extends TestCase
 
     public function test_attention_is_empty_when_all_is_well(): void
     {
-        $this->assertSame([], adminAttentionItems([], [], 0, []));
+        $this->assertSame([], adminAttentionItems([], [], []));
     }
 
     public function test_attention_lists_approvals_first_then_stalled_roads_and_cities(): void
@@ -86,16 +86,14 @@ class AdminDashboardTest extends TestCase
         $awaiting = [['id' => 9, 'name' => 'Pune Audit', 'audit_year' => 2026, 'city_name' => 'Pune',
                       'road_count' => 1, 'segment_count' => 3]];
         $stalled  = [$this->audit(2, 'active', '2026-09-10 00:00:00') + ['idle_days' => 25]];
-        $items    = adminAttentionItems($awaiting, $stalled, 2, [['name' => 'Mumbai', 'leaders' => 0]]);
+        $items    = adminAttentionItems($awaiting, $stalled, [['name' => 'Mumbai', 'leaders' => 0]]);
 
-        $this->assertSame(['urgent', 'warn', 'info', 'warn'], array_column($items, 'tone'));
+        $this->assertSame(['urgent', 'warn', 'warn'], array_column($items, 'tone'));
         $this->assertSame('city_audit_report.php?id=9', $items[0]['href']);
         $this->assertSame('Review', $items[0]['cta']);
         $this->assertStringContainsString('1 road, 3 segments', $items[0]['detail']);
         $this->assertStringContainsString('25 days', $items[1]['detail']);
-        $this->assertSame('2 roads to verify', $items[2]['title']);
-        $this->assertSame('admin.php', $items[2]['href']);
-        $this->assertSame('Mumbai has no City Leader', $items[3]['title']);
+        $this->assertSame('Mumbai has no City Leader', $items[2]['title']);
     }
 
     public function test_cities_without_a_leader(): void
@@ -150,10 +148,5 @@ class AdminDashboardTest extends TestCase
         $this->assertSame('2026-09-15 00:00:00', $byId[3]['last_activity'], 'no submissions yet: falls back to the audit itself');
         $this->assertSame(0, $byId[3]['segment_count']);
         $this->assertSame('Mumbai', $byId[3]['city_name']);
-    }
-
-    public function test_roads_to_verify_count(): void
-    {
-        $this->assertSame(2, (new AdminDashboardRepository($this->db()))->roadsToVerifyCount());
     }
 }

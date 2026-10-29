@@ -88,10 +88,4 @@ class AdminDashboardRepository
         unset($r);
         return $rows;
     }
-
-    /** How many road names are waiting to be verified. */
-    public function roadsToVerifyCount(): int
-    {
-        return (int)$this->pdo->query('SELECT COUNT(*) FROM road_groups WHERE is_verified = 0')->fetchColumn();
-    }
 }
