@@ -219,6 +219,11 @@ body.login {
   font-size: calc(12px * var(--s)); line-height: 1.4; font-weight: 500;
 }
 
+.alert--ok { background: #eaf6e4; color: var(--green-dark); border-color: #b9dba9; }
+
+/* ── Plain paragraph inside the card (forgot / reset pages) ──── */
+.card-text { font-size: calc(12px * var(--s)); line-height: 1.5; color: var(--muted); }
+
 /* ── Credit (bottom left) ────────────────────────────────────── */
 .credit {
   position: absolute;
