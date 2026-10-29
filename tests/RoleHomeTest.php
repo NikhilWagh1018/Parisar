@@ -7,14 +7,14 @@ require_once __DIR__ . '/../helpers/RoleHome.php';
 
 class RoleHomeTest extends TestCase
 {
-    public function test_national_admin_goes_to_platform_dashboard(): void
+    public function test_admin_goes_to_platform_dashboard(): void
     {
-        $this->assertSame('platform_dashboard.php', roleHomePage('national_admin'));
+        $this->assertSame('platform_dashboard.php', roleHomePage('admin'));
     }
 
-    public function test_city_admin_goes_to_city_dashboard(): void
+    public function test_city_leader_goes_to_city_dashboard(): void
     {
-        $this->assertSame('city_dashboard.php', roleHomePage('city_admin'));
+        $this->assertSame('city_dashboard.php', roleHomePage('city_leader'));
     }
 
     public function test_surveyor_and_unknown_roles_stay_on_dashboard(): void
@@ -26,8 +26,8 @@ class RoleHomeTest extends TestCase
 
     public function test_role_labels(): void
     {
-        $this->assertSame('Admin', roleLabel('national_admin'));
-        $this->assertSame('City Leader', roleLabel('city_admin'));
+        $this->assertSame('Admin', roleLabel('admin'));
+        $this->assertSame('City Leader', roleLabel('city_leader'));
         $this->assertSame('Surveyor', roleLabel('surveyor'));
         $this->assertSame('Something else', roleLabel('something_else'));
     }

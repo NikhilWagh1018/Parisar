@@ -215,12 +215,12 @@ class RoadRepository
 
     /**
      * road_groups.city_id is NOT NULL, but not every user has a city_id
-     * set yet (national_admins are city-less by design; older accounts
+     * set yet (admins are city-less by design; older accounts
      * predate city assignment). Resolution order:
      *   1. The creator's own city_id, if set.
      *   2. If exactly one city exists in the whole app, use that — this
      *      is Parisar's current single-city state (Pune, id 1), so a
-     *      city-less national_admin creating a road still works.
+     *      city-less admin creating a road still works.
      *   3. Otherwise, fail loudly rather than guess which of several
      *      cities a road belongs to.
      */

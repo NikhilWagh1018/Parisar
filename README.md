@@ -187,8 +187,8 @@ Supporting tables: `login_attempts` and `activity_log` (migrations 001 and 002).
 
 | Role (shown in the app) | Stored value | Can do |
 | --- | --- | --- |
-| Admin | `national_admin` | Everything, across all cities |
-| City Leader | `city_admin` | Everything an Admin can, but only for resources in their own city |
+| Admin | `admin` | Everything, across all cities |
+| City Leader | `city_leader` | Everything an Admin can, but only for resources in their own city |
 | Surveyor | `surveyor` | Create roads, audit any road, edit or delete only their own roads and segments |
 
 Permissions live in `config/permissions.php` and fail closed: an endpoint that forgets to pass a city context grants a City Leader nothing extra.
@@ -280,7 +280,7 @@ Found a vulnerability? Please open a private security advisory on GitHub rather 
 ## Known gaps and roadmap
 
 **Known gaps**
-- [ ] **Migrations lag behind the code.** The code uses tables and columns that no migration creates: `cities`, `road_groups`, `audit_log`, `rate_limit_attempts`, `users.city_id`, `users.is_active`, the `national_admin` and `city_admin` roles, and `segment_audits.cycle_track_missing` / `missing_length`. Production has them; a fresh install does not. A consolidating migration is the next fix.
+- [ ] **Migrations lag behind the code.** The code uses tables and columns that no migration creates: `cities`, `road_groups`, `audit_log`, `rate_limit_attempts`, `users.city_id`, `users.is_active`, the `admin` and `city_leader` roles, and `segment_audits.cycle_track_missing` / `missing_length`. Production has them; a fresh install does not. A consolidating migration is the next fix.
 - [ ] Profile pictures are stored as base64 in MySQL because Railway's filesystem is ephemeral. Object storage would be better.
 
 **Roadmap**

@@ -38,12 +38,12 @@ class CityAuditRepositoryTest extends TestCase
             segment_id INTEGER NOT NULL UNIQUE, surveyor_id INTEGER NOT NULL, assigned_by INTEGER NOT NULL,
             assigned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
         $this->pdo->exec("INSERT INTO users (id, name, role, is_active, city_id) VALUES
-            (2,'Nick','city_admin',1,1),
+            (2,'Nick','city_leader',1,1),
             (10,'Asha','surveyor',1,1),
             (11,'Ravi','surveyor',1,1),
             (12,'Inactive Ian','surveyor',0,1),
             (13,'Mumbai Mona','surveyor',1,2),
-            (14,'Other Admin','city_admin',1,1)");
+            (14,'Other Admin','city_leader',1,1)");
         $this->pdo->exec("INSERT INTO road_groups (canonical_name, city_id, is_flagged) VALUES
             ('F.C. ROAD',1,0),('PMC ROAD',1,0),('BAD ROAD',1,1),('MARINE DRIVE',2,0)");
         $this->repo = new CityAuditRepository($this->pdo);

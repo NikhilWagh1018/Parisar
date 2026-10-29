@@ -32,7 +32,7 @@ class AuditReviewTest extends TestCase
             segment_id INTEGER NOT NULL UNIQUE, surveyor_id INTEGER NOT NULL, assigned_by INTEGER NOT NULL,
             status TEXT NOT NULL DEFAULT \'assigned\', assigned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             submitted_at TEXT NULL, reviewed_at TEXT NULL, reviewed_by INTEGER NULL, review_note TEXT NULL)');
-        $this->pdo->exec("INSERT INTO users VALUES (2,'Nick','city_admin',1,1),(10,'Asha','surveyor',1,1),(11,'Ravi','surveyor',1,1),
+        $this->pdo->exec("INSERT INTO users VALUES (2,'Nick','city_leader',1,1),(10,'Asha','surveyor',1,1),(11,'Ravi','surveyor',1,1),
             (12,'Inactive','surveyor',0,1),(13,'Mona','surveyor',1,2)");
         $this->pdo->exec("INSERT INTO city_audits VALUES (1,1,'active')");
         $this->pdo->exec("INSERT INTO roads VALUES (1,'F.C. Road',1)");

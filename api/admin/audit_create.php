@@ -10,7 +10,7 @@ declare(strict_types=1);
 //  (same rules as api/admin/city_leader.php).
 //  The Admin creates a new project (a city audit) for a city. The City
 //  Leader of that city then adds the roads and assigns surveyors.
-//  national_admin only. (City Leaders no longer create audits.)
+//  admin only. (City Leaders no longer create audits.)
 // ═══════════════════════════════════════════════════════════════
 
 header('Content-Type: application/json');
@@ -80,7 +80,7 @@ try {
         if ($leaderError !== null) {
             throw new DomainException($leaderError);
         }
-        $pdo->prepare("UPDATE users SET role = 'city_admin', city_id = ? WHERE id = ?")->execute([(int)$cityId, (int)$leaderId]);
+        $pdo->prepare("UPDATE users SET role = 'city_leader', city_id = ? WHERE id = ?")->execute([(int)$cityId, (int)$leaderId]);
         $leaderAssigned = (int)$leaderId;
     }
     $pdo->commit();
@@ -101,7 +101,7 @@ ActivityLogger::log($pdo, ActivityLogger::AUDIT_CREATED, $CURRENT_USER_ID, [
 
 if ($leaderAssigned !== null) {
     ActivityLogger::log($pdo, ActivityLogger::USER_ROLE_CHANGED, $CURRENT_USER_ID, [
-        'user_id' => $leaderAssigned, 'to_role' => 'city_admin', 'city_id' => (int)$cityId,
+        'user_id' => $leaderAssigned, 'to_role' => 'city_leader', 'city_id' => (int)$cityId,
     ]);
 }
 

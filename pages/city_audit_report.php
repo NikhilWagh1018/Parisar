@@ -8,7 +8,7 @@ declare(strict_types=1);
 //  to close the audit and send it to the Admin.
 //  Only approved segments are scored. Before the audit is closed the
 //  report is marked provisional.
-//  city_admin: own city. national_admin: any city, read only.
+//  city_leader: own city. admin: any city, read only.
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
@@ -19,7 +19,7 @@ require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 require_once __DIR__ . '/../repositories/AuditReportRepository.php';
 require_once __DIR__ . '/../services/ScoreService.php';
 
-$isNational = $CURRENT_USER_ROLE === 'national_admin';
+$isNational = $CURRENT_USER_ROLE === 'admin';
 $repo       = new CityAuditRepository($pdo);
 $audit      = $repo->find((int)($_GET['id'] ?? 0));
 

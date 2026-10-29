@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  pages/platform_dashboard.php  —  Admin Dashboard (home)
-//  national_admin only: what needs attention, every audit, every city.
+//  admin only: what needs attention, every audit, every city.
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
@@ -13,7 +13,7 @@ require_once __DIR__ . '/../helpers/Cities.php';
 require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 require_once __DIR__ . '/../repositories/AdminDashboardRepository.php';
 
-if ($CURRENT_USER_ROLE !== 'national_admin') {
+if ($CURRENT_USER_ROLE !== 'admin') {
     header('Location: ' . roleHomePage($CURRENT_USER_ROLE));
     exit;
 }

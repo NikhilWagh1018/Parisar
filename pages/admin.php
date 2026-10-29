@@ -254,7 +254,7 @@ document.addEventListener('click', e => {
     </div>
 
     <div class="add-road-form" id="addRoadForm">
-      <?php if ($CURRENT_USER_ROLE === 'national_admin' && count($cities) > 1): ?>
+      <?php if ($CURRENT_USER_ROLE === 'admin' && count($cities) > 1): ?>
       <select id="addRoadCity" aria-label="City for the new road">
         <option value="">Select city&hellip;</option>
         <?php foreach ($cities as $c): ?>
@@ -293,7 +293,7 @@ document.addEventListener('click', e => {
 </main>
 
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';
-const IS_NATIONAL_ADMIN = <?= $CURRENT_USER_ROLE === 'national_admin' ? 'true' : 'false' ?>;
+const IS_NATIONAL_ADMIN = <?= $CURRENT_USER_ROLE === 'admin' ? 'true' : 'false' ?>;
 const CITIES = <?= json_encode($cities, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 (function () {
@@ -413,7 +413,7 @@ const CITIES = <?= json_encode($cities, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_A
     right.className = 'grp-head-right';
 
     // Assign-to-surveyor control. Available to any admin (national or
-    // city) — unlike Delete, which is national_admin only. An
+    // city) — unlike Delete, which is admin only. An
     // unassigned road stays open to any surveyor in the city to
     // self-select, same as before this feature existed.
     var assignWrap = document.createElement('div');
@@ -473,7 +473,7 @@ const CITIES = <?= json_encode($cities, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_A
     // panel below the row with a type-to-confirm control instead of a
     // browser confirm() — deletion here removes any real audit entries
     // under the road too, so it needs a deliberate, hard-to-fat-finger step.
-    // Admin-only (confirmed scope) — a city_admin doesn't get this button
+    // Admin-only (confirmed scope) — a city_leader doesn't get this button
     // at all, rather than seeing one that would just 403 on click.
     var deleteBtn = null;
     if (IS_NATIONAL_ADMIN) {

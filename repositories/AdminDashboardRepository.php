@@ -21,7 +21,7 @@ class AdminDashboardRepository
     {
         $rows = $this->pdo->query(
             "SELECT c.id, c.name,
-                (SELECT COUNT(*) FROM users u WHERE u.city_id = c.id AND u.role = 'city_admin')  AS leaders,
+                (SELECT COUNT(*) FROM users u WHERE u.city_id = c.id AND u.role = 'city_leader')  AS leaders,
                 (SELECT COUNT(*) FROM users u WHERE u.city_id = c.id AND u.role = 'surveyor')    AS surveyors,
                 (SELECT COUNT(*) FROM road_groups rg WHERE rg.city_id = c.id)                    AS road_groups,
                 (SELECT COUNT(*) FROM segments s

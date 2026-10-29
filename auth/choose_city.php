@@ -36,7 +36,7 @@ $cities = listCities($pdo);
 
 // Nothing to choose: already has a city, is an Admin (city-less
 // by design), or there are not yet two cities to choose between.
-if ($me['city_id'] !== null || $me['role'] === 'national_admin' || count($cities) < 2) {
+if ($me['city_id'] !== null || $me['role'] === 'admin' || count($cities) < 2) {
     header('Location: ../pages/dashboard.php');
     exit;
 }

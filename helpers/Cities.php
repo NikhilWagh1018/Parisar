@@ -82,7 +82,7 @@ function resolveSignupCity(array $cities, mixed $posted): array
  */
 function validateUserCityChange(array $cities, string $targetRole, mixed $posted): array
 {
-    if ($targetRole === 'national_admin') {
+    if ($targetRole === 'admin') {
         return [null, 'Admins are not tied to a city.'];
     }
     if (!is_bool($posted) && !is_array($posted)) {

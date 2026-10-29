@@ -41,7 +41,7 @@ class SegmentRepositoryTest extends TestCase
             email      TEXT    NOT NULL
         );
 
-        -- Added for Phase 3 (city_admin): SegmentRepository::findWithRoad()
+        -- Added for Phase 3 (city_leader): SegmentRepository::findWithRoad()
         -- now LEFT JOINs road_groups to expose city_id for the permissions
         -- gate. road_groups.city_id is nullable here (unlike prod, where
         -- it's NOT NULL) purely to keep this fixture minimal — no test

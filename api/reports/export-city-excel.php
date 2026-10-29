@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  api/reports/export-city-excel.php
-//  GET  — national_admin: ?city_id=<id> (optional if exactly one
+//  GET  — admin: ?city_id=<id> (optional if exactly one
 //         city exists; required once more than one does)
-//         city_admin: always scoped to their own city, city_id
+//         city_leader: always scoped to their own city, city_id
 //         param ignored.
 //
 //  The city-wide downloadable score sheet: one row per road_group
@@ -38,7 +38,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 
 // ── Resolve which city we're exporting ─────────────────────────
-$isNationalAdmin = $CURRENT_USER_ROLE === 'national_admin';
+$isNationalAdmin = $CURRENT_USER_ROLE === 'admin';
 
 if ($isNationalAdmin) {
     if (isset($_GET['city_id'])) {
@@ -65,7 +65,7 @@ if ($isNationalAdmin) {
         $cityId = (int)$pdo->query('SELECT id FROM cities LIMIT 1')->fetchColumn();
     }
 } else {
-    // city_admin — always their own city, never client-supplied.
+    // city_leader — always their own city, never client-supplied.
     $cityId = $CURRENT_USER_CITY_ID;
     if ($cityId === null) {
         http_response_code(400);

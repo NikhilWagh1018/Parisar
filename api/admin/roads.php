@@ -10,8 +10,8 @@ declare(strict_types=1);
 //         { action: 'delete', id, confirm_name } to remove one,
 //         where confirm_name must match the road's name exactly.
 //
-//  city_admin is scoped to road_groups in their own city only, for
-//  both listing and create/delete. national_admin is unscoped, same
+//  city_leader is scoped to road_groups in their own city only, for
+//  both listing and create/delete. admin is unscoped, same
 //  as before.
 // ═══════════════════════════════════════════════════════════════
 
@@ -26,7 +26,7 @@ set_exception_handler(function (Throwable $e) {
 
 require_once __DIR__ . '/../../config/admin_guard.php';
 
-$isNationalAdmin = $CURRENT_USER_ROLE === 'national_admin';
+$isNationalAdmin = $CURRENT_USER_ROLE === 'admin';
 $cityId          = $isNationalAdmin ? null : $CURRENT_USER_CITY_ID;
 
 function logAudit(PDO $pdo, int $actorId, string $actorName, string $action, int $groupId, string $groupName): void
@@ -39,7 +39,7 @@ function logAudit(PDO $pdo, int $actorId, string $actorName, string $action, int
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // A city_admin with no city assigned sees nothing, rather than
+    // A city_leader with no city assigned sees nothing, rather than
     // falling through to every city's roads.
     if (!$isNationalAdmin && $cityId === null) {
         echo json_encode(['success' => true, 'road_groups' => []]);
@@ -145,8 +145,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // road_groups.city_id is NOT NULL. A city_admin always creates
-        // within their own city. A national_admin may pass city_id
+        // road_groups.city_id is NOT NULL. A city_leader always creates
+        // within their own city. An admin may pass city_id
         // explicitly (once multiple cities exist); until then, this
         // falls back to the sole existing city, same convention as
         // RoadRepository::resolveCityIdForNewRoadGroup().
@@ -207,8 +207,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // for every road, including ones with real audit entries under them.
     if (isset($body['action']) && $body['action'] === 'delete') {
         // Data deletion is Admin-only in this phase (confirmed scope) —
-        // a city_admin can create/view roads in their city but not
-        // delete them; only national_admin may.
+        // a city_leader can create/view roads in their city but not
+        // delete them; only admin may.
         if (!$isNationalAdmin) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Only an Admin can delete roads.']);
@@ -288,7 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ── Assign path: { action: 'assign', id, surveyor_id } ───────
     // surveyor_id may be null/0 to unassign. Available to both
-    // national_admin and city_admin (city-scoped), unlike delete.
+    // admin and city_leader (city-scoped), unlike delete.
     if (isset($body['action']) && $body['action'] === 'assign') {
         $id = isset($body['id']) ? (int)$body['id'] : 0;
         if ($id <= 0) {
@@ -324,7 +324,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Surveyor must exist, actually be a surveyor, and belong to
-        // the SAME city as the road — otherwise a city_admin could
+        // the SAME city as the road — otherwise a city_leader could
         // hand their roads to someone outside their city.
         $survStmt = $pdo->prepare(
             "SELECT id, name, city_id FROM users WHERE id = ? AND role = 'surveyor' LIMIT 1"

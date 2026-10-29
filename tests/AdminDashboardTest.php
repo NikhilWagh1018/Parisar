@@ -119,7 +119,7 @@ class AdminDashboardTest extends TestCase
         $pdo->exec('CREATE TABLE segments (id INTEGER PRIMARY KEY, road_id INTEGER, status TEXT)');
         $pdo->exec('CREATE TABLE segment_audits (id INTEGER PRIMARY KEY, segment_id INTEGER, created_at TEXT)');
         $pdo->exec("INSERT INTO cities VALUES (1,'Pune'),(2,'Mumbai')");
-        $pdo->exec("INSERT INTO users VALUES (1,1,'city_admin'),(2,1,'surveyor'),(3,1,'surveyor'),(4,NULL,'national_admin')");
+        $pdo->exec("INSERT INTO users VALUES (1,1,'city_leader'),(2,1,'surveyor'),(3,1,'surveyor'),(4,NULL,'admin')");
         $pdo->exec("INSERT INTO road_groups VALUES (1,1,1),(2,1,0),(3,2,0)");
         $pdo->exec("INSERT INTO city_audits (id,city_id,name,audit_year,status,updated_at) VALUES
             (1,1,'Pune Audit',2026,'active','2026-09-01 00:00:00'),

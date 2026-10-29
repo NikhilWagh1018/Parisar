@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 // ===============================================================
 //  helpers/CityLeaderGate.php
-//  City Leaders (role city_admin) may only open the screens listed
+//  City Leaders (role city_leader) may only open the screens listed
 //  here. Everything else -- pages and APIs -- is closed to them.
 //  config/auth_guard.php enforces this on every protected request.
 //  Pure functions (no DB, no session) so they are unit-tested.

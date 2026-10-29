@@ -93,8 +93,8 @@ document.addEventListener('click', e => {
         <input type="text" id="survSearch" class="surv-search" placeholder="Search by name or email…">
         <select id="roleFilter" class="surv-role-filter">
           <option value="all">All roles</option>
-          <option value="national_admin">Admins only</option>
-          <option value="city_admin">City Leaders only</option>
+          <option value="admin">Admins only</option>
+          <option value="city_leader">City Leaders only</option>
           <option value="surveyor">Surveyors only</option>
         </select>
         <select id="cityFilter" class="surv-role-filter" aria-label="Filter by city" style="display:none;">
@@ -119,7 +119,7 @@ document.addEventListener('click', e => {
               <th>Name</th>
               <th>Organisation</th>
               <th>Role</th>
-              <?php if ($CURRENT_USER_ROLE === 'national_admin'): ?><th>City</th><?php endif; ?>
+              <?php if ($CURRENT_USER_ROLE === 'admin'): ?><th>City</th><?php endif; ?>
               <th>Roads Created</th>
               <th>Segments Audited</th>
               <th>Last Active</th>
@@ -136,7 +136,7 @@ document.addEventListener('click', e => {
   </div>
 </main>
 
-<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';const IS_NATIONAL_ADMIN = <?= $CURRENT_USER_ROLE === 'national_admin' ? 'true' : 'false' ?>;</script>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';const IS_NATIONAL_ADMIN = <?= $CURRENT_USER_ROLE === 'admin' ? 'true' : 'false' ?>;</script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 (function () {
   'use strict';
@@ -165,21 +165,21 @@ document.addEventListener('click', e => {
   }
 
   var ROLE_LABELS = {
-    national_admin: 'Admin',
-    city_admin: 'City Leader',
+    admin: 'Admin',
+    city_leader: 'City Leader',
     surveyor: 'Surveyor'
   };
 
   function buildRow(s) {
     var tr = document.createElement('tr');
-    var roleBadge = s.role === 'national_admin'
+    var roleBadge = s.role === 'admin'
       ? '<span class="admin-badge">Admin</span>'
-      : s.role === 'city_admin'
+      : s.role === 'city_leader'
         ? '<span class="admin-badge" style="background:#eef2ff;color:#4338ca;">City Leader</span>'
         : '<span style="color:#6b7280;font-size:.78rem;">Surveyor</span>';
 
     // Role selector: shown to the Admin only.
-    var roleOptions = ['surveyor', 'city_admin', 'national_admin'];
+    var roleOptions = ['surveyor', 'city_leader', 'admin'];
     var roleBtn = '';
     // Only the Admin changes roles (creates City Leaders); the
     // API enforces this too. City Leaders only manage surveyors.
@@ -195,7 +195,7 @@ document.addEventListener('click', e => {
     var cityCell = '';
     if (IS_NATIONAL_ADMIN) {
       var cityInner;
-      if (s.role === 'national_admin') {
+      if (s.role === 'admin') {
         cityInner = '<span class="surv-muted">All cities</span>';
       } else if (cities.length > 1) {
         cityInner = '<select class="role-select city-select" data-id="' + s.id + '" data-city="' + (s.city_id == null ? '' : s.city_id) + '" aria-label="City for ' + escapeHtml(s.name) + '">' +

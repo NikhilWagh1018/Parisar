@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
-// Only roads in the viewer's own city (national_admin sees all).
+// Only roads in the viewer's own city (admin sees all).
 $cityScope = resolveViewerCityScope($pdo, $CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID);
 
 $stmt = $pdo->prepare(
@@ -45,7 +45,7 @@ $stmt->execute(['cid1' => $cityScope, 'cid2' => $cityScope]);
 $roads = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
 // Name of the viewer's city, for the dropdown's section header.
-// null for national_admin (several cities) or when no city resolves.
+// null for admin (several cities) or when no city resolves.
 $cityName = null;
 if ($cityScope !== null && $cityScope > 0) {
     $nameStmt = $pdo->prepare('SELECT name FROM cities WHERE id = ? LIMIT 1');
