@@ -34,7 +34,7 @@ class CityAuditRepository
             ]);
         } catch (PDOException $e) {
             if ((string)$e->getCode() === '23000') {
-                throw new DomainException('An audit with this name and year already exists for your city.');
+                throw new DomainException('An audit with this name and year already exists for this city.');
             }
             throw $e;
         }

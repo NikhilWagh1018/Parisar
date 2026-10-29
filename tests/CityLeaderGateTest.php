@@ -70,12 +70,15 @@ class CityLeaderGateTest extends TestCase
 
     public function test_audit_screens_are_allowed(): void
     {
-        foreach (['/pages/city_audit.php', '/api/city/audit_create.php',
+        foreach (['/pages/city_audit.php',
                   '/api/city/audit_road_add.php', '/api/city/audit_road_remove.php',
                   '/api/city/audit_assign.php', '/api/city/audit_activate.php'] as $path) {
             $this->assertTrue(cityLeaderMayAccess($path), $path);
             $this->assertTrue(cityLeaderMayAccess('/Parisar' . $path), $path);
         }
+        // Admins create audits now; the old City Leader endpoint is closed.
+        $this->assertFalse(cityLeaderMayAccess('/api/city/audit_create.php'));
+        $this->assertFalse(cityLeaderMayAccess('/api/admin/audit_create.php'));
         $this->assertFalse(cityLeaderMayAccess('/api/city/anything_else.php'));
         $this->assertFalse(cityLeaderMayAccess('/pages/city_audits.php'));
     }

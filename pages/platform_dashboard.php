@@ -9,6 +9,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../helpers/AdminDashboard.php';
+require_once __DIR__ . '/../helpers/Cities.php';
 require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 require_once __DIR__ . '/../repositories/AdminDashboardRepository.php';
 
@@ -40,6 +41,8 @@ $pct = static fn(int $d, int $t): string => $t > 0 ? (string)round($d * 100 / $t
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $nonce     = $h($_SESSION['csp_nonce'] ?? '');
 $activeNav = 'home';
+$csrf      = $h($_SESSION['csrf_token'] ?? '');
+$today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -50,6 +53,7 @@ $activeNav = 'home';
 <title>Dashboard — CycleAudit</title>
 <link nonce="<?= $nonce ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/dashboard.css?v=<?= filemtime(__DIR__ . '/../css/dashboard.css') ?>">
+<link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/city_audit.css?v=<?= filemtime(__DIR__ . '/../css/city_audit.css') ?>">
 </head>
 <body>
 <?php require __DIR__ . '/partials/role_sidebar.php'; ?>
@@ -60,8 +64,50 @@ $activeNav = 'home';
       <h1>Dashboard</h1>
       <p>What needs you, and how every city is doing.</p>
     </div>
+    <button class="btn-new" id="npNewBtn" type="button">+ New Project</button>
   </div>
-  <div class="content">
+  <div class="content" id="npApp" data-csrf="<?= $csrf ?>">
+
+    <div class="card" id="npNewCard" style="display:none">
+      <div class="card-head"><h3>New project</h3></div>
+      <form id="npNewForm" class="ca-form" novalidate>
+        <div class="ca-field">
+          <label for="npCity">City *</label>
+          <select id="npCity" name="city_id">
+            <option value="">— Select a city —</option>
+            <?php foreach ($cities as $c): ?>
+              <option value="<?= (int)$c['id'] ?>" data-state="<?= $h(cityStateFor((string)$c['name']) ?? '') ?>" data-leaders="<?= (int)$c['leaders'] ?>"><?= $h($c['name']) ?></option>
+            <?php endforeach; ?>
+          </select>
+          <div class="ca-err"></div>
+          <div class="ca-hint" id="npNoLeader" style="display:none;color:#b45309">This city has no City Leader yet. Add one under Users, or nobody can add its roads.</div>
+        </div>
+        <div class="ca-field">
+          <label for="npState">State *</label>
+          <input id="npState" name="state" type="text" maxlength="100" placeholder="Fills in from the city">
+          <div class="ca-err"></div>
+        </div>
+        <div class="ca-field">
+          <label for="npName">Project name *</label>
+          <input id="npName" name="name" type="text" maxlength="150" placeholder="e.g. Pune Cycle Infrastructure Audit">
+          <div class="ca-err"></div>
+        </div>
+        <div class="ca-field">
+          <label for="npDate">Audit date *</label>
+          <input id="npDate" name="audit_date" type="date" min="2000-01-01" max="2100-12-31" value="<?= $h($today) ?>">
+          <div class="ca-err"></div>
+        </div>
+        <div class="ca-field full">
+          <label for="npInfo">Programme info</label>
+          <textarea id="npInfo" name="programme_info" maxlength="2000" placeholder="Programme, funder or scope notes (optional)"></textarea>
+          <div class="ca-err"></div>
+        </div>
+        <div class="ca-actions full">
+          <button class="ca-btn" type="submit">Create project</button>
+          <button class="ca-btn ghost" type="button" id="npNewCancel">Cancel</button>
+        </div>
+      </form>
+    </div>
 
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-icon" style="background:#fee2e2">📝</div><div><div class="stat-val"><?= count($awaiting) ?></div><div class="stat-lbl">Awaiting your approval</div></div></div>
@@ -101,7 +147,7 @@ $activeNav = 'home';
           <thead><tr><th>Audit</th><th>City</th><th>Status</th><th>Progress</th><th>Last activity</th><th></th></tr></thead>
           <tbody>
           <?php if (!$audits): ?>
-            <tr><td colspan="6" class="pd-empty">No audits yet. City Leaders create audits from their own dashboard.</td></tr>
+            <tr><td colspan="6" class="pd-empty">No audits yet. Use “+ New Project” to create the first one; the City Leader then adds its roads.</td></tr>
           <?php endif; ?>
           <?php foreach ($audits as $a):
               $p = cityDashProgress($a['done_count'], $a['segment_count']); ?>
@@ -153,6 +199,8 @@ $activeNav = 'home';
   </div>
 </main>
 <div class="sb-overlay" id="sb-overlay"></div>
+<div class="ca-toast" id="caToast"></div>
+<script nonce="<?= $nonce ?>" src="../js/admin_new_project.js?v=<?= filemtime(__DIR__ . '/../js/admin_new_project.js') ?>"></script>
 <script nonce="<?= $nonce ?>">
 const tog = document.getElementById('sb-toggle'), ovl = document.getElementById('sb-overlay'), aside = document.querySelector('aside');
 tog.addEventListener('click', () => { aside.classList.add('open'); ovl.classList.add('show'); });
