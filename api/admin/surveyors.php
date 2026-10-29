@@ -35,6 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             u.city_id,
             c.name AS city_name,
             u.organisation,
+            u.home_city,
+            u.home_state,
             u.profile_picture,
             u.is_active,
             u.last_login,

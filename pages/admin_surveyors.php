@@ -119,7 +119,7 @@ document.addEventListener('click', e => {
               <th>Name</th>
               <th>Organisation</th>
               <th>Role</th>
-              <?php if ($CURRENT_USER_ROLE === 'admin'): ?><th>City</th><?php endif; ?>
+              <?php if ($CURRENT_USER_ROLE === 'admin'): ?><th>City</th><th>Says they are in</th><?php endif; ?>
               <th>Roads Created</th>
               <th>Segments Audited</th>
               <th>Last Active</th>
@@ -207,6 +207,8 @@ document.addEventListener('click', e => {
         cityInner = s.city_name ? escapeHtml(s.city_name) : '<span class="surv-muted">&mdash;</span>';
       }
       cityCell = '<td>' + cityInner + '</td>';
+      var said = [s.home_city, s.home_state].filter(Boolean).join(', ');
+      cityCell += '<td>' + (said ? escapeHtml(said) : '<span class="surv-muted">&mdash;</span>') + '</td>';
     }
     // City Leaders may only (de)activate surveyors; the API enforces this.
     var toggleBtn = (IS_NATIONAL_ADMIN || s.role === 'surveyor')

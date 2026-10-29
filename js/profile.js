@@ -8,12 +8,6 @@ function sanitizePhoneInput(el) {
   if (v !== el.value) el.value = v;
 }
 
-// Strips anything but letters and spaces, so organisation names stay alphabetic.
-function sanitizeAlphaInput(el) {
-  const v = el.value.replace(/[^A-Za-z ]/g, '');
-  if (v !== el.value) el.value = v;
-}
-
 // ── Tab switching ──────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -45,6 +39,9 @@ async function loadProfile() {
   document.getElementById('f-name').value    = u.name    || '';
   document.getElementById('f-phone').value   = u.phone   || '';
   document.getElementById('f-org').value     = u.organisation || '';
+  document.getElementById('f-city').value    = u.home_city || '';
+  document.getElementById('f-state').value   = u.home_state || '';
+  if (window.initLocationFields) initLocationFields('f-city', 'f-state');
   document.getElementById('f-gender').value  = u.gender  || '';
   document.getElementById('f-age').value     = u.age     || '';
   document.getElementById('f-address').value = u.address || '';
@@ -77,6 +74,8 @@ async function saveProfile() {
     name:         document.getElementById('f-name').value.trim(),
     phone:        document.getElementById('f-phone').value.trim(),
     organisation: document.getElementById('f-org').value.trim(),
+    home_city:    document.getElementById('f-city').value.trim(),
+    home_state:   document.getElementById('f-state').value.trim(),
     gender:       document.getElementById('f-gender').value,
     age:          document.getElementById('f-age').value,
     address:      document.getElementById('f-address').value.trim(),

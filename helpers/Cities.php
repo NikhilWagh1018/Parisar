@@ -4,7 +4,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  helpers/Cities.php
 //  Small helpers around the `cities` table, used when a new account
-//  needs a city (the registration form).
+//  needs a city or state (registration form, profile).
 //
 //  While exactly one city exists (Parisar today: Pune), new accounts
 //  are put in it automatically and nobody is asked. Once there are
@@ -36,34 +36,25 @@ function soleCityId(PDO $pdo): ?int
 }
 
 /**
- * Work out which city a self-registering account belongs to.
- *
- *   0 cities  -> [null, null]            (nothing to assign)
- *   1 city    -> [that id, null]         (automatic, nobody is asked)
- *   2+ cities -> the posted id if it is one of them,
- *                otherwise [null, 'Please select your city.']
+ * The CycleAudit city (a row in `cities`) that matches the city a person typed
+ * at sign-up, or null when no such city has been set up yet. Spelling and case
+ * do not matter ("bangalore" finds "Bengaluru"). Null means the Admin places the
+ * person later, once the city exists.
  *
  * @param list<array{id:int, name:string}> $cities  from listCities()
- * @param mixed                            $posted  raw form value
- * @return array{0: ?int, 1: ?string}  [city id, error message]
  */
-function resolveSignupCity(array $cities, mixed $posted): array
+function signupCityId(array $cities, string $typedCity): ?int
 {
-    if (count($cities) === 0) {
-        return [null, null];
+    $want = mb_strtolower(cityCanonicalName($typedCity));
+    if ($want === '') {
+        return null;
     }
-    if (count($cities) === 1) {
-        return [$cities[0]['id'], null];
-    }
-    $id = filter_var($posted, FILTER_VALIDATE_INT);
-    if ($id !== false) {
-        foreach ($cities as $c) {
-            if ($c['id'] === $id) {
-                return [$id, null];
-            }
+    foreach ($cities as $c) {
+        if (mb_strtolower(cityCanonicalName($c['name'])) === $want) {
+            return $c['id'];
         }
     }
-    return [null, 'Please select your city.'];
+    return null;
 }
 
 /**
@@ -199,12 +190,11 @@ function cityNameIsValid(string $name): bool
 }
 
 /**
- * The id of the city with this name (case-insensitive), creating it when it does
- * not exist yet. Known alternative spellings (Bangalore) map to the usual name.
- *
- * @return array{0:int, 1:bool}  [city id, true when it was just created]
+ * The usual spelling of a city: tidied, alternative spellings mapped (Bangalore ->
+ * Bengaluru) and known cities given their listed capitalisation. Names the app does
+ * not know are only tidied.
  */
-function cityFindOrCreate(PDO $pdo, string $name): array
+function cityCanonicalName(string $name): string
 {
     $name = cityNameClean($name);
     foreach (CITY_ALIASES as $alias => $canonical) {
@@ -215,10 +205,126 @@ function cityFindOrCreate(PDO $pdo, string $name): array
     }
     foreach (indianCityList() as $known => $_) {
         if (mb_strtolower($known) === mb_strtolower($name)) {
-            $name = $known;
-            break;
+            return $known;
         }
     }
+    return $name;
+}
+
+/** All states and union territories, alphabetical (the state suggestions on forms). */
+function indianStates(): array
+{
+    $states = array_merge(array_keys(indianCitiesByState()), [
+        'Ladakh', 'Andaman and Nicobar Islands', 'Lakshadweep', 'Dadra and Nagar Haveli and Daman and Diu',
+    ]);
+    $states = array_values(array_unique($states));
+    sort($states, SORT_NATURAL | SORT_FLAG_CASE);
+    return $states;
+}
+
+/** The listed spelling of a state ("maharashtra " -> "Maharashtra"), or null when it is not a state we know. */
+function stateCanonical(string $typed): ?string
+{
+    $t = mb_strtolower(cityNameClean($typed));
+    if ($t === '') {
+        return null;
+    }
+    foreach (indianStates() as $s) {
+        if (mb_strtolower($s) === $t) {
+            return $s;
+        }
+    }
+    return null;
+}
+
+/**
+ * Check the City and State a person typed (sign-up and profile).
+ *
+ * A city from the list brings its own state, so the state field is only checked for
+ * a city we do not know, where it must be one of the states.
+ *
+ * @return array{0: ?string, 1: ?string, 2: array<string,string>}  [city, state, errors keyed 'city' / 'state'];
+ *         city and state are null when there are errors
+ */
+function validateHomeLocation(string $cityRaw, string $stateRaw): array
+{
+    $errors = [];
+    $city   = cityNameClean($cityRaw);
+    $state  = null;
+
+    if ($city === '') {
+        $errors['city'] = 'City is required.';
+    } elseif (!cityNameIsValid($city)) {
+        $errors['city'] = 'Enter a valid city name (letters only, 2–100 characters).';
+    } else {
+        $city  = cityCanonicalName($city);
+        $state = cityStateFor($city);
+        if ($state === null) {
+            if (cityNameClean($stateRaw) === '') {
+                $errors['state'] = 'State is required.';
+            } else {
+                $state = stateCanonical($stateRaw);
+                if ($state === null) {
+                    $errors['state'] = 'Choose a state from the list.';
+                }
+            }
+        }
+    }
+
+    if ($errors !== []) {
+        return [null, null, $errors];
+    }
+    return [$city, $state, []];
+}
+
+/** Organisation is required: an error message, or null when it is fine. */
+function organisationError(string $org): ?string
+{
+    $org = cityNameClean($org);
+    if ($org === '') {
+        return 'Organisation is required.';
+    }
+    $len = mb_strlen($org);
+    if ($len < 2 || $len > 200) {
+        return 'Organisation name must be 2–200 characters.';
+    }
+    if (preg_match('/\p{L}/u', $org) !== 1) {
+        return 'Organisation name must contain letters.';
+    }
+    if (strpbrk($org, '<>') !== false) {
+        return 'Organisation name cannot contain < or >.';
+    }
+    return null;
+}
+
+/**
+ * The type-ahead lists for the City and State inputs (<datalist id="cityList"> and
+ * <datalist id="stateList">). Each city option carries its state in data-state, which
+ * js/location_fields.js uses to fill the State box.
+ */
+function locationDatalistsHtml(): string
+{
+    $h = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+    $out = '<datalist id="cityList">';
+    foreach (indianCityList() as $name => $state) {
+        $out .= '<option value="' . $h($name) . '" label="' . $h($state) . '" data-state="' . $h($state) . '"></option>';
+    }
+    $out .= '</datalist><datalist id="stateList">';
+    foreach (indianStates() as $state) {
+        $out .= '<option value="' . $h($state) . '"></option>';
+    }
+    return $out . '</datalist>';
+}
+
+/**
+ * The id of the city with this name (case-insensitive), creating it when it does
+ * not exist yet. Known alternative spellings (Bangalore) map to the usual name.
+ *
+ * @return array{0:int, 1:bool}  [city id, true when it was just created]
+ */
+function cityFindOrCreate(PDO $pdo, string $name): array
+{
+    $name = cityCanonicalName($name);
     $find = $pdo->prepare('SELECT id FROM cities WHERE LOWER(name) = LOWER(?) ORDER BY id LIMIT 1');
     $find->execute([$name]);
     $id = $find->fetchColumn();

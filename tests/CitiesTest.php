@@ -41,28 +41,86 @@ class CitiesTest extends TestCase
         $this->assertNull(soleCityId($this->pdo));
     }
 
-    public function test_signup_with_no_cities_assigns_nothing(): void
+    public function test_signup_city_is_null_when_no_cities_exist_or_none_typed(): void
     {
-        $this->assertSame([null, null], resolveSignupCity([], ''));
+        $this->assertNull(signupCityId([], 'Pune'));
+        $this->addCities('Pune');
+        $this->assertNull(signupCityId(listCities($this->pdo), ''));
+        $this->assertNull(signupCityId(listCities($this->pdo), '   '));
     }
 
-    public function test_signup_with_one_city_is_automatic_and_ignores_the_form(): void
+    public function test_signup_city_matches_the_typed_name_ignoring_case_spacing_and_spelling(): void
+    {
+        $this->addCities('Pune', 'Bengaluru');
+        $cities = listCities($this->pdo);
+        $this->assertSame(1, signupCityId($cities, 'pune'));
+        $this->assertSame(1, signupCityId($cities, '  PUNE  '));
+        $this->assertSame(1, signupCityId($cities, 'Poona'));
+        $this->assertSame(2, signupCityId($cities, 'bangalore'));
+    }
+
+    public function test_signup_city_is_null_for_a_city_that_is_not_set_up_yet(): void
     {
         $this->addCities('Pune');
-        $cities = listCities($this->pdo);
-        $this->assertSame([1, null], resolveSignupCity($cities, ''));
-        $this->assertSame([1, null], resolveSignupCity($cities, '999'));
+        $this->assertNull(signupCityId(listCities($this->pdo), 'Mumbai'));
     }
 
-    public function test_signup_with_several_cities_requires_a_valid_choice(): void
+    public function test_cityCanonicalName_uses_the_listed_spelling(): void
     {
-        $this->addCities('Pune', 'Mumbai');
-        $cities = listCities($this->pdo);
-        $this->assertSame([1, null], resolveSignupCity($cities, '1'));
-        $this->assertSame([2, null], resolveSignupCity($cities, 2));
-        foreach (['', '0', '3', 'abc', '1 OR 1=1', null, [1]] as $bad) {
-            $this->assertSame([null, 'Please select your city.'], resolveSignupCity($cities, $bad));
-        }
+        $this->assertSame('Bengaluru', cityCanonicalName('bangalore'));
+        $this->assertSame('Navi Mumbai', cityCanonicalName(' navi   mumbai '));
+        $this->assertSame('Smallville', cityCanonicalName(' Smallville '));
+    }
+
+    public function test_stateCanonical_accepts_listed_states_only(): void
+    {
+        $this->assertSame('Maharashtra', stateCanonical(' maharashtra '));
+        $this->assertSame('Ladakh', stateCanonical('LADAKH'));
+        $this->assertNull(stateCanonical('Atlantis'));
+        $this->assertNull(stateCanonical(''));
+    }
+
+    public function test_home_location_for_a_known_city_brings_its_own_state(): void
+    {
+        $this->assertSame(['Pune', 'Maharashtra', []], validateHomeLocation('pune', ''));
+        $this->assertSame(['Bengaluru', 'Karnataka', []], validateHomeLocation('Bangalore', 'Goa'));
+    }
+
+    public function test_home_location_for_an_unknown_city_needs_a_listed_state(): void
+    {
+        $this->assertSame(['Smallville', 'Goa', []], validateHomeLocation('Smallville', ' goa '));
+        $this->assertSame([null, null, ['state' => 'State is required.']], validateHomeLocation('Smallville', ''));
+        $this->assertSame([null, null, ['state' => 'Choose a state from the list.']], validateHomeLocation('Smallville', 'Atlantis'));
+    }
+
+    public function test_home_location_requires_a_valid_city(): void
+    {
+        $this->assertSame([null, null, ['city' => 'City is required.']], validateHomeLocation('  ', 'Goa'));
+        [, , $e] = validateHomeLocation('<b>x</b>', 'Goa');
+        $this->assertArrayHasKey('city', $e);
+        [, , $e] = validateHomeLocation('12345', 'Goa');
+        $this->assertArrayHasKey('city', $e);
+    }
+
+    public function test_organisation_is_required_and_checked(): void
+    {
+        $this->assertSame('Organisation is required.', organisationError(''));
+        $this->assertSame('Organisation is required.', organisationError('   '));
+        $this->assertNotNull(organisationError('A'));
+        $this->assertNotNull(organisationError(str_repeat('a', 201)));
+        $this->assertNotNull(organisationError('12345'));
+        $this->assertNotNull(organisationError('<script>x</script>'));
+        $this->assertNull(organisationError('Parisar'));
+        $this->assertNull(organisationError("St. Xavier's College & Co. 2"));
+    }
+
+    public function test_location_datalists_list_every_city_with_its_state_and_every_state(): void
+    {
+        $html = locationDatalistsHtml();
+        $this->assertStringContainsString('<datalist id="cityList">', $html);
+        $this->assertStringContainsString('<datalist id="stateList">', $html);
+        $this->assertStringContainsString('value="Pune" label="Maharashtra" data-state="Maharashtra"', $html);
+        $this->assertStringContainsString('<option value="Ladakh">', $html);
     }
 
     public function test_user_city_change_accepts_only_real_cities(): void

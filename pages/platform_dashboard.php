@@ -53,11 +53,12 @@ foreach ($cities as $c) {
 uasort($pickCities, static fn(array $a, array $b): int => strcasecmp($a['name'], $b['name']));
 // Active surveyors an Admin can promote to City Leader (the page narrows them to the city).
 $leaderCandidates = $pdo->query(
-    "SELECT id, name, email, city_id FROM users WHERE is_active = 1 AND role = 'surveyor' ORDER BY name ASC, id ASC"
+    "SELECT id, name, email, city_id, home_city, home_state FROM users WHERE is_active = 1 AND role = 'surveyor' ORDER BY name ASC, id ASC"
 )->fetchAll(PDO::FETCH_ASSOC);
 $leaderCandidates = array_map(static fn(array $u): array => [
     'id' => (int)$u['id'], 'name' => (string)$u['name'], 'email' => (string)$u['email'],
     'city_id' => $u['city_id'] !== null ? (int)$u['city_id'] : null,
+    'home' => implode(', ', array_filter([(string)($u['home_city'] ?? ''), (string)($u['home_state'] ?? '')], 'strlen')),
 ], $leaderCandidates);
 $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d');
 ?>
