@@ -13,13 +13,13 @@ class CitiesTest extends TestCase
     {
         $this->pdo = new PDO('sqlite::memory:');
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $this->pdo->exec('CREATE TABLE cities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)');
+        $this->pdo->exec('CREATE TABLE cities (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, slug TEXT NOT NULL DEFAULT \'\', created_at TEXT)');
     }
 
     private function addCities(string ...$names): void
     {
         foreach ($names as $n) {
-            $this->pdo->prepare('INSERT INTO cities (name) VALUES (?)')->execute([$n]);
+            $this->pdo->prepare('INSERT INTO cities (name, slug) VALUES (?, ?)')->execute([$n, citySlug($n)]);
         }
     }
 
@@ -150,5 +150,20 @@ class CitiesTest extends TestCase
         [, $c2] = cityFindOrCreate($this->pdo, 'Some Small Town');
         $this->assertTrue($c2);
         $this->assertCount(3, listCities($this->pdo));
+    }
+
+    public function test_new_cities_get_a_unique_url_style_slug(): void
+    {
+        $this->assertSame('navi-mumbai', citySlug('Navi  Mumbai'));
+        $this->assertSame('pimpri-chinchwad', citySlug('Pimpri-Chinchwad'));
+        $this->assertSame('st-john-s-east', citySlug("St. John's (East)"));
+        $this->addCities('Pune');
+        [$id] = cityFindOrCreate($this->pdo, 'Amravati');
+        $row = $this->pdo->query("SELECT slug, created_at FROM cities WHERE id = $id")->fetch(PDO::FETCH_ASSOC);
+        $this->assertSame('amravati', $row['slug']);
+        $this->assertNotEmpty($row['created_at']);
+        // A different name with the same slug gets a numbered one.
+        $this->pdo->exec("INSERT INTO cities (name, slug) VALUES ('Some Town', 'some-town')");
+        $this->assertSame('some-town-2', citySlugUnique($this->pdo, 'Some-Town'));
     }
 }
