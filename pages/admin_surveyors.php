@@ -207,7 +207,8 @@ document.addEventListener('click', e => {
         cityInner = s.city_name ? escapeHtml(s.city_name) : '<span class="surv-muted">&mdash;</span>';
       }
       cityCell = '<td>' + cityInner + '</td>';
-      var said = [s.home_city, s.home_state].filter(Boolean).join(', ');
+      var said = (s.home_city && s.home_state && s.home_city.indexOf('(' + s.home_state + ')') !== -1)
+        ? s.home_city : [s.home_city, s.home_state].filter(Boolean).join(', ');
       cityCell += '<td>' + (said ? escapeHtml(said) : '<span class="surv-muted">&mdash;</span>') + '</td>';
     }
     // City Leaders may only (de)activate surveyors; the API enforces this.

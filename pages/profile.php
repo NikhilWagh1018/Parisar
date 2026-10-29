@@ -143,11 +143,11 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
           </div>
           <div class="field">
             <label>City *</label>
-            <input type="text" id="f-city" list="cityList" placeholder="Start typing your city" maxlength="100" autocomplete="off" required>
+            <input type="text" id="f-city" list="cityList" placeholder="Search and pick your city" maxlength="100" autocomplete="off" required>
           </div>
           <div class="field">
             <label>State *</label>
-            <input type="text" id="f-state" list="stateList" placeholder="Fills in for known cities" maxlength="100" autocomplete="off" required>
+            <input type="text" id="f-state" readonly tabindex="-1" placeholder="Fills in from your city" maxlength="100" autocomplete="off">
             <?= locationDatalistsHtml() ?>
           </div>
           <div class="field">

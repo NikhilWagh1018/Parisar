@@ -89,90 +89,189 @@ function validateUserCityChange(array $cities, string $targetRole, mixed $posted
 }
 
 /**
- * Cities an Admin can pick when creating a project, grouped by state. Names the
- * app already knew by another spelling live in CITY_ALIASES (below) and are not
- * offered twice.
+ * Cities and towns by state, from helpers/data/indian_cities.php (plain names).
  *
  * @return array<string, list<string>>  state => city names
  */
 function indianCitiesByState(): array
 {
-    return [
-        'Maharashtra'       => ['Pune', 'Mumbai', 'Nagpur', 'Nashik', 'Chhatrapati Sambhajinagar', 'Thane', 'Kolhapur', 'Solapur', 'Navi Mumbai', 'Pimpri-Chinchwad', 'Amravati', 'Satara', 'Sangli', 'Akola', 'Latur', 'Jalgaon', 'Dhule', 'Nanded', 'Ahilyanagar', 'Panvel', 'Kalyan-Dombivli', 'Vasai-Virar', 'Mira-Bhayandar', 'Ichalkaranji', 'Baramati'],
-        'Karnataka'         => ['Bengaluru', 'Mysuru', 'Hubballi', 'Dharwad', 'Mangaluru', 'Belagavi', 'Kalaburagi', 'Davanagere', 'Ballari', 'Shivamogga', 'Tumakuru', 'Udupi', 'Vijayapura'],
-        'Tamil Nadu'        => ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli', 'Erode', 'Vellore', 'Thoothukudi', 'Thanjavur', 'Tiruppur', 'Hosur', 'Kanchipuram'],
-        'Telangana'         => ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar', 'Khammam', 'Secunderabad'],
-        'Andhra Pradesh'    => ['Visakhapatnam', 'Vijayawada', 'Tirupati', 'Guntur', 'Nellore', 'Kurnool', 'Rajahmundry', 'Kakinada', 'Amaravati'],
-        'Kerala'            => ['Kochi', 'Thiruvananthapuram', 'Kozhikode', 'Thrissur', 'Kollam', 'Kannur', 'Alappuzha', 'Palakkad'],
-        'Gujarat'           => ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Gandhinagar', 'Bhavnagar', 'Jamnagar', 'Junagadh', 'Anand'],
-        'Rajasthan'         => ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Ajmer', 'Bikaner', 'Alwar', 'Bhilwara'],
-        'Delhi'             => ['Delhi', 'New Delhi'],
-        'Uttar Pradesh'     => ['Lucknow', 'Kanpur', 'Varanasi', 'Agra', 'Noida', 'Ghaziabad', 'Prayagraj', 'Meerut', 'Bareilly', 'Aligarh', 'Moradabad', 'Gorakhpur', 'Jhansi', 'Mathura'],
-        'West Bengal'       => ['Kolkata', 'Howrah', 'Siliguri', 'Durgapur', 'Asansol', 'Kharagpur'],
-        'Madhya Pradesh'    => ['Bhopal', 'Indore', 'Jabalpur', 'Gwalior', 'Ujjain', 'Sagar', 'Rewa'],
-        'Punjab'            => ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda', 'Mohali'],
-        'Haryana'           => ['Gurugram', 'Faridabad', 'Panipat', 'Ambala', 'Rohtak', 'Hisar', 'Karnal', 'Sonipat'],
-        'Bihar'             => ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Darbhanga', 'Purnia'],
-        'Odisha'            => ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Puri', 'Sambalpur', 'Berhampur'],
-        'Jharkhand'         => ['Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro Steel City', 'Hazaribagh'],
-        'Chhattisgarh'      => ['Raipur', 'Bilaspur', 'Bhilai', 'Durg', 'Korba'],
-        'Assam'             => ['Guwahati', 'Dibrugarh', 'Silchar', 'Jorhat'],
-        'Uttarakhand'       => ['Dehradun', 'Haridwar', 'Rishikesh', 'Haldwani'],
-        'Himachal Pradesh'  => ['Shimla', 'Dharamshala', 'Manali', 'Solan'],
-        'Goa'               => ['Panaji', 'Margao', 'Vasco da Gama', 'Mapusa'],
-        'Chandigarh'        => ['Chandigarh'],
-        'Jammu and Kashmir' => ['Srinagar', 'Jammu'],
-        'Puducherry'        => ['Puducherry'],
-        'Tripura'           => ['Agartala'],
-        'Meghalaya'         => ['Shillong'],
-        'Manipur'           => ['Imphal'],
-        'Sikkim'            => ['Gangtok'],
-        'Arunachal Pradesh' => ['Itanagar'],
-        'Nagaland'          => ['Kohima'],
-        'Mizoram'           => ['Aizawl'],
-    ];
+    static $data = null;
+    if ($data === null) {
+        $data = require __DIR__ . '/data/indian_cities.php';
+    }
+    return $data;
 }
 
-/** Other spellings of cities above (lookup only; not offered in the picker). */
+/**
+ * Other spellings of cities in the list, including common misspellings. Lookup only
+ * (they are not offered in the picker): "Banglore" finds "Bengaluru". A name that is
+ * itself in the list always wins over an alias. Every value must be a listed label.
+ */
 const CITY_ALIASES = [
-    'Bangalore' => 'Bengaluru', 'Mysore' => 'Mysuru', 'Gurgaon' => 'Gurugram', 'Aurangabad' => 'Chhatrapati Sambhajinagar',
-    'Ahmednagar' => 'Ahilyanagar', 'Bombay' => 'Mumbai', 'Poona' => 'Pune', 'Calcutta' => 'Kolkata', 'Madras' => 'Chennai',
-    'Trivandrum' => 'Thiruvananthapuram', 'Cochin' => 'Kochi', 'Vizag' => 'Visakhapatnam', 'Baroda' => 'Vadodara',
-    'Allahabad' => 'Prayagraj', 'Pondicherry' => 'Puducherry', 'Mangalore' => 'Mangaluru', 'Belgaum' => 'Belagavi',
+    'Bangalore' => 'Bengaluru', 'Bengalooru' => 'Bengaluru', 'Banglore' => 'Bengaluru', 'Bangalor' => 'Bengaluru',
+    'Bengalore' => 'Bengaluru', 'Banaglore' => 'Bengaluru', 'Mysore' => 'Mysuru', 'Gurgaon' => 'Gurugram',
+    'Aurangabad' => 'Chhatrapati Sambhajinagar', 'Ahmednagar' => 'Ahilyanagar', 'Ahmadnagar' => 'Ahilyanagar',
+    'Osmanabad' => 'Dharashiv', 'Bombay' => 'Mumbai', 'Mumbay' => 'Mumbai', 'Poona' => 'Pune', 'Puna' => 'Pune',
+    'Calcutta' => 'Kolkata', 'Madras' => 'Chennai', 'Trivandrum' => 'Thiruvananthapuram', 'Cochin' => 'Kochi',
+    'Quilon' => 'Kollam', 'Vizag' => 'Visakhapatnam', 'Baroda' => 'Vadodara', 'Allahabad' => 'Prayagraj',
+    'Pondicherry' => 'Puducherry', 'Mangalore' => 'Mangaluru', 'Belgaum' => 'Belagavi', 'Hubli' => 'Hubballi',
+    'Gulbarga' => 'Kalaburagi', 'Bellary' => 'Ballari', 'Bijapur' => 'Vijayapura', 'Shimoga' => 'Shivamogga',
+    'Tumkur' => 'Tumakuru', 'Tuticorin' => 'Thoothukudi', 'Trichy' => 'Tiruchirappalli', 'Pimpri Chinchwad' => 'Pimpri-Chinchwad',
 ];
 
-/** Every city the picker offers, as [name => state], sorted by name. */
-function indianCityList(): array
+/** Lower-case, single-spaced form of a name, used to compare spellings. */
+function cityKey(string $s): string
 {
+    return mb_strtolower(trim((string)preg_replace('/\s+/u', ' ', $s)));
+}
+
+/**
+ * For a name used by towns in several states, the one state whose town keeps the plain
+ * name (the well-known city). The others are labelled "Name (State)". Names not listed
+ * here, such as Bilaspur, have no plain form: everyone must pick a state.
+ */
+const CITY_PRIMARY_STATE = [
+    'hyderabad' => 'Telangana', 'kanpur' => 'Uttar Pradesh', 'aligarh' => 'Uttar Pradesh', 'udaipur' => 'Rajasthan',
+    'kota' => 'Rajasthan', 'raipur' => 'Chhattisgarh', 'srinagar' => 'Jammu and Kashmir', 'durgapur' => 'West Bengal',
+    'kharagpur' => 'West Bengal', 'nizamabad' => 'Telangana', 'vijayapura' => 'Karnataka', 'kolar' => 'Karnataka',
+    'chandrapur' => 'Maharashtra', 'chapra' => 'Bihar', 'hajipur' => 'Bihar', 'shahjahanpur' => 'Uttar Pradesh',
+    'sitapur' => 'Uttar Pradesh', 'rameswaram' => 'Tamil Nadu', 'sirsa' => 'Haryana',
+];
+
+/**
+ * Every city the picker offers, one entry per city per state.
+ *
+ * @return list<array{label:string, plain:string, state:string, shared:bool}>
+ */
+function cityEntries(): array
+{
+    static $out = null;
+    if ($out !== null) {
+        return $out;
+    }
+    $count = [];
+    foreach (indianCitiesByState() as $names) {
+        foreach ($names as $n) {
+            $count[cityKey($n)] = ($count[cityKey($n)] ?? 0) + 1;
+        }
+    }
     $out = [];
     foreach (indianCitiesByState() as $state => $names) {
         foreach ($names as $n) {
-            $out[$n] = $state;
+            $shared  = $count[cityKey($n)] > 1;
+            $primary = $shared && (CITY_PRIMARY_STATE[cityKey($n)] ?? null) === $state;
+            $out[] = [
+                'label'  => ($shared && !$primary) ? $n . ' (' . $state . ')' : $n,
+                'plain'  => $n,
+                'state'  => $state,
+                'shared' => $shared,
+            ];
         }
     }
-    ksort($out, SORT_NATURAL | SORT_FLAG_CASE);
     return $out;
 }
 
 /**
- * The state a city is in, for the New Project form (so nobody types it).
- * Lookup is case-insensitive and ignores extra spaces. Returns null for a city that
- * is not in the list, in which case the form falls back to asking for the state.
+ * Every city the picker offers, as [label => state], sorted by label. The label is
+ * what is stored as the city's name: plain for most ("Pune"), with the state for
+ * towns that share a name ("Bilaspur (Chhattisgarh)").
+ *
+ * @return array<string, string>
+ */
+function indianCityList(): array
+{
+    static $out = null;
+    if ($out === null) {
+        $out = [];
+        foreach (cityEntries() as $e) {
+            $out[$e['label']] = $e['state'];
+        }
+        uksort($out, 'strnatcasecmp');
+    }
+    return $out;
+}
+
+/**
+ * Lookup tables over the list.
+ *
+ * @return array{byLabel: array<string,string>, shared: array<string,list<string>>}
+ *         byLabel: cityKey(label) => label;  shared: cityKey(plain name) => every label with that name
+ */
+function cityIndex(): array
+{
+    static $idx = null;
+    if ($idx !== null) {
+        return $idx;
+    }
+    $idx = ['byLabel' => [], 'shared' => []];
+    foreach (cityEntries() as $e) {
+        $idx['byLabel'][cityKey($e['label'])] = $e['label'];
+        if ($e['shared']) {
+            $idx['shared'][cityKey($e['plain'])][] = $e['label'];
+        }
+    }
+    foreach ($idx['shared'] as &$labels) {
+        sort($labels, SORT_NATURAL | SORT_FLAG_CASE);
+    }
+    return $idx;
+}
+
+/**
+ * Match what a person typed against the list.
+ *
+ * Finds an exact label (case and spacing ignored), a name that is unique to one state,
+ * or an alias ("Bangalore"). A shared name ("Bilaspur") is resolved only when the state
+ * hint singles one out; otherwise the choices are returned so the form can ask.
+ *
+ * @return array{0: ?string, 1: ?string, 2: list<string>}  [label, state, choices when ambiguous]
+ */
+function cityResolve(string $typed, string $stateHint = ''): array
+{
+    $key = cityKey($typed);
+    if ($key === '') {
+        return [null, null, []];
+    }
+    $list = indianCityList();
+    $idx  = cityIndex();
+    if (isset($idx['byLabel'][$key])) {
+        $label = $idx['byLabel'][$key];
+        return [$label, $list[$label], []];
+    }
+    $alias = null;
+    foreach (CITY_ALIASES as $a => $canonical) {
+        if (cityKey($a) === $key) {
+            $alias = $idx['byLabel'][cityKey($canonical)] ?? null;
+            break;
+        }
+    }
+    if (isset($idx['shared'][$key])) {
+        $choices = $idx['shared'][$key];
+        $st = stateCanonical($stateHint);
+        if ($st !== null) {
+            foreach ($choices as $label) {
+                if ($list[$label] === $st) {
+                    return [$label, $st, []];
+                }
+            }
+        }
+        if ($alias !== null) {
+            $choices[] = $alias;
+        }
+        return [null, null, $choices];
+    }
+    if ($alias !== null) {
+        return [$alias, $list[$alias], []];
+    }
+    return [null, null, []];
+}
+
+/**
+ * The state a city is in, so nobody types it. Null for a name not in the list or a
+ * shared name that does not say which state ("Bilaspur").
  */
 function cityStateFor(string $cityName): ?string
 {
-    static $map = null;
-    if ($map === null) {
-        $map = [];
-        foreach (indianCityList() as $n => $state) {
-            $map[mb_strtolower($n)] = $state;
-        }
-        foreach (CITY_ALIASES as $alias => $canonical) {
-            $map[mb_strtolower($alias)] = $map[mb_strtolower($canonical)] ?? null;
-        }
-    }
-    $key = mb_strtolower(trim((string)preg_replace('/\s+/u', ' ', $cityName)));
-    return $map[$key] ?? null;
+    return cityResolve($cityName)[1];
 }
 
 /** Tidy a typed city name: trim, collapse spaces. */
@@ -190,34 +289,20 @@ function cityNameIsValid(string $name): bool
 }
 
 /**
- * The usual spelling of a city: tidied, alternative spellings mapped (Bangalore ->
- * Bengaluru) and known cities given their listed capitalisation. Names the app does
- * not know are only tidied.
+ * The listed label of a city: tidied, alternative spellings mapped (Bangalore ->
+ * Bengaluru) and known cities given their listed capitalisation. A name that is not
+ * in the list (or is ambiguous) is only tidied.
  */
 function cityCanonicalName(string $name): string
 {
     $name = cityNameClean($name);
-    foreach (CITY_ALIASES as $alias => $canonical) {
-        if (mb_strtolower($alias) === mb_strtolower($name)) {
-            $name = $canonical;
-            break;
-        }
-    }
-    foreach (indianCityList() as $known => $_) {
-        if (mb_strtolower($known) === mb_strtolower($name)) {
-            return $known;
-        }
-    }
-    return $name;
+    return cityResolve($name)[0] ?? $name;
 }
 
-/** All states and union territories, alphabetical (the state suggestions on forms). */
+/** All states and union territories in the city list, alphabetical. */
 function indianStates(): array
 {
-    $states = array_merge(array_keys(indianCitiesByState()), [
-        'Ladakh', 'Andaman and Nicobar Islands', 'Lakshadweep', 'Dadra and Nagar Haveli and Daman and Diu',
-    ]);
-    $states = array_values(array_unique($states));
+    $states = array_keys(indianCitiesByState());
     sort($states, SORT_NATURAL | SORT_FLAG_CASE);
     return $states;
 }
@@ -238,43 +323,27 @@ function stateCanonical(string $typed): ?string
 }
 
 /**
- * Check the City and State a person typed (sign-up and profile).
+ * Check the City a person chose (sign-up and profile). The city must be in the list;
+ * its state comes from the list, never from what was typed. The posted state is used
+ * only to pick between towns that share a name ("Bilaspur" + "Haryana").
  *
- * A city from the list brings its own state, so the state field is only checked for
- * a city we do not know, where it must be one of the states.
- *
- * @return array{0: ?string, 1: ?string, 2: array<string,string>}  [city, state, errors keyed 'city' / 'state'];
+ * @return array{0: ?string, 1: ?string, 2: array<string,string>}  [city label, state, errors keyed 'city'];
  *         city and state are null when there are errors
  */
 function validateHomeLocation(string $cityRaw, string $stateRaw): array
 {
-    $errors = [];
-    $city   = cityNameClean($cityRaw);
-    $state  = null;
-
+    $city = cityNameClean($cityRaw);
     if ($city === '') {
-        $errors['city'] = 'City is required.';
-    } elseif (!cityNameIsValid($city)) {
-        $errors['city'] = 'Enter a valid city name (letters only, 2–100 characters).';
-    } else {
-        $city  = cityCanonicalName($city);
-        $state = cityStateFor($city);
-        if ($state === null) {
-            if (cityNameClean($stateRaw) === '') {
-                $errors['state'] = 'State is required.';
-            } else {
-                $state = stateCanonical($stateRaw);
-                if ($state === null) {
-                    $errors['state'] = 'Choose a state from the list.';
-                }
-            }
-        }
+        return [null, null, ['city' => 'City is required.']];
     }
-
-    if ($errors !== []) {
-        return [null, null, $errors];
+    [$label, $state, $choices] = cityResolve($city, $stateRaw);
+    if ($label === null || $state === null) {
+        $msg = $choices !== []
+            ? 'More than one place has that name. Pick one from the list: ' . implode(', ', array_slice($choices, 0, 6)) . '.'
+            : 'Pick your city from the list. If it is not there, ask a Parisar admin to add it.';
+        return [null, null, ['city' => $msg]];
     }
-    return [$city, $state, []];
+    return [$label, $state, []];
 }
 
 /** Organisation is required: an error message, or null when it is fine. */
@@ -298,20 +367,21 @@ function organisationError(string $org): ?string
 }
 
 /**
- * The type-ahead lists for the City and State inputs (<datalist id="cityList"> and
- * <datalist id="stateList">). Each city option carries its state in data-state, which
- * js/location_fields.js uses to fill the State box.
+ * The search list for the City input (<datalist id="cityList">). Each option's value is
+ * the city label and carries its state in data-state, which js/location_fields.js uses
+ * to fill the State box. data-aliases holds the alternative spellings (Bangalore ->
+ * Bengaluru) so the form can correct them on the spot.
  */
 function locationDatalistsHtml(): string
 {
     $h = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
-    $out = '<datalist id="cityList">';
-    foreach (indianCityList() as $name => $state) {
-        $out .= '<option value="' . $h($name) . '" label="' . $h($state) . '" data-state="' . $h($state) . '"></option>';
+    $aliases = [];
+    foreach (CITY_ALIASES as $a => $canonical) {
+        $aliases[cityKey($a)] = $canonical;
     }
-    $out .= '</datalist><datalist id="stateList">';
-    foreach (indianStates() as $state) {
-        $out .= '<option value="' . $h($state) . '"></option>';
+    $out = '<datalist id="cityList" data-aliases="' . $h((string)json_encode($aliases, JSON_UNESCAPED_UNICODE)) . '">';
+    foreach (indianCityList() as $label => $state) {
+        $out .= '<option value="' . $h($label) . '" data-state="' . $h($state) . '"></option>';
     }
     return $out . '</datalist>';
 }

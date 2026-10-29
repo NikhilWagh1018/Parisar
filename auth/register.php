@@ -281,14 +281,14 @@ function fc(string $k, array $e): string
           <label for="inp-city">City <span style="color:var(--red)">*</span></label>
           <input type="text" name="city" id="inp-city" list="cityList"
                  value="<?= htmlspecialchars($_POST['city'] ?? '') ?>"
-                 placeholder="Start typing your city" maxlength="100" autocomplete="off">
+                 placeholder="Search and pick your city" maxlength="100" autocomplete="off">
           <?= fe('city', $errors) ?>
         </div>
         <div class="form-group<?= fc('state', $errors) ?>">
           <label for="inp-state">State <span style="color:var(--red)">*</span></label>
-          <input type="text" name="state" id="inp-state" list="stateList"
+          <input type="text" name="state" id="inp-state" readonly tabindex="-1"
                  value="<?= htmlspecialchars($_POST['state'] ?? '') ?>"
-                 placeholder="Fills in for known cities" maxlength="100" autocomplete="off">
+                 placeholder="Fills in from your city" maxlength="100" autocomplete="off">
           <?= fe('state', $errors) ?>
         </div>
       </div>

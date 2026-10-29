@@ -86,11 +86,49 @@ class CitiesTest extends TestCase
         $this->assertSame(['Bengaluru', 'Karnataka', []], validateHomeLocation('Bangalore', 'Goa'));
     }
 
-    public function test_home_location_for_an_unknown_city_needs_a_listed_state(): void
+    public function test_home_location_rejects_a_city_that_is_not_in_the_list(): void
     {
-        $this->assertSame(['Smallville', 'Goa', []], validateHomeLocation('Smallville', ' goa '));
-        $this->assertSame([null, null, ['state' => 'State is required.']], validateHomeLocation('Smallville', ''));
-        $this->assertSame([null, null, ['state' => 'Choose a state from the list.']], validateHomeLocation('Smallville', 'Atlantis'));
+        $msg = 'Pick your city from the list. If it is not there, ask a Parisar admin to add it.';
+        $this->assertSame([null, null, ['city' => $msg]], validateHomeLocation('Smallville', 'Goa'));
+        // A misspelling that is not a known alias is rejected too, so no stray spellings are stored.
+        $this->assertSame([null, null, ['city' => $msg]], validateHomeLocation('Punee', ''));
+    }
+
+    public function test_home_location_uses_the_list_state_not_the_posted_one(): void
+    {
+        $this->assertSame(['Pune', 'Maharashtra', []], validateHomeLocation('Pune', 'Goa'));
+    }
+
+    public function test_shared_names_need_their_state(): void
+    {
+        [$c, $s, $e] = validateHomeLocation('Bilaspur', '');
+        $this->assertNull($c);
+        $this->assertStringContainsString('Bilaspur (Chhattisgarh)', $e['city']);
+        $this->assertSame(['Bilaspur (Haryana)', 'Haryana', []], validateHomeLocation('Bilaspur', 'haryana'));
+        $this->assertSame(['Bilaspur (Himachal Pradesh)', 'Himachal Pradesh', []], validateHomeLocation('bilaspur (himachal pradesh)', ''));
+        // The well-known city keeps the plain name; the namesake carries its state.
+        $this->assertSame(['Hyderabad', 'Telangana', []], validateHomeLocation('Hyderabad', ''));
+        $this->assertSame(['Hyderabad (Uttar Pradesh)', 'Uttar Pradesh', []], validateHomeLocation('Hyderabad (Uttar Pradesh)', ''));
+    }
+
+    public function test_city_list_has_no_duplicate_labels_and_aliases_point_at_listed_cities(): void
+    {
+        $entries = cityEntries();
+        $labels = array_map(static fn(array $e): string => cityKey($e['label']), $entries);
+        $this->assertSame(count($labels), count(array_unique($labels)));
+        foreach (CITY_ALIASES as $alias => $canonical) {
+            $this->assertArrayHasKey(cityKey($canonical), cityIndex()['byLabel'], $alias);
+        }
+        foreach (CITY_PRIMARY_STATE as $plain => $state) {
+            $this->assertArrayHasKey($plain, cityIndex()['shared'], $plain);
+        }
+    }
+
+    public function test_common_misspellings_are_corrected(): void
+    {
+        foreach (['Banglore', 'banaglore', 'Bengalooru', 'Bangalore'] as $typed) {
+            $this->assertSame(['Bengaluru', 'Karnataka', []], validateHomeLocation($typed, ''), $typed);
+        }
     }
 
     public function test_home_location_requires_a_valid_city(): void
@@ -117,10 +155,11 @@ class CitiesTest extends TestCase
     public function test_location_datalists_list_every_city_with_its_state_and_every_state(): void
     {
         $html = locationDatalistsHtml();
-        $this->assertStringContainsString('<datalist id="cityList">', $html);
-        $this->assertStringContainsString('<datalist id="stateList">', $html);
-        $this->assertStringContainsString('value="Pune" label="Maharashtra" data-state="Maharashtra"', $html);
-        $this->assertStringContainsString('<option value="Ladakh">', $html);
+        $this->assertStringContainsString('<datalist id="cityList"', $html);
+        $this->assertStringContainsString('data-aliases=', $html);
+        $this->assertStringContainsString('value="Pune" data-state="Maharashtra"', $html);
+        $this->assertStringContainsString('value="Bilaspur (Haryana)" data-state="Haryana"', $html);
+        $this->assertStringNotContainsString('value="Bilaspur"', $html);
     }
 
     public function test_user_city_change_accepts_only_real_cities(): void
@@ -176,7 +215,9 @@ class CitiesTest extends TestCase
     public function test_alternative_spellings_find_the_same_state(): void
     {
         $this->assertSame('Karnataka', cityStateFor('Bangalore'));
-        $this->assertSame('Maharashtra', cityStateFor('aurangabad'));
+        $this->assertSame('Maharashtra', cityStateFor('Ahmednagar'));
+        // "Aurangabad" is also a town in three other states, so it needs the state.
+        $this->assertNull(cityStateFor('aurangabad'));
         $this->assertNull(cityStateFor('Nowhereville'));
     }
 
