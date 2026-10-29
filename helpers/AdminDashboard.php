@@ -163,8 +163,8 @@ function adminAttentionItems(array $awaiting, array $stalled, int $roadsToVerify
         $items[] = [
             'tone'   => 'warn',
             'title'  => (string)$c['name'] . ' has no City Leader',
-            'detail' => 'Nobody can start audits there until a City Leader is assigned.',
-            'href'   => 'admin_surveyors.php',
+            'detail' => 'Nobody can add roads or assign surveyors there until a City Leader is assigned.',
+            'href'   => 'platform_dashboard.php?assign_leader=' . (int)$c['id'] . '#npCities',
             'cta'    => 'Assign',
         ];
     }

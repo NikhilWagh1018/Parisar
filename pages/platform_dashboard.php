@@ -53,6 +53,14 @@ foreach ($cities as $c) {
                        'state' => cityStateFor((string)$c['name']) ?? ($pickCities[$k]['state'] ?? ''), 'leaders' => (int)$c['leaders']];
 }
 uasort($pickCities, static fn(array $a, array $b): int => strcasecmp($a['name'], $b['name']));
+// Active surveyors an Admin can promote to City Leader (the page narrows them to the city).
+$leaderCandidates = $pdo->query(
+    "SELECT id, name, email, city_id FROM users WHERE is_active = 1 AND role = 'surveyor' ORDER BY name ASC, id ASC"
+)->fetchAll(PDO::FETCH_ASSOC);
+$leaderCandidates = array_map(static fn(array $u): array => [
+    'id' => (int)$u['id'], 'name' => (string)$u['name'], 'email' => (string)$u['email'],
+    'city_id' => $u['city_id'] !== null ? (int)$u['city_id'] : null,
+], $leaderCandidates);
 $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d');
 ?>
 <!DOCTYPE html>
@@ -77,7 +85,7 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
     </div>
     <button class="btn-new" id="npNewBtn" type="button">+ New Project</button>
   </div>
-  <div class="content" id="npApp" data-csrf="<?= $csrf ?>">
+  <div class="content" id="npApp" data-csrf="<?= $csrf ?>" data-candidates="<?= $h(json_encode($leaderCandidates, JSON_UNESCAPED_UNICODE)) ?>" data-assign-city="<?= (int)($_GET['assign_leader'] ?? 0) ?>">
 
     <div class="card" id="npNewCard" style="display:none">
       <div class="card-head"><h3>New project</h3></div>
@@ -107,6 +115,11 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
           <label for="npDate">Audit date *</label>
           <input id="npDate" name="audit_date" type="date" min="2000-01-01" max="2100-12-31" value="<?= $h($today) ?>">
           <div class="ca-err"></div>
+        </div>
+        <div class="ca-field full" id="npLeaderWrap" style="display:none">
+          <label for="npLeader">City Leader (optional)</label>
+          <select id="npLeader" name="leader_user_id"><option value="">— Assign later —</option></select>
+          <div class="ca-hint">This city has no City Leader yet. Pick a surveyor from the city to make them its City Leader.</div>
         </div>
         <div class="ca-field full">
           <label for="npInfo">Programme info</label>
@@ -181,7 +194,7 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="npCities">
       <div class="card-head">
         <h3>Cities</h3>
         <a href="admin_surveyors.php">Manage users →</a>
@@ -200,7 +213,7 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
               <td><?= (int)$c['surveyors'] ?></td>
               <td><?= (int)$c['road_groups'] ?></td>
               <td><?= $h($pct($c['done'], $c['segs'])) ?> <span class="pd-sub"><?= (int)$c['done'] ?> of <?= (int)$c['segs'] ?></span></td>
-              <td><a class="pd-link" href="city_dashboard.php?city_id=<?= (int)$c['id'] ?>">Open →</a></td>
+              <td class="pd-nowrap"><?php if ($c['leaders'] === 0): ?><button type="button" class="pd-link npAssign" data-city="<?= (int)$c['id'] ?>" data-name="<?= $h($c['name']) ?>">Assign City Leader</button> · <?php endif; ?><a class="pd-link" href="city_dashboard.php?city_id=<?= (int)$c['id'] ?>">Open →</a></td>
             </tr>
           <?php endforeach; ?>
           </tbody>
