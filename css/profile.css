@@ -61,7 +61,6 @@ main { margin-left:var(--sw); flex:1; display:flex; flex-direction:column; min-h
 .hero-badges { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
 .badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:.75rem; font-weight:600; }
 .badge-role { background:var(--gp); color:var(--gd); }
-.badge-provider { background:#f0f4ff; color:#3730a3; }
 .badge-verified { background:#d1fae5; color:#065f46; }
 .badge-unverified { background:var(--amber-pale); color:var(--amber); }
 

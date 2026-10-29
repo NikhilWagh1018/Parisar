@@ -4,8 +4,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  helpers/Cities.php
 //  Small helpers around the `cities` table, used when a new account
-//  needs a city (registration form, Google sign-up, "choose your
-//  city" page).
+//  needs a city (the registration form).
 //
 //  While exactly one city exists (Parisar today: Pune), new accounts
 //  are put in it automatically and nobody is asked. Once there are

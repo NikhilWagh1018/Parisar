@@ -106,7 +106,6 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
         <div class="hero-email" id="hero-email">Loading…</div>
         <div class="hero-badges">
           <span class="badge badge-role" id="hero-role"><?= htmlspecialchars(roleLabel($CURRENT_USER_ROLE)) ?></span>
-          <span class="badge badge-provider" id="hero-provider">—</span>
           <span class="badge" id="hero-verified">—</span>
         </div>
       </div>

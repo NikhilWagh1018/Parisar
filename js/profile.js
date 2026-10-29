@@ -54,9 +54,6 @@ async function loadProfile() {
   document.getElementById('hero-name').textContent  = u.name;
   document.getElementById('hero-email').textContent = u.email;
 
-  const provBadge = document.getElementById('hero-provider');
-  provBadge.textContent = u.auth_provider === 'google' ? '🔵 Google' : '🔑 Local';
-
   const verBadge = document.getElementById('hero-verified');
   if (u.email_verified == 1) {
     verBadge.textContent = '✓ Verified';
@@ -64,13 +61,6 @@ async function loadProfile() {
   } else {
     verBadge.textContent = '⚠ Unverified';
     verBadge.className   = 'badge badge-unverified';
-  }
-
-  // Disable email/password cards for Google users
-  if (u.auth_provider === 'google') {
-    const note = '<div style="font-size:.84rem;color:var(--gray);padding:8px 0">Your account uses Google Sign-In. Email and password changes are managed through Google.</div>';
-    document.getElementById('card-email').innerHTML    = '<div class="card-title">Email & Password</div>' + note;
-    const pwCard = document.getElementById('card-password'); pwCard.innerHTML = ''; pwCard.style.display = 'none';
   }
 }
 loadProfile();

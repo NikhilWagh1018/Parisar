@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  auth/logout.php
-//  Destroys the session cleanly for both local and Google users.
+//  Destroys the session cleanly.
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/constants.php';

@@ -76,7 +76,7 @@ Parisar audits the quality of cycling infrastructure across Pune. CycleAudit rep
 - Public landing page with live stats
 
 **Accounts and administration**
-- Email and password sign-up, plus **Google OAuth** sign-in
+- Email and password sign-up and sign-in
 - Role-based access control: Admin, City Leader, Surveyor
 - Admin dashboard, road manager, surveyor manager (activate or deactivate accounts), activity log
 - Excel exports of users and roads for admins
@@ -126,7 +126,7 @@ Road scores are **length-weighted** across their segments and are computed with 
 | Frontend | Vanilla JavaScript, HTML, CSS |
 | Maps | Leaflet |
 | Reports | mPDF (PDF), PhpSpreadsheet (Excel) |
-| Auth | PHP sessions, `password_hash` / `password_verify`, Google OAuth 2.0 |
+| Auth | PHP sessions, `password_hash` / `password_verify` |
 | Config | `vlucas/phpdotenv` for local `.env`, environment variables in production |
 | Testing | PHPUnit 10 |
 | CI | GitHub Actions (PHP lint + PHPUnit on PHP 8.3) |
@@ -150,7 +150,7 @@ Parisar/
 │   ├── roads/, segments/, audit-sessions/
 │   ├── reports/             #   PDF and Excel export
 │   ├── user/, admin/, leaderboard/, dashboard/, public/
-├── auth/                    # login, register, logout, Google callback
+├── auth/                    # login, register, logout
 ├── config/                  # db, constants, guards, permissions, rate limiting, error handler
 ├── services/                # ScoreService, ScoreHelpers, IdGenerator
 ├── repositories/            # Road, Segment, AuditSession data access
@@ -173,7 +173,7 @@ Core tables created by `migrations/000_initial_schema.sql`:
 
 | Table | Purpose |
 | --- | --- |
-| `users` | Accounts, role, auth provider (local or Google), profile picture |
+| `users` | Accounts, role, profile picture |
 | `roads` | A road to audit: name (unique), endpoints, GPS, length, segmentation method, `finalized_at` |
 | `segments` | Slices of a road with distances and a pending or completed status |
 | `audit_sessions` | One surveyor's audit run over a road (active, completed, abandoned) |
@@ -229,11 +229,8 @@ Settings are read from environment variables first, then a local `.env` (via php
 | `MYSQLUSER` / `DB_USER` | Database user | `root` |
 | `MYSQLPASSWORD` / `DB_PASS` | Database password | empty |
 | `BASE_URL` | Public URL of the app | `http://localhost/Parisar` |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID | empty |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | empty |
-| `GOOGLE_REDIRECT_URI` | OAuth callback URL | `BASE_URL/auth/google_callback.php` |
 
-The `MYSQL*` names are the ones Railway injects, so the same code runs locally and in production. To enable Google sign-in, create an OAuth client in Google Cloud Console and add `.../auth/google_callback.php` as an authorised redirect URI.
+The `MYSQL*` names are the ones Railway injects, so the same code runs locally and in production.
 
 `env.example` documents the variables used by the backup job (see [Backups](#backups)).
 
@@ -258,7 +255,7 @@ CycleAudit is containerised and runs on **Railway**, with a managed MySQL servic
 **To deploy your own copy:**
 
 1. Create a Railway project, add a MySQL service, and connect this repository.
-2. Set `BASE_URL` and the Google OAuth variables on the web service.
+2. Set `BASE_URL` on the web service.
 3. Run the SQL migrations against the Railway MySQL instance.
 4. Point a health check at `/health.php`.
 

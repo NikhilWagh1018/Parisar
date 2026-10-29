@@ -30,7 +30,7 @@ function json_out(bool $ok, array $data = [], string $error = ''): never
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $stmt = $pdo->prepare(
         'SELECT public_id, name, email, phone, organisation, gender, age,
-                address, role, auth_provider, profile_picture, email_verified,
+                address, role, profile_picture, email_verified,
                 last_login, created_at
          FROM users WHERE id = ? LIMIT 1'
     );
@@ -116,11 +116,6 @@ if ($action === 'update_profile') {
 
 // ── Action: update_email ───────────────────────────────────────
 if ($action === 'update_email') {
-    // Google users cannot change email
-    if ($CURRENT_USER_AUTH === 'google') {
-        json_out(false, error: 'Google-linked accounts cannot change their email here.');
-    }
-
     $newEmail = trim(filter_var($body['email'] ?? '', FILTER_SANITIZE_EMAIL));
     $password = $body['password'] ?? '';
 
@@ -165,10 +160,6 @@ if ($action === 'update_email') {
 
 // ── Action: change_password ────────────────────────────────────
 if ($action === 'change_password') {
-    if ($CURRENT_USER_AUTH === 'google') {
-        json_out(false, error: 'Google-linked accounts cannot set a password here.');
-    }
-
     $current = $body['current_password'] ?? '';
     $new     = $body['new_password']     ?? '';
     $confirm = $body['confirm_password'] ?? '';
