@@ -46,7 +46,7 @@ class CityLeaderAssignTest extends TestCase
 
     public function test_the_no_leader_alert_points_at_the_assign_picker(): void
     {
-        $items = adminAttentionItems([], [], 0, [['id' => 7, 'name' => 'Yavatmal']]);
+        $items = adminAttentionItems([], [], [['id' => 7, 'name' => 'Yavatmal']]);
         $this->assertSame('Yavatmal has no City Leader', $items[0]['title']);
         $this->assertSame('platform_dashboard.php?assign_leader=7#npCities', $items[0]['href']);
         $this->assertStringContainsString('add roads', $items[0]['detail']);

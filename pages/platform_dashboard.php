@@ -22,7 +22,6 @@ $dash     = new AdminDashboardRepository($pdo);
 $cities   = $dash->cities();
 $audits   = adminSortAudits($dash->audits());
 $awaiting = (new AuditReviewRepository($pdo))->awaitingApproval();
-$toVerify = $dash->roadsToVerifyCount();
 
 $segs = $done = 0;
 foreach ($cities as $c) {
@@ -33,7 +32,6 @@ $inProgress = count(array_filter($audits, static fn(array $a): bool => in_array(
 $attention  = adminAttentionItems(
     $awaiting,
     adminStalledAudits($audits, new DateTimeImmutable('now', new DateTimeZone('UTC'))),
-    $toVerify,
     adminCitiesWithoutLeader($cities)
 );
 $pct = static fn(int $d, int $t): string => $t > 0 ? (string)round($d * 100 / $t) . '%' : '—';
@@ -136,7 +134,7 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-icon" style="background:#fee2e2">📝</div><div><div class="stat-val"><?= count($awaiting) ?></div><div class="stat-lbl">Awaiting your approval</div></div></div>
       <div class="stat-card"><div class="stat-icon" style="background:#dbeafe">🛠️</div><div><div class="stat-val"><?= $inProgress ?></div><div class="stat-lbl">Audits in progress</div></div></div>
-      <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">🛣️</div><div><div class="stat-val"><?= $toVerify ?></div><div class="stat-lbl">Roads to verify</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">🏙️</div><div><div class="stat-val"><?= count($cities) ?></div><div class="stat-lbl">Cities</div></div></div>
       <div class="stat-card"><div class="stat-icon" style="background:#dcfce7">✅</div><div><div class="stat-val"><?= $pct($done, $segs) ?></div><div class="stat-lbl">Segments done</div></div></div>
     </div>
 

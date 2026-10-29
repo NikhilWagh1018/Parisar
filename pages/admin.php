@@ -3,19 +3,23 @@ declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
 //  pages/admin.php  (v4 — UI polish pass)
-//  Roads admin page — admin-only. Add/Delete only (no verify/flag,
-//  removed in v3). This pass restyles the page: a search filter, a
-//  roads/segments summary line, badge-style counts, and a redesigned
-//  delete confirmation panel — no behavior or API contract changes.
+//  Roads page — City Leader only. A City Leader keeps the list of roads
+//  in their own city; an audit's "Add a road" picker reads from it.
+//  Admins do not manage roads (they are sent to their dashboard).
+//  A road can be deleted only while no audit uses it.
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../config/constants.php';
-require_once __DIR__ . '/../helpers/Cities.php';
+
+// Roads belong to City Leaders. An Admin has no city and no road list.
+if ($CURRENT_USER_ROLE !== 'city_leader') {
+    header('Location: ' . roleHomePage($CURRENT_USER_ROLE));
+    exit;
+}
 
 $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
-$cities   = listCities($pdo);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -250,18 +254,10 @@ document.addEventListener('click', e => {
   <div style="padding: 0 4px 4px;">
     <div class="info-banner">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      <span>Every road here is public. Click a road name to see who created each underlying entry. Deleting a road removes it and any audit entries under it — you'll be asked to type its name to confirm.</span>
+      <span>These are the roads of your city. Add a road here, then add it to an audit from your City Dashboard. A road can be deleted only while it is not part of any audit; you'll be asked to type its name to confirm.</span>
     </div>
 
     <div class="add-road-form" id="addRoadForm">
-      <?php if ($CURRENT_USER_ROLE === 'admin' && count($cities) > 1): ?>
-      <select id="addRoadCity" aria-label="City for the new road">
-        <option value="">Select city&hellip;</option>
-        <?php foreach ($cities as $c): ?>
-        <option value="<?= (int)$c['id'] ?>"><?= htmlspecialchars($c['name']) ?></option>
-        <?php endforeach; ?>
-      </select>
-      <?php endif; ?>
       <input type="text" id="addRoadInput" placeholder="Road name (e.g. KOTHRUD ROAD)" maxlength="255">
       <button class="action-btn" id="addRoadSubmit" style="background:var(--g);color:#fff;border-color:var(--g);">Add</button>
       <button class="text-link-btn" id="addRoadCancel">Cancel</button>
@@ -292,9 +288,7 @@ document.addEventListener('click', e => {
   </div>
 </main>
 
-<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';
-const IS_NATIONAL_ADMIN = <?= $CURRENT_USER_ROLE === 'admin' ? 'true' : 'false' ?>;
-const CITIES = <?= json_encode($cities, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">const CSRF = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';</script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
 (function () {
   'use strict';
@@ -398,12 +392,6 @@ const CITIES = <?= json_encode($cities, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_A
     segPill.textContent = group.total_segments + ' segments';
     countsEl.appendChild(entryPill);
     countsEl.appendChild(segPill);
-    if (IS_NATIONAL_ADMIN && CITIES.length > 1 && group.city_name) {
-      var cityPill = document.createElement('span');
-      cityPill.className = 'count-pill';
-      cityPill.textContent = group.city_name;
-      countsEl.appendChild(cityPill);
-    }
 
     left.appendChild(chev);
     left.appendChild(nameEl);
@@ -471,12 +459,10 @@ const CITIES = <?= json_encode($cities, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_A
 
     // Default state: just a Delete affordance. Clicking it opens a danger
     // panel below the row with a type-to-confirm control instead of a
-    // browser confirm() — deletion here removes any real audit entries
-    // under the road too, so it needs a deliberate, hard-to-fat-finger step.
-    // Admin-only (confirmed scope) — a city_leader doesn't get this button
-    // at all, rather than seeing one that would just 403 on click.
+    // browser confirm(). Only a road that no audit uses can be deleted, so
+    // a road with entries gets no button (the server refuses it as well).
     var deleteBtn = null;
-    if (IS_NATIONAL_ADMIN) {
+    if (group.entry_count === 0) {
       deleteBtn = document.createElement('button');
       deleteBtn.className = 'del-btn';
       deleteBtn.innerHTML = TRASH_ICON + '<span>Delete</span>';
@@ -493,9 +479,6 @@ const CITIES = <?= json_encode($cities, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_A
     var panelMsg = document.createElement('div');
     panelMsg.className = 'del-panel-msg';
     panelMsg.innerHTML = WARN_ICON + '<span>' +
-      (group.entry_count > 0
-        ? 'This also removes <b>' + escapeHtml(group.entry_count) + ' audit ' + (group.entry_count === 1 ? 'entry' : 'entries') + '</b> under this road. '
-        : '') +
       'This cannot be undone. Type <b>' + escapeHtml(group.name) + '</b> to confirm.</span>';
 
     var panelRow = document.createElement('div');
@@ -508,7 +491,7 @@ const CITIES = <?= json_encode($cities, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_A
 
     var confirmBtn = document.createElement('button');
     confirmBtn.className = 'del-confirm-btn';
-    confirmBtn.textContent = group.entry_count > 0 ? 'Delete road + entries' : 'Delete road';
+    confirmBtn.textContent = 'Delete road';
     confirmBtn.disabled = true;
 
     var confirmCancel = document.createElement('button');
@@ -616,7 +599,7 @@ const CITIES = <?= json_encode($cities, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_A
         emptyMsgSub.textContent = 'Try a different search, or clear it to see all roads.';
       } else {
         emptyMsgText.textContent = 'No roads yet.';
-        emptyMsgSub.textContent = 'Add the first road to get started.';
+        emptyMsgSub.textContent = 'Add the roads of your city here; then add them to an audit from your City Dashboard.';
       }
     }
     visible.forEach(function (g) {
@@ -660,15 +643,6 @@ const CITIES = <?= json_encode($cities, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_A
       return;
     }
     var payload = { action: 'create', name: name };
-    var cityEl = document.getElementById('addRoadCity');
-    if (cityEl) {
-      if (!cityEl.value) {
-        addRoadMsg.textContent = 'Choose a city.';
-        addRoadMsg.className = 'add-road-msg err';
-        return;
-      }
-      payload.city_id = parseInt(cityEl.value, 10);
-    }
     addRoadSubmit.disabled = true;
     addRoadMsg.textContent = 'Adding\u2026';
     fetch('../api/admin/roads.php', {

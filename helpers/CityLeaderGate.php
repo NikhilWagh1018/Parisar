@@ -25,6 +25,12 @@ const CITY_LEADER_ALLOWED_SCRIPTS = [
     'pages/city_audit_report_detail.php',
     'pages/profile.php',
     'api/user/profile.php',
+    // Roads: the City Leader keeps their city's road list (the roads an
+    // audit can use), so this page and its APIs are theirs, not the Admin's.
+    'pages/admin.php',
+    'api/admin/roads.php',
+    'api/admin/export-roads.php',
+    'api/reports/export-city-excel.php',
 ];
 
 function cityLeaderNormalize(string $scriptName): string

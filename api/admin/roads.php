@@ -2,17 +2,17 @@
 declare(strict_types=1);
 
 // ═══════════════════════════════════════════════════════════════
-//  api/admin/roads.php  (v3 — simple Add/Delete, no verify/flag)
-//  GET  — all road_groups, each with its member `roads` rows
-//         (id, creator, segment_count, created_at) nested inside,
-//         for the Roads admin page.
-//  POST — { action: 'create', name } to add a road (auto-visible),
-//         { action: 'delete', id, confirm_name } to remove one,
-//         where confirm_name must match the road's name exactly.
+//  api/admin/roads.php  (v4 — City Leader only)
+//  GET  — the road_groups of the City Leader's own city, each with its
+//         member `roads` rows (id, creator, segment_count, created_at)
+//         nested inside, for the Roads page.
+//  POST — { action: 'create', name } to add a road,
+//         { action: 'delete', id, confirm_name } to remove one that no
+//         audit uses (confirm_name must match the road's name exactly),
+//         { action: 'assign', id, surveyor_id } legacy road assignment.
 //
-//  city_leader is scoped to road_groups in their own city only, for
-//  both listing and create/delete. admin is unscoped, same
-//  as before.
+//  Roads belong to City Leaders, scoped to their own city. An Admin
+//  gets 403: Admins create projects, City Leaders manage the roads.
 // ═══════════════════════════════════════════════════════════════
 
 header('Content-Type: application/json');
@@ -25,9 +25,15 @@ set_exception_handler(function (Throwable $e) {
 });
 
 require_once __DIR__ . '/../../config/admin_guard.php';
+require_once __DIR__ . '/../../helpers/RoadCatalogue.php';
 
-$isNationalAdmin = $CURRENT_USER_ROLE === 'admin';
-$cityId          = $isNationalAdmin ? null : $CURRENT_USER_CITY_ID;
+if ($CURRENT_USER_ROLE !== 'city_leader') {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Roads are managed by City Leaders.']);
+    exit;
+}
+
+$cityId = $CURRENT_USER_CITY_ID;
 
 function logAudit(PDO $pdo, int $actorId, string $actorName, string $action, int $groupId, string $groupName): void
 {
@@ -39,9 +45,9 @@ function logAudit(PDO $pdo, int $actorId, string $actorName, string $action, int
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // A city_leader with no city assigned sees nothing, rather than
+    // A City Leader with no city assigned sees nothing, rather than
     // falling through to every city's roads.
-    if (!$isNationalAdmin && $cityId === null) {
+    if ($cityId === null) {
         echo json_encode(['success' => true, 'road_groups' => []]);
         exit;
     }
@@ -53,10 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
            FROM road_groups g
            LEFT JOIN users u ON u.id = g.assigned_surveyor_id
            LEFT JOIN cities c ON c.id = g.city_id
-          WHERE (:cid1 IS NULL OR g.city_id = :cid2)
+          WHERE g.city_id = ?
           ORDER BY g.canonical_name ASC'
     );
-    $groupStmt->execute(['cid1' => $cityId, 'cid2' => $cityId]);
+    $groupStmt->execute([$cityId]);
     $groups = $groupStmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Surveyors available to assign, grouped by city_id, so each
@@ -145,36 +151,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // road_groups.city_id is NOT NULL. A city_leader always creates
-        // within their own city. An admin may pass city_id
-        // explicitly (once multiple cities exist); until then, this
-        // falls back to the sole existing city, same convention as
-        // RoadRepository::resolveCityIdForNewRoadGroup().
-        if (!$isNationalAdmin) {
-            if ($cityId === null) {
-                http_response_code(400);
-                echo json_encode(['success' => false, 'error' => 'Your account has no city assigned — contact an Admin.']);
-                exit;
-            }
-            $newCityId = $cityId;
-        } elseif (isset($body['city_id'])) {
-            $newCityId = filter_var($body['city_id'], FILTER_VALIDATE_INT);
-            $cityCheck = $pdo->prepare('SELECT 1 FROM cities WHERE id = ? LIMIT 1');
-            $cityCheck->execute([$newCityId]);
-            if ($newCityId === false || $cityCheck->fetchColumn() === false) {
-                http_response_code(422);
-                echo json_encode(['success' => false, 'error' => 'Invalid city_id.']);
-                exit;
-            }
-        } else {
-            $cityCountStmt = $pdo->query('SELECT COUNT(*) FROM cities');
-            if ((int)$cityCountStmt->fetchColumn() !== 1) {
-                http_response_code(422);
-                echo json_encode(['success' => false, 'error' => 'city_id is required — more than one city exists.']);
-                exit;
-            }
-            $newCityId = (int)$pdo->query('SELECT id FROM cities LIMIT 1')->fetchColumn();
+        // road_groups.city_id is NOT NULL: a City Leader creates roads
+        // only in their own city.
+        if ($cityId === null) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Your account has no city assigned — contact an Admin.']);
+            exit;
         }
+        $newCityId = $cityId;
 
         // Road names are unique per city, not globally: the same name in
         // another city is a different road.
@@ -188,8 +172,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Admin-added roads are trusted by definition — no separate
-        // verification step needed, so they go live immediately.
+        // Roads a City Leader adds are trusted — no separate verification
+        // step, so they are usable in an audit immediately.
         $ins = $pdo->prepare('INSERT INTO road_groups (canonical_name, city_id, is_verified) VALUES (?, ?, 1)');
         $ins->execute([$name, $newCityId]);
         $newId = (int)$pdo->lastInsertId();
@@ -202,19 +186,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ── Delete path: { action: 'delete', id, confirm_name } ──
     // confirm_name must exactly match the road's canonical_name (case-
-    // insensitive) — the type-to-confirm safeguard that replaces the old
-    // "only allowed when empty" restriction now that Delete is available
-    // for every road, including ones with real audit entries under them.
+    // insensitive) — the type-to-confirm safeguard. A road that an audit
+    // uses cannot be deleted: it must be removed from the audit first.
     if (isset($body['action']) && $body['action'] === 'delete') {
-        // Data deletion is Admin-only in this phase (confirmed scope) —
-        // a city_leader can create/view roads in their city but not
-        // delete them; only admin may.
-        if (!$isNationalAdmin) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'Only an Admin can delete roads.']);
-            exit;
-        }
-
         $id = isset($body['id']) ? (int)$body['id'] : 0;
         if ($id <= 0) {
             http_response_code(400);
@@ -231,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if (!$isNationalAdmin && ((int)$group['city_id'] !== $cityId)) {
+        if ((int)$group['city_id'] !== $cityId) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'You can only manage roads in your own city.']);
             exit;
@@ -248,34 +222,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $countStmt->execute([$id]);
         $entryCount = (int)$countStmt->fetchColumn();
 
-        $pdo->beginTransaction();
+        $blocked = roadDeleteBlockedReason($entryCount);
+        if ($blocked !== null) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'error' => $blocked]);
+            exit;
+        }
+
         try {
-            // road_group_id's own FK behaviour (if any) is unknown, since
-            // road_groups isn't in any tracked migration. So member `roads`
-            // rows are removed explicitly here rather than relying on it —
-            // this cascades to segments/audit_sessions/segment_audits/
-            // obstructions/intersections via the confirmed, migration-
-            // tracked ON DELETE CASCADE chain on roads.id.
-            if ($entryCount > 0) {
-                $delRoads = $pdo->prepare('DELETE FROM roads WHERE road_group_id = ?');
-                $delRoads->execute([$id]);
-            }
-
-            $del = $pdo->prepare('DELETE FROM road_groups WHERE id = ?');
-            $del->execute([$id]);
-
-            $pdo->commit();
+            $pdo->prepare('DELETE FROM road_groups WHERE id = ?')->execute([$id]);
         } catch (Throwable $e) {
-            $pdo->rollBack();
             error_log('api/admin/roads.php: delete failed: ' . $e->getMessage());
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Delete failed — nothing was removed. Please try again.']);
             exit;
         }
 
-        if ($entryCount > 0) {
-            error_log("api/admin/roads.php: deleted road group #{$id} ({$group['canonical_name']}) with {$entryCount} audit entries, by user {$CURRENT_USER_ID}");
-        }
         try {
             logAudit($pdo, $CURRENT_USER_ID, $CURRENT_USER_NAME, 'delete', $id, $group['canonical_name']);
         } catch (PDOException $e) {
@@ -287,8 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ── Assign path: { action: 'assign', id, surveyor_id } ───────
-    // surveyor_id may be null/0 to unassign. Available to both
-    // admin and city_leader (city-scoped), unlike delete.
+    // surveyor_id may be null/0 to unassign (city-scoped).
     if (isset($body['action']) && $body['action'] === 'assign') {
         $id = isset($body['id']) ? (int)$body['id'] : 0;
         if ($id <= 0) {
@@ -306,7 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        if (!$isNationalAdmin && ((int)$group['city_id'] !== $cityId)) {
+        if ((int)$group['city_id'] !== $cityId) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'You can only manage roads in your own city.']);
             exit;

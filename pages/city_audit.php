@@ -27,6 +27,12 @@ if ($audit === null || (!$isNational && (int)$audit['city_id'] !== (int)($CURREN
 
 $canEdit   = !$isNational && $repo->isEditable($audit);
 $available = $canEdit ? $repo->availableRoadGroups((int)$audit['city_id'], (int)$audit['id']) : [];
+$cityRoadCount = 0;
+if ($canEdit && !$available) {
+    $crc = $pdo->prepare('SELECT COUNT(*) FROM road_groups WHERE city_id = ? AND is_flagged = 0');
+    $crc->execute([(int)$audit['city_id']]);
+    $cityRoadCount = (int)$crc->fetchColumn();
+}
 $roads     = $repo->roadsWithSegments((int)$audit['id']);
 $canAssign = !$isNational && $repo->canAssign($audit);
 $surveyors = $canAssign ? $repo->assignableSurveyors((int)$audit['city_id']) : [];
@@ -213,7 +219,11 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
     <div class="card" id="caAddRoad">
       <div class="card-head"><h3>Add a road</h3></div>
       <?php if (!$available): ?>
-        <p class="rd-empty">Every road in this city is already part of this audit.</p>
+        <?php if ($cityRoadCount === 0): ?>
+        <p class="rd-empty">Your city has no roads yet. <a href="admin.php">Add them on the Roads page</a>, then come back to add them to this audit.</p>
+        <?php else: ?>
+        <p class="rd-empty">Every road in this city is already part of this audit. <a href="admin.php">Add more on the Roads page.</a></p>
+        <?php endif; ?>
       <?php else: ?>
       <form id="caRoadForm" class="ca-form" novalidate>
         <div class="ca-field full">
