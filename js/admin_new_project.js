@@ -6,6 +6,15 @@
   var card = document.getElementById('npNewCard');
   var form = document.getElementById('npNewForm');
   if (!app || !openBtn || !card || !form) return;
+  var candidates = [];
+  try { candidates = JSON.parse(app.dataset.candidates || '[]'); } catch (e) { candidates = []; }
+  function csrfHeaders() {
+    return { 'Content-Type': 'application/json', 'X-CSRF-Token': app.dataset.csrf || '', 'X-Requested-With': 'XMLHttpRequest' };
+  }
+  function candidatesFor(cityId) {
+    return candidates.filter(function (u) { return u.city_id === null || u.city_id === cityId; });
+  }
+  function personLabel(u) { return u.name + (u.email ? ' (' + u.email + ')' : ''); }
 
   var toastEl = document.getElementById('caToast');
   function toast(msg, type) {
@@ -49,10 +58,22 @@
     selectedId = c ? c.id : 0;
     if (c && c.state) { stateInput.value = c.state; stateInput.readOnly = true; }
     else { if (stateInput.readOnly) stateInput.value = ''; stateInput.readOnly = false; }
+    updateLeaderField(c);
     if (!typed) say('');
     else if (c && c.id && c.leaders === 0) say('This city has no City Leader yet. Add one under Users, or nobody can add its roads.', true);
     else if (!c || !c.id) say('New city: it is added to CycleAudit with this project, and its City Leader and surveyors can then sign up.', false);
     else say('');
+  }
+  var leaderWrap = document.getElementById('npLeaderWrap'), leaderSel = form.leader_user_id;
+  function updateLeaderField(c) {
+    var list = c && c.id && c.leaders === 0 ? candidatesFor(c.id) : [];
+    leaderSel.innerHTML = '<option value="">— Assign later —</option>';
+    list.forEach(function (u) {
+      var o = document.createElement('option');
+      o.value = u.id; o.textContent = personLabel(u);
+      leaderSel.appendChild(o);
+    });
+    leaderWrap.style.display = list.length ? 'block' : 'none';
   }
   cityInput.addEventListener('input', syncCity);
   cityInput.addEventListener('change', syncCity);
@@ -72,8 +93,9 @@
     try {
       var res = await fetch('../api/admin/audit_create.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': app.dataset.csrf || '', 'X-Requested-With': 'XMLHttpRequest' },
+        headers: csrfHeaders(),
         body: JSON.stringify({
+          leader_user_id: leaderSel.value || '',
           city_id: selectedId || '', city_name: cityInput.value, name: form.name.value, state: stateInput.value,
           audit_date: form.audit_date.value, programme_info: form.programme_info.value
         })
@@ -93,4 +115,69 @@
       btn.disabled = false;
     }
   });
+
+  // ── Cities table: "Assign City Leader" opens a picker under the row ──
+  function closePickers() { document.querySelectorAll('tr.npPicker').forEach(function (r) { r.remove(); }); }
+  function openPicker(btn) {
+    var row = btn.closest('tr');
+    var existing = row.nextElementSibling;
+    var wasOpen = existing && existing.classList.contains('npPicker');
+    closePickers();
+    if (wasOpen) return;
+    var cityId = parseInt(btn.getAttribute('data-city'), 10);
+    var cityName = btn.getAttribute('data-name');
+    var list = candidatesFor(cityId);
+    var tr = document.createElement('tr');
+    tr.className = 'npPicker';
+    var td = document.createElement('td');
+    td.colSpan = row.children.length;
+    td.style.background = '#f7faf2';
+    if (!list.length) {
+      td.textContent = 'No surveyors in ' + cityName + ' yet. Ask the City Leader to sign up and choose ' + cityName +
+        ' as their city, then come back here. Someone in another city can be moved on the Users page first.';
+    } else {
+      var sel = document.createElement('select');
+      sel.style.cssText = 'padding:8px 10px;border:1px solid rgba(0,0,0,.14);border-radius:8px;font:inherit;margin-right:8px;min-width:260px';
+      sel.innerHTML = '<option value="">— Choose a person —</option>';
+      list.forEach(function (u) {
+        var o = document.createElement('option');
+        o.value = u.id; o.textContent = personLabel(u);
+        sel.appendChild(o);
+      });
+      var go = document.createElement('button');
+      go.type = 'button'; go.className = 'ca-btn'; go.textContent = 'Make City Leader';
+      var lbl = document.createElement('span');
+      lbl.textContent = 'City Leader for ' + cityName + ': ';
+      lbl.style.marginRight = '8px';
+      td.appendChild(lbl); td.appendChild(sel); td.appendChild(go);
+      go.addEventListener('click', async function () {
+        if (!sel.value) { toast('Choose a person first.', 'error'); return; }
+        go.disabled = true;
+        try {
+          var res = await fetch('../api/admin/city_leader.php', {
+            method: 'POST', headers: csrfHeaders(),
+            body: JSON.stringify({ city_id: cityId, user_id: parseInt(sel.value, 10) })
+          });
+          var data = null;
+          try { data = await res.json(); } catch (e) { /* keep null */ }
+          if (!res.ok || !data || !data.success) throw new Error((data && data.error) || 'Something went wrong.');
+          toast('City Leader assigned.');
+          setTimeout(function () { window.location.href = 'platform_dashboard.php'; }, 900);
+        } catch (e) {
+          toast(e.message, 'error');
+          go.disabled = false;
+        }
+      });
+    }
+    tr.appendChild(td);
+    row.parentNode.insertBefore(tr, row.nextSibling);
+  }
+  document.querySelectorAll('.npAssign').forEach(function (b) {
+    b.addEventListener('click', function () { openPicker(b); });
+  });
+  var auto = parseInt(app.dataset.assignCity || '0', 10);
+  if (auto > 0) {
+    var target = document.querySelector('.npAssign[data-city="' + auto + '"]');
+    if (target) { target.scrollIntoView({ block: 'center' }); openPicker(target); }
+  }
 })();
