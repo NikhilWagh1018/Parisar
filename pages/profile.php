@@ -44,14 +44,6 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 2));
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
       Dashboard
     </a>
-    <a href="form.php" class="nav-item">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14l4-4h12c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
-      New Audit
-    </a>
-    <a href="report.php" class="nav-item">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4zM5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-      Reports
-    </a>
     <?php endif; ?>
     <div class="nav-section">Account</div>
     <a href="profile.php" class="nav-item active">
