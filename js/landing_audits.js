@@ -139,13 +139,23 @@
       o.value = String(c.id);
       citySel.appendChild(o);
     });
-    citySel.addEventListener('change', function () { state.city = citySel.value; render(); });
+    citySel.addEventListener('change', function () {
+      state.city = citySel.value; state.year = null; render();
+      window.dispatchEvent(new CustomEvent('ca:citychange', { detail: { id: state.city } }));
+    });
+    // A city tile further down the page picks the city here.
+    window.addEventListener('ca:city', function (e) {
+      var id = (e.detail && e.detail.id) || '';
+      citySel.value = id;
+      state.city = citySel.value; state.year = null; render();
+    });
     condSel.addEventListener('change', function () { state.cond = condSel.value; render(); });
     q.addEventListener('input', function () { state.q = q.value; render(); });
     $('ax-clear').addEventListener('click', function () {
       citySel.value = ''; condSel.value = ''; q.value = '';
       state.city = ''; state.cond = ''; state.q = ''; state.year = null;
       render();
+      window.dispatchEvent(new CustomEvent('ca:citychange', { detail: { id: '' } }));
     });
     bar.hidden = false;
   }
