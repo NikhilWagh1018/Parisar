@@ -112,8 +112,6 @@ $greeting     = cityGreeting($hour);
       <p style="margin:0;font-size:.92rem;line-height:1.5"><b>That project was deleted.</b> The Admin deleted it, so work on it has stopped and it is no longer listed.</p>
     </div>
     <?php endif; ?>
-    <?php if (!$isNational) { require __DIR__ . '/partials/notifications.php'; } ?>
-
     <section class="cx-hero">
       <div class="cx-hero-row">
         <div>
@@ -134,6 +132,8 @@ $greeting     = cityGreeting($hour);
         </div>
       </div>
     </section>
+
+    <?php if (!$isNational) { require __DIR__ . '/partials/notifications.php'; } ?>
 
     <div class="cx-kpis">
       <div class="cx-kpi"><span class="cx-kpi-ico g"><?= cxIcon('list') ?></span><div><b><?= (int)$totals['audits'] ?></b><span>Audits (<?= (int)$totals['open'] ?> open)</span></div></div>

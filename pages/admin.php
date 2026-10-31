@@ -400,62 +400,7 @@ document.addEventListener('click', e => {
     var right = document.createElement('div');
     right.className = 'grp-head-right';
 
-    // Assign-to-surveyor control. Available to any admin (national or
-    // city) — unlike Delete, which is admin only. An
-    // unassigned road stays open to any surveyor in the city to
-    // self-select, same as before this feature existed.
-    var assignWrap = document.createElement('div');
-    assignWrap.className = 'assign-wrap';
-    var assignLabel = document.createElement('span');
-    assignLabel.className = 'assign-label';
-    assignLabel.textContent = 'Assigned:';
-    var assignSelect = document.createElement('select');
-    assignSelect.className = 'assign-select';
-    assignSelect.setAttribute('aria-label', 'Assign ' + group.name + ' to a surveyor');
-    var noneOpt = document.createElement('option');
-    noneOpt.value = '0';
-    noneOpt.textContent = 'Unassigned';
-    assignSelect.appendChild(noneOpt);
-    (group.available_surveyors || []).forEach(function (s) {
-      var opt = document.createElement('option');
-      opt.value = String(s.id);
-      opt.textContent = s.name;
-      assignSelect.appendChild(opt);
-    });
-    assignSelect.value = group.assigned_surveyor_id ? String(group.assigned_surveyor_id) : '0';
-    assignSelect.addEventListener('click', function (e) { e.stopPropagation(); });
-    assignSelect.addEventListener('change', function (e) {
-      e.stopPropagation();
-      var surveyorId = parseInt(assignSelect.value, 10) || 0;
-      assignSelect.disabled = true;
-      fetch('../api/admin/roads.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': CSRF,
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ id: group.id, action: 'assign', surveyor_id: surveyorId })
-      })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          assignSelect.disabled = false;
-          if (!data.success) {
-            assignSelect.value = group.assigned_surveyor_id ? String(group.assigned_surveyor_id) : '0';
-            showExportMsg(data.error || 'Could not update assignment.', true);
-            return;
-          }
-          group.assigned_surveyor_id = data.assigned_surveyor_id;
-        })
-        .catch(function () {
-          assignSelect.disabled = false;
-          assignSelect.value = group.assigned_surveyor_id ? String(group.assigned_surveyor_id) : '0';
-          showExportMsg('Network error — could not update assignment.', true);
-        });
-    });
-    assignWrap.appendChild(assignLabel);
-    assignWrap.appendChild(assignSelect);
-    right.appendChild(assignWrap);
+    // Assigning segments to surveyors happens inside an audit, not on this page.
 
     // Default state: just a Delete affordance. Clicking it opens a danger
     // panel below the row with a type-to-confirm control instead of a

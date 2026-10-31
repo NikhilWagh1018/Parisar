@@ -78,4 +78,23 @@ class NotificationsTest extends TestCase
         $this->assertSame(150, mb_strlen($row['title']));
         $this->assertSame(500, mb_strlen($row['body']));
     }
+
+    public function test_recent_keeps_read_notifications_and_marks_one_at_a_time(): void
+    {
+        $a = $this->repo->create(7, NOTIFY_ASSIGNED, 'First', 'b');
+        $this->repo->create(7, NOTIFY_ASSIGNED, 'Second', 'b');
+        $this->repo->create(8, NOTIFY_ASSIGNED, 'Other user', 'b');
+
+        $this->assertTrue($this->repo->markRead(7, $a));
+        $this->assertFalse($this->repo->markRead(7, $a), 'already read');
+        $this->assertFalse($this->repo->markRead(8, $a), "cannot read another user's notification");
+
+        $rows = $this->repo->recent(7);
+        $this->assertSame(['Second', 'First'], array_column($rows, 'title'));
+        $this->assertSame([false, true], array_column($rows, 'is_read'));
+
+        $this->repo->markAllRead(7);
+        $this->assertCount(2, $this->repo->recent(7), 'read notifications stay in the list');
+        $this->assertSame([], $this->repo->unread(7));
+    }
 }

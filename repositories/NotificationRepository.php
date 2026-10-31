@@ -21,13 +21,26 @@ class NotificationRepository
     }
 
     /** Newest unread notifications first.
-     *  @return list<array{id:int,type:string,title:string,body:string,link:?string,created_at:string}> */
+     *  @return list<array{id:int,type:string,title:string,body:string,link:?string,created_at:string,is_read:bool}> */
     public function unread(int $userId, int $limit = 20): array
+    {
+        return $this->fetch($userId, $limit, true);
+    }
+
+    /** Newest notifications first, read ones included, so nothing disappears once it is read.
+     *  @return list<array{id:int,type:string,title:string,body:string,link:?string,created_at:string,is_read:bool}> */
+    public function recent(int $userId, int $limit = 30): array
+    {
+        return $this->fetch($userId, $limit, false);
+    }
+
+    /** @return list<array{id:int,type:string,title:string,body:string,link:?string,created_at:string,is_read:bool}> */
+    private function fetch(int $userId, int $limit, bool $onlyUnread): array
     {
         $limit = max(1, min(50, $limit));
         $st = $this->pdo->prepare(
-            'SELECT id, type, title, body, link, created_at FROM notifications
-             WHERE user_id = ? AND is_read = 0 ORDER BY id DESC LIMIT ' . $limit
+            'SELECT id, type, title, body, link, created_at, is_read FROM notifications
+             WHERE user_id = ?' . ($onlyUnread ? ' AND is_read = 0' : '') . ' ORDER BY id DESC LIMIT ' . $limit
         );
         $st->execute([$userId]);
         return array_map(static fn(array $r): array => [
@@ -37,7 +50,16 @@ class NotificationRepository
             'body'       => (string)$r['body'],
             'link'       => $r['link'] === null ? null : (string)$r['link'],
             'created_at' => (string)$r['created_at'],
+            'is_read'    => (int)$r['is_read'] === 1,
         ], $st->fetchAll(PDO::FETCH_ASSOC));
+    }
+
+    /** Marks one of this user's notifications as read. */
+    public function markRead(int $userId, int $id): bool
+    {
+        $st = $this->pdo->prepare('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ? AND is_read = 0');
+        $st->execute([$id, $userId]);
+        return $st->rowCount() > 0;
     }
 
     public function unreadCount(int $userId): int

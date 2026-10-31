@@ -82,6 +82,9 @@ function cityAuditAttention(string $status, array $c, ?string $adminNote = null,
             $items[] = ['level' => 'action', 'text' => 'Add a road to start this audit.'];
         } elseif ($unassigned > 0) {
             $items[] = ['level' => 'action', 'text' => cityPlural($unassigned, 'segment still needs', 'segments still need') . ' a surveyor.'];
+            if ($total - $unassigned > 0) {
+                $items[] = ['level' => 'info', 'text' => 'You can activate the audit now and assign the rest afterwards.'];
+            }
         } else {
             $items[] = ['level' => 'action', 'text' => 'Every segment has a surveyor. Activate the audit.'];
         }
@@ -348,7 +351,8 @@ function cityAuditNextAction(string $status, array $c, bool $forAdmin, int $audi
         if ($total === 0) {
             return ['label' => 'Add a road', 'href' => '#caAddRoad'];
         }
-        return $unassigned > 0
+        // One assigned segment is enough to activate; the rest can be assigned afterwards.
+        return $unassigned >= $total
             ? ['label' => 'Assign surveyors', 'href' => '#caRoads']
             : ['label' => 'Activate audit', 'href' => '#caAssign'];
     }

@@ -498,8 +498,9 @@ class CityAuditRepository
     }
 
     /**
-     * Move a draft audit to active. Every segment must have an active surveyor
-     * of this city. From then on roads can no longer be added or removed.
+     * Move a draft audit to active. At least one segment must have a surveyor, and every
+     * assigned segment must have an active surveyor of this city. The rest can be assigned
+     * after activation. From then on roads can no longer be added or removed.
      */
     public function activate(array $audit): void
     {
@@ -510,10 +511,8 @@ class CityAuditRepository
         if ($c['total'] === 0) {
             throw new DomainException('Add at least one road before activating this audit.');
         }
-        if ($c['assigned'] < $c['total']) {
-            $left = $c['total'] - $c['assigned'];
-            throw new DomainException($left . ($left === 1 ? ' segment still has' : ' segments still have')
-                . ' no surveyor. Assign every segment before activating.');
+        if ($c['assigned'] < 1) {
+            throw new DomainException('Assign at least one segment to a surveyor before activating this audit.');
         }
 
         $bad = $this->pdo->prepare(
