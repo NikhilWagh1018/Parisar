@@ -458,27 +458,8 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
             <div>
               <h4><?= $h($r['name']) ?></h4>
               <small><?= $h($num($r['total_length'])) ?> m · <?= count($r['segments']) ?> segments of <?= $h($num($r['segment_length'])) ?> m · <?= $rAssigned ?> of <?= count($r['segments']) ?> assigned</small>
-              <?php if ($r['segments']): ?>
-              <div class="cx-dots" aria-hidden="true">
-                <?php foreach ($r['segments'] as $sd):
-                    $dCls = $sd['status'] === 'in_progress' ? 'in_progress' : ($sd['status'] === 'completed' ? 'completed' : ($sd['assigned_to'] === null ? 'un' : ''));
-                    $dTip = 'Segment ' . (int)$sd['segment_number'] . ' · ' . $num($sd['length']) . ' m · ' . ($sd['assigned_name'] ?? 'Unassigned') . ' · ' . ucfirst(str_replace('_', ' ', (string)$sd['status']));
-                ?><span class="cx-dot <?= $h($dCls) ?>" title="<?= $h($dTip) ?>"><?= (int)$sd['segment_number'] ?></span><?php endforeach; ?>
-              </div>
-              <?php endif; ?>
             </div>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-              <?php if ($canAssign && $surveyors && $rPending > 0): ?>
-                <select class="ca-seg-select ca-road-surveyor" aria-label="Surveyor for the whole road <?= $h($r['name']) ?>">
-                  <option value="">— Choose surveyor —</option>
-                  <?php foreach ($surveyors as $sv): ?>
-                    <option value="<?= (int)$sv['id'] ?>"><?= $h($sv['name']) ?></option>
-                  <?php endforeach; ?>
-                  <option value="0">Unassign whole road</option>
-                </select>
-                <button class="ca-btn ghost ca-assign-road" type="button" data-road-id="<?= (int)$r['id'] ?>">Assign whole road</button>
-              <?php endif; ?>
-              <button class="ca-toggle" type="button">Show segments</button>
               <?php if ($canEdit): ?>
                 <button class="ca-btn danger ca-remove" type="button"
                         data-road-id="<?= (int)$r['id'] ?>" data-name="<?= $h($r['name']) ?>">Remove</button>
@@ -486,6 +467,19 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
             </div>
           </div>
           <div class="ca-road-body">
+            <?php if ($canAssign && $surveyors && $rPending > 1): ?>
+            <div class="ca-road-bulk">
+              <span>Give all pending segments of this road to one surveyor:</span>
+              <select class="ca-seg-select ca-road-surveyor" aria-label="Surveyor for all pending segments of <?= $h($r['name']) ?>">
+                <option value="">— Choose surveyor —</option>
+                <?php foreach ($surveyors as $sv): ?>
+                  <option value="<?= (int)$sv['id'] ?>"><?= $h($sv['name']) ?></option>
+                <?php endforeach; ?>
+                <option value="0">Unassign all</option>
+              </select>
+              <button class="ca-btn ghost ca-assign-road" type="button" data-road-id="<?= (int)$r['id'] ?>">Apply to all</button>
+            </div>
+            <?php endif; ?>
             <div class="rd-scroll">
               <table class="rd-table">
                 <thead><tr><th>#</th><th>From</th><th>To</th><th>Length</th><th>Status</th><th>Surveyor</th></tr></thead>
