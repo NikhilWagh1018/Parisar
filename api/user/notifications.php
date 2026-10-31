@@ -27,7 +27,7 @@ if ($method === 'GET') {
     echo json_encode([
         'success'       => true,
         'unread'        => $repo->unreadCount((int)$CURRENT_USER_ID),
-        'notifications' => $repo->unread((int)$CURRENT_USER_ID),
+        'notifications' => $repo->recent((int)$CURRENT_USER_ID),
     ]);
     exit;
 }
@@ -40,7 +40,13 @@ if ($method === 'POST') {
         exit;
     }
     $body = json_decode((string)file_get_contents('php://input'), true);
-    if (!is_array($body) || ($body['action'] ?? '') !== 'read_all') {
+    $action = is_array($body) ? ($body['action'] ?? '') : '';
+    if ($action === 'read') {
+        $id = filter_var($body['id'] ?? null, FILTER_VALIDATE_INT);
+        echo json_encode(['success' => true, 'marked' => ($id !== false && $id !== null) ? ($repo->markRead((int)$CURRENT_USER_ID, (int)$id) ? 1 : 0) : 0]);
+        exit;
+    }
+    if ($action !== 'read_all') {
         http_response_code(422);
         echo json_encode(['success' => false, 'error' => 'Unknown action.']);
         exit;

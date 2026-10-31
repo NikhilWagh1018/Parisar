@@ -4,7 +4,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  api/city/audit_activate.php
 //  POST { audit_id }
-//  Moves a draft audit to active once every segment has a surveyor.
+//  Moves a draft audit to active once at least one segment has a surveyor.
 // ═══════════════════════════════════════════════════════════════
 
 header('Content-Type: application/json');

@@ -285,7 +285,7 @@ class CityAuditRepositoryTest extends TestCase
         }
     }
 
-    public function test_activate_needs_roads_and_every_segment_assigned(): void
+    public function test_activate_needs_roads_and_one_assigned_segment(): void
     {
         $a = $this->newAudit();
         try {
@@ -297,15 +297,14 @@ class CityAuditRepositoryTest extends TestCase
 
         $res = $this->repo->addRoad($a, 2, 1, 1000.0, 500.0);
         $ids = $this->segmentIds($res['road_id']);
-        $this->repo->assignSegments($a, 2, [$ids[0]], 10);
         try {
             $this->repo->activate($a);
-            $this->fail('a half-assigned audit cannot be activated');
+            $this->fail('nothing assigned yet');
         } catch (DomainException $e) {
-            $this->assertStringContainsString('1 segment still has no surveyor', $e->getMessage());
+            $this->assertStringContainsString('at least one segment', $e->getMessage());
         }
 
-        $this->repo->assignSegments($a, 2, [$ids[1]], 11);
+        $this->repo->assignSegments($a, 2, [$ids[0]], 10);   // the other segment stays unassigned
         $this->repo->activate($a);
         $a = $this->repo->find((int)$a['id']);
         $this->assertSame('active', $a['status']);

@@ -302,7 +302,8 @@ class CityDashboardTest extends TestCase
     {
         $none = ['total' => 0];
         $this->assertSame('Add a road', cityAuditNextAction('draft', $none, false, 5)['label']);
-        $this->assertSame('Assign surveyors', cityAuditNextAction('draft', ['total' => 4, 'unassigned' => 1], false, 5)['label']);
+        $this->assertSame('Assign surveyors', cityAuditNextAction('draft', ['total' => 4, 'unassigned' => 4], false, 5)['label']);
+        $this->assertSame('Activate audit', cityAuditNextAction('draft', ['total' => 4, 'unassigned' => 1], false, 5)['label'], 'one assigned segment is enough');
         $this->assertSame('Activate audit', cityAuditNextAction('draft', ['total' => 4, 'unassigned' => 0], false, 5)['label']);
         $this->assertSame('Review submissions', cityAuditNextAction('active', ['total' => 4, 'submitted' => 1], false, 5)['label']);
         $this->assertSame('Close audit', cityAuditNextAction('in_review', ['total' => 4, 'approved' => 4], false, 5)['label']);

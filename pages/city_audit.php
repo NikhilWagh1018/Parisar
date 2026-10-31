@@ -46,6 +46,7 @@ $surveyors = $canAssign ? $repo->assignableSurveyors((int)$audit['city_id']) : [
 $counts    = $repo->assignmentCounts((int)$audit['id']);
 $canActivate = !$isNational && $audit['status'] === 'draft';
 $allAssigned = $counts['total'] > 0 && $counts['assigned'] === $counts['total'];
+$canActivateNow = $counts['assigned'] > 0;   // one assigned segment is enough to start
 $review     = new AuditReviewRepository($pdo);
 $rv         = $review->counts((int)$audit['id']);
 $showReview = $audit['status'] !== 'draft' && $audit['status'] !== 'voided';
@@ -221,7 +222,7 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
       <div class="card-head">
         <h3>Surveyor assignment</h3>
         <?php if ($canActivate): ?>
-          <button class="ca-btn" type="button" id="caActivate" <?= $allAssigned ? '' : 'disabled' ?>>Activate Audit</button>
+          <button class="ca-btn" type="button" id="caActivate" <?= $canActivateNow ? '' : 'disabled' ?>>Activate Audit</button>
         <?php endif; ?>
       </div>
       <p class="ca-assign-sum"><b><?= (int)$counts['assigned'] ?></b> of <b><?= (int)$counts['total'] ?></b> segments have a surveyor.</p>
@@ -230,8 +231,10 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
       <?php endif; ?>
       <?php if ($canAssign && !$surveyors): ?>
         <p class="ca-hint-line">No active surveyors are registered in <?= $h($audit['city_name']) ?> yet, so segments cannot be assigned.</p>
+      <?php elseif ($canActivate && !$canActivateNow): ?>
+        <p class="ca-hint-line"><?= $counts['total'] === 0 ? 'Add a road, then assign its segments.' : 'Assign at least one segment to a surveyor to activate the audit. Roads cannot be added or removed after that.' ?></p>
       <?php elseif ($canActivate && !$allAssigned): ?>
-        <p class="ca-hint-line"><?= $counts['total'] === 0 ? 'Add a road, then assign its segments.' : 'Assign every segment to activate the audit. Roads cannot be added or removed after that.' ?></p>
+        <p class="ca-hint-line">You can activate now. The <?= (int)($counts['total'] - $counts['assigned']) ?> unassigned segment(s) can still be assigned later. Roads cannot be added or removed after activation.</p>
       <?php elseif ($audit['status'] === 'active'): ?>
         <p class="ca-hint-line">This audit is active. Segments can still be reassigned until auditing starts on them.</p>
       <?php endif; ?>
