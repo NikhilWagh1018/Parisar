@@ -84,3 +84,21 @@ if (scaleBar) new IntersectionObserver((es, o) => es.forEach(e => {
   window.addEventListener('resize', queue);
   update();
 })();
+
+// Nav: highlight the link for the section being read
+(function () {
+  const links = Array.from(document.querySelectorAll('#nl a[href^="#"]'));
+  const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+  const secs = Array.from(map.keys()).map(id => document.getElementById(id)).filter(Boolean);
+  if (!secs.length) return;
+  let queued = false;
+  function update() {
+    queued = false;
+    const line = innerHeight * 0.35;
+    let cur = null;
+    secs.forEach(s => { const r = s.getBoundingClientRect(); if (r.top <= line && r.bottom > line) cur = s.id; });
+    links.forEach(a => a.classList.toggle('act', a === map.get(cur)));
+  }
+  window.addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(update); } }, { passive: true });
+  update();
+})();
