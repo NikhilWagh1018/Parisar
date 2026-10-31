@@ -251,5 +251,8 @@ if (!$canDefineRoad && empty($_GET['road_id']) && ($_GET['status'] ?? '') !== 'd
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/segment.js?v=<?= filemtime(__DIR__ . '/../js/segment.js') ?>"></script>
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/segment-roads.js?v=<?= filemtime(__DIR__ . '/../js/segment-roads.js') ?>"></script>
 
+<?php if (!$canDefineRoad && (int)($_GET['road_id'] ?? 0) > 0): ?>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/project_watch.js?v=<?= filemtime(__DIR__ . '/../js/project_watch.js') ?>" data-road-id="<?= (int)$_GET['road_id'] ?>" data-home="dashboard.php?notice=project_deleted"></script>
+<?php endif; ?>
 </body>
 </html>

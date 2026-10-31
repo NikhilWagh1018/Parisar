@@ -109,7 +109,7 @@ class AdminDashboardTest extends TestCase
         $pdo = new PDO('sqlite::memory:');
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec('CREATE TABLE cities (id INTEGER PRIMARY KEY, name TEXT)');
-        $pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, city_id INTEGER NULL, role TEXT)');
+        $pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, city_id INTEGER NULL, role TEXT)');
         $pdo->exec('CREATE TABLE road_groups (id INTEGER PRIMARY KEY, city_id INTEGER, is_verified INTEGER NOT NULL DEFAULT 1)');
         $pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY, city_id INTEGER, name TEXT, audit_year INTEGER, audit_date TEXT NULL, status TEXT,
                     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
@@ -117,7 +117,7 @@ class AdminDashboardTest extends TestCase
         $pdo->exec('CREATE TABLE segments (id INTEGER PRIMARY KEY, road_id INTEGER, status TEXT)');
         $pdo->exec('CREATE TABLE segment_audits (id INTEGER PRIMARY KEY, segment_id INTEGER, created_at TEXT)');
         $pdo->exec("INSERT INTO cities VALUES (1,'Pune'),(2,'Mumbai')");
-        $pdo->exec("INSERT INTO users VALUES (1,1,'city_leader'),(2,1,'surveyor'),(3,1,'surveyor'),(4,NULL,'admin')");
+        $pdo->exec("INSERT INTO users VALUES (1,'Pune Leader',1,'city_leader'),(2,'A',1,'surveyor'),(3,'B',1,'surveyor'),(4,'Root',NULL,'admin')");
         $pdo->exec("INSERT INTO road_groups VALUES (1,1,1),(2,1,0),(3,2,0)");
         $pdo->exec("INSERT INTO city_audits (id,city_id,name,audit_year,status,updated_at) VALUES
             (1,1,'Pune Audit',2026,'active','2026-09-01 00:00:00'),
@@ -136,6 +136,17 @@ class AdminDashboardTest extends TestCase
         $pune = $rows[1];
         $this->assertSame([1, 2, 2, 3, 2], [$pune['leaders'], $pune['surveyors'], $pune['road_groups'], $pune['segs'], $pune['done']]);
         $this->assertSame(0, $rows[0]['leaders'], 'Mumbai has no City Leader');
+        $this->assertSame('Pune Leader', $pune['leader_name']);
+        $this->assertNull($rows[0]['leader_name']);
+    }
+
+    public function test_segments_of_a_deleted_project_do_not_count(): void
+    {
+        $pdo = $this->db();
+        // Pune audit 1 holds roads 1 and 2 (3 segments, 2 done). Deleting it removes them from the city totals.
+        $pdo->exec("UPDATE city_audits SET status = 'voided' WHERE id = 1");
+        $pune = (new AdminDashboardRepository($pdo))->cities()[1];
+        $this->assertSame([0, 0], [$pune['segs'], $pune['done']]);
     }
 
     public function test_audits_skip_voided_and_use_latest_segment_activity(): void

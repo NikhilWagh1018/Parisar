@@ -22,16 +22,20 @@ class AdminDashboardRepository
         $rows = $this->pdo->query(
             "SELECT c.id, c.name,
                 (SELECT COUNT(*) FROM users u WHERE u.city_id = c.id AND u.role = 'city_leader')  AS leaders,
+                (SELECT u.name FROM users u WHERE u.city_id = c.id AND u.role = 'city_leader'
+                  ORDER BY u.id ASC LIMIT 1)                                                      AS leader_name,
                 (SELECT COUNT(*) FROM users u WHERE u.city_id = c.id AND u.role = 'surveyor')    AS surveyors,
                 (SELECT COUNT(*) FROM road_groups rg WHERE rg.city_id = c.id)                    AS road_groups,
                 (SELECT COUNT(*) FROM segments s
                    JOIN roads r ON r.id = s.road_id
                    JOIN road_groups rg ON rg.id = r.road_group_id
-                  WHERE rg.city_id = c.id)                                                       AS segs,
+                  WHERE rg.city_id = c.id
+                    AND NOT EXISTS (SELECT 1 FROM city_audits ca WHERE ca.id = r.audit_id AND ca.status = 'voided')) AS segs,
                 (SELECT COUNT(*) FROM segments s
                    JOIN roads r ON r.id = s.road_id
                    JOIN road_groups rg ON rg.id = r.road_group_id
-                  WHERE rg.city_id = c.id AND s.status = 'completed')                            AS done
+                  WHERE rg.city_id = c.id AND s.status = 'completed'
+                    AND NOT EXISTS (SELECT 1 FROM city_audits ca WHERE ca.id = r.audit_id AND ca.status = 'voided')) AS done
                FROM cities c
               ORDER BY c.name ASC, c.id ASC"
         )->fetchAll(PDO::FETCH_ASSOC);

@@ -81,6 +81,11 @@ try {
     if ($CURRENT_USER_ROLE === 'surveyor') {
         $work = new SurveyorWorkRepository($pdo);
         if ($work->roadIsInCityAudit($roadId)) {
+            if ($work->projectDeletedForRoad($roadId)) {
+                http_response_code(410);
+                echo json_encode(['success' => false, 'error' => PROJECT_DELETED_MESSAGE, 'project_deleted' => true]);
+                exit;
+            }
             if (!$work->mayOpenRoad($roadId, (int)$CURRENT_USER_ID)) {
                 http_response_code(403);
                 echo json_encode(['success' => false, 'error' => 'This road is not assigned to you.']);

@@ -10,6 +10,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
+require_once __DIR__ . '/../helpers/ProjectStatus.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
 require_once __DIR__ . '/../helpers/SurveyLabels.php';
@@ -24,6 +25,10 @@ $audit      = $auditRepo->find((int)($_GET['audit_id'] ?? 0));
 
 if ($audit === null || (!$isNational && (int)$audit['city_id'] !== (int)($CURRENT_USER_CITY_ID ?? 0))) {
     header('Location: ' . ($isNational ? 'platform_dashboard.php' : 'city_dashboard.php'));
+    exit;
+}
+if (projectIsDeleted($audit)) {
+    header('Location: ' . ($isNational ? 'platform_dashboard.php?notice=project_deleted_ok' : 'city_dashboard.php?notice=project_deleted'));
     exit;
 }
 
@@ -281,5 +286,6 @@ ovl.addEventListener('click', () => { aside.classList.remove('open'); ovl.classL
 </script>
 <script nonce="<?= $nonce ?>" src="../js/confirm_box.js?v=<?= filemtime(__DIR__ . '/../js/confirm_box.js') ?>"></script>
 <script nonce="<?= $nonce ?>" src="../js/city_review.js?v=<?= filemtime(__DIR__ . '/../js/city_review.js') ?>"></script>
+<script nonce="<?= $nonce ?>" src="../js/project_watch.js?v=<?= filemtime(__DIR__ . '/../js/project_watch.js') ?>" data-audit-id="<?= (int)$audit['id'] ?>" data-home="<?= $isNational ? 'platform_dashboard.php?notice=project_deleted_ok' : 'city_dashboard.php?notice=project_deleted' ?>"></script>
 </body>
 </html>

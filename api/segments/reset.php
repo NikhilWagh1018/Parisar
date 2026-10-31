@@ -47,6 +47,14 @@ if ($v->fails()) {
 }
 
 $segmentId = (int)$body['segment_id'];
+
+// A project the Admin deleted is closed to everyone: work on it stops.
+require_once __DIR__ . '/../../repositories/SurveyorWorkRepository.php';
+if ((new SurveyorWorkRepository($pdo))->projectDeletedForSegment($segmentId)) {
+    http_response_code(410);
+    echo json_encode(['success' => false, 'error' => PROJECT_DELETED_MESSAGE, 'project_deleted' => true]);
+    exit;
+}
 $sessionId = (int)$body['session_id'];
 
 try {

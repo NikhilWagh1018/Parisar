@@ -43,7 +43,8 @@
     byName[o.value.trim().toLowerCase()] = {
       id: parseInt(o.getAttribute('data-id'), 10) || 0,
       state: o.getAttribute('data-state') || '',
-      leaders: parseInt(o.getAttribute('data-leaders'), 10)
+      leaders: parseInt(o.getAttribute('data-leaders'), 10),
+      leaderName: o.getAttribute('data-leader-name') || ''
     };
   });
   var selectedId = 0;
@@ -61,6 +62,7 @@
     updateLeaderField(c);
     if (!typed) say('');
     else if (c && c.id && c.leaders === 0) say('This city has no City Leader yet. Add one under Users, or nobody can add its roads.', true);
+    else if (c && c.id && c.leaders > 0) say((c.leaderName || 'This city\'s City Leader') + ' is already the City Leader of ' + typed + '. The project goes to their dashboard. A city has only one City Leader; to change who leads it, open the project and choose Edit.', false);
     else if (!c) say('Pick a city from the list. If it is not there, it has to be added to the city list first.', true);
     else if (!c.id) say('New city: it is added to CycleAudit with this project, and its City Leader and surveyors can then sign up.', false);
     else say('');

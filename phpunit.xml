@@ -22,6 +22,7 @@
             <file>tests/CityAuditTest.php</file>
             <file>tests/CityAuditRepositoryTest.php</file>
             <file>tests/SurveyorWorkTest.php</file>
+            <file>tests/ProjectAdminTest.php</file>
             <file>tests/AuditReviewTest.php</file>
             <file>tests/SurveyorAssignedOnlyTest.php</file>
             <file>tests/CityDashboardTest.php</file>
