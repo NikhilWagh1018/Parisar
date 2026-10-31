@@ -76,8 +76,28 @@
     });
     leaderWrap.style.display = list.length ? 'block' : 'none';
   }
+  if (window.CitySearch) {
+    var cityItems = [];
+    document.querySelectorAll('#npCityList option').forEach(function (o) {
+      cityItems.push({ label: o.value, state: o.getAttribute('data-state') || '', boost: parseInt(o.getAttribute('data-id'), 10) > 0 ? 1 : 0 });
+    });
+    var cityAliases = {};
+    try { cityAliases = JSON.parse(document.getElementById('npCityList').getAttribute('data-aliases') || '{}'); } catch (e) { cityAliases = {}; }
+    window.CitySearch.attach(cityInput, cityItems, syncCity, { aliases: cityAliases });
+  }
+  // An old "Pick a city" error goes away as soon as the Admin types again.
+  cityInput.addEventListener('input', function () {
+    var w = cityInput.closest('.ca-field');
+    if (w) w.classList.remove('bad');
+  });
   cityInput.addEventListener('input', syncCity);
   cityInput.addEventListener('change', syncCity);
+  cityInput.addEventListener('blur', function () {
+    var al = {};
+    try { al = JSON.parse(document.getElementById('npCityList').getAttribute('data-aliases') || '{}'); } catch (e) { al = {}; }
+    var k = cityInput.value.replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!byName[k] && al[k]) { var hit = al[k].toLowerCase(); if (byName[hit]) { cityInput.value = al[k]; syncCity(); } }
+  });
   syncCity();
 
   openBtn.addEventListener('click', function () {

@@ -1,4 +1,4 @@
-// City + State inputs (sign-up and profile).
+// City + State inputs (sign-up and profile). Needs js/city_search.js loaded first.
 // The City box is a search box over a fixed list: typing narrows the suggestions, and only
 // a city from the list is accepted. Picking one fills the State box, which is read-only
 // because it always comes from the list. Common alternative spellings (Bangalore) are
@@ -48,6 +48,10 @@
       if (!key(v)) { city.setCustomValidity(''); msg.textContent = ''; return; }
       city.setCustomValidity('Pick your city from the list.');
       if (final) msg.textContent = 'Pick your city from the list. If it is not there, ask a Parisar admin to add it.';
+    }
+    if (window.CitySearch) {
+      var items = Object.keys(map).map(function (k) { return { label: map[k].label, state: map[k].state, boost: 0 }; });
+      window.CitySearch.attach(city, items, function () { sync(true); }, { aliases: aliases });
     }
     city.addEventListener('input', function () { sync(false); });
     city.addEventListener('change', function () { sync(true); });

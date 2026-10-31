@@ -94,7 +94,7 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
         <div class="ca-field">
           <label for="npCity">City *</label>
           <input id="npCity" name="city_name" type="text" list="npCityList" maxlength="100" autocomplete="off" placeholder="Start typing to search, e.g. Pune">
-          <datalist id="npCityList">
+          <datalist id="npCityList" data-aliases="<?= $h(json_encode(array_combine(array_map('cityKey', array_keys(CITY_ALIASES)), array_values(CITY_ALIASES)), JSON_UNESCAPED_UNICODE)) ?>">
             <?php foreach ($pickCities as $pc): ?>
               <option value="<?= $h($pc['name']) ?>" label="<?= $h($pc['state']) ?>" data-id="<?= (int)$pc['id'] ?>" data-state="<?= $h($pc['state']) ?>" data-leaders="<?= (int)$pc['leaders'] ?>"></option>
             <?php endforeach; ?>
@@ -225,6 +225,7 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
 </main>
 <div class="sb-overlay" id="sb-overlay"></div>
 <div class="ca-toast" id="caToast"></div>
+<script nonce="<?= $nonce ?>" src="../js/city_search.js?v=<?= filemtime(__DIR__ . '/../js/city_search.js') ?>"></script>
 <script nonce="<?= $nonce ?>" src="../js/admin_new_project.js?v=<?= filemtime(__DIR__ . '/../js/admin_new_project.js') ?>"></script>
 <script nonce="<?= $nonce ?>">
 const tog = document.getElementById('sb-toggle'), ovl = document.getElementById('sb-overlay'), aside = document.querySelector('aside');
