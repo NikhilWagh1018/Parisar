@@ -62,6 +62,11 @@
     open(editBg);
     editForm.elements['name'].focus();
   });
+  // "Assign City Leader" opens the same dialog with the leader list ready.
+  document.getElementById('apAssignBtn').addEventListener('click', function () {
+    open(editBg);
+    leaderSel.focus();
+  });
   document.getElementById('apEditCancel').addEventListener('click', function () { close(editBg); });
 
   editForm.addEventListener('submit', async function (ev) {
@@ -72,20 +77,7 @@
       audit_date: editForm.elements['audit_date'].value,
       programme_info: editForm.elements['programme_info'].value
     };
-    var picked = leaderSel.value;
-    if (picked) {
-      var current = leaderSel.getAttribute('data-current') || '';
-      var label = leaderSel.options[leaderSel.selectedIndex].textContent;
-      if (current) {
-        if (!(await window.caConfirm({
-          title: 'Change the City Leader?',
-          message: 'A city has only one City Leader. ' + current + ' will become a Surveyor and ' + label + ' will lead this city.',
-          confirmText: 'Change City Leader', danger: true
-        }))) return;
-        payload.replace_leader = true;
-      }
-      payload.leader_user_id = parseInt(picked, 10);
-    }
+    if (leaderSel.value) payload.leader_user_id = parseInt(leaderSel.value, 10);
     editSave.disabled = true;
     try {
       await post('../api/admin/audit_update.php', payload);

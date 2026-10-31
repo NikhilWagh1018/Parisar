@@ -4,13 +4,13 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  api/admin/audit_update.php
 //  POST { audit_id, name, audit_date (YYYY-MM-DD), programme_info?,
-//         leader_user_id?, replace_leader? }
+//         leader_user_id? }
 //  The Admin edits a project's name, audit date and programme info, and may
-//  choose the City Leader of its city. The city and state do not change (the
+//  assign the project to one of the city's City Leaders. The city and state do not change (the
 //  roads and surveyors belong to the city). Everyone sees the change the next
 //  time their screen loads, and the City Leader is told what changed.
-//  A city has ONE City Leader: choosing someone else is refused unless
-//  replace_leader is true, which makes the current leader a Surveyor.
+//  A city can have several City Leaders; the project belongs to the one chosen here.
+//  Only a City Leader of the project's city can be chosen, never a Surveyor.
 //  admin only.
 // ═══════════════════════════════════════════════════════════════
 
@@ -53,32 +53,22 @@ if ($v['errors']) {
 
 $cityId   = (int)$audit['city_id'];
 $changed  = [];
-$newLeader = null;       // id of the person made City Leader by this edit
-$replaced  = null;       // the City Leader who was replaced
+$newLeader = null;       // id of the City Leader this edit assigned the project to
+$oldLeader = $audit['leader_user_id'] !== null ? (int)$audit['leader_user_id'] : null;
 try {
     $pdo->beginTransaction();
     $changed = $repo->updateAudit($audit, $v['clean']);
 
     $leaderId = filter_var($body['leader_user_id'] ?? null, FILTER_VALIDATE_INT);
-    if ($leaderId !== false && $leaderId !== null && $leaderId > 0) {
+    if ($leaderId !== false && $leaderId !== null && $leaderId > 0 && (int)$leaderId !== $oldLeader) {
         $u = $pdo->prepare('SELECT role, is_active, city_id FROM users WHERE id = ?');
         $u->execute([(int)$leaderId]);
-        $leader = $u->fetch(PDO::FETCH_ASSOC) ?: null;
-        $other  = cityLeaderOther($pdo, $cityId, (int)$leaderId);
-        $alreadyLeader = $leader !== null && (string)$leader['role'] === 'city_leader' && (int)($leader['city_id'] ?? 0) === $cityId;
-        if (!$alreadyLeader) {
-            $replace = ($body['replace_leader'] ?? false) === true;
-            $err = cityLeaderAssignError($leader, $cityId, ($other !== null && !$replace) ? $other['name'] : null);
-            if ($err !== null) {
-                throw new DomainException($err);
-            }
-            if ($other !== null) {
-                $pdo->prepare("UPDATE users SET role = 'surveyor' WHERE id = ? AND role = 'city_leader'")->execute([$other['id']]);
-                $replaced = $other;
-            }
-            $pdo->prepare("UPDATE users SET role = 'city_leader', city_id = ? WHERE id = ?")->execute([$cityId, (int)$leaderId]);
-            $newLeader = (int)$leaderId;
+        $err = projectLeaderError($u->fetch(PDO::FETCH_ASSOC) ?: null, $cityId);
+        if ($err !== null) {
+            throw new DomainException($err);
         }
+        $repo->setLeader((int)$audit['id'], (int)$leaderId);
+        $newLeader = (int)$leaderId;
     }
     $pdo->commit();
 } catch (DomainException $e) {
@@ -99,36 +89,25 @@ if ($changed) {
     ]);
 }
 if ($newLeader !== null) {
-    ActivityLogger::log($pdo, ActivityLogger::USER_ROLE_CHANGED, $CURRENT_USER_ID, [
-        'user_id' => $newLeader, 'to_role' => 'city_leader', 'city_id' => $cityId,
+    ActivityLogger::log($pdo, ActivityLogger::AUDIT_UPDATED, $CURRENT_USER_ID, [
+        'audit_id' => (int)$audit['id'], 'changed' => ['City Leader'], 'leader_user_id' => $newLeader, 'previous_leader_user_id' => $oldLeader,
     ]);
-    if ($replaced !== null) {
-        ActivityLogger::log($pdo, ActivityLogger::USER_ROLE_CHANGED, $CURRENT_USER_ID, [
-            'user_id' => $replaced['id'], 'from_role' => 'city_leader', 'to_role' => 'surveyor', 'city_id' => $cityId, 'replaced_by' => $newLeader,
-        ]);
-    }
 }
 
-// Tell the City Leader what changed. A failure here must never undo the edit.
+// Tell the City Leaders involved. A failure here must never undo the edit.
 try {
     $notes = new NotificationRepository($pdo);
     $link  = 'city_audit.php?id=' . (int)$audit['id'];
-    if ($changed) {
-        $leaderRow = cityLeaderOther($pdo, $cityId, null);
-        if ($leaderRow !== null && $leaderRow['id'] !== $newLeader) {
-            $t = projectUpdatedNotificationText((string)$v['clean']['name'], $changed);
-            $notes->create($leaderRow['id'], NOTIFY_PROJECT_UPDATED, $t['title'], $t['body'], $link);
-        }
+    if ($changed && $oldLeader !== null && $oldLeader !== $newLeader) {
+        $t = projectUpdatedNotificationText((string)$v['clean']['name'], $changed);
+        $notes->create($oldLeader, NOTIFY_PROJECT_UPDATED, $t['title'], $t['body'], $link);
     }
     if ($newLeader !== null) {
-        $cn = $pdo->prepare('SELECT name FROM cities WHERE id = ?');
-        $cn->execute([$cityId]);
-        $cityName = (string)$cn->fetchColumn();
-        $t = cityLeaderChangedNotificationText($cityName, true);
-        $notes->create($newLeader, NOTIFY_LEADER_CHANGED, $t['title'], $t['body'], null);
-        if ($replaced !== null) {
-            $t = cityLeaderChangedNotificationText($cityName, false);
-            $notes->create($replaced['id'], NOTIFY_LEADER_CHANGED, $t['title'], $t['body'], null);
+        $t = projectAssignedNotificationText((string)$v['clean']['name']);
+        $notes->create($newLeader, NOTIFY_PROJECT_ASSIGNED, $t['title'], $t['body'], $link);
+        if ($oldLeader !== null) {
+            $t = projectUnassignedNotificationText((string)$v['clean']['name']);
+            $notes->create($oldLeader, NOTIFY_PROJECT_ASSIGNED, $t['title'], $t['body'], null);
         }
     }
 } catch (Throwable $e) {

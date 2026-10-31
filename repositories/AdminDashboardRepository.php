@@ -22,8 +22,6 @@ class AdminDashboardRepository
         $rows = $this->pdo->query(
             "SELECT c.id, c.name,
                 (SELECT COUNT(*) FROM users u WHERE u.city_id = c.id AND u.role = 'city_leader')  AS leaders,
-                (SELECT u.name FROM users u WHERE u.city_id = c.id AND u.role = 'city_leader'
-                  ORDER BY u.id ASC LIMIT 1)                                                      AS leader_name,
                 (SELECT COUNT(*) FROM users u WHERE u.city_id = c.id AND u.role = 'surveyor')    AS surveyors,
                 (SELECT COUNT(*) FROM road_groups rg WHERE rg.city_id = c.id)                    AS road_groups,
                 (SELECT COUNT(*) FROM segments s
@@ -43,6 +41,15 @@ class AdminDashboardRepository
             foreach (['id', 'leaders', 'surveyors', 'road_groups', 'segs', 'done'] as $k) {
                 $r[$k] = (int)$r[$k];
             }
+        }
+        unset($r);
+        // A city can have several City Leaders: list their names, in order.
+        $names = [];
+        foreach ($this->pdo->query("SELECT city_id, name FROM users WHERE role = 'city_leader' AND city_id IS NOT NULL ORDER BY name ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC) as $l) {
+            $names[(int)$l['city_id']][] = (string)$l['name'];
+        }
+        foreach ($rows as &$r) {
+            $r['leader_name'] = implode(', ', $names[$r['id']] ?? []);
         }
         unset($r);
         return $rows;

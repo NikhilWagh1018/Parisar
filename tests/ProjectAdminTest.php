@@ -26,10 +26,10 @@ class ProjectAdminTest extends TestCase
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->pdo->exec('CREATE TABLE cities (id INTEGER PRIMARY KEY, name TEXT)');
         $this->pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, role TEXT NOT NULL DEFAULT \'surveyor\',
-            is_active INTEGER NOT NULL DEFAULT 1, city_id INTEGER NULL)');
+            is_active INTEGER NOT NULL DEFAULT 1, city_id INTEGER NULL, email TEXT NOT NULL DEFAULT \'\')');
         $this->pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY AUTOINCREMENT, city_id INTEGER NOT NULL,
             state TEXT NOT NULL, name TEXT NOT NULL, audit_year INTEGER NOT NULL, audit_date TEXT NULL, programme_info TEXT NULL,
-            status TEXT NOT NULL DEFAULT \'draft\', created_by INTEGER NOT NULL,
+            status TEXT NOT NULL DEFAULT \'draft\', created_by INTEGER NOT NULL, leader_user_id INTEGER NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE (city_id, audit_year, name))');
         $this->pdo->exec('CREATE TABLE roads (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, audit_id INTEGER NULL)');
         $this->pdo->exec('CREATE TABLE segments (id INTEGER PRIMARY KEY AUTOINCREMENT, road_id INTEGER NOT NULL, segment_number INTEGER NOT NULL,
@@ -57,24 +57,43 @@ class ProjectAdminTest extends TestCase
         return $this->repo->find((int)$a['id']);
     }
 
-    // ── one City Leader per city ────────────────────────────────
+    // ── a city can have several City Leaders; each project has one ──
 
-    public function test_a_city_with_a_leader_refuses_a_second_one_by_name(): void
+    public function test_only_a_city_leader_of_the_projects_city_can_be_assigned(): void
     {
-        $user = ['role' => 'surveyor', 'is_active' => 1, 'city_id' => 1];
-        $msg = cityLeaderAssignError($user, 1, 'Nick');
-        $this->assertStringContainsString('Nick is already the City Leader', (string)$msg);
-        $this->assertStringContainsString('only one City Leader', (string)$msg);
-        $this->assertNull(cityLeaderAssignError($user, 1, null), 'no other leader (or replacing on purpose) is allowed');
+        $leader = ['role' => 'city_leader', 'is_active' => 1, 'city_id' => 1];
+        $this->assertNull(projectLeaderError($leader, 1));
+        $this->assertStringContainsString('Only a City Leader', (string)projectLeaderError(['role' => 'surveyor'] + $leader, 1));
+        $this->assertStringContainsString('another city', (string)projectLeaderError($leader, 2));
+        $this->assertStringContainsString('inactive', (string)projectLeaderError(['is_active' => 0] + $leader, 1));
+        $this->assertSame('That person was not found.', projectLeaderError(null, 1));
     }
 
-    public function test_leader_lookup_finds_the_leader_and_can_leave_one_person_out(): void
+    public function test_a_city_leader_opens_only_projects_assigned_to_them(): void
     {
-        $this->assertSame(['id' => 2, 'name' => 'Nick'], cityLeaderOther($this->pdo, 1));
-        $this->assertNull(cityLeaderOther($this->pdo, 1, 2), 'the leader themselves is not "another" leader');
-        $this->assertSame(['id' => 20, 'name' => 'Mona'], cityLeaderOther($this->pdo, 2, 10));
-        $this->pdo->exec("UPDATE users SET role = 'surveyor' WHERE id = 20");
-        $this->assertNull(cityLeaderOther($this->pdo, 2));
+        $audit = ['city_id' => 1, 'leader_user_id' => 5];
+        $this->assertTrue(projectOpenableBy($audit, 'city_leader', 5, 1));
+        $this->assertFalse(projectOpenableBy($audit, 'city_leader', 6, 1), 'another leader in the same city');
+        $this->assertFalse(projectOpenableBy(['city_id' => 1, 'leader_user_id' => null] + $audit, 'city_leader', 5, 1), 'unassigned');
+        $this->assertFalse(projectOpenableBy($audit, 'city_leader', 5, 2), 'other city');
+        $this->assertFalse(projectOpenableBy($audit, 'surveyor', 5, 1));
+        $this->assertTrue(projectOpenableBy(['city_id' => 1, 'leader_user_id' => null], 'admin', 1, null));
+    }
+
+    public function test_leaders_of_a_city_lists_every_active_leader(): void
+    {
+        $this->assertSame([2], array_column(cityLeadersOf($this->pdo, 1), 'id'));
+        $this->assertSame([20], array_column(cityLeadersOf($this->pdo, 2), 'id'));
+    }
+
+    public function test_a_project_can_be_assigned_and_filtered_by_leader(): void
+    {
+        $id = $this->repo->createAudit(1, 1, ['name' => 'P', 'state' => 'MH', 'audit_date' => '2026-01-01', 'audit_year' => 2026, 'programme_info' => null], 2);
+        $this->assertSame(2, (int)$this->repo->find($id)['leader_user_id']);
+        $this->assertCount(1, array_filter($this->repo->listForCity(1, 2), fn($r) => (int)$r['id'] === $id));
+        $this->assertCount(0, array_filter($this->repo->listForCity(1, 99), fn($r) => (int)$r['id'] === $id));
+        $this->repo->setLeader($id, null);
+        $this->assertNull($this->repo->find($id)['leader_user_id']);
     }
 
     // ── editing a project ───────────────────────────────────────

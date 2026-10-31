@@ -9,6 +9,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
+require_once __DIR__ . '/../helpers/CityLeaderAssign.php';
 require_once __DIR__ . '/../helpers/ProjectStatus.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../repositories/CityAuditRepository.php';
@@ -22,7 +23,7 @@ $isNational = $CURRENT_USER_ROLE === 'admin';
 $repo       = new CityAuditRepository($pdo);
 $audit      = $repo->find((int)($_GET['id'] ?? 0));
 
-if ($audit === null || (!$isNational && (int)$audit['city_id'] !== (int)($CURRENT_USER_CITY_ID ?? 0))) {
+if ($audit === null || !projectOpenableBy($audit, $CURRENT_USER_ROLE, $CURRENT_USER_ID, (int)($CURRENT_USER_CITY_ID ?? 0))) {
     header('Location: ' . ($isNational ? 'platform_dashboard.php' : 'city_dashboard.php'));
     exit;
 }
@@ -68,15 +69,10 @@ $segScore = static function (?int $auditRowId) use ($pdo): ?array {
 };
 $backUrl   = 'city_dashboard.php' . ($isNational ? '?city_id=' . (int)$audit['city_id'] : '');
 
-// Admin only: the city's City Leader, who could take over, and what deleting would stop.
-$adminLeader = null; $adminCandidates = []; $adminImpact = null;
+// Admin only: the city's City Leaders (the project goes to one of them), and what deleting would stop.
+$adminLeaders = []; $adminImpact = null;
 if ($isNational) {
-    $adminLeader = cityLeaderOther($pdo, (int)$audit['city_id']);
-    $cq = $pdo->prepare(
-        "SELECT id, name, email FROM users WHERE is_active = 1 AND role = 'surveyor' AND (city_id = ? OR city_id IS NULL) ORDER BY name ASC, id ASC"
-    );
-    $cq->execute([(int)$audit['city_id']]);
-    $adminCandidates = $cq->fetchAll(PDO::FETCH_ASSOC);
+    $adminLeaders = cityLeadersOf($pdo, (int)$audit['city_id']);
     $adminImpact = $repo->deletionImpact((int)$audit['id']);
 }
 
@@ -154,6 +150,8 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
     </div>
     <?php if ($isNational): ?>
     <div class="ap-actions">
+      <span class="ap-leader" style="margin-right:10px"><?php if ($audit['leader_name'] !== null): ?>City Leader: <b><?= $h($audit['leader_name']) ?></b><?php else: ?><b style="color:#b45309">No City Leader assigned</b><?php endif; ?></span>
+      <button type="button" class="ca-btn" id="apAssignBtn"><?= $audit['leader_name'] !== null ? 'Change City Leader' : 'Assign City Leader' ?></button>
       <button type="button" class="ca-btn ghost" id="apEditBtn">Edit project</button>
       <button type="button" class="ca-btn ca-btn-danger" id="apDeleteBtn">Delete project</button>
     </div>
@@ -536,16 +534,19 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
         <div class="ca-err"></div>
       </div>
       <div class="ca-field full">
-        <label for="apLeader">City Leader of <?= $h($audit['city_name']) ?></label>
-        <select id="apLeader" name="leader_user_id" data-current="<?= $adminLeader ? $h($adminLeader['name']) : '' ?>">
-          <option value=""><?= $adminLeader ? '— Keep ' . $h($adminLeader['name']) . ' —' : '— Assign later —' ?></option>
-          <?php foreach ($adminCandidates as $cu): ?>
+        <label for="apLeader">City Leader for this project</label>
+        <select id="apLeader" name="leader_user_id">
+          <option value=""><?= $audit['leader_user_id'] === null ? '— Not assigned —' : '— Keep ' . $h($audit['leader_name']) . ' —' ?></option>
+          <?php foreach ($adminLeaders as $cu): ?>
+            <?php if ((int)$cu['id'] === (int)$audit['leader_user_id']) { continue; } ?>
             <option value="<?= (int)$cu['id'] ?>"><?= $h($cu['name']) ?><?= $cu['email'] !== '' ? ' (' . $h($cu['email']) . ')' : '' ?></option>
           <?php endforeach; ?>
         </select>
-        <div class="ca-hint"><?= $adminLeader
-            ? $h($adminLeader['name']) . ' is the City Leader. A city has only one, so choosing someone else makes ' . $h($adminLeader['name']) . ' a Surveyor.'
-            : 'This city has no City Leader yet. A city has only one.' ?></div>
+        <div class="ca-hint"><?php if (!$adminLeaders): ?>
+            <?= $h($audit['city_name']) ?> has no City Leader yet. Make someone a City Leader on the Users page first.
+          <?php else: ?>
+            Only City Leaders of <?= $h($audit['city_name']) ?> are listed. The chosen City Leader sees this project and assigns its surveyors; other City Leaders in the city do not see it.
+          <?php endif; ?></div>
       </div>
       <div class="ca-hint full">The city (<?= $h($audit['city_name']) ?>) and state cannot be changed here. Changes show on the City Leader’s and surveyors’ dashboards the next time they load.</div>
       <div class="ca-modal-actions">

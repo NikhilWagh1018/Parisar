@@ -11,8 +11,13 @@
   function csrfHeaders() {
     return { 'Content-Type': 'application/json', 'X-CSRF-Token': app.dataset.csrf || '', 'X-Requested-With': 'XMLHttpRequest' };
   }
+  // Surveyors who could be promoted to City Leader (Cities table picker).
   function candidatesFor(cityId) {
-    return candidates.filter(function (u) { return u.city_id === null || u.city_id === cityId; });
+    return candidates.filter(function (u) { return u.role === 'surveyor' && (u.city_id === null || u.city_id === cityId); });
+  }
+  // City Leaders of the city: the only people a project can be assigned to.
+  function leadersFor(cityId) {
+    return candidates.filter(function (u) { return u.role === 'city_leader' && u.city_id === cityId; });
   }
   function personLabel(u) { return u.name + (u.email ? ' (' + u.email + ')' : '') + (u.home ? ' \u2014 ' + u.home : ''); }
 
@@ -61,22 +66,26 @@
     else { if (stateInput.readOnly) stateInput.value = ''; stateInput.readOnly = false; }
     updateLeaderField(c);
     if (!typed) say('');
-    else if (c && c.id && c.leaders === 0) say('This city has no City Leader yet. Add one under Users, or nobody can add its roads.', true);
-    else if (c && c.id && c.leaders > 0) say((c.leaderName || 'This city\'s City Leader') + ' is already the City Leader of ' + typed + '. The project goes to their dashboard. A city has only one City Leader; to change who leads it, open the project and choose Edit.', false);
+    else if (c && c.id && c.leaders === 0) say('This city has no City Leader yet. Make someone a City Leader on the Users page, then assign the project to them.', true);
     else if (!c) say('Pick a city from the list. If it is not there, it has to be added to the city list first.', true);
     else if (!c.id) say('New city: it is added to CycleAudit with this project, and its City Leader and surveyors can then sign up.', false);
     else say('');
   }
   var leaderWrap = document.getElementById('npLeaderWrap'), leaderSel = form.leader_user_id;
+  var leaderHint = document.getElementById('npLeaderHint');
   function updateLeaderField(c) {
-    var list = c && c.id && c.leaders === 0 ? candidatesFor(c.id) : [];
-    leaderSel.innerHTML = '<option value="">— Assign later —</option>';
+    var list = c && c.id ? leadersFor(c.id) : [];
+    leaderSel.innerHTML = '<option value="">\u2014 Assign later \u2014</option>';
     list.forEach(function (u) {
       var o = document.createElement('option');
-      o.value = u.id; o.textContent = personLabel(u);
+      o.value = u.id; o.textContent = u.name + (u.email ? ' (' + u.email + ')' : '');
       leaderSel.appendChild(o);
     });
-    leaderWrap.style.display = list.length ? 'block' : 'none';
+    leaderHint.textContent = !c || !c.id
+      ? 'Pick a city first. Only City Leaders of that city are listed. The project is visible to the City Leader you choose, and to nobody else in the city.'
+      : list.length
+        ? 'Only City Leaders of this city are listed. The chosen City Leader sees this project and assigns its surveyors.'
+        : 'This city has no City Leader yet. Make someone a City Leader on the Users page, then assign the project to them.';
   }
   if (window.CitySearch) {
     var cityItems = [];
@@ -135,7 +144,7 @@
         err.fields = (data && data.errors) || {};
         throw err;
       }
-      toast('Project created. The City Leader can now add roads.');
+      toast(leaderSel.value ? 'Project created. The City Leader can now add roads.' : 'Project created. Assign a City Leader so they can start.');
       setTimeout(function () { window.location.reload(); }, 900);
     } catch (e) {
       showFieldErrors(e.fields);

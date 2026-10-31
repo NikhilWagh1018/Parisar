@@ -408,23 +408,19 @@ function cityFindOrCreate(PDO $pdo, string $name): array
 }
 
 /**
- * The City Leader of a city, or null when it has none. $exceptUserId leaves one person
- * out (the one being promoted). On MySQL the city row is locked first, so two Admins
- * promoting at the same moment cannot both succeed; call this inside a transaction.
+ * The active City Leaders of a city (a city can have several), by name.
  *
- * @return array{id:int,name:string}|null
+ * @return list<array{id:int,name:string,email:string}>
  */
-function cityLeaderOther(PDO $pdo, int $cityId, ?int $exceptUserId = null): ?array
+function cityLeadersOf(PDO $pdo, int $cityId): array
 {
-    if ($pdo->inTransaction() && $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql') {
-        $pdo->prepare('SELECT id FROM cities WHERE id = ? FOR UPDATE')->execute([$cityId]);
-    }
     $q = $pdo->prepare(
-        "SELECT id, name FROM users WHERE city_id = ? AND role = 'city_leader' AND id <> ? ORDER BY id ASC LIMIT 1"
+        "SELECT id, name, email FROM users WHERE city_id = ? AND role = 'city_leader' AND is_active = 1 ORDER BY name ASC, id ASC"
     );
-    $q->execute([$cityId, $exceptUserId ?? 0]);
-    $row = $q->fetch(PDO::FETCH_ASSOC);
-    return $row === false ? null : ['id' => (int)$row['id'], 'name' => (string)$row['name']];
+    $q->execute([$cityId]);
+    return array_map(static fn(array $r): array => [
+        'id' => (int)$r['id'], 'name' => (string)$r['name'], 'email' => (string)($r['email'] ?? ''),
+    ], $q->fetchAll(PDO::FETCH_ASSOC));
 }
 
 /**

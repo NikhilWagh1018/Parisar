@@ -32,7 +32,7 @@ if ($cityId > 0) {
     $city = $s->fetch(PDO::FETCH_ASSOC) ?: null;
 }
 
-$audits    = $city ? (new CityDashboardRepository($pdo))->auditSummaries((int)$city['id']) : [];
+$audits    = $city ? (new CityDashboardRepository($pdo))->auditSummaries((int)$city['id'], $isNational ? null : (int)$CURRENT_USER_ID) : [];
 $adminNotes = $city ? (new AuditReviewRepository($pdo))->adminNotesForCity((int)$city['id']) : [];
 $totals    = cityDashTotals($audits);
 
