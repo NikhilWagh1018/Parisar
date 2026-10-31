@@ -61,7 +61,8 @@
     updateLeaderField(c);
     if (!typed) say('');
     else if (c && c.id && c.leaders === 0) say('This city has no City Leader yet. Add one under Users, or nobody can add its roads.', true);
-    else if (!c || !c.id) say('New city: it is added to CycleAudit with this project, and its City Leader and surveyors can then sign up.', false);
+    else if (!c) say('Pick a city from the list. If it is not there, it has to be added to the city list first.', true);
+    else if (!c.id) say('New city: it is added to CycleAudit with this project, and its City Leader and surveyors can then sign up.', false);
     else say('');
   }
   var leaderWrap = document.getElementById('npLeaderWrap'), leaderSel = form.leader_user_id;
@@ -87,6 +88,11 @@
 
   form.addEventListener('submit', async function (ev) {
     ev.preventDefault();
+    if (!byName[cityInput.value.trim().toLowerCase()]) {
+      showFieldErrors({ city_name: 'Pick a city from the list.' });
+      toast('Pick a city from the list.', 'error');
+      return;
+    }
     var btn = form.querySelector('button[type="submit"]');
     btn.disabled = true;
     showFieldErrors({});

@@ -64,6 +64,8 @@ loadProfile();
 
 // ── Save profile ───────────────────────────────────────────────
 async function saveProfile() {
+  const cityEl = document.getElementById('f-city');
+  if (!cityEl.checkValidity()) { cityEl.reportValidity(); return; }
   const btn = document.getElementById('btn-save-profile');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Saving…';

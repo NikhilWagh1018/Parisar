@@ -58,7 +58,9 @@ $leaderCandidates = $pdo->query(
 $leaderCandidates = array_map(static fn(array $u): array => [
     'id' => (int)$u['id'], 'name' => (string)$u['name'], 'email' => (string)$u['email'],
     'city_id' => $u['city_id'] !== null ? (int)$u['city_id'] : null,
-    'home' => implode(', ', array_filter([(string)($u['home_city'] ?? ''), (string)($u['home_state'] ?? '')], 'strlen')),
+    'home' => str_contains((string)($u['home_city'] ?? ''), '(' . (string)($u['home_state'] ?? '') . ')')
+        ? (string)$u['home_city']
+        : implode(', ', array_filter([(string)($u['home_city'] ?? ''), (string)($u['home_state'] ?? '')], 'strlen')),
 ], $leaderCandidates);
 $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d');
 ?>

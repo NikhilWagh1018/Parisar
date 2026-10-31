@@ -46,9 +46,12 @@ if ($cityName === null) {
     if ($cityName === '') {
         cityApiFail(422, 'Choose a city.', ['errors' => ['city_name' => 'Choose a city.']]);
     }
-    if (!cityNameIsValid($cityName)) {
-        cityApiFail(422, 'Enter a valid city name.', ['errors' => ['city_name' => 'Enter a valid city name.']]);
+    // Only cities from the list can be added, so spelling stays standard.
+    [$listed] = cityResolve($cityName, (string)($body['state'] ?? ''));
+    if ($listed === null) {
+        cityApiFail(422, 'Pick a city from the list.', ['errors' => ['city_name' => 'Pick a city from the list.']]);
     }
+    $cityName = $listed;
 }
 
 // The state follows the city, so a posted value is ignored when the city is known.
