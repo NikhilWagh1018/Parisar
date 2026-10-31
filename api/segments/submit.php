@@ -24,6 +24,7 @@ require_once __DIR__ . '/../../config/auth_guard.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 require_once __DIR__ . '/../../helpers/Validator.php';
+require_once __DIR__ . '/../../helpers/SegmentAnswers.php';
 require_once __DIR__ . '/../../repositories/AuditSessionRepository.php';
 require_once __DIR__ . '/../../repositories/SurveyorWorkRepository.php';
 
@@ -85,7 +86,7 @@ try {
 
     // ── 1. Lock segment — prevent duplicate submissions ────────
     $stmtSeg = $pdo->prepare(
-        'SELECT s.status, s.road_id, s.segment_number, r.creator_id, r.finalized_at
+        'SELECT s.status, s.road_id, s.segment_number, s.length, r.creator_id, r.finalized_at
          FROM   segments s
          JOIN   roads r ON r.id = s.road_id
          WHERE  s.id = ?
@@ -145,6 +146,21 @@ try {
         $pdo->rollBack();
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => 'Segment does not belong to this session\'s road.']);
+        exit;
+    }
+
+    // ── 2c. Every answer the score needs must be given ─────────
+    // A blank form would otherwise get an invented score (the engine reads
+    // a blank buffer zone as worst and a blank shade as best).
+    $answerError = segmentAnswersError(
+        $_POST,
+        (float)($segment['length'] ?? 0),
+        (array)(json_decode((string)($_POST['intersections'] ?? '[]'), true) ?: [])
+    );
+    if ($answerError !== null) {
+        $pdo->rollBack();
+        http_response_code(422);
+        echo json_encode(['success' => false, 'error' => $answerError]);
         exit;
     }
 
@@ -257,21 +273,7 @@ try {
     }
 
     // ── 4. INSERT obstructions ─────────────────────────────────
-    $obsCategories = [
-        'fixed'   => [
-            'Trees', 'Poles', 'CCTV', 'TrafficSignal', 'SignBoard',
-            'TelephonePanel', 'ElectricalPanel', 'BusStand',
-            'BuiltEncroachment', 'Bollards', 'PropertyEntrance', 'UtilityChambers',
-        ],
-        'movable' => [
-            'Hawkers', 'GarbageBins', 'ConstructionMaterial',
-            'TrafficBarricade', 'PeopleSitting', 'Hoardings',
-        ],
-        'parked'  => [
-            'ReligiousLandmark', 'RestaurantEatery', 'AutoGarage',
-            'CommercialRetailShops', 'OnStreetVending', 'PublicSpace',
-        ],
-    ];
+    $obsCategories = segmentObstructionCategories();
 
     $obsStmt = $pdo->prepare(
         'INSERT INTO obstructions

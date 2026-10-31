@@ -245,6 +245,7 @@ function toggleObstruction(type, label) {
         ${makeCounter(id + '_total',   'Total Obstruction')}
       </div>`;
     container.appendChild(block);
+    clearReqError('wrap-noObstructions');
   } else {
     document.getElementById('block_' + id)?.remove();
   }
@@ -403,6 +404,7 @@ function addIntersection() {
       ${buildIntersectionBody(uid)}
     </div>`;
   document.getElementById('intersectionsContainer').appendChild(card);
+  clearReqError('wrap-noIntersections');
 }
 
 function toggleIntersection(uid) {
@@ -538,6 +540,118 @@ function fillGPS(inputId) {
   );
 }
 
+// Answers the scoring engine reads. A blank is not "unknown" to the engine
+// (blank buffer zone scores worst, blank shade scores best), so each of
+// these must be answered. Keep in sync with helpers/SegmentAnswers.php.
+const REQUIRED_RADIOS = [
+  ['cycle_track_missing', 'Cycle Track Missing'],
+  ['surface_material',    'Cycle track surface material'],
+  ['shade',               'Shade'],
+  ['light_after_sunset',  'Light (after sunset)'],
+  ['buffer_zone',         'Presence of Buffer Zone'],
+];
+const INTERSECTION_REQUIRED = [
+  ['offRamp',        'Ramp off track'],
+  ['onRamp',         'Ramp back to track'],
+  ['Markings',       'Markings'],
+  ['Signage',        'Signage'],
+  ['TrafficCalming', 'Traffic Calming Device'],
+];
+
+function setReqError(el, msg) {
+  if (!el) return;
+  el.classList.add('req-error');
+  let m = el.querySelector(':scope > .req-msg');
+  if (!m) {
+    m = document.createElement('div');
+    m.className = 'req-msg';
+    el.appendChild(m);
+  }
+  m.textContent = msg;
+}
+
+function clearReqError(idOrEl) {
+  const el = typeof idOrEl === 'string' ? document.getElementById(idOrEl) : idOrEl;
+  if (!el) return;
+  el.classList.remove('req-error');
+  el.querySelector(':scope > .req-msg')?.remove();
+}
+
+function clearAllReqErrors() {
+  document.querySelectorAll('#auditForm .req-error').forEach(el => clearReqError(el));
+}
+
+// Total of every obstruction count the surveyor typed in.
+function obstructionCountTotal() {
+  let sum = 0;
+  ['fixed', 'movable', 'parked'].forEach(t => {
+    document.querySelectorAll(`#${t}Inputs .item-block input`).forEach(el => { sum += _numVal(el); });
+  });
+  return sum;
+}
+
+function validateScoringAnswers() {
+  let ok = true;
+  const form = document.getElementById('auditForm');
+
+  // 1. Radio questions
+  REQUIRED_RADIOS.forEach(([name, label]) => {
+    const group = form.querySelector(`input[name="${name}"]`)?.closest('.field-group');
+    if (!group) return;
+    if (form.querySelector(`input[name="${name}"]:checked`)) { clearReqError(group); return; }
+    setReqError(group, 'Please answer: ' + label);
+    ok = false;
+  });
+
+  // 2. Missing length (only when the track is missing)
+  const box = document.getElementById('missingLengthBox');
+  if (form.querySelector('input[name="cycle_track_missing"]:checked')?.value === 'Yes') {
+    const raw = (document.getElementById('missingLength')?.value || '').trim();
+    const len = parseFloat(raw);
+    const max = parseFloat(form.dataset.segmentLength || '0');
+    let msg = '';
+    if (raw === '' || !Number.isFinite(len)) msg = 'Enter the missing cycle track length in metres.';
+    else if (len <= 0)                       msg = 'The missing length must be more than 0 m.';
+    else if (max > 0 && len > max)           msg = 'The missing length cannot be more than the segment length (' + max + ' m).';
+    if (msg) { setReqError(box, msg); ok = false; } else { clearReqError(box); }
+  } else {
+    clearReqError(box);
+  }
+
+  // 3. Obstructions: some counted, or "none" confirmed
+  const noObs = document.getElementById('noObstructions')?.checked;
+  const obsN  = obstructionCountTotal();
+  const obsWrap = document.getElementById('wrap-noObstructions');
+  let obsMsg = '';
+  if (noObs && obsN > 0)       obsMsg = 'You ticked "No obstructions" but also entered counts. Untick one of them.';
+  else if (!noObs && obsN === 0) obsMsg = 'Add the obstructions you found (with a count), or tick "No obstructions on this segment".';
+  if (obsMsg) { setReqError(obsWrap, obsMsg); ok = false; } else { clearReqError(obsWrap); }
+
+  // 4. Intersections: complete rows, or "none" confirmed
+  const noInt   = document.getElementById('noIntersections')?.checked;
+  const intWrap = document.getElementById('wrap-noIntersections');
+  let intMsg = '';
+  if (noInt && intersections.length > 0)        intMsg = 'You ticked "No intersections" but also added one. Untick it or remove the intersection.';
+  else if (!noInt && intersections.length === 0) intMsg = 'Add the intersections in this segment, or tick "No intersections in this segment".';
+  if (intMsg) { setReqError(intWrap, intMsg); ok = false; } else { clearReqError(intWrap); }
+
+  intersections.forEach(uid => {
+    const p = 'int' + uid + '_';
+    INTERSECTION_REQUIRED.forEach(([suffix, label]) => {
+      const radio = form.querySelector(`input[name="${p}${suffix}"]`);
+      const field = radio?.closest('.int-field');
+      if (!field) return;
+      if (form.querySelector(`input[name="${p}${suffix}"]:checked`)) { clearReqError(field); return; }
+      setReqError(field, 'Please answer');
+      ok = false;
+      // make sure a collapsed card shows its problem
+      if (!document.getElementById('intBody_' + uid)?.classList.contains('open')) toggleIntersection(uid);
+    });
+  });
+
+  return ok;
+}
+
 function validateForm() {
   let ok = true;
   ['startLandmark','endLandmark','gpsStart','gpsEnd'].forEach(id => {
@@ -546,12 +660,32 @@ function validateForm() {
     if (!val) { wrap?.classList.add('field-error'); ok = false; }
     else       { wrap?.classList.remove('field-error'); }
   });
+  // The end landmark and GPS sit at the bottom of the page; the scoring
+  // answers are checked too so the surveyor sees everything missing at once.
+  if (!validateScoringAnswers()) ok = false;
   if (!ok) {
-    document.querySelector('.field-error')
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const first = Array.from(document.querySelectorAll('.field-error, .req-error'))
+      .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1)[0];
+    first?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showFormToast('Some required answers are missing. Check the red fields.', 'error', 5000);
   }
   return ok;
 }
+
+// Clear a field's red state as soon as it is answered.
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (!t || !t.closest || !t.closest('#auditForm')) return;
+  if (t.type === 'radio') {
+    clearReqError(t.closest('.int-field') || t.closest('.field-group'));
+  }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (!t || !t.closest) return;
+  if (t.id === 'missingLength') clearReqError('missingLengthBox');
+  if (t.closest('#fixedInputs, #movableInputs, #parkedInputs')) clearReqError('wrap-noObstructions');
+});
 function clearError(id) {
   document.getElementById(id)?.classList.remove('field-error');
 }
@@ -626,6 +760,8 @@ async function doReset() {
     // Missing length box
     const missingBox = document.getElementById('missingLengthBox');
     if (missingBox) missingBox.style.display = 'none';
+
+    clearAllReqErrors();
 
     // Footpath score badge
     updateFootpathScore();
@@ -840,9 +976,17 @@ async function prefillFormIfEditMode() {
 
     // ── Obstructions ─────────────────────────────────────────
     prefillObstructions(data.obstructions);
+    if (!data.obstructions || !data.obstructions.length) {
+      const c = document.getElementById('noObstructions');
+      if (c) c.checked = true;
+    }
 
     // ── Intersections ────────────────────────────────────────
     prefillIntersections(data.intersections);
+    if (!data.intersections || !data.intersections.length) {
+      const c = document.getElementById('noIntersections');
+      if (c) c.checked = true;
+    }
 
   } catch (err) {
     console.warn('Could not pre-fill form:', err);
