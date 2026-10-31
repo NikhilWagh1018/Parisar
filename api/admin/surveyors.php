@@ -113,6 +113,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // -- Reset password (Admin: anyone else; City Leader: surveyors of their own city) --
+    if (($body['action'] ?? '') === 'reset_password') {
+        require_once __DIR__ . '/../../helpers/StaffPasswordReset.php';
+        $resetError = staffPasswordResetError(
+            $CURRENT_USER_ROLE,
+            $CURRENT_USER_ID,
+            $CURRENT_USER_CITY_ID,
+            (int)$targetId,
+            (string)$target['role'],
+            $target['city_id'] !== null ? (int)$target['city_id'] : null,
+            (int)$target['is_active'] === 1
+        );
+        if ($resetError !== null) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => $resetError]);
+            exit;
+        }
+
+        $tempPassword = tempPasswordGenerate();
+        staffPasswordResetApply($pdo, (int)$targetId, $tempPassword);
+        // The password itself is never logged.
+        error_log('Password reset for user ' . $targetId . ' by user ' . $CURRENT_USER_ID . ' (' . $CURRENT_USER_ROLE . ').');
+        try {
+            ActivityLogger::log($pdo, 'user_password_reset', $CURRENT_USER_ID, ['user_id' => $targetId]);
+        } catch (Throwable $e) {
+            error_log('Activity log for password reset failed: ' . $e->getMessage());
+        }
+
+        header('Cache-Control: no-store');
+        echo json_encode(['success' => true, 'temp_password' => $tempPassword]);
+        exit;
+    }
+
     // ── City change (admin only) ───────────────────────
     if (array_key_exists('city_id', $body)) {
         if (!$isNationalAdmin) {

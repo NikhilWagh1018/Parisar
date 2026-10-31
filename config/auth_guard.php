@@ -109,6 +109,32 @@ if (!$freshUser || (int)$freshUser['is_active'] === 0) {
 
 $CURRENT_USER_ROLE     = (string)$freshUser['role'];
 $_SESSION['user_role'] = $CURRENT_USER_ROLE; // keep session cache in sync
+
+// A person whose password was reset by staff must choose their own before using
+// anything else (helpers/StaffPasswordReset.php, auth/force_password.php).
+require_once __DIR__ . '/../helpers/StaffPasswordReset.php';
+if (!mustChangePasswordExempt((string)($_SERVER['SCRIPT_NAME'] ?? '')) && userMustChangePassword($pdo, $CURRENT_USER_ID)) {
+    $mustChangeWantsJson = (
+        str_contains($_SERVER['HTTP_ACCEPT']         ?? '', 'application/json')
+        || strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest'
+        || str_contains($_SERVER['CONTENT_TYPE']     ?? '', 'application/json')
+    );
+
+    if ($mustChangeWantsJson) {
+        header('Content-Type: application/json');
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Choose a new password first.']);
+    } else {
+        $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_FILENAME']));
+        $docRoot   = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '/');
+        $relPath   = ltrim(str_replace($docRoot, '', $scriptDir), '/');
+        $depth     = ($relPath !== '') ? count(explode('/', $relPath)) : 0;
+        $prefix    = $depth > 0 ? str_repeat('../', $depth) : './';
+        header("Location: {$prefix}auth/force_password.php");
+    }
+    exit;
+}
+
 // City Leaders only get the screens built for them (helpers/CityLeaderGate.php).
 // Every other page and API is closed to them here, not just hidden from the menu.
 require_once __DIR__ . '/../helpers/CityLeaderGate.php';
