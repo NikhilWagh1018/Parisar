@@ -14,6 +14,7 @@
             <file>tests/CityScopeTest.php</file>
             <file>tests/RoadRepositoryCityTest.php</file>
             <file>tests/CitiesTest.php</file>
+            <file>tests/UserPublicIdTest.php</file>
             <file>tests/RoleHomeTest.php</file>
             <file>tests/RoleRulesTest.php</file>
             <file>tests/CityLeaderGateTest.php</file>
