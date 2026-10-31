@@ -67,6 +67,14 @@ class CityLeaderGateTest extends TestCase
         $this->assertFalse(cityLeaderMayAccess('/pages/xprofile.php'));
     }
 
+    public function test_notifications_api_is_allowed(): void
+    {
+        // The dashboard's "Mark all as read" posts here; a 403 made it fail silently.
+        $this->assertTrue(cityLeaderMayAccess('/pages/../api/user/notifications.php'));
+        $this->assertTrue(cityLeaderMayAccess('/Parisar/api/user/notifications.php'));
+        $this->assertFalse(cityLeaderMayAccess('/api/user/xnotifications.php'));
+    }
+
     public function test_audit_screens_are_allowed(): void
     {
         foreach (['/pages/city_audit.php',

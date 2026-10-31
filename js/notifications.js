@@ -37,10 +37,13 @@
     readAll.addEventListener('click', function () {
       readAll.disabled = true;
       post({ action: 'read_all' }).then(function (d) {
-        if (!d.success) throw new Error('failed');
+        if (!d || !d.success) throw new Error('failed');
         panel.querySelectorAll('.nt-item').forEach(function (li) { li.classList.add('is-read'); });
         refreshCount();
-      }).catch(function () { readAll.disabled = false; });
+      }).catch(function () {
+        readAll.disabled = false;
+        if (subEl) subEl.textContent = 'Could not mark as read. Please try again.';
+      });
     });
   }
 
