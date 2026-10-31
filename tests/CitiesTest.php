@@ -265,4 +265,90 @@ class CitiesTest extends TestCase
         $this->pdo->exec("INSERT INTO cities (name, slug) VALUES ('Some Town', 'some-town')");
         $this->assertSame('some-town-2', citySlugUnique($this->pdo, 'Some-Town'));
     }
+
+    public function test_cityForPromotion_keeps_the_city_a_person_already_has(): void
+    {
+        $this->addCities('Pune', 'Mumbai');
+        $this->assertSame([2, false], cityForPromotion($this->pdo, 2, 'Pune'));
+        $this->assertCount(2, listCities($this->pdo));
+    }
+
+    public function test_cityForPromotion_uses_the_signup_city_when_it_exists(): void
+    {
+        $this->addCities('Pune');
+        $this->assertSame([1, false], cityForPromotion($this->pdo, null, ' pune '));
+        $this->assertCount(1, listCities($this->pdo));
+    }
+
+    public function test_cityForPromotion_adds_the_signup_city_when_it_is_new(): void
+    {
+        [$id, $created] = cityForPromotion($this->pdo, null, 'Pune');
+        $this->assertTrue($created);
+        $this->assertSame('Pune', $this->pdo->query("SELECT name FROM cities WHERE id = $id")->fetchColumn());
+    }
+
+    public function test_cityForPromotion_is_null_without_a_usable_signup_city(): void
+    {
+        $this->assertSame([null, false], cityForPromotion($this->pdo, null, null));
+        $this->assertSame([null, false], cityForPromotion($this->pdo, null, '   '));
+        $this->assertSame([null, false], cityForPromotion($this->pdo, null, 'Pune<script>'));
+        $this->assertSame([null, false], cityForPromotion($this->pdo, 0, ''));
+        $this->assertCount(0, listCities($this->pdo));
+    }
+
+    private function addUsers(): void
+    {
+        $this->pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, role TEXT, city_id INTEGER NULL, home_city TEXT NULL)');
+        $this->pdo->exec("INSERT INTO users (id, role, city_id, home_city) VALUES
+            (1, 'admin',       NULL, 'Pune'),
+            (2, 'surveyor',    NULL, 'Pune'),
+            (3, 'surveyor',    NULL, ' pune '),
+            (4, 'city_leader', NULL, 'Pune'),
+            (5, 'surveyor',    NULL, 'Mumbai'),
+            (6, 'surveyor',    NULL, NULL),
+            (7, 'surveyor',    9,    'Pune')");
+    }
+
+    private function userCity(int $id): mixed
+    {
+        return $this->pdo->query("SELECT city_id FROM users WHERE id = $id")->fetchColumn();
+    }
+
+    public function test_cityAdoptSignups_places_everyone_who_named_the_city(): void
+    {
+        $this->addCities('Pune');
+        $this->addUsers();
+        $this->assertSame(3, cityAdoptSignups($this->pdo, 1));
+        foreach ([2, 3, 4] as $id) {
+            $this->assertSame(1, (int)$this->userCity($id), "user $id");
+        }
+        // Admins, other cities, no city named, and people already placed are left alone.
+        $this->assertNull($this->userCity(1));
+        $this->assertNull($this->userCity(5));
+        $this->assertNull($this->userCity(6));
+        $this->assertSame(9, (int)$this->userCity(7));
+        // Running it again changes nothing.
+        $this->assertSame(0, cityAdoptSignups($this->pdo, 1));
+    }
+
+    public function test_cityAdoptSignups_does_nothing_for_an_unknown_city(): void
+    {
+        $this->addUsers();
+        $this->assertSame(0, cityAdoptSignups($this->pdo, 99));
+        $this->assertNull($this->userCity(2));
+    }
+
+    public function test_cityLinkUserToHomeCity_places_one_unplaced_person_in_an_existing_city(): void
+    {
+        $this->addCities('Pune');
+        $this->addUsers();
+        $this->assertSame(1, cityLinkUserToHomeCity($this->pdo, 2));
+        $this->assertSame(1, (int)$this->userCity(2));
+        $this->assertNull($this->userCity(3));            // others untouched
+        $this->assertNull(cityLinkUserToHomeCity($this->pdo, 5));   // Mumbai is not set up
+        $this->assertNull(cityLinkUserToHomeCity($this->pdo, 7));   // already placed
+        $this->assertNull(cityLinkUserToHomeCity($this->pdo, 1));   // admins have no city
+        $this->assertNull(cityLinkUserToHomeCity($this->pdo, 6));   // named no city
+        $this->assertSame(9, (int)$this->userCity(7));
+    }
 }

@@ -407,6 +407,87 @@ function cityFindOrCreate(PDO $pdo, string $name): array
     return [(int)$pdo->lastInsertId(), true];
 }
 
+/**
+ * Put everyone who named this city at sign-up into it. People whose city was not
+ * set up yet when they registered have users.city_id empty; once the city exists
+ * they are placed in it, so its City Leader sees them. Anyone already in a city
+ * stays where they are (moving people is an Admin decision), and Admins have no
+ * city. Safe to run again.
+ *
+ * @return int  how many people were placed
+ */
+function cityAdoptSignups(PDO $pdo, int $cityId): int
+{
+    $q = $pdo->prepare('SELECT name FROM cities WHERE id = ?');
+    $q->execute([$cityId]);
+    $name = $q->fetchColumn();
+    if (!is_string($name) || $name === '') {
+        return 0;
+    }
+    $want = mb_strtolower(cityCanonicalName($name));
+
+    $ids = [];
+    $rows = $pdo->query(
+        "SELECT id, home_city FROM users
+          WHERE city_id IS NULL AND role <> 'admin' AND home_city IS NOT NULL AND home_city <> ''"
+    )->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $r) {
+        if (mb_strtolower(cityCanonicalName((string)$r['home_city'])) === $want) {
+            $ids[] = (int)$r['id'];
+        }
+    }
+    if ($ids === []) {
+        return 0;
+    }
+    $in = implode(',', array_fill(0, count($ids), '?'));
+    $upd = $pdo->prepare("UPDATE users SET city_id = ? WHERE city_id IS NULL AND id IN ($in)");
+    $upd->execute(array_merge([$cityId], $ids));
+    return $upd->rowCount();
+}
+
+/**
+ * Place one person in the city they named, when that city exists and they are not
+ * in a city yet (used when they save their profile). Returns the city id they were
+ * placed in, or null when nothing changed.
+ */
+function cityLinkUserToHomeCity(PDO $pdo, int $userId): ?int
+{
+    $q = $pdo->prepare('SELECT role, city_id, home_city FROM users WHERE id = ?');
+    $q->execute([$userId]);
+    $u = $q->fetch(PDO::FETCH_ASSOC);
+    if (!$u || $u['city_id'] !== null || $u['role'] === 'admin') {
+        return null;
+    }
+    $cityId = signupCityId(listCities($pdo), (string)($u['home_city'] ?? ''));
+    if ($cityId === null) {
+        return null;
+    }
+    $pdo->prepare('UPDATE users SET city_id = ? WHERE id = ? AND city_id IS NULL')->execute([$cityId, $userId]);
+    return $cityId;
+}
+
+/**
+ * The city a person should be in when an Admin makes them City Leader.
+ *
+ * Their own city is kept when they already have one. Otherwise it is the city
+ * they chose at sign-up (users.home_city), which is found in `cities` or added
+ * there, the same way a city is added with its first project. Null when they
+ * have neither, so the Admin has to place them first.
+ *
+ * @return array{0: ?int, 1: bool}  [city id, true when the city was just added]
+ */
+function cityForPromotion(PDO $pdo, ?int $currentCityId, ?string $homeCity): array
+{
+    if ($currentCityId !== null && $currentCityId > 0) {
+        return [$currentCityId, false];
+    }
+    $name = cityNameClean((string)($homeCity ?? ''));
+    if ($name === '' || !cityNameIsValid($name)) {
+        return [null, false];
+    }
+    return cityFindOrCreate($pdo, $name);
+}
+
 /** "Navi Mumbai" -> "navi-mumbai": lower case, letters and digits, single dashes. */
 function citySlug(string $name): string
 {

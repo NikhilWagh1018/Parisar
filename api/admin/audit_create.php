@@ -73,6 +73,12 @@ try {
     if ($cityId === null) {
         [$cityId, $cityCreated] = cityFindOrCreate($pdo, $cityName);
     }
+    // Everyone who named this city at sign-up is placed in it, so its City Leader sees them.
+    try {
+        cityAdoptSignups($pdo, (int)$cityId);
+    } catch (Throwable $e) {
+        error_log('city sign-up placement failed: ' . $e->getMessage());
+    }
     $auditId = (new CityAuditRepository($pdo))->createAudit((int)$cityId, $CURRENT_USER_ID, $v['clean']);
     $leaderId = filter_var($body['leader_user_id'] ?? null, FILTER_VALIDATE_INT);
     if ($leaderId !== false && $leaderId !== null && $leaderId > 0) {
