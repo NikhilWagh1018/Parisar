@@ -9,7 +9,7 @@ declare(strict_types=1);
 //  FIXES APPLIED:
 //    1. Auto-login + redirect to dashboard after successful registration
 //    2. Sets last_login on registration
-//    3. Generates public_id (SURV-NNNN) in PHP after INSERT (no trigger needed)
+//    3. Generates public_id (USR-NNNN) in PHP after INSERT (no trigger needed)
 //    4. Rate limiting now uses its own 'register' bucket (previously the
 //       check ran but was discarded, and no attempt was ever recorded)
 // ═══════════════════════════════════════════════════════════════
@@ -26,6 +26,7 @@ if (isset($_SESSION['user_id'])) {
 }
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../helpers/Cities.php';
+require_once __DIR__ . '/../services/IdGenerator.php';
 
 $errors      = [];
 $success     = false;
@@ -144,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$rateLimited) {
         $newId = (int)$pdo->lastInsertId();
 
         // ── FIX 1: Generate public_id in PHP (no trigger needed) ──
-        $publicId = 'SURV-' . str_pad((string)$newId, 4, '0', STR_PAD_LEFT);
+        $publicId = generatePublicId('USR', $newId);   // same format for every role
         $pdo->prepare('UPDATE users SET public_id = ? WHERE id = ?')
             ->execute([$publicId, $newId]);
 
