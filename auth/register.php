@@ -354,6 +354,7 @@ function fc(string $k, array $e): string
   </div>
 </div>
 
+<script src="../js/city_search.js"></script>
 <script src="../js/location_fields.js"></script>
 <script src="../js/register.js"></script>
 <script>initLocationFields('inp-city', 'inp-state');</script>
