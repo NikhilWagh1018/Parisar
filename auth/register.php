@@ -183,6 +183,31 @@ function fc(string $k, array $e): string
 {
     return isset($e[$k]) ? ' err' : '';
 }
+// Inline icon (24x24 stroke icons, same set the sign-in page uses)
+function ic(string $name): string
+{
+    static $p = [
+        'user'     => '<path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0"/><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/>',
+        'calendar' => '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4M8 3v4M4 11h16"/>',
+        'pin'      => '<path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"/>',
+        'flag'     => '<path d="M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9z"/><path d="M5 21v-7"/>',
+        'mail'     => '<path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z"/><path d="M3 7l9 6l9 -6"/>',
+        'phone'    => '<path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2"/>',
+        'building' => '<path d="M3 21h18"/><path d="M9 8h1M9 12h1M9 16h1M14 8h1M14 12h1M14 16h1"/><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16"/>',
+        'lock'     => '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11v-4a4 4 0 0 1 8 0v4"/>',
+        'check'    => '<path d="M5 12l5 5l10 -10"/>',
+        'eye'      => '<path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/>',
+        'eyeoff'   => '<path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/><path d="M3 3l18 18"/>',
+        'arrow'    => '<path d="M5 12h14M13 6l6 6l-6 6"/>',
+        'back'     => '<path d="M5 12h14"/><path d="M5 12l6 6"/><path d="M5 12l6 -6"/>',
+        'chart'    => '<path d="M3 21h18M6 21v-8M12 21v-14M18 21v-5"/>',
+        'file'     => '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/><path d="M9 13h6M9 17h6"/>',
+        'leaf'     => '<path d="M5 21c0 -9 5 -15 15 -16c0 10 -6 15 -15 16z"/><path d="M5 21c3 -6 6 -9 10 -11"/>',
+        'alert'    => '<path d="M12 9v4"/><path d="M12 16h.01"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z"/>',
+    ];
+    return '<svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+         . 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($p[$name] ?? '') . '</svg>';
+}
 
 ?>
 <!DOCTYPE html>
@@ -190,174 +215,191 @@ function fc(string $k, array $e): string
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#f6efe0">
 <title>Register — CycleAudit</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/auth.css">
-<link rel="stylesheet" href="../css/register-inline.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/login.css?v=<?= filemtime(__DIR__ . '/../css/login.css') ?>">
+<link rel="stylesheet" href="../css/register.css?v=<?= filemtime(__DIR__ . '/../css/register.css') ?>">
+<script>document.documentElement.classList.add('js')</script>
 </head>
-<body>
+<body class="login reg">
 
-<!-- LEFT PANEL -->
-<div class="left-panel">
-  <div class="brand">
-    <div class="brand-mark">
-      <svg viewBox="0 0 24 24"><path d="M12 2C8.5 2 6 5 6 8.5c0 4.5 6 11.5 6 11.5s6-7 6-11.5C18 5 15.5 2 12 2zm0 9.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
-    </div>
-    <span class="brand-name">CycleAudit</span>
-  </div>
+<div class="stage">
 
-  <h2 class="left-headline">Join the<br><span class="hi">Audit Network.</span></h2>
-  <p class="left-sub">Register as a surveyor and contribute to your city's cycle infrastructure dataset. Your field data drives Parisar's advocacy with municipal bodies.</p>
+  <a class="brand rise" style="--i:0" href="../index.html" aria-label="CycleAudit home">
+    <span class="brand-mark"><svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /> <path d="M19 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /> <path d="M12 19l0 -4l-3 -3l5 -4l2 3l3 0" /> <path d="M17 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg></span>CycleAudit
+  </a>
+  <a class="back-home rise" style="--i:0" href="../index.html"><?= ic('back') ?> Back to home</a>
 
-  <div class="feature-pills">
-    <div class="pill">
-      <div class="pill-icon">🗺️</div>
-      <div class="pill-text"><strong>Geo-Referenced Segments</strong><span>Each audit linked to precise road segments with GPS</span></div>
-    </div>
-    <div class="pill">
-      <div class="pill-icon">📊</div>
-      <div class="pill-text"><strong>Multi-Dimensional Scoring</strong><span>Safety, Continuity and Comfort from your field notes</span></div>
-    </div>
-    <div class="pill">
-      <div class="pill-icon">📄</div>
-      <div class="pill-text"><strong>PDF Reports</strong><span>Auto-generate stakeholder reports from submissions</span></div>
-    </div>
-    <div class="pill">
-      <div class="pill-icon">🌱</div>
-      <div class="pill-text"><strong>Drive Real Impact</strong><span>Parisar uses your data to advocate for better cycling</span></div>
-    </div>
-  </div>
+  <div class="reg-wheel" aria-hidden="true"><?php require __DIR__ . '/partials/wheel.php'; ?></div>
 
-  <div style="margin-top:auto;padding-top:28px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:12px;">
-    <img src="../assets/parisar-logo.png" alt="Parisar" style="height:24px;width:auto;filter:brightness(0) invert(1);opacity:.75;">
-    <span style="font-size:.72rem;color:rgba(255,255,255,.45);line-height:1.5;">An initiative by Parisar,<br>Pune, Maharashtra</span>
-  </div>
-</div>
+  <!-- LEFT: pitch -->
+  <aside class="reg-pitch">
+    <h2 class="pitch-title">
+      <span class="rise" style="--i:1">Join the</span>
+      <span class="accent rise" style="--i:2">Audit Network.</span>
+    </h2>
+    <p class="pitch-sub rise" style="--i:3">Register as a surveyor and contribute to your city's cycle infrastructure dataset. Your field data drives Parisar's advocacy with municipal bodies.</p>
+    <ul class="reg-points">
+      <li class="rise" style="--i:4"><span class="pt-ic"><?= ic('pin') ?></span><span><strong>Geo-referenced segments</strong>Every audit is tied to a precise road segment with GPS.</span></li>
+      <li class="rise" style="--i:5"><span class="pt-ic"><?= ic('chart') ?></span><span><strong>Multi-dimensional scoring</strong>Safety, Continuity and Comfort, scored from your field notes.</span></li>
+      <li class="rise" style="--i:6"><span class="pt-ic"><?= ic('file') ?></span><span><strong>PDF reports</strong>Stakeholder reports are generated from your submissions.</span></li>
+      <li class="rise" style="--i:7"><span class="pt-ic"><?= ic('leaf') ?></span><span><strong>Real impact</strong>Parisar uses your data to advocate for better cycling.</span></li>
+    </ul>
+  </aside>
 
-<!-- RIGHT PANEL -->
-<div class="right-panel">
-  <div class="form-box">
-    <h1 class="form-title">Create Account</h1>
-    <p class="form-subtitle">Already have an account? <a href="login.php">Sign in here</a></p>
+  <!-- RIGHT: form card -->
+  <main class="reg-zone">
+    <section class="card card-in reg-card" aria-labelledby="reg-title">
+      <h1 class="card-title" id="reg-title">Create account</h1>
+      <p class="reg-sub">Already have an account? <a href="login.php">Sign in</a></p>
 
-    <?php if (isset($errors['rate_limit'])): ?>
-    <div class="alert alert-error">⚠️ <?= htmlspecialchars($errors['rate_limit']) ?></div>
-    <?php endif; ?>
+      <?php if (isset($errors['rate_limit'])): ?>
+      <div class="alert" role="alert"><?= htmlspecialchars($errors['rate_limit']) ?></div>
+      <?php elseif ($errors): ?>
+      <div class="alert" role="alert" id="reg-alert"><?= ic('alert') ?> Please fix the highlighted <?= count($errors) === 1 ? 'field' : 'fields' ?> below.</div>
+      <?php endif; ?>
 
-    <form method="POST" novalidate>
+      <form method="POST" novalidate id="reg-form" class="reg-form card-form">
 
-      <div class="sdiv">Personal Information</div>
+        <fieldset class="grp">
+          <legend><span class="n">1</span> About you</legend>
 
-      <div class="form-group<?= fc('name', $errors) ?>">
-        <label for="inp-name">Full Name <span style="color:var(--red)">*</span> <small style="color:#a0b090;font-weight:400">letters only, 2–80 chars</small></label>
-        <input type="text" name="name" id="inp-name"
-               value="<?= htmlspecialchars($_POST['name'] ?? '') ?>"
-               placeholder="Enter your full name" maxlength="80" autocomplete="off">
-        <?= fe('name', $errors) ?>
-      </div>
+          <div class="fg<?= fc('name', $errors) ?>">
+            <label for="inp-name">Full name <b class="req" aria-hidden="true">*</b><small>letters only</small></label>
+            <div class="ctl"><?= ic('user') ?>
+              <input type="text" name="name" id="inp-name" value="<?= htmlspecialchars($_POST['name'] ?? '') ?>"
+                     placeholder="Enter your full name" maxlength="80" autocomplete="name" aria-required="true">
+            </div>
+            <?= fe('name', $errors) ?>
+          </div>
 
-      <div class="form-row-2">
-        <div class="form-group<?= fc('age', $errors) ?>">
-          <label for="inp-age">Age <span style="color:var(--red)">*</span> <small style="color:#a0b090;font-weight:400">16–80</small></label>
-          <input type="number" name="age" id="inp-age"
-                 value="<?= htmlspecialchars($_POST['age'] ?? '') ?>"
-                 placeholder="Your age" min="16" max="80">
-          <?= fe('age', $errors) ?>
-        </div>
-        <div class="form-group<?= fc('gender', $errors) ?>">
-          <label for="inp-gender">Gender <span style="color:var(--red)">*</span></label>
-          <select name="gender" id="inp-gender">
-            <option value="">— Select —</option>
-            <?php foreach (['Male', 'Female', 'Other'] as $g): ?>
-            <option <?= ($_POST['gender'] ?? '') === $g ? 'selected' : '' ?>><?= $g ?></option>
-            <?php endforeach; ?>
-          </select>
-          <?= fe('gender', $errors) ?>
-        </div>
-      </div>
+          <div class="row2">
+            <div class="fg<?= fc('age', $errors) ?>">
+              <label for="inp-age">Age <b class="req" aria-hidden="true">*</b><small>16–80</small></label>
+              <div class="ctl"><?= ic('calendar') ?>
+                <input type="number" name="age" id="inp-age" value="<?= htmlspecialchars($_POST['age'] ?? '') ?>"
+                       placeholder="Your age" min="16" max="80" inputmode="numeric" aria-required="true">
+              </div>
+              <?= fe('age', $errors) ?>
+            </div>
+            <div class="fg<?= fc('gender', $errors) ?>">
+              <span class="lbl" id="gender-lbl">Gender <b class="req" aria-hidden="true">*</b></span>
+              <div class="seg" role="radiogroup" aria-labelledby="gender-lbl">
+                <?php foreach (['Male', 'Female', 'Other'] as $g): ?>
+                <label><input type="radio" name="gender" value="<?= $g ?>" <?= ($_POST['gender'] ?? '') === $g ? 'checked' : '' ?>><span><?= $g ?></span></label>
+                <?php endforeach; ?>
+              </div>
+              <?= fe('gender', $errors) ?>
+            </div>
+          </div>
 
-      <div class="form-row-2">
-        <div class="form-group<?= fc('city', $errors) ?>">
-          <label for="inp-city">City <span style="color:var(--red)">*</span></label>
-          <input type="text" name="city" id="inp-city" list="cityList"
-                 value="<?= htmlspecialchars($_POST['city'] ?? '') ?>"
-                 placeholder="Search and pick your city" maxlength="100" autocomplete="off">
-          <?= fe('city', $errors) ?>
-        </div>
-        <div class="form-group<?= fc('state', $errors) ?>">
-          <label for="inp-state">State <span style="color:var(--red)">*</span></label>
-          <input type="text" name="state" id="inp-state" readonly tabindex="-1"
-                 value="<?= htmlspecialchars($_POST['state'] ?? '') ?>"
-                 placeholder="Fills in from your city" maxlength="100" autocomplete="off">
-          <?= fe('state', $errors) ?>
-        </div>
-      </div>
-      <?= locationDatalistsHtml() ?>
+          <div class="row2">
+            <div class="fg<?= fc('city', $errors) ?>">
+              <label for="inp-city">City <b class="req" aria-hidden="true">*</b></label>
+              <div class="ctl"><?= ic('pin') ?>
+                <input type="text" name="city" id="inp-city" list="cityList" value="<?= htmlspecialchars($_POST['city'] ?? '') ?>"
+                       placeholder="Search your city" maxlength="100" autocomplete="off" aria-required="true">
+              </div>
+              <?= fe('city', $errors) ?>
+            </div>
+            <div class="fg<?= fc('state', $errors) ?>">
+              <label for="inp-state">State <b class="req" aria-hidden="true">*</b></label>
+              <div class="ctl ro"><?= ic('flag') ?>
+                <input type="text" name="state" id="inp-state" readonly tabindex="-1" value="<?= htmlspecialchars($_POST['state'] ?? '') ?>"
+                       placeholder="Fills in from your city" maxlength="100" autocomplete="off">
+              </div>
+              <?= fe('state', $errors) ?>
+            </div>
+          </div>
+          <?= locationDatalistsHtml() ?>
+        </fieldset>
 
-      <div class="sdiv">Contact Details</div>
+        <fieldset class="grp">
+          <legend><span class="n">2</span> Contact &amp; organisation</legend>
 
-      <div class="form-group<?= fc('email', $errors) ?>">
-        <label for="inp-email">Email Address <span style="color:var(--red)">*</span></label>
-        <input type="email" name="email" id="inp-email"
-               value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
-               placeholder="you@example.com" autocomplete="off">
-        <?= fe('email', $errors) ?>
-      </div>
+          <div class="fg<?= fc('email', $errors) ?>">
+            <label for="inp-email">Email address <b class="req" aria-hidden="true">*</b></label>
+            <div class="ctl"><?= ic('mail') ?>
+              <input type="email" name="email" id="inp-email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
+                     placeholder="you@example.com" autocomplete="email" aria-required="true">
+            </div>
+            <?= fe('email', $errors) ?>
+          </div>
 
-      <div class="form-row-2">
-        <div class="form-group<?= fc('phone', $errors) ?>">
-          <label for="inp-phone">Mobile <small style="color:#a0b090;font-weight:400">optional</small></label>
-          <input type="tel" name="phone" id="inp-phone"
-                 value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>"
-                 placeholder="9XXXXXXXXX" maxlength="10">
-          <?= fe('phone', $errors) ?>
-        </div>
-        <div class="form-group<?= fc('organisation', $errors) ?>">
-          <label for="inp-org">Organisation <span style="color:var(--red)">*</span></label>
-          <input type="text" name="organisation" id="inp-org"
-                 value="<?= htmlspecialchars($_POST['organisation'] ?? '') ?>"
-                 placeholder="Your NGO or institute" maxlength="200">
-          <?= fe('organisation', $errors) ?>
-        </div>
-      </div>
+          <div class="row2">
+            <div class="fg<?= fc('phone', $errors) ?>">
+              <label for="inp-phone">Mobile <small>optional</small></label>
+              <div class="ctl"><?= ic('phone') ?>
+                <input type="tel" name="phone" id="inp-phone" value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>"
+                       placeholder="10-digit number" maxlength="10" inputmode="numeric" autocomplete="tel-national">
+              </div>
+              <?= fe('phone', $errors) ?>
+            </div>
+            <div class="fg<?= fc('organisation', $errors) ?>">
+              <label for="inp-org">Organisation <b class="req" aria-hidden="true">*</b></label>
+              <div class="ctl"><?= ic('building') ?>
+                <input type="text" name="organisation" id="inp-org" value="<?= htmlspecialchars($_POST['organisation'] ?? '') ?>"
+                       placeholder="Your NGO or institute" maxlength="200" autocomplete="organization" aria-required="true">
+              </div>
+              <?= fe('organisation', $errors) ?>
+            </div>
+          </div>
+        </fieldset>
 
-      <div class="sdiv">Set Password</div>
+        <fieldset class="grp">
+          <legend><span class="n">3</span> Set a password</legend>
 
-      <div class="form-group<?= fc('password', $errors) ?>">
-        <label for="inp-pass">Password <span style="color:var(--red)">*</span> <small style="color:#a0b090;font-weight:400">min 8 chars, 1 letter + 1 number</small></label>
-        <div class="pw-wrap">
-          <input type="password" name="password" id="inp-pass"
-                 placeholder="Create a strong password" oninput="checkStr(this.value)">
-          <button type="button" class="eye-btn" onclick="tog('inp-pass',this)">Show</button>
-        </div>
-        <div class="str-wrap">
-          <div class="str-bar"><div class="str-fill" id="sf"></div></div>
-          <div class="str-lbl" id="sl">Enter a password</div>
-        </div>
-        <?= fe('password', $errors) ?>
-      </div>
+          <div class="fg<?= fc('password', $errors) ?>">
+            <label for="inp-pass">Password <b class="req" aria-hidden="true">*</b></label>
+            <div class="ctl"><?= ic('lock') ?>
+              <input type="password" name="password" id="inp-pass" placeholder="Create a password"
+                     autocomplete="new-password" aria-required="true" aria-describedby="pw-rules">
+              <button type="button" class="eye" data-toggle-pass="inp-pass" aria-controls="inp-pass" aria-pressed="false" aria-label="Show password">
+                <span class="eye-on"><?= ic('eye') ?></span><span class="eye-off"><?= ic('eyeoff') ?></span>
+              </button>
+            </div>
+            <div class="str"><div class="str-bar"><i id="sf"></i></div><span id="sl">Enter a password</span></div>
+            <ul class="rules" id="pw-rules">
+              <li data-rule="len"><?= ic('check') ?>8 or more characters</li>
+              <li data-rule="alpha"><?= ic('check') ?>One letter</li>
+              <li data-rule="num"><?= ic('check') ?>One number</li>
+            </ul>
+            <?= fe('password', $errors) ?>
+          </div>
 
-      <div class="form-group<?= fc('confirm_password', $errors) ?>">
-        <label for="inp-conf">Confirm Password <span style="color:var(--red)">*</span></label>
-        <div class="pw-wrap">
-          <input type="password" name="confirm_password" id="inp-conf"
-                 placeholder="Re-enter your password">
-          <button type="button" class="eye-btn" onclick="tog('inp-conf',this)">Show</button>
-        </div>
-        <?= fe('confirm_password', $errors) ?>
-      </div>
+          <div class="fg<?= fc('confirm_password', $errors) ?>">
+            <label for="inp-conf">Confirm password <b class="req" aria-hidden="true">*</b></label>
+            <div class="ctl"><?= ic('lock') ?>
+              <input type="password" name="confirm_password" id="inp-conf" placeholder="Re-enter your password"
+                     autocomplete="new-password" aria-required="true">
+              <button type="button" class="eye" data-toggle-pass="inp-conf" aria-controls="inp-conf" aria-pressed="false" aria-label="Show password">
+                <span class="eye-on"><?= ic('eye') ?></span><span class="eye-off"><?= ic('eyeoff') ?></span>
+              </button>
+            </div>
+            <div class="match" id="match" hidden></div>
+            <?= fe('confirm_password', $errors) ?>
+          </div>
+        </fieldset>
 
-      <button type="submit" class="sub-btn">Create Surveyor Account →</button>
-    </form>
+        <button type="submit" class="btn-submit"><span class="btn-label">Create surveyor account</span><?= ic('arrow') ?></button>
+      </form>
+    </section>
+  </main>
 
-    <div class="back-link"><a href="../index.html">← Back to Home</a></div>
-  </div>
+  <footer class="credit rise" style="--i:8">
+    <img src="../assets/parisar-logo.png" alt="Parisar" width="60" height="20">
+    <span>An initiative by Parisar, Pune, Maharashtra</span>
+  </footer>
+
 </div>
 
 <script src="../js/city_search.js"></script>
 <script src="../js/location_fields.js"></script>
-<script src="../js/register.js"></script>
+<script src="../js/auth_simple.js?v=<?= filemtime(__DIR__ . '/../js/auth_simple.js') ?>"></script>
+<script src="../js/register.js?v=<?= filemtime(__DIR__ . '/../js/register.js') ?>"></script>
 <script>initLocationFields('inp-city', 'inp-state');</script>
 </body>
 </html>
