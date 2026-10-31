@@ -21,7 +21,7 @@
     <span class="ln-sep" style="width:1px;height:22px;background:var(--bd);margin:0 4px;display:inline-block;vertical-align:middle;"></span>
     <span class="ln">CycleAudit</span>
   </a>
-  <div class="nl" id="nl"><a href="#about">About</a><a href="#findings">Findings</a><a href="#features">Features</a><a href="#how">How It Works</a><a href="#scoring">Scoring</a><a href="#cities">Cities</a><a href="#audits">Audit Data</a><a href="auth/login.php" class="cta">Sign In</a></div>
+  <div class="nl" id="nl"><a href="#about">About</a><a href="#features">Features</a><a href="#how">How It Works</a><a href="#scoring">Scoring</a><a href="#audits">Audit Data</a><a href="#cities">Cities</a><a href="auth/login.php" class="cta">Sign In</a></div>
   <div class="ham" id="ham" onclick="document.getElementById('nl').classList.toggle('open')"><span></span><span></span><span></span></div>
 </nav>
 <section id="hero">
@@ -31,13 +31,7 @@
     <h1>Auditing<br><em>Cycle Tracks</em><br>Segment by Segment</h1>
     <p class="hero-p">A systematic, data-driven field auditing platform for cycle tracks. City audit teams document obstructions, surface conditions, intersections, and safety data across <span class="js-roads">19</span> cycle track roads — building the evidence needed to improve cycling infrastructure.</p>
     <div class="hbtns"><a href="auth/login.php" class="btn-p">Sign In to Audit →</a><a href="#about" class="btn-s">Learn More</a></div>
-    <div class="hm-scope" id="stat-scope" hidden><label for="stat-city">Showing</label><select id="stat-city" aria-label="Choose city for statistics"><option value="">All cities</option></select></div>
-    <div class="hm">
-      <div class="hm-item"><div class="num" id="stat-roads">—</div><div class="lbl">Roads Audited</div></div>
-      <div class="hm-item"><div class="num" id="stat-length">—</div><div class="lbl">Track Covered</div></div>
-      <div class="hm-item"><div class="num" id="stat-segments">—</div><div class="lbl">Segments</div></div>
-      <div class="hm-item"><div class="num" id="stat-good">—</div><div class="lbl">Rated "Good"</div></div>
-    </div>
+    <select id="stat-city" hidden aria-hidden="true"><option value="">All cities</option></select>
   </div>
   <div class="hr">
     <div style="position:relative;padding:18px 22px 18px 0">
@@ -91,48 +85,61 @@
     </div>
   </div>
 </div></div></section>
-<section id="findings"><div class="mw">
-  <div class="ey">2024–25 Audit Findings</div><h2>What the Field Data Revealed</h2>
-  <p class="sub">Parisar's 2024–25 Cycle Track Audit uncovered critical deficiencies across the cycle tracks it audited — findings that drive the case for urgent infrastructure intervention.</p>
-  <div class="fg-grid">
-    <div class="fc rv"><div class="fc-ic">⚠️</div><div class="fc-num">11%</div><h4>Rated "Good"</h4><p>Only 11% of 77 audited segments met the threshold for Good quality — safe, continuous, and comfortable for everyday cyclists.</p></div>
-    <div class="fc rv" style="transition-delay:.08s"><div class="fc-ic">🚧</div><div class="fc-num">60%+</div><h4>Have Obstructions</h4><p>More than 60% of segments recorded fixed or movable obstructions blocking the cycle track, from hawkers to utility panels.</p></div>
-    <div class="fc rv" style="transition-delay:.16s"><div class="fc-ic">🔀</div><div class="fc-num">40%</div><h4>Missing Ramps</h4><p>Nearly 40% of intersection points lack proper on/off ramps, forcing cyclists to dismount — a critical continuity failure.</p></div>
-    <div class="fc rv" style="transition-delay:.24s"><div class="fc-ic">💡</div><div class="fc-num">35%</div><h4>No After-Sunset Lighting</h4><p>A third of all segments have no functional lighting after sunset, making night cycling unsafe and discouraging commuters.</p></div>
-    <div class="fc rv" style="transition-delay:.32s"><div class="fc-ic">🛣️</div><div class="fc-num">22%</div><h4>Missing Track Sections</h4><p>22% of segments have portions where the cycle track is entirely absent — forcing cyclists onto vehicular traffic lanes.</p></div>
-    <div class="fc rv" style="transition-delay:.40s"><div class="fc-ic">🚶</div><div class="fc-num">55%</div><h4>Pedestrian Conflict</h4><p>More than half of all segments reported pedestrians regularly walking on the cycle track, reducing usable width.</p></div>
-  </div>
-</div></section>
 <section id="features"><div class="mw">
   <div class="feat-hd">
-    <div class="rv"><div class="ey">Platform Features</div><h2>Everything Needed for a Complete Field Audit</h2></div>
-    <div class="rv" style="transition-delay:.1s"><p class="sub">CycleAudit captures every dimension of cycle track quality — from surface material to obstruction counts — in a structured, repeatable format that ensures consistency across all surveyors.</p></div>
+    <div class="rv"><div class="ey">Platform Features</div><h2>Built for the Whole Audit, Field to Final Report</h2></div>
+    <div class="rv" style="transition-delay:.1s"><p class="sub">Surveyors record what they see on the road. CycleAudit does the scoring, keeps the review trail, and publishes the result, the same way for every city.</p></div>
   </div>
-  <div class="feat-grid">
-    <div class="feat rv"><div class="f-ic">🛡️</div><h3>Safety Analysis</h3><p>Evaluate buffer zones, lighting conditions, intersection risk, and parked vehicle conflicts to measure how safe each segment is for everyday cyclists.</p><span class="f-tag">Buffer · Lighting · Traffic</span></div>
-    <div class="feat rv" style="transition-delay:.08s"><div class="f-ic">🔗</div><h3>Continuity Score</h3><p>Track missing sections, total obstruction counts, ramp quality at intersections, and signage presence to assess uninterrupted cycling flow.</p><span class="f-tag">Ramps · Signage · Gaps</span></div>
-    <div class="feat rv" style="transition-delay:.16s"><div class="f-ic">🌿</div><h3>Comfort Ratings</h3><p>Assess surface material type, shade coverage, pedestrian conflict frequency, and footpath quality to determine cyclist comfort.</p><span class="f-tag">Surface · Shade · Footpath</span></div>
-    <div class="feat rv" style="transition-delay:.24s"><div class="f-ic">📍</div><h3>Obstruction Mapping</h3><p>Document fixed, movable, and parked vehicle obstructions with specific type, count, and severity across every segment.</p><span class="f-tag">Fixed · Movable · Parked</span></div>
-    <div class="feat rv" style="transition-delay:.32s"><div class="f-ic">🔀</div><h3>Intersection Audit</h3><p>Capture on/off ramp quality, markings, signage, and traffic device presence at every intersection point along the track.</p><span class="f-tag">Ramps · Markings · Devices</span></div>
-    <div class="feat rv" style="transition-delay:.40s"><div class="f-ic">📈</div><h3>PDF Report Export</h3><p>Generate professional audit reports with segment scores, key observations, critical issues, and actionable recommendations in one click.</p><span class="f-tag">Auto-generated · Parisar-branded</span></div>
+  <div class="bento">
+    <div class="bt bt-lead rv">
+      <div class="bt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M22 20H2"/></svg></div>
+      <h3>Scored automatically, the same way every time</h3>
+      <p>Every segment gets a 0 to 100 score from the answers the surveyor enters. Scores roll up into a road score, weighted by segment length, so a long poor stretch counts for more than a short one.</p>
+      <div class="bt-pills"><span>Safety</span><span>Continuity</span><span>Comfort</span></div>
+    </div>
+    <div class="bt rv" style="transition-delay:.08s">
+      <div class="bt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg></div>
+      <h3>Obstruction mapping</h3>
+      <p>Fixed, movable and parked-vehicle obstructions are counted by type on every segment.</p>
+      <span class="f-tag">Fixed · Movable · Parked</span>
+    </div>
+    <div class="bt rv" style="transition-delay:.16s">
+      <div class="bt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M3 12h18"/><circle cx="12" cy="12" r="3"/></svg></div>
+      <h3>Intersection audit</h3>
+      <p>Ramps, markings, signage and traffic calming are recorded at every crossing along the track.</p>
+      <span class="f-tag">Ramps · Markings · Signage</span>
+    </div>
+    <div class="bt rv" style="transition-delay:.24s">
+      <div class="bt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></svg></div>
+      <h3>Reviewed before it is published</h3>
+      <p>The City Leader checks each submitted segment and can send it back with a note. The Admin signs off on the whole audit.</p>
+      <span class="f-tag">Approve · Send back</span>
+    </div>
+    <div class="bt rv" style="transition-delay:.32s">
+      <div class="bt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 14h6M9 17h4"/></svg></div>
+      <h3>Public reports and PDF</h3>
+      <p>Approved audits appear on this page, with a full report to read online or save as a PDF.</p>
+      <span class="f-tag">Online · PDF</span>
+    </div>
   </div>
 </div></section>
 <section id="how"><div class="mw"><div class="how-g">
   <div class="rv">
     <div class="ey">Audit Process</div><h2>How a Cycle Track Audit Works</h2>
-    <p class="sub" style="margin-bottom:32px">A structured 5-step process ensures every segment is audited consistently by any surveyor on a city's audit team — from road setup to the final report.</p>
+    <p class="sub" style="margin-bottom:32px">Each audit is a project for one city. It moves through six steps, from set-up by Parisar to a published report anyone can read.</p>
     <div class="steps">
-      <div class="step act"><div class="stc">1</div><div class="stb"><h4>Define the Road</h4><p>Select a road from the <span class="js-roads">19</span> cycle track roads in the audit network. Its start and end landmarks and GPS are captured automatically from the audit itself.</p><span class="st-chip">segment.php</span></div></div>
-      <div class="step"><div class="stc">2</div><div class="stb"><h4>Generate Segments</h4><p>Auto-divide the road into standard 500m segments, each with its own start and end landmarks.</p><span class="st-chip">Auto</span></div></div>
-      <div class="step"><div class="stc">3</div><div class="stb"><h4>Field Audit Each Segment</h4><p>For each segment, fill in landmarks, obstructions (30+ types), intersections, surface issues, lighting, and footpath data.</p><span class="st-chip">form.html</span></div></div>
-      <div class="step"><div class="stc">4</div><div class="stb"><h4>Submit and Auto-Score</h4><p>Data is stored in MySQL. Safety, Continuity, and Comfort scores are calculated automatically from submitted responses.</p><span class="st-chip">submit.php</span></div></div>
-      <div class="step"><div class="stc">5</div><div class="stb"><h4>Download PDF Report</h4><p>Generate a professional PDF with segment scores, key observations, critical issues, and recommendations for city authorities. City leaders can also download a city-wide score sheet.</p><span class="st-chip">report.php</span></div></div>
+      <div class="step act"><div class="stc">1</div><div class="stb"><h4>Parisar sets up the project</h4><p>The Admin creates an audit project for a city and assigns it to that city's City Leader.</p><span class="st-chip">Admin</span></div></div>
+      <div class="step"><div class="stc">2</div><div class="stb"><h4>The City Leader adds the roads</h4><p>The City Leader picks the city's roads for this audit. Each road is split into segments automatically, each with its own start and end landmark.</p><span class="st-chip">City Leader</span></div></div>
+      <div class="step"><div class="stc">3</div><div class="stb"><h4>Surveyors are assigned</h4><p>The City Leader gives each segment, or a whole road, to a surveyor on the city's audit team, then starts the audit.</p><span class="st-chip">City Leader</span></div></div>
+      <div class="step"><div class="stc">4</div><div class="stb"><h4>Field audit of each segment</h4><p>On the road, the surveyor fills in the segment form. The answers the score depends on are required, so no segment can be submitted half-complete. A submitted segment is locked and scored automatically.</p><span class="st-chip">Surveyor</span></div></div>
+      <div class="step"><div class="stc">5</div><div class="stb"><h4>Review and send to the Admin</h4><p>The City Leader reviews every submitted segment, approving it or sending it back to the surveyor with a note. Once all segments are approved, the audit is closed and sent to the Admin.</p><span class="st-chip">City Leader</span></div></div>
+      <div class="step"><div class="stc">6</div><div class="stb"><h4>Approval and publication</h4><p>The Admin approves the audit, and it is published under Audit Data on this page with an online report and a PDF download. If something needs fixing, the Admin returns it to the City Leader with a note.</p><span class="st-chip">Admin</span></div></div>
     </div>
   </div>
   <div class="rv how-cards" style="transition-delay:.14s">
-    <div class="how-card"><div class="hc-hd"><div class="ic">📋</div><h4>What Gets Audited Per Segment</h4></div><p>Start/end landmarks · GPS coordinates · Fixed obstructions (12 types) · Movable obstructions (6 types) · Parked vehicle causes (6 types) · Track surface issues · Overhead obstructions · Intersection data · Footpath rating · Lighting · Shade · Buffer zone · Geometry type · Dimensions · Surveyor comments</p></div>
-    <div class="how-card"><div class="hc-hd"><div class="ic">🔒</div><h4>Segment Locking</h4></div><p>Once a segment is submitted, it is automatically locked to prevent duplicate entries. Surveyors can view submitted data but cannot overwrite it — ensuring data integrity across the entire audit.</p></div>
-    <div class="how-card"><div class="hc-hd"><div class="ic">🎯</div><h4>Road-Level Final Score</h4></div><p>Once all segments are audited, a weighted final score (0–100) is calculated using segment lengths as weights. Roads scoring below 50 are rated "Poor" and flagged for priority intervention.</p></div>
+    <div class="how-card"><div class="hc-hd"><div class="ic">📋</div><h4>What Gets Audited Per Segment</h4></div><p>Start and end landmarks · GPS · Buffer zone · Lighting after sunset · Surface material · Shade · Missing track length · Fixed, movable and parked obstructions · Overhead obstructions · Intersections with ramps, markings, signage and traffic calming · Footpath · Surveyor comments</p></div>
+    <div class="how-card"><div class="hc-hd"><div class="ic">🔒</div><h4>Locked After Submission</h4></div><p>A submitted segment is locked, so the surveyor cannot quietly change it. It only opens again if the City Leader sends it back for correction.</p></div>
+    <div class="how-card"><div class="hc-hd"><div class="ic">🎯</div><h4>Segment and Road Scores</h4></div><p>Scores run from 0 to 100, and <strong>lower is better</strong>: the score measures problems found. Up to 20 is Good, up to 40 OK, up to 60 Poor, up to 80 Bad, and above that Very Bad. A road's score is its segment scores weighted by segment length.</p></div>
   </div>
 </div></div></section>
 <section id="scoring"><div class="mw">
@@ -154,26 +161,9 @@
     <div class="scr-card b3 rv" style="transition-delay:.2s"><div class="scr-ic">🌿</div><h3>Comfort Score</h3><p>Measures how pleasant and comfortable the segment is to cycle on.</p><div class="scr-items"><div class="scr-it">Surface material type</div><div class="scr-it">Cyclist slowed by obstructions</div><div class="scr-it">Shade availability</div><div class="scr-it">Footpath quality rating</div></div></div>
   </div>
 </div></section>
-<section id="impact"><div class="mw">
-  <div class="ey">Why It Matters</div><h2>Driving Change Through Evidence</h2>
-  <p class="sub">Systematic data gives city teams and Parisar the evidence to press local authorities for better cycle infrastructure — facts from the field, not opinion.</p>
-  <div class="imp-g">
-    <div class="ic-card rv"><div class="big">🏙️</div><div class="n js-roads">19</div><div class="l">Roads in the Cycle Network</div></div>
-    <div class="ic-card rv" style="transition-delay:.08s"><div class="big">📏</div><div class="n">500m</div><div class="l">Standard Segment Length</div></div>
-    <div class="ic-card rv" style="transition-delay:.16s"><div class="big">🧪</div><div class="n">3</div><div class="l">Score Dimensions Measured</div></div>
-    <div class="ic-card rv" style="transition-delay:.24s"><div class="big">🚴</div><div class="n">100%</div><div class="l">Field-Data Driven Scores</div></div>
-  </div>
-</div></section>
-<section id="cities"><div class="mw">
-  <div class="ey">Coverage</div><h2>Cities in the Audit Network</h2>
-  <p class="sub">Select a city to see its audit statistics on this page; select it again to see all cities.</p>
-  <div class="cg" id="cities-grid"><p class="cg-empty">Loading cities…</p></div>
-  <p class="cg-msg" id="cities-msg" aria-live="polite"></p>
-  <p class="cg-note" id="cities-note" aria-live="polite"></p>
-</div></section>
 <section id="audits"><div class="mw">
   <div class="ey">Published audits</div><h2>Explore the Audit Data</h2>
-  <p class="sub">Every approved city audit, by year and month. Pick a year, then a month, to see the audits. Use the filters to narrow them down.</p>
+  <p class="sub">Every approved city audit, by year. Pick a year to see its audits, and use the filters to narrow them down.</p>
   <div class="ax-filters" id="ax-filters" hidden>
     <label>City<select id="ax-city" aria-label="Filter by city"><option value="">All cities</option></select></label>
     <label>Condition<select id="ax-cond" aria-label="Filter by condition"><option value="">All conditions</option><option>Good</option><option>OK</option><option>Poor</option><option>Bad</option><option>Very Bad</option></select></label>
@@ -184,12 +174,31 @@
   <div class="ax-grid" id="ax-grid"><p class="ax-empty">Loading audits…</p></div>
   <p class="ax-msg" id="ax-msg" aria-live="polite"></p>
 </div></section>
-<section id="cta"><div class="mw"><div class="cta-inner">
-<div class="ey" style="justify-content:center">Audit Teams</div>
-<h2>Part of a City Audit Team?</h2>
-<p class="sub">Sign in to audit the roads in your city. City Leaders can manage their city's roads and surveyors, view audit data and scores, and download the city score sheet. Want to bring a cycle track audit to your city? Get in touch with Parisar.</p>
-<div class="cta-bs"><a href="auth/login.php" class="btn-p">Sign In</a><a href="https://parisar.org/contact-us" target="_blank" rel="noopener" class="btn-s">Contact Parisar</a></div>
-</div></div></section>
+<section id="cities"><div class="mw">
+  <div class="ey">Coverage</div><h2>Cities in the Audit Network</h2>
+  <p class="sub">Select a city to see its audit statistics on this page; select it again to see all cities.</p>
+  <div class="cg" id="cities-grid"><p class="cg-empty">Loading cities…</p></div>
+  <p class="cg-msg" id="cities-msg" aria-live="polite"></p>
+  <div class="cg-more" id="cities-more" hidden></div>
+  <p class="cg-note" id="cities-note" aria-live="polite"></p>
+</div></section>
+<section id="cta"><div class="mw">
+  <div class="ey" style="justify-content:center">Audit Teams</div>
+  <h2 class="cta-h">Part of a City Audit Team?</h2>
+  <p class="sub cta-sub">Everyone on a city's audit team has a place in CycleAudit. Use Sign In at the top of the page to get to yours.</p>
+  <div class="roles">
+    <div class="role rv"><div class="bt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg></div><h3>City Leaders</h3><p>Add the city's roads, assign surveyors, review every segment and send the finished audit to Parisar.</p></div>
+    <div class="role rv" style="transition-delay:.08s"><div class="bt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div><h3>Surveyors</h3><p>See the segments assigned to you, audit them on the road and submit them for review.</p></div>
+    <div class="role rv" style="transition-delay:.16s"><div class="bt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><h3>Parisar</h3><p>Sets up each city's audit project, approves finished audits and publishes the results.</p></div>
+  </div>
+  <div class="cta-card rv">
+    <div>
+      <h3>Want a cycle track audit in your city?</h3>
+      <p>Parisar can set up CycleAudit for your city and train your team. Get in touch and we will take it from there.</p>
+    </div>
+    <a href="https://parisar.org/contact-us" target="_blank" rel="noopener" class="cta-btn">Contact Parisar <span aria-hidden="true">→</span></a>
+  </div>
+</div></section>
 <footer><div class="mw">
   <div class="fg-wrap">
     <div class="fb-brand">
@@ -199,9 +208,8 @@
     </div>
     <div class="fcol"><h5>Platform</h5><a href="auth/login.php">Login</a><a href="pages/segment.php">Start Audit</a><a href="pages/road_result.php">View Results</a></div>
     <div class="fcol"><h5>Parisar</h5><a href="https://parisar.org" target="_blank">parisar.org</a><a href="https://parisar.org/what-we-do/urban-transport" target="_blank">Urban Transport</a><a href="https://parisar.org/contact-us" target="_blank">Contact</a></div>
-    <div class="fcol"><h5>Audit Scope</h5><a href="#cities">Cities</a><a href="#audits">Audit Data</a><a href="#scoring">Scoring Method</a><a href="#findings">2024–25 Findings</a></div>
+    <div class="fcol"><h5>Audit Scope</h5><a href="#audits">Audit Data</a><a href="#cities">Cities</a><a href="#scoring">Scoring Method</a></div>
   </div>
-  <div class="fb-bot"><span>2026 CycleAudit — Built for <span class="pb-cr">Parisar</span></span><span>PHP · MySQL · Vanilla JS</span></div>
 </div></footer>
 <button id="topBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script src="js/landing.js"></script>
@@ -209,7 +217,7 @@
 <script>
 (function () {
   var cityEl  = document.getElementById('stat-city');
-  var scopeEl = document.getElementById('stat-scope');
+  var allCities = [];
   var citiesBuilt = false;
 
   function qs(cityId) {
@@ -279,7 +287,7 @@
   }
 
   function syncTiles() {
-    var els = document.querySelectorAll('#cities-grid .cc');
+    var els = document.querySelectorAll('#cities-grid .cc, #cities-more button');
     var cur = cityEl ? cityEl.value : '';
     for (var i = 0; i < els.length; i++) {
       var on = cur !== '' && els[i].getAttribute('data-id') === cur;
@@ -320,6 +328,73 @@
     return b;
   }
 
+  function makeMoreTile() {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'cc cc-more';
+    b.id = 'cities-more-btn';
+    b.setAttribute('aria-expanded', 'false');
+    b.setAttribute('aria-controls', 'cities-more');
+    b.innerHTML = '<span class="cc-dots" aria-hidden="true">&middot;&middot;&middot;</span>';
+    var n = document.createElement('span');
+    n.textContent = 'More';
+    b.appendChild(n);
+    b.addEventListener('click', function () {
+      var panel = document.getElementById('cities-more');
+      if (!panel) return;
+      var open = panel.hidden;
+      panel.hidden = !open;
+      b.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    return b;
+  }
+
+  // Every city in the audit network, as text. Cities with published audit data
+  // can be selected (like the tiles); the others are listed as plain text.
+  function renderMoreList(audited) {
+    var panel = document.getElementById('cities-more');
+    if (!panel) return;
+    panel.innerHTML = '';
+    var h = document.createElement('h3');
+    h.textContent = 'All cities';
+    panel.appendChild(h);
+    var byId = {};
+    audited.forEach(function (c) { byId[String(c.id)] = true; });
+    var list = allCities.length ? allCities : audited;
+    if (!list.length) {
+      var p = document.createElement('p');
+      p.className = 'cg-hint';
+      p.textContent = 'No cities have been added yet.';
+      panel.appendChild(p);
+      return;
+    }
+    var ul = document.createElement('ul');
+    ul.className = 'cg-list';
+    list.forEach(function (c) {
+      var li = document.createElement('li');
+      if (byId[String(c.id)]) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = c.name;
+        b.setAttribute('data-id', String(c.id));
+        b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', function () { setCityMsg(''); selectCity(String(c.id)); });
+        li.appendChild(b);
+      } else {
+        var sp = document.createElement('span');
+        sp.className = 'cg-soon';
+        sp.textContent = c.name;
+        li.appendChild(sp);
+      }
+      ul.appendChild(li);
+    });
+    panel.appendChild(ul);
+    var hint = document.createElement('p');
+    hint.className = 'cg-hint';
+    hint.textContent = 'Cities in green have audit data. Select one to see its figures; select it again to see all cities.';
+    panel.appendChild(hint);
+  }
+
   function renderCityTiles(cities) {
     var grid = document.getElementById('cities-grid');
     if (!grid) return;
@@ -335,16 +410,16 @@
       delete byKey[p[0]];
     });
 
-    // Any other city that has audit data is added after them, so it stays reachable.
-    cities.forEach(function (c) {
-      if (byKey[cityKey(c.name)]) grid.appendChild(makeTile(c.name, cityKey(c.name), c));
-    });
+    // One more tile opens the full list of cities, as text.
+    grid.appendChild(makeMoreTile());
+    renderMoreList(cities);
     syncTiles();
   }
 
-  function buildCityPicker(cities) {
+  function buildCityPicker(cities, everyCity) {
     if (citiesBuilt || !Array.isArray(cities)) return;
     citiesBuilt = true;
+    allCities = Array.isArray(everyCity) ? everyCity : [];
     renderCityTiles(cities);
     if (!cityEl) return;
     cities.forEach(function (c) {
@@ -353,8 +428,6 @@
       opt.textContent = c.name;
       cityEl.appendChild(opt);
     });
-    // The dropdown in the hero is only worth showing once there is a real choice.
-    if (scopeEl && cities.length >= 2) scopeEl.hidden = false;
   }
 
   function loadStats(cityId) {
@@ -363,12 +436,7 @@
       .then(function (data) {
         if (!data.success) return;
         var s = data.stats;
-        buildCityPicker(data.cities);
-        // "Segments" and "Rated Good" share one base: audited segments.
-        setText('stat-roads',    s.total_roads);
-        setText('stat-length',   fmtKm(s.total_length_km));
-        setText('stat-segments', s.audited_segments);
-        setText('stat-good',     s.good_pct + '%');
+        buildCityPicker(data.cities, data.all_cities);
         setText('about-segs',    s.audited_segments);
         setText('about-km',      fmtKm(s.total_length_km));
         setText('cities-note',

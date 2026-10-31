@@ -1,5 +1,5 @@
 /* js/landing_audits.js
-   Landing page "Audit data": published audits as cards, year -> month -> audits,
+   Landing page "Audit data": published audits as cards, year -> audits,
    with city / condition / search filters. Reads /api/public/audits.php. */
 (function () {
   'use strict';
@@ -10,7 +10,7 @@
   var grid = $('ax-grid'), crumbs = $('ax-crumbs'), msg = $('ax-msg'), bar = $('ax-filters');
   if (!grid) return;
 
-  var state = { all: [], city: '', cond: '', q: '', year: null, month: null };
+  var state = { all: [], city: '', cond: '', q: '', year: null };
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -92,11 +92,8 @@
 
   function renderCrumbs() {
     crumbs.textContent = '';
-    var steps = [{ label: 'All years', go: function () { state.year = null; state.month = null; } }];
-    if (state.year !== null) {
-      steps.push({ label: String(state.year), go: function () { state.month = null; } });
-    }
-    if (state.month !== null) steps.push({ label: MONTHS[state.month - 1] });
+    var steps = [{ label: 'All years', go: function () { state.year = null; } }];
+    if (state.year !== null) steps.push({ label: String(state.year) });
     steps.forEach(function (s, i) {
       if (i) crumbs.appendChild(el('span', 'ax-sep', '›'));
       if (i === steps.length - 1) { crumbs.appendChild(el('span', 'ax-here', s.label)); return; }
@@ -110,14 +107,11 @@
   function render() {
     var list = filtered();
     if (state.year !== null && !list.some(function (a) { return a.year === state.year; })) {
-      state.year = null; state.month = null;
-    }
-    if (state.month !== null && !list.some(function (a) { return a.year === state.year && a.month === state.month; })) {
-      state.month = null;
+      state.year = null;
     }
     renderCrumbs();
     grid.textContent = '';
-    grid.className = 'ax-grid' + (state.month !== null ? ' ax-grid-audits' : '');
+    grid.className = 'ax-grid' + (state.year !== null ? ' ax-grid-audits' : '');
     msg.textContent = 'Showing ' + plural(list.length, 'audit', 'audits') + ' of ' + state.all.length + '.';
 
     if (!list.length) {
@@ -132,17 +126,8 @@
           state.year = Number(y); render();
         }));
       });
-    } else if (state.month === null) {
-      var months = {};
-      list.filter(function (a) { return a.year === state.year; })
-          .forEach(function (a) { (months[a.month] = months[a.month] || []).push(a); });
-      Object.keys(months).sort(function (a, b) { return b - a; }).forEach(function (m) {
-        grid.appendChild(card(MONTHS[m - 1], String(state.year), months[m].length, '', function () {
-          state.month = Number(m); render();
-        }));
-      });
     } else {
-      list.filter(function (a) { return a.year === state.year && a.month === state.month; })
+      list.filter(function (a) { return a.year === state.year; })
           .forEach(function (a) { grid.appendChild(auditCard(a)); });
     }
   }
@@ -159,7 +144,7 @@
     q.addEventListener('input', function () { state.q = q.value; render(); });
     $('ax-clear').addEventListener('click', function () {
       citySel.value = ''; condSel.value = ''; q.value = '';
-      state.city = ''; state.cond = ''; state.q = ''; state.year = null; state.month = null;
+      state.city = ''; state.cond = ''; state.q = ''; state.year = null;
       render();
     });
     bar.hidden = false;
