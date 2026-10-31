@@ -108,20 +108,11 @@
         var c = document.querySelector('.ca-road[data-road-id="' + id + '"]');
         if (!c) return;
         c.classList.add('open');
-        var t = c.querySelector('.ca-toggle');
-        if (t) t.textContent = 'Hide segments';
       });
     } catch (e) { /* ignore */ }
   }
 
-  // ── Audit page: expand / remove road ──────────────────────────
-  document.querySelectorAll('.ca-toggle').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var card = b.closest('.ca-road');
-      card.classList.toggle('open');
-      b.textContent = card.classList.contains('open') ? 'Hide segments' : 'Show segments';
-    });
-  });
+  // ── Audit page: remove road (segments are always shown) ───────
   document.querySelectorAll('.ca-remove').forEach(function (b) {
     b.addEventListener('click', async function () {
       if (!(await confirmBox({ title: 'Remove road', message: 'Remove ' + b.dataset.name + ' and its segments from this audit?', confirmText: 'Remove', danger: true }))) return;
@@ -173,9 +164,9 @@
       var sel = b.closest('.ca-road').querySelector('.ca-road-surveyor');
       if (!sel || sel.value === '') { toast('Choose a surveyor first.', 'error'); return; }
       var label = sel.value === '0' ? 'Unassign every pending segment of this road?'
-                                    : 'Assign every pending segment of this road to ' + sel.options[sel.selectedIndex].text + '?';
+                                    : 'Give every pending segment of this road to ' + sel.options[sel.selectedIndex].text + '?';
       var unassign = sel.value === '0';
-      if (!(await confirmBox({ title: unassign ? 'Unassign road' : 'Assign road', message: label, confirmText: unassign ? 'Unassign' : 'Assign' }))) return;
+      if (!(await confirmBox({ title: unassign ? 'Unassign all segments' : 'Assign all segments', message: label, confirmText: unassign ? 'Unassign' : 'Assign' }))) return;
       b.disabled = true;
       try {
         await post('../api/city/audit_assign.php', {
