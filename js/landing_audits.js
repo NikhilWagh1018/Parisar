@@ -41,20 +41,40 @@
     return plural(roads, 'road', 'roads') + ' · ' + km(len) + ' · ' + plural(Object.keys(cities).length, 'city', 'cities');
   }
 
-  function card(title, sub, count, meta, onClick) {
+  var COND_COLOR = { 'Good': '#16a34a', 'OK': '#84b32a', 'Poor': '#d97706', 'Bad': '#dc2626', 'Very Bad': '#8e1010' };
+  // A thin bar showing how a set of audits splits across conditions.
+  function mixBar(list) {
+    var counts = {}, n = 0;
+    list.forEach(function (a) { if (a.condition && COND_COLOR[a.condition]) { counts[a.condition] = (counts[a.condition] || 0) + 1; n++; } });
+    if (!n) return null;
+    var bar = el('span', 'ax-mix');
+    Object.keys(COND_COLOR).forEach(function (k) {
+      if (!counts[k]) return;
+      var seg = el('i');
+      seg.style.flex = String(counts[k]);
+      seg.style.background = COND_COLOR[k];
+      seg.title = k + ': ' + counts[k];
+      bar.appendChild(seg);
+    });
+    return bar;
+  }
+
+  function card(title, sub, count, meta, onClick, mixList) {
     var b = el('button', 'ax-card');
     b.type = 'button';
     b.appendChild(el('span', 'ax-card-title', title));
     if (sub) b.appendChild(el('span', 'ax-card-sub', sub));
     b.appendChild(el('span', 'ax-card-count', plural(count, 'audit', 'audits')));
     if (meta) b.appendChild(el('span', 'ax-card-meta', meta));
+    var mix = mixList ? mixBar(mixList) : null;
+    if (mix) b.appendChild(mix);
     b.appendChild(el('span', 'ax-card-go', 'Open →'));
     b.addEventListener('click', onClick);
     return b;
   }
 
   function auditCard(a) {
-    var c = el('article', 'ax-audit');
+    var c = el('article', 'ax-audit' + (a.condition ? ' bd-' + a.condition.toLowerCase().replace(/ /g, '-') : ''));
     var top = el('div', 'ax-audit-top');
     top.appendChild(el('h4', null, a.name));
     if (a.condition) {
@@ -124,7 +144,7 @@
       Object.keys(years).sort(function (a, b) { return b - a; }).forEach(function (y) {
         grid.appendChild(card(y, '', years[y].length, totals(years[y]), function () {
           state.year = Number(y); render();
-        }));
+        }, years[y]));
       });
     } else {
       list.filter(function (a) { return a.year === state.year; })

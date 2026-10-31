@@ -326,3 +326,38 @@ footer{position:relative;padding-top:72px}
 @media(max-width:1024px){.about-grid{grid-template-columns:1fr 1fr}.ag{gap:36px}}
 @media(max-width:640px){.about-grid{grid-template-columns:1fr}.av-card{padding:26px 22px}}
 @media(prefers-reduced-motion:reduce){.rs span{opacity:1;transform:none}}
+
+/* ───────── scoring cards, cities, audit explorer ───────── */
+.scr-card{position:relative;overflow:hidden;transition:transform var(--T),box-shadow var(--T)}
+.scr-card:hover{transform:translateY(-5px);box-shadow:0 18px 44px rgba(24,31,16,.1)}
+.scr-ic{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--gp);color:var(--g);margin-bottom:14px;transition:transform var(--T)}
+.scr-ic svg{width:24px;height:24px}
+.scr-card.b2 .scr-ic{background:#dbeafe;color:#1d4ed8}.scr-card.b3 .scr-ic{background:#fef3c7;color:#b45309}
+.scr-card:hover .scr-ic{transform:rotate(-6deg) scale(1.08)}
+.scr-it{transition:transform var(--T)}.scr-card:hover .scr-it{transform:translateX(3px)}
+.scr-card:hover .scr-it:nth-child(2){transition-delay:.04s}.scr-card:hover .scr-it:nth-child(3){transition-delay:.08s}.scr-card:hover .scr-it:nth-child(4){transition-delay:.12s}
+
+.cg-legend{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:24px;font-size:.82rem;font-weight:600;color:var(--ink)}
+.cg-legend i{width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.55);animation:pulse 2s infinite}
+.cg-legend span{font-weight:400;color:var(--gray);margin-left:6px}
+.cc{position:relative}
+.cc:not(.has):not(.cc-more){opacity:.82}
+.cc.has::after{content:'';position:absolute;top:12px;right:12px;width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.55);animation:pulse 2s infinite}
+.cc.has.on::after{background:#fff;box-shadow:none;animation:none}
+.cc.has{border-color:rgba(61,122,31,.3)}
+
+#audits{background:linear-gradient(180deg,var(--cream),#f1efe5)}
+.ax-filters{background:#fff;border:1px solid var(--bd);border-radius:16px;padding:18px 20px;box-shadow:0 8px 30px rgba(24,31,16,.05)}
+.ax-card{position:relative;overflow:hidden}
+.ax-card::before{content:'';position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,rgba(134,185,59,.22),transparent 70%);transition:transform .5s ease}
+.ax-card:hover::before{transform:scale(1.5)}
+.ax-card-title{font-size:2.4rem}
+.ax-mix{display:flex;gap:2px;width:100%;height:6px;border-radius:6px;overflow:hidden;margin-top:12px}
+.ax-mix i{display:block;height:100%}
+.ax-card-go{transition:transform var(--T)}.ax-card:hover .ax-card-go{transform:translateX(4px)}
+.ax-card,.ax-audit{animation:tileIn .5s ease both}
+.ax-grid>*:nth-child(2){animation-delay:.06s}.ax-grid>*:nth-child(3){animation-delay:.12s}.ax-grid>*:nth-child(4){animation-delay:.18s}.ax-grid>*:nth-child(n+5){animation-delay:.24s}
+.ax-audit{border-left:5px solid var(--grl);transition:transform var(--T),box-shadow var(--T)}
+.ax-audit:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(24,31,16,.1)}
+.ax-audit.bd-good{border-left-color:#16a34a}.ax-audit.bd-ok{border-left-color:#84b32a}.ax-audit.bd-poor{border-left-color:#d97706}.ax-audit.bd-bad{border-left-color:#dc2626}.ax-audit.bd-very-bad{border-left-color:#8e1010}
+@media(prefers-reduced-motion:reduce){.cg-legend i,.cc.has::after{animation:none}}

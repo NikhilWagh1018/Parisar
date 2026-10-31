@@ -11,7 +11,7 @@
 <meta property="og:image" content="https://cycleaudit.parisar.org/assets/parisar-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/landing.css?v=6">
+<link rel="stylesheet" href="css/landing.css?v=7">
 <script type="speculationrules">{"prerender":[{"where":{"href_matches":"/auth/login.php"},"eagerness":"moderate"}]}</script>
 </head>
 <body>
@@ -126,9 +126,9 @@
     </div>
   </div>
   <div class="score-cards">
-    <div class="scr-card rv"><div class="scr-ic">🛡️</div><h3>Safety Score</h3><p>Measures risks that could cause accidents or discourage use of the track.</p><div class="scr-items"><div class="scr-it">Buffer zone presence</div><div class="scr-it">After-sunset lighting</div><div class="scr-it">Intersection traffic devices</div><div class="scr-it">Partial obstruction count</div></div></div>
-    <div class="scr-card b2 rv" style="transition-delay:.1s"><div class="scr-ic">🔗</div><h3>Continuity Score</h3><p>Measures whether a cyclist can travel the segment without interruption.</p><div class="scr-items"><div class="scr-it">Missing ramps at intersections</div><div class="scr-it">Missing markings and signage</div><div class="scr-it">Total obstruction count</div><div class="scr-it">Missing track sections</div></div></div>
-    <div class="scr-card b3 rv" style="transition-delay:.2s"><div class="scr-ic">🌿</div><h3>Comfort Score</h3><p>Measures how pleasant and comfortable the segment is to cycle on.</p><div class="scr-items"><div class="scr-it">Surface material type</div><div class="scr-it">Cyclist slowed by obstructions</div><div class="scr-it">Shade availability</div><div class="scr-it">Footpath quality rating</div></div></div>
+    <div class="scr-card rv"><div class="scr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></div><h3>Safety Score</h3><p>Measures risks that could cause accidents or discourage use of the track.</p><div class="scr-items"><div class="scr-it">Buffer zone presence</div><div class="scr-it">After-sunset lighting</div><div class="scr-it">Intersection traffic devices</div><div class="scr-it">Partial obstruction count</div></div></div>
+    <div class="scr-card b2 rv" style="transition-delay:.1s"><div class="scr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></div><h3>Continuity Score</h3><p>Measures whether a cyclist can travel the segment without interruption.</p><div class="scr-items"><div class="scr-it">Missing ramps at intersections</div><div class="scr-it">Missing markings and signage</div><div class="scr-it">Total obstruction count</div><div class="scr-it">Missing track sections</div></div></div>
+    <div class="scr-card b3 rv" style="transition-delay:.2s"><div class="scr-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-14 15-14 0 10-6 15-14 15"/><path d="M5 19c2-5 5-8 9-10"/></svg></div><h3>Comfort Score</h3><p>Measures how pleasant and comfortable the segment is to cycle on.</p><div class="scr-items"><div class="scr-it">Surface material type</div><div class="scr-it">Cyclist slowed by obstructions</div><div class="scr-it">Shade availability</div><div class="scr-it">Footpath quality rating</div></div></div>
   </div>
 </div></section>
 <section id="audits"><div class="mw">
@@ -146,7 +146,8 @@
 </div></section>
 <section id="cities"><div class="mw">
   <div class="ey">Coverage</div><h2>Cities in the Audit Network</h2>
-  <p class="sub">Select a city to see its audit statistics on this page; select it again to see all cities.</p>
+  <p class="sub">Cities with published audits are marked with a green dot. Select one to see its audits; select it again to see all cities.</p>
+  <div class="cg-legend"><i></i>Has published audits<span>Other cities are part of the network and will appear here once their audit is approved.</span></div>
   <div class="cg" id="cities-grid"><p class="cg-empty">Loading cities…</p></div>
   <p class="cg-msg" id="cities-msg" aria-live="polite"></p>
   <div class="cg-more" id="cities-more" hidden></div>
@@ -182,7 +183,7 @@
 </div></footer>
 <button id="topBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script src="js/landing.js?v=4"></script>
-<script src="js/landing_audits.js?v=3"></script>
+<script src="js/landing_audits.js?v=4"></script>
 <script>
 (function () {
   var cityEl  = document.getElementById('stat-city');
@@ -271,6 +272,7 @@
     n.textContent = label;
     b.appendChild(n);
     if (city) {
+      b.classList.add('has');
       b.setAttribute('data-id', String(city.id));
       b.setAttribute('aria-pressed', 'false');
       b.addEventListener('click', function () { setCityMsg(''); selectCity(String(city.id)); });
