@@ -385,6 +385,7 @@ function ic(string $name): string
         </fieldset>
 
         <button type="submit" class="btn-submit"><span class="btn-label">Create surveyor account</span><?= ic('arrow') ?></button>
+        <p class="reg-note">Your account is created straight away and you go to your dashboard, ready to start auditing.</p>
       </form>
     </section>
   </main>
