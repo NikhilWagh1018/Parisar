@@ -193,7 +193,18 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
         <p><?= $h($nextItem['text']) ?></p>
       </div>
       <?php if ($nextCta): ?>
-        <a class="ca-btn" href="<?= $h($nextCta['href']) ?>"><?= $h($nextCta['label']) ?> <?= cxIcon('arrow') ?></a>
+        <?php
+        // "Send to Admin" / "Close audit" act right here: one click, one confirmation.
+        // (Used to scroll down to the Review card, which needed a second click.)
+        $ctaDirect = null;
+        if (!$isNational && $audit['status'] === 'finalised') { $ctaDirect = 'caSend'; }
+        elseif (!empty($canReview) && $closeBlock === null && $nextCta['label'] === 'Close audit') { $ctaDirect = 'caClose'; }
+        ?>
+        <?php if ($ctaDirect): ?>
+          <button class="ca-btn" type="button" data-click-target="<?= $h($ctaDirect) ?>"><?= $h($nextCta['label']) ?> <?= cxIcon('arrow') ?></button>
+        <?php else: ?>
+          <a class="ca-btn" href="<?= $h($nextCta['href']) ?>"><?= $h($nextCta['label']) ?> <?= cxIcon('arrow') ?></a>
+        <?php endif; ?>
       <?php endif; ?>
     </div>
     <?php endif; ?>

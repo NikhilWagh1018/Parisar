@@ -250,6 +250,13 @@
       window.location.reload();
     } catch (e) { toast(e.message, 'error'); closeBtn.disabled = false; }
   });
+  // Top "next step" button: runs the real button's action (its confirmation) in one click.
+  document.querySelectorAll('[data-click-target]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var t = document.getElementById(b.getAttribute('data-click-target'));
+      if (t && !t.disabled) t.click();
+    });
+  });
   var sendBtn = document.getElementById('caSend');
   if (sendBtn) sendBtn.addEventListener('click', async function () {
     if (!(await confirmBox({ title: 'Send to Admin', message: 'Send this audit and its report to the Admin?', confirmText: 'Send' }))) return;
