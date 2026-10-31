@@ -11,6 +11,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
+require_once __DIR__ . '/../helpers/CityLeaderAssign.php';
 require_once __DIR__ . '/../helpers/ProjectStatus.php';
 require_once __DIR__ . '/../config/constants.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
@@ -23,7 +24,7 @@ require_once __DIR__ . '/../services/ScoreService.php';
 $isNational = $CURRENT_USER_ROLE === 'admin';
 $audit      = (new CityAuditRepository($pdo))->find((int)($_GET['id'] ?? 0));
 
-if ($audit === null || (!$isNational && (int)$audit['city_id'] !== (int)($CURRENT_USER_CITY_ID ?? 0))) {
+if ($audit === null || !projectOpenableBy($audit, $CURRENT_USER_ROLE, $CURRENT_USER_ID, (int)($CURRENT_USER_CITY_ID ?? 0))) {
     header('Location: ' . ($isNational ? 'platform_dashboard.php' : 'city_dashboard.php'));
     exit;
 }

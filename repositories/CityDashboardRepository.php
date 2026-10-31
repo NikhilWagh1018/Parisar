@@ -18,7 +18,7 @@ class CityDashboardRepository
      *
      * @return list<array<string,mixed>>
      */
-    public function auditSummaries(int $cityId): array
+    public function auditSummaries(int $cityId, ?int $leaderUserId = null): array
     {
         $stmt = $this->pdo->prepare(
             "SELECT a.id, a.name, a.state, a.audit_year, a.audit_date, a.status, a.created_at,
@@ -33,11 +33,11 @@ class CityDashboardRepository
                LEFT JOIN roads r    ON r.audit_id = a.id
                LEFT JOIN segments s ON s.road_id  = r.id
                LEFT JOIN segment_assignments sa ON sa.segment_id = s.id
-              WHERE a.city_id = ? AND a.status <> 'voided'
+              WHERE a.city_id = ? AND a.status <> 'voided'" . ($leaderUserId !== null ? ' AND a.leader_user_id = ?' : '') . "
               GROUP BY a.id, a.name, a.state, a.audit_year, a.audit_date, a.status, a.created_at
               ORDER BY a.created_at DESC, a.id DESC"
         );
-        $stmt->execute([$cityId]);
+        $stmt->execute($leaderUserId !== null ? [$cityId, $leaderUserId] : [$cityId]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($rows as &$row) {

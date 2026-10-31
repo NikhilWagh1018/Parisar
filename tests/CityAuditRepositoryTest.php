@@ -23,7 +23,7 @@ class CityAuditRepositoryTest extends TestCase
             city_id INTEGER NOT NULL, is_flagged INTEGER NOT NULL DEFAULT 0)');
         $this->pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY AUTOINCREMENT, city_id INTEGER NOT NULL,
             state TEXT NOT NULL, name TEXT NOT NULL, audit_year INTEGER NOT NULL, audit_date TEXT NULL, programme_info TEXT NULL,
-            status TEXT NOT NULL DEFAULT \'draft\', created_by INTEGER NOT NULL,
+            status TEXT NOT NULL DEFAULT \'draft\', created_by INTEGER NOT NULL, leader_user_id INTEGER NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE (city_id, audit_year, name))');
         $this->pdo->exec('CREATE TABLE roads (id INTEGER PRIMARY KEY AUTOINCREMENT, public_id TEXT NOT NULL UNIQUE,
             creator_id INTEGER NOT NULL, name TEXT NOT NULL, road_group_id INTEGER NULL, audit_id INTEGER NULL,

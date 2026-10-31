@@ -161,14 +161,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         $oldCityId = $target['city_id'] !== null ? (int)$target['city_id'] : null;
-        if ($oldCityId !== $newCityId && (string)$target['role'] === 'city_leader' && $newCityId !== null) {
-            $existing = cityLeaderOther($pdo, $newCityId, $targetId);
-            if ($existing !== null) {
-                http_response_code(409);
-                echo json_encode(['success' => false, 'error' => cityLeaderTakenMessage($existing['name'])]);
-                exit;
-            }
-        }
         if ($oldCityId !== $newCityId) {
             $pdo->prepare('UPDATE users SET city_id = ? WHERE id = ?')->execute([$newCityId, $targetId]);
             ActivityLogger::log($pdo, ActivityLogger::USER_CITY_CHANGED, $CURRENT_USER_ID, [
@@ -208,17 +200,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            // A city has ONE City Leader. Replace the current one first (Cities page / project Edit).
-            if ($newRole === 'city_leader' && $newCityId !== null) {
-                $existing = cityLeaderOther($pdo, $newCityId, $targetId);
-                if ($existing !== null) {
-                    $pdo->rollBack();
-                    http_response_code(409);
-                    echo json_encode(['success' => false, 'error' => cityLeaderTakenMessage($existing['name']) . ' To change who leads it, edit the project and choose a new City Leader.']);
-                    exit;
-                }
-            }
-
             $roleError = validateRoleChange(
                 $CURRENT_USER_ROLE,
                 (string)$target['role'],
@@ -238,6 +219,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare("UPDATE users SET role = ?, city_id = ? WHERE id = ?")->execute([$newRole, $newCityId, $targetId]);
             } else {
                 $pdo->prepare("UPDATE users SET role = ? WHERE id = ?")->execute([$newRole, $targetId]);
+            }
+            // Someone who stops being a City Leader no longer holds projects: they go back to the Admin to reassign.
+            if ((string)$target['role'] === 'city_leader' && $newRole !== 'city_leader') {
+                $pdo->prepare("UPDATE city_audits SET leader_user_id = NULL WHERE leader_user_id = ?")->execute([$targetId]);
             }
             $pdo->commit();
         } catch (Throwable $e) {

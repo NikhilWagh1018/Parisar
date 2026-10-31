@@ -47,7 +47,7 @@ if ($typed === '' || !hash_equals((string)$audit['name'], $typed)) {
 
 $impact      = $repo->deletionImpact((int)$audit['id']);
 $surveyorIds = $repo->assignedSurveyorIds((int)$audit['id']);
-$leader      = cityLeaderOther($pdo, (int)$audit['city_id'], null);
+$leaderId    = $audit['leader_user_id'] !== null ? (int)$audit['leader_user_id'] : null;
 
 $pdo->beginTransaction();
 try {
@@ -77,8 +77,8 @@ try {
     $notes = new NotificationRepository($pdo);
     $t = projectDeletedNotificationText((string)$audit['name']);
     $targets = $surveyorIds;
-    if ($leader !== null) {
-        $targets[] = $leader['id'];
+    if ($leaderId !== null) {
+        $targets[] = $leaderId;
     }
     foreach (array_unique($targets) as $uid) {
         $notes->create((int)$uid, NOTIFY_PROJECT_DELETED, $t['title'], $t['body'], null);

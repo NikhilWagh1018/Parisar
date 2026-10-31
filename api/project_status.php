@@ -43,7 +43,7 @@ if ($auditId === null || $auditId <= 0) {
     exit;
 }
 
-$q = $pdo->prepare('SELECT city_id, status FROM city_audits WHERE id = ?');
+$q = $pdo->prepare('SELECT city_id, status, leader_user_id FROM city_audits WHERE id = ?');
 $q->execute([$auditId]);
 $audit = $q->fetch(PDO::FETCH_ASSOC);
 if ($audit === false || (string)$audit['status'] !== 'voided') {
@@ -56,7 +56,8 @@ $involved = false;
 if ($CURRENT_USER_ROLE === 'admin') {
     $involved = true;
 } elseif ($CURRENT_USER_ROLE === 'city_leader') {
-    $involved = (int)$audit['city_id'] === (int)($CURRENT_USER_CITY_ID ?? 0);
+    $involved = (int)$audit['city_id'] === (int)($CURRENT_USER_CITY_ID ?? 0)
+        && (int)($audit['leader_user_id'] ?? 0) === (int)$CURRENT_USER_ID;
 } else {
     $m = $pdo->prepare('SELECT COUNT(*) FROM segment_assignments WHERE audit_id = ? AND surveyor_id = ?');
     $m->execute([$auditId, (int)$CURRENT_USER_ID]);

@@ -22,15 +22,15 @@ class CityAuditRepository
     public function __construct(private PDO $pdo) {}
 
     /** @param array{name:string,state:string,audit_date:string,audit_year:int,programme_info:?string} $clean */
-    public function createAudit(int $cityId, int $userId, array $clean): int
+    public function createAudit(int $cityId, int $userId, array $clean, ?int $leaderUserId = null): int
     {
         try {
             $this->pdo->prepare(
-                'INSERT INTO city_audits (city_id, state, name, audit_year, audit_date, programme_info, created_by)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO city_audits (city_id, state, name, audit_year, audit_date, programme_info, created_by, leader_user_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
             )->execute([
                 $cityId, $clean['state'], $clean['name'], $clean['audit_year'], $clean['audit_date'],
-                $clean['programme_info'], $userId,
+                $clean['programme_info'], $userId, $leaderUserId,
             ]);
         } catch (PDOException $e) {
             if ((string)$e->getCode() === '23000') {
@@ -42,7 +42,7 @@ class CityAuditRepository
     }
 
     /** @return list<array<string,mixed>> */
-    public function listForCity(int $cityId): array
+    public function listForCity(int $cityId, ?int $leaderUserId = null): array
     {
         $stmt = $this->pdo->prepare(
             'SELECT a.id, a.name, a.state, a.audit_year, a.audit_date, a.status, a.created_at,
@@ -52,11 +52,11 @@ class CityAuditRepository
                FROM city_audits a
                LEFT JOIN roads r    ON r.audit_id = a.id
                LEFT JOIN segments s ON s.road_id  = r.id
-              WHERE a.city_id = ? AND a.status <> \'voided\'
+              WHERE a.city_id = ? AND a.status <> \'voided\'' . ($leaderUserId !== null ? ' AND a.leader_user_id = ?' : '') . '
               GROUP BY a.id, a.name, a.state, a.audit_year, a.audit_date, a.status, a.created_at
               ORDER BY a.created_at DESC, a.id DESC'
         );
-        $stmt->execute([$cityId]);
+        $stmt->execute($leaderUserId !== null ? [$cityId, $leaderUserId] : [$cityId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -65,16 +65,23 @@ class CityAuditRepository
     {
         $stmt = $this->pdo->prepare(
             'SELECT a.id, a.city_id, a.state, a.name, a.audit_year, a.audit_date, a.programme_info,
-                    a.status, a.created_by, a.created_at,
-                    c.name AS city_name, u.name AS created_by_name
+                    a.status, a.created_by, a.created_at, a.leader_user_id,
+                    c.name AS city_name, u.name AS created_by_name, l.name AS leader_name
                FROM city_audits a
                JOIN cities c ON c.id = a.city_id
                LEFT JOIN users u ON u.id = a.created_by
+               LEFT JOIN users l ON l.id = a.leader_user_id
               WHERE a.id = ?'
         );
         $stmt->execute([$auditId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row === false ? null : $row;
+    }
+
+    /** The Admin picks (or clears, with null) the City Leader a project belongs to. */
+    public function setLeader(int $auditId, ?int $leaderUserId): void
+    {
+        $this->pdo->prepare('UPDATE city_audits SET leader_user_id = ? WHERE id = ?')->execute([$leaderUserId, $auditId]);
     }
 
     /** The Admin deleted this project (kept in the database as 'voided', but gone from every screen). */

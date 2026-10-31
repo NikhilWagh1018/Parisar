@@ -6,11 +6,11 @@ declare(strict_types=1);
 //  POST { city_id | city_name, name, state, audit_date (YYYY-MM-DD), programme_info? }
 //  city_id picks an existing city; city_name picks one by name and adds it to
 //  the cities list the first time it is used.
-//  Optional leader_user_id also makes that person the City Leader of the city
-//  (same rules as api/admin/city_leader.php). A city has ONE City Leader: if it
-//  already has one, the request is refused unless replace_leader is true.
-//  The Admin creates a new project (a city audit) for a city. The City
-//  Leader of that city then adds the roads and assigns surveyors.
+//  Optional leader_user_id assigns the project to one of the city's City Leaders
+//  (a city can have several; only the assigned one sees the project). Without it the
+//  project stays with the Admin until a leader is assigned on its Edit screen.
+//  The Admin creates a new project (a city audit) for a city. Its City Leader
+//  then adds the roads and assigns surveyors.
 //  admin only. (City Leaders no longer create audits.)
 // ═══════════════════════════════════════════════════════════════
 
@@ -29,7 +29,9 @@ require_once __DIR__ . '/../../helpers/CityAudit.php';
 require_once __DIR__ . '/../../helpers/Cities.php';
 require_once __DIR__ . '/../../helpers/CityLeaderAssign.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
+require_once __DIR__ . '/../../helpers/Notifications.php';
 require_once __DIR__ . '/../../repositories/CityAuditRepository.php';
+require_once __DIR__ . '/../../repositories/NotificationRepository.php';
 
 $body = nationalApiContext($CURRENT_USER_ROLE);
 
@@ -80,24 +82,18 @@ try {
     } catch (Throwable $e) {
         error_log('city sign-up placement failed: ' . $e->getMessage());
     }
-    $auditId = (new CityAuditRepository($pdo))->createAudit((int)$cityId, $CURRENT_USER_ID, $v['clean']);
     $leaderId = filter_var($body['leader_user_id'] ?? null, FILTER_VALIDATE_INT);
-    if ($leaderId !== false && $leaderId !== null && $leaderId > 0) {
+    $leaderId = ($leaderId !== false && $leaderId !== null && $leaderId > 0) ? (int)$leaderId : null;
+    if ($leaderId !== null) {
         $u = $pdo->prepare('SELECT role, is_active, city_id FROM users WHERE id = ?');
-        $u->execute([(int)$leaderId]);
-        $leader = $u->fetch(PDO::FETCH_ASSOC) ?: null;
-        $other       = cityLeaderOther($pdo, (int)$cityId, (int)$leaderId);
-        $replace     = ($body['replace_leader'] ?? false) === true;
-        $leaderError = cityLeaderAssignError($leader, (int)$cityId, ($other !== null && !$replace) ? $other['name'] : null);
+        $u->execute([$leaderId]);
+        $leaderError = projectLeaderError($u->fetch(PDO::FETCH_ASSOC) ?: null, (int)$cityId);
         if ($leaderError !== null) {
             throw new DomainException($leaderError);
         }
-        if ($other !== null) {
-            $pdo->prepare("UPDATE users SET role = 'surveyor' WHERE id = ? AND role = 'city_leader'")->execute([$other['id']]);
-        }
-        $pdo->prepare("UPDATE users SET role = 'city_leader', city_id = ? WHERE id = ?")->execute([(int)$cityId, (int)$leaderId]);
-        $leaderAssigned = (int)$leaderId;
+        $leaderAssigned = $leaderId;
     }
+    $auditId = (new CityAuditRepository($pdo))->createAudit((int)$cityId, $CURRENT_USER_ID, $v['clean'], $leaderId);
     $pdo->commit();
 } catch (DomainException $e) {
     $pdo->rollBack();
@@ -115,9 +111,12 @@ ActivityLogger::log($pdo, ActivityLogger::AUDIT_CREATED, $CURRENT_USER_ID, [
 ]);
 
 if ($leaderAssigned !== null) {
-    ActivityLogger::log($pdo, ActivityLogger::USER_ROLE_CHANGED, $CURRENT_USER_ID, [
-        'user_id' => $leaderAssigned, 'to_role' => 'city_leader', 'city_id' => (int)$cityId,
-    ]);
+    try {
+        $t = projectAssignedNotificationText($v['clean']['name']);
+        (new NotificationRepository($pdo))->create($leaderAssigned, NOTIFY_PROJECT_ASSIGNED, $t['title'], $t['body'], 'city_audit.php?id=' . (int)$auditId);
+    } catch (Throwable $e) {
+        error_log('project assigned notification failed: ' . $e->getMessage());
+    }
 }
 
 echo json_encode(['success' => true, 'audit_id' => $auditId]);

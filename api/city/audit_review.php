@@ -18,6 +18,7 @@ set_exception_handler(function (Throwable $e) {
 });
 
 require_once __DIR__ . '/../../config/admin_guard.php';
+require_once __DIR__ . '/../../helpers/CityLeaderAssign.php';
 require_once __DIR__ . '/../../helpers/CityApi.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 require_once __DIR__ . '/../../repositories/CityAuditRepository.php';
@@ -28,7 +29,7 @@ $repo = new CityAuditRepository($pdo);
 
 $auditId = filter_var($body['audit_id'] ?? null, FILTER_VALIDATE_INT);
 $audit   = ($auditId !== false && $auditId !== null) ? $repo->find((int)$auditId) : null;
-if ($audit === null || (int)$audit['city_id'] !== (int)$CURRENT_USER_CITY_ID) {
+if ($audit === null || !projectOpenableBy($audit, $CURRENT_USER_ROLE, $CURRENT_USER_ID, (int)$CURRENT_USER_CITY_ID)) {
     cityApiFail(404, 'Audit not found.');
 }
 cityApiFailIfDeleted($audit);

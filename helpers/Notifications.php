@@ -11,6 +11,7 @@ const NOTIFY_ASSIGNED = 'segments_assigned';
 const NOTIFY_PROJECT_DELETED = 'project_deleted';
 const NOTIFY_PROJECT_UPDATED = 'project_updated';
 const NOTIFY_LEADER_CHANGED  = 'city_leader_changed';
+const NOTIFY_PROJECT_ASSIGNED = 'project_assigned';
 
 /** "1 segment" / "3 segments". */
 function notifyPlural(int $n, string $one, string $many): string
@@ -73,4 +74,22 @@ function cityLeaderChangedNotificationText(string $cityName, bool $nowLeader): a
     return $nowLeader
         ? ['title' => 'You are now City Leader', 'body' => 'The Admin made you the City Leader of ' . $cityName . '. Open your City Dashboard to manage its projects.']
         : ['title' => 'City Leader changed', 'body' => 'The Admin made someone else the City Leader of ' . $cityName . '. You are now a Surveyor.'];
+}
+
+/** What a City Leader is told when the Admin assigns a project to them. */
+function projectAssignedNotificationText(string $auditName): array
+{
+    return [
+        'title' => 'New project assigned',
+        'body'  => 'The Admin assigned the project "' . $auditName . '" to you. Open it to add roads and assign surveyors.',
+    ];
+}
+
+/** What a City Leader is told when the Admin hands their project to another City Leader. */
+function projectUnassignedNotificationText(string $auditName): array
+{
+    return [
+        'title' => 'Project reassigned',
+        'body'  => 'The Admin assigned the project "' . $auditName . '" to another City Leader. It no longer appears on your dashboard.',
+    ];
 }
