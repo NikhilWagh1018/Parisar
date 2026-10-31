@@ -63,3 +63,12 @@ function nationalApiContext(string $role): array
     }
     return $body;
 }
+
+/** Stops a write API with a clear message when the Admin has deleted the project. */
+function cityApiFailIfDeleted(?array $audit): void
+{
+    require_once __DIR__ . '/ProjectStatus.php';
+    if (projectIsDeleted($audit)) {
+        cityApiFail(410, PROJECT_DELETED_MESSAGE, ['project_deleted' => true]);
+    }
+}

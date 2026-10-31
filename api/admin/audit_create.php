@@ -7,7 +7,8 @@ declare(strict_types=1);
 //  city_id picks an existing city; city_name picks one by name and adds it to
 //  the cities list the first time it is used.
 //  Optional leader_user_id also makes that person the City Leader of the city
-//  (same rules as api/admin/city_leader.php).
+//  (same rules as api/admin/city_leader.php). A city has ONE City Leader: if it
+//  already has one, the request is refused unless replace_leader is true.
 //  The Admin creates a new project (a city audit) for a city. The City
 //  Leader of that city then adds the roads and assigns surveyors.
 //  admin only. (City Leaders no longer create audits.)
@@ -85,9 +86,14 @@ try {
         $u = $pdo->prepare('SELECT role, is_active, city_id FROM users WHERE id = ?');
         $u->execute([(int)$leaderId]);
         $leader = $u->fetch(PDO::FETCH_ASSOC) ?: null;
-        $leaderError = cityLeaderAssignError($leader, (int)$cityId);
+        $other       = cityLeaderOther($pdo, (int)$cityId, (int)$leaderId);
+        $replace     = ($body['replace_leader'] ?? false) === true;
+        $leaderError = cityLeaderAssignError($leader, (int)$cityId, ($other !== null && !$replace) ? $other['name'] : null);
         if ($leaderError !== null) {
             throw new DomainException($leaderError);
+        }
+        if ($other !== null) {
+            $pdo->prepare("UPDATE users SET role = 'surveyor' WHERE id = ? AND role = 'city_leader'")->execute([$other['id']]);
         }
         $pdo->prepare("UPDATE users SET role = 'city_leader', city_id = ? WHERE id = ?")->execute([(int)$cityId, (int)$leaderId]);
         $leaderAssigned = (int)$leaderId;

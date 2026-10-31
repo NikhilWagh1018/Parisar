@@ -107,6 +107,12 @@ $greeting     = cityGreeting($hour);
     <div class="card"><p class="rd-empty">No city is assigned to your account yet. Please ask an Admin to assign one.</p></div>
   <?php else: ?>
 
+    <?php if (($_GET['notice'] ?? '') === 'project_deleted'): ?>
+    <div class="card" role="alert" style="border-left:4px solid #dc2626;background:#fef2f2">
+      <p style="margin:0;font-size:.92rem;line-height:1.5"><b>That project was deleted.</b> The Admin deleted it, so work on it has stopped and it is no longer listed.</p>
+    </div>
+    <?php endif; ?>
+    <?php if (!$isNational) { require __DIR__ . '/partials/notifications.php'; } ?>
 
     <section class="cx-hero">
       <div class="cx-hero-row">
@@ -271,6 +277,8 @@ const tog = document.getElementById('sb-toggle'), ovl = document.getElementById(
 tog.addEventListener('click', () => { aside.classList.add('open'); ovl.classList.add('show'); });
 ovl.addEventListener('click', () => { aside.classList.remove('open'); ovl.classList.remove('show'); });
 </script>
+<script nonce="<?= $nonce ?>">const CSRF = '<?= $csrf ?>';</script>
+<script nonce="<?= $nonce ?>" src="../js/notifications.js?v=<?= filemtime(__DIR__ . '/../js/notifications.js') ?>"></script>
 <script nonce="<?= $nonce ?>" src="../js/confirm_box.js?v=<?= filemtime(__DIR__ . '/../js/confirm_box.js') ?>"></script>
 <script nonce="<?= $nonce ?>" src="../js/city_audit.js?v=<?= filemtime(__DIR__ . '/../js/city_audit.js') ?>"></script>
 </body>

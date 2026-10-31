@@ -48,7 +48,8 @@ foreach (indianCityList() as $n => $st) {
 foreach ($cities as $c) {
     $k = mb_strtolower((string)$c['name']);
     $pickCities[$k] = ['id' => (int)$c['id'], 'name' => (string)$c['name'],
-                       'state' => cityStateFor((string)$c['name']) ?? ($pickCities[$k]['state'] ?? ''), 'leaders' => (int)$c['leaders']];
+                       'state' => cityStateFor((string)$c['name']) ?? ($pickCities[$k]['state'] ?? ''), 'leaders' => (int)$c['leaders'],
+                       'leader_name' => (string)($c['leader_name'] ?? '')];
 }
 uasort($pickCities, static fn(array $a, array $b): int => strcasecmp($a['name'], $b['name']));
 // Active surveyors an Admin can promote to City Leader (the page narrows them to the city).
@@ -88,6 +89,11 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
   </div>
   <div class="content" id="npApp" data-csrf="<?= $csrf ?>" data-candidates="<?= $h(json_encode($leaderCandidates, JSON_UNESCAPED_UNICODE)) ?>" data-assign-city="<?= (int)($_GET['assign_leader'] ?? 0) ?>">
 
+    <?php if (($_GET['notice'] ?? '') === 'project_deleted_ok'): ?>
+    <div class="card" role="status" style="border-left:4px solid #16a34a;background:#f0fdf4">
+      <p style="margin:0;font-size:.92rem;line-height:1.5"><b>Project deleted.</b> It no longer appears on any dashboard and work on it has stopped. The City Leader and surveyors were told.</p>
+    </div>
+    <?php endif; ?>
     <div class="card" id="npNewCard" style="display:none">
       <div class="card-head"><h3>New project</h3></div>
       <form id="npNewForm" class="ca-form" novalidate>
@@ -96,7 +102,7 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
           <input id="npCity" name="city_name" type="text" list="npCityList" maxlength="100" autocomplete="off" placeholder="Start typing to search, e.g. Pune">
           <datalist id="npCityList" data-aliases="<?= $h(json_encode(array_combine(array_map('cityKey', array_keys(CITY_ALIASES)), array_values(CITY_ALIASES)), JSON_UNESCAPED_UNICODE)) ?>">
             <?php foreach ($pickCities as $pc): ?>
-              <option value="<?= $h($pc['name']) ?>" label="<?= $h($pc['state']) ?>" data-id="<?= (int)$pc['id'] ?>" data-state="<?= $h($pc['state']) ?>" data-leaders="<?= (int)$pc['leaders'] ?>"></option>
+              <option value="<?= $h($pc['name']) ?>" label="<?= $h($pc['state']) ?>" data-id="<?= (int)$pc['id'] ?>" data-state="<?= $h($pc['state']) ?>" data-leaders="<?= (int)$pc['leaders'] ?>" data-leader-name="<?= $h($pc['leader_name'] ?? '') ?>"></option>
             <?php endforeach; ?>
           </datalist>
           <div class="ca-err"></div>
@@ -202,7 +208,7 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
       </div>
       <div class="pd-scroll">
         <table class="pd-table">
-          <thead><tr><th>City</th><th>City Leaders</th><th>Surveyors</th><th>Roads</th><th>Segments done</th><th></th></tr></thead>
+          <thead><tr><th>City</th><th>City Leader</th><th>Surveyors</th><th>Roads</th><th>Segments done</th><th></th></tr></thead>
           <tbody>
           <?php if (!$cities): ?>
             <tr><td colspan="6" class="pd-empty">No cities yet.</td></tr>
@@ -210,7 +216,7 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
           <?php foreach ($cities as $c): ?>
             <tr>
               <td><strong><?= $h($c['name']) ?></strong></td>
-              <td><?= $c['leaders'] > 0 ? (int)$c['leaders'] : '<span class="pd-warn-text">None</span>' ?></td>
+              <td><?php if ($c['leaders'] === 0): ?><span class="pd-warn-text">None</span><?php elseif ($c['leaders'] === 1): ?><?= $h($c['leader_name']) ?><?php else: ?><span class="pd-warn-text"><?= (int)$c['leaders'] ?> leaders. Make all but one a Surveyor.</span><?php endif; ?></td>
               <td><?= (int)$c['surveyors'] ?></td>
               <td><?= (int)$c['road_groups'] ?></td>
               <td><?= $h($pct($c['done'], $c['segs'])) ?> <span class="pd-sub"><?= (int)$c['done'] ?> of <?= (int)$c['segs'] ?></span></td>

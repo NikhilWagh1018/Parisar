@@ -67,3 +67,11 @@
 .ca-btn.ca-btn-danger { background:#dc2626; color:#fff; border:none; padding:9px 16px; font-size:.82rem; }
 .ca-btn.ca-btn-danger:hover { background:#b91c1c; }
 @media (prefers-reduced-motion:no-preference) { .ca-modal { animation:caPop .15s ease-out; } @keyframes caPop { from { transform:translateY(6px); opacity:.6; } to { transform:none; opacity:1; } } }
+
+/* Admin project page: Edit / Delete project */
+.ca-modal-bg[hidden] { display:none; }
+.ap-actions { display:flex; gap:10px; align-items:center; margin-left:auto; flex-wrap:wrap; }
+.ap-actions .ca-btn { padding:8px 14px; font-size:.82rem; }
+.ca-modal.ap-modal { max-width:520px; max-height:92vh; overflow:auto; }
+.ap-modal .ca-field { margin-bottom:12px; }
+.ap-modal .ca-hint.full { margin:0 0 14px; font-size:.78rem; color:var(--gray); }

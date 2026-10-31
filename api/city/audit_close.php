@@ -31,6 +31,7 @@ $audit   = ($auditId !== false && $auditId !== null) ? $repo->find((int)$auditId
 if ($audit === null || (int)$audit['city_id'] !== (int)$CURRENT_USER_CITY_ID) {
     cityApiFail(404, 'Audit not found.');
 }
+cityApiFailIfDeleted($audit);
 
 $action = (string)($body['action'] ?? '');
 if (!in_array($action, ['close', 'send'], true)) {

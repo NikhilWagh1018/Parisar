@@ -104,6 +104,27 @@ class SurveyorWorkRepository
         return (int)$q->fetchColumn() > 0;
     }
 
+    /** Did the Admin delete the project this road belongs to? (False for older stand-alone roads.) */
+    public function projectDeletedForRoad(int $roadId): bool
+    {
+        $q = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM roads r JOIN city_audits a ON a.id = r.audit_id WHERE r.id = ? AND a.status = 'voided'"
+        );
+        $q->execute([$roadId]);
+        return (int)$q->fetchColumn() > 0;
+    }
+
+    /** Did the Admin delete the project this segment belongs to? */
+    public function projectDeletedForSegment(int $segmentId): bool
+    {
+        $q = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM segments s JOIN roads r ON r.id = s.road_id JOIN city_audits a ON a.id = r.audit_id
+              WHERE s.id = ? AND a.status = 'voided'"
+        );
+        $q->execute([$segmentId]);
+        return (int)$q->fetchColumn() > 0;
+    }
+
     /** Does the road belong to a city audit (as opposed to an older stand-alone road)? */
     public function roadIsInCityAudit(int $roadId): bool
     {

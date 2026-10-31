@@ -408,6 +408,26 @@ function cityFindOrCreate(PDO $pdo, string $name): array
 }
 
 /**
+ * The City Leader of a city, or null when it has none. $exceptUserId leaves one person
+ * out (the one being promoted). On MySQL the city row is locked first, so two Admins
+ * promoting at the same moment cannot both succeed; call this inside a transaction.
+ *
+ * @return array{id:int,name:string}|null
+ */
+function cityLeaderOther(PDO $pdo, int $cityId, ?int $exceptUserId = null): ?array
+{
+    if ($pdo->inTransaction() && $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql') {
+        $pdo->prepare('SELECT id FROM cities WHERE id = ? FOR UPDATE')->execute([$cityId]);
+    }
+    $q = $pdo->prepare(
+        "SELECT id, name FROM users WHERE city_id = ? AND role = 'city_leader' AND id <> ? ORDER BY id ASC LIMIT 1"
+    );
+    $q->execute([$cityId, $exceptUserId ?? 0]);
+    $row = $q->fetch(PDO::FETCH_ASSOC);
+    return $row === false ? null : ['id' => (int)$row['id'], 'name' => (string)$row['name']];
+}
+
+/**
  * Put everyone who named this city at sign-up into it. People whose city was not
  * set up yet when they registered have users.city_id empty; once the city exists
  * they are placed in it, so its City Leader sees them. Anyone already in a city

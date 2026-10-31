@@ -12,7 +12,12 @@ $segmentIdParam = isset($_GET['segment_id']) ? (int)$_GET['segment_id'] : 0;
 // Surveyors may only open segments assigned to them in a city audit.
 if ($segmentIdParam > 0 && $CURRENT_USER_ROLE === 'surveyor') {
     require_once __DIR__ . '/../repositories/SurveyorWorkRepository.php';
-    if (!(new SurveyorWorkRepository($pdo))->mayOpenSegment($segmentIdParam, (int)$CURRENT_USER_ID)) {
+    $workRepo = new SurveyorWorkRepository($pdo);
+    if ($workRepo->projectDeletedForSegment($segmentIdParam)) {
+        header('Location: dashboard.php?notice=project_deleted');
+        exit;
+    }
+    if (!$workRepo->mayOpenSegment($segmentIdParam, (int)$CURRENT_USER_ID)) {
         header('Location: dashboard.php');
         exit;
     }
@@ -585,5 +590,8 @@ if ($segNum > 0) {
 
 <script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/form.js?v=<?= filemtime(__DIR__ . '/../js/form.js') ?>"></script>
 
+<?php if ($segmentIdParam > 0): ?>
+<script nonce="<?= htmlspecialchars($_SESSION['csp_nonce'] ?? '', ENT_QUOTES, 'UTF-8') ?>" src="../js/project_watch.js?v=<?= filemtime(__DIR__ . '/../js/project_watch.js') ?>" data-segment-id="<?= (int)$segmentIdParam ?>" data-home="dashboard.php?notice=project_deleted"></script>
+<?php endif; ?>
 </body>
 </html>

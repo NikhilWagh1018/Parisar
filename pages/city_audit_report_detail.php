@@ -11,6 +11,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
+require_once __DIR__ . '/../helpers/ProjectStatus.php';
 require_once __DIR__ . '/../config/constants.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
@@ -24,6 +25,10 @@ $audit      = (new CityAuditRepository($pdo))->find((int)($_GET['id'] ?? 0));
 
 if ($audit === null || (!$isNational && (int)$audit['city_id'] !== (int)($CURRENT_USER_CITY_ID ?? 0))) {
     header('Location: ' . ($isNational ? 'platform_dashboard.php' : 'city_dashboard.php'));
+    exit;
+}
+if (projectIsDeleted($audit)) {
+    header('Location: ' . ($isNational ? 'platform_dashboard.php?notice=project_deleted_ok' : 'city_dashboard.php?notice=project_deleted'));
     exit;
 }
 if ($audit['status'] === 'draft' || $audit['status'] === 'voided') {

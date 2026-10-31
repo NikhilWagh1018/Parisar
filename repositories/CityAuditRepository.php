@@ -52,7 +52,7 @@ class CityAuditRepository
                FROM city_audits a
                LEFT JOIN roads r    ON r.audit_id = a.id
                LEFT JOIN segments s ON s.road_id  = r.id
-              WHERE a.city_id = ?
+              WHERE a.city_id = ? AND a.status <> \'voided\'
               GROUP BY a.id, a.name, a.state, a.audit_year, a.audit_date, a.status, a.created_at
               ORDER BY a.created_at DESC, a.id DESC'
         );
@@ -75,6 +75,106 @@ class CityAuditRepository
         $stmt->execute([$auditId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row === false ? null : $row;
+    }
+
+    /** The Admin deleted this project (kept in the database as 'voided', but gone from every screen). */
+    public function isDeleted(array $audit): bool
+    {
+        return ($audit['status'] ?? '') === 'voided';
+    }
+
+    /**
+     * Admin edit of a project's name, audit date (the year follows it) and programme info.
+     * The city and state stay as they are: the roads and surveyors belong to the city.
+     *
+     * @param array<string,mixed> $audit  row from find()
+     * @param array<string,mixed> $clean  from cityAuditValidate()
+     * @return list<string>  what changed, e.g. ['name', 'programme info'] (empty = nothing changed)
+     */
+    public function updateAudit(array $audit, array $clean): array
+    {
+        if ($this->isDeleted($audit)) {
+            throw new DomainException('This project was deleted.');
+        }
+        $changed = [];
+        if ((string)$audit['name'] !== (string)$clean['name']) {
+            $changed[] = 'name';
+        }
+        if ((string)($audit['audit_date'] ?? '') !== (string)$clean['audit_date']) {
+            $changed[] = 'audit date';
+        }
+        if ((string)($audit['programme_info'] ?? '') !== (string)($clean['programme_info'] ?? '')) {
+            $changed[] = 'programme info';
+        }
+        if (!$changed) {
+            return [];
+        }
+        try {
+            $this->pdo->prepare(
+                'UPDATE city_audits SET name = ?, audit_year = ?, audit_date = ?, programme_info = ?
+                  WHERE id = ? AND status <> \'voided\''
+            )->execute([
+                $clean['name'], $clean['audit_year'], $clean['audit_date'], $clean['programme_info'], (int)$audit['id'],
+            ]);
+        } catch (PDOException $e) {
+            if ((string)$e->getCode() === '23000') {
+                throw new DomainException('Another project in this city already has this name and year.');
+            }
+            throw $e;
+        }
+        return $changed;
+    }
+
+    /**
+     * What deleting the project stops: roads, segments, segments already worked on, and the
+     * surveyors holding segments.
+     *
+     * @return array{roads:int,segments:int,started:int,surveyors:int}
+     */
+    public function deletionImpact(int $auditId): array
+    {
+        $q = $this->pdo->prepare(
+            "SELECT COUNT(DISTINCT r.id) AS roads, COUNT(s.id) AS segs,
+                    SUM(CASE WHEN s.status <> 'pending' THEN 1 ELSE 0 END) AS started
+               FROM roads r LEFT JOIN segments s ON s.road_id = r.id WHERE r.audit_id = ?"
+        );
+        $q->execute([$auditId]);
+        $row = $q->fetch(PDO::FETCH_ASSOC) ?: [];
+        $u = $this->pdo->prepare('SELECT COUNT(DISTINCT surveyor_id) FROM segment_assignments WHERE audit_id = ?');
+        $u->execute([$auditId]);
+        return [
+            'roads'     => (int)($row['roads'] ?? 0),
+            'segments'  => (int)($row['segs'] ?? 0),
+            'started'   => (int)($row['started'] ?? 0),
+            'surveyors' => (int)$u->fetchColumn(),
+        ];
+    }
+
+    /** Ids of the surveyors holding segments in this project. @return list<int> */
+    public function assignedSurveyorIds(int $auditId): array
+    {
+        $q = $this->pdo->prepare('SELECT DISTINCT surveyor_id FROM segment_assignments WHERE audit_id = ? ORDER BY surveyor_id');
+        $q->execute([$auditId]);
+        return array_map('intval', $q->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    /**
+     * Admin delete: the project is marked 'voided'. Its roads, segments and audit data are kept in
+     * the database (nothing is lost for good), but it disappears from every list and all work on it
+     * stops. The name is changed so the same name can be used again for a new project.
+     */
+    public function deleteAudit(array $audit): void
+    {
+        if ($this->isDeleted($audit)) {
+            throw new DomainException('This project was already deleted.');
+        }
+        $suffix = ' [deleted #' . (int)$audit['id'] . ']';
+        $name   = mb_substr((string)$audit['name'], 0, 150 - mb_strlen($suffix)) . $suffix;
+        $upd = $this->pdo->prepare('UPDATE city_audits SET status = \'voided\', name = ? WHERE id = ? AND status <> \'voided\'');
+        $upd->execute([$name, (int)$audit['id']]);
+        if ($upd->rowCount() === 0) {
+            throw new DomainException('This project was already deleted.');
+        }
     }
 
     public function isEditable(array $audit): bool

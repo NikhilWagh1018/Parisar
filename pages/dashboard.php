@@ -129,6 +129,12 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 
   <div class="content">
 
+    <?php if (($_GET['notice'] ?? '') === 'project_deleted'): ?>
+    <div class="card" role="alert" style="border-left:4px solid #dc2626;background:#fef2f2">
+      <p style="margin:0;font-size:.92rem;line-height:1.5"><b>That project was deleted.</b> The Admin deleted it, so work on it has stopped and it is no longer listed.</p>
+    </div>
+    <?php endif; ?>
+
     <?php if (!isAnyAdmin($CURRENT_USER_ROLE)): ?>
     <!-- Stat cards — populated by JS -->
     <div class="stat-grid" id="statGrid">

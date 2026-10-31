@@ -10,9 +10,13 @@ declare(strict_types=1);
 /**
  * Why this user cannot become the City Leader of $cityId, or null when they can.
  *
+ * A city has ONE City Leader. $otherLeaderName is the name of the city's current City
+ * Leader when that is someone else (null when there is none, or when the Admin is
+ * replacing them on purpose).
+ *
  * @param array{role:string,is_active:mixed,city_id:mixed}|null $user  the users row, or null if missing
  */
-function cityLeaderAssignError(?array $user, int $cityId): ?string
+function cityLeaderAssignError(?array $user, int $cityId, ?string $otherLeaderName = null): ?string
 {
     if ($user === null) {
         return 'User not found.';
@@ -30,5 +34,14 @@ function cityLeaderAssignError(?array $user, int $cityId): ?string
     if ((string)$user['role'] === 'city_leader' && $userCity === $cityId) {
         return 'This user is already the City Leader of this city.';
     }
+    if ($otherLeaderName !== null) {
+        return cityLeaderTakenMessage($otherLeaderName);
+    }
     return null;
+}
+
+/** The refusal shown when a city already has its City Leader. */
+function cityLeaderTakenMessage(string $leaderName): string
+{
+    return $leaderName . ' is already the City Leader of this city. A city can have only one City Leader.';
 }

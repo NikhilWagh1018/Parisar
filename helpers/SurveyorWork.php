@@ -7,6 +7,8 @@ declare(strict_types=1);
 //  submit it. Pure functions (no DB) so they are unit-tested.
 // ═══════════════════════════════════════════════════════════════
 
+require_once __DIR__ . '/ProjectStatus.php';
+
 /** Audit statuses in which surveyors can work on their segments. */
 const SURVEYOR_WORKABLE_AUDIT_STATUSES = ['active', 'in_review'];
 
@@ -69,6 +71,9 @@ function surveyorSubmitBlockReason(
 ): ?string {
     if ($auditId === null) {
         return null;
+    }
+    if ((string)$auditStatus === 'voided') {
+        return PROJECT_DELETED_MESSAGE;
     }
     if (!in_array((string)$auditStatus, SURVEYOR_WORKABLE_AUDIT_STATUSES, true)) {
         return 'This audit is not open for surveying.';

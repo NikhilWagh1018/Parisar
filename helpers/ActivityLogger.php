@@ -23,6 +23,8 @@ class ActivityLogger
     public const USER_CITY_CHANGED = 'user_city_changed';
     public const USER_ROLE_CHANGED = 'user_role_changed';
     public const AUDIT_CREATED      = 'audit_created';
+    public const AUDIT_UPDATED      = 'audit_updated';
+    public const AUDIT_DELETED      = 'audit_deleted';
     public const AUDIT_ROAD_ADDED   = 'audit_road_added';
     public const AUDIT_ROAD_REMOVED = 'audit_road_removed';
     public const AUDIT_SEGMENTS_ASSIGNED = 'audit_segments_assigned';

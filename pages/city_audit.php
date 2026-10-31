@@ -9,11 +9,13 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../config/admin_guard.php';
+require_once __DIR__ . '/../helpers/ProjectStatus.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../repositories/CityAuditRepository.php';
 require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 require_once __DIR__ . '/../services/ScoreService.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
+require_once __DIR__ . '/../helpers/Cities.php';
 require_once __DIR__ . '/partials/cx_icons.php';
 
 $isNational = $CURRENT_USER_ROLE === 'admin';
@@ -22,6 +24,10 @@ $audit      = $repo->find((int)($_GET['id'] ?? 0));
 
 if ($audit === null || (!$isNational && (int)$audit['city_id'] !== (int)($CURRENT_USER_CITY_ID ?? 0))) {
     header('Location: ' . ($isNational ? 'platform_dashboard.php' : 'city_dashboard.php'));
+    exit;
+}
+if (projectIsDeleted($audit)) {
+    header('Location: ' . ($isNational ? 'platform_dashboard.php?notice=project_deleted_ok' : 'city_dashboard.php?notice=project_deleted'));
     exit;
 }
 
@@ -61,6 +67,18 @@ $segScore = static function (?int $auditRowId) use ($pdo): ?array {
     try { return calculateSegmentScore($auditRowId, $pdo); } catch (Throwable $e) { return null; }
 };
 $backUrl   = 'city_dashboard.php' . ($isNational ? '?city_id=' . (int)$audit['city_id'] : '');
+
+// Admin only: the city's City Leader, who could take over, and what deleting would stop.
+$adminLeader = null; $adminCandidates = []; $adminImpact = null;
+if ($isNational) {
+    $adminLeader = cityLeaderOther($pdo, (int)$audit['city_id']);
+    $cq = $pdo->prepare(
+        "SELECT id, name, email FROM users WHERE is_active = 1 AND role = 'surveyor' AND (city_id = ? OR city_id IS NULL) ORDER BY name ASC, id ASC"
+    );
+    $cq->execute([(int)$audit['city_id']]);
+    $adminCandidates = $cq->fetchAll(PDO::FETCH_ASSOC);
+    $adminImpact = $repo->deletionImpact((int)$audit['id']);
+}
 
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $nonce     = $h($_SESSION['csp_nonce'] ?? '');
@@ -134,6 +152,12 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
       <h1><?= $h($audit['name']) ?></h1>
       <p><a href="<?= $h($backUrl) ?>">← All audits</a></p>
     </div>
+    <?php if ($isNational): ?>
+    <div class="ap-actions">
+      <button type="button" class="ca-btn ghost" id="apEditBtn">Edit project</button>
+      <button type="button" class="ca-btn ca-btn-danger" id="apDeleteBtn">Delete project</button>
+    </div>
+    <?php endif; ?>
   </div>
   <div class="content cx-page cx-audit" id="caApp" data-csrf="<?= $csrf ?>" data-audit-id="<?= (int)$audit['id'] ?>">
 
@@ -491,6 +515,67 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
 
   </div>
 </main>
+<?php if ($isNational): ?>
+<div class="ca-modal-bg" id="apEditBg" hidden>
+  <div class="ca-modal ap-modal" role="dialog" aria-modal="true" aria-labelledby="apEditTitle">
+    <h3 id="apEditTitle">Edit project</h3>
+    <form id="apEditForm" class="ca-form" novalidate>
+      <div class="ca-field">
+        <label for="apName">Project name *</label>
+        <input id="apName" name="name" type="text" maxlength="150" value="<?= $h($audit['name']) ?>">
+        <div class="ca-err"></div>
+      </div>
+      <div class="ca-field">
+        <label for="apDate">Audit date *</label>
+        <input id="apDate" name="audit_date" type="date" min="2000-01-01" max="2100-12-31" value="<?= $h($audit['audit_date'] ?? '') ?>">
+        <div class="ca-err"></div>
+      </div>
+      <div class="ca-field full">
+        <label for="apInfo">Programme info</label>
+        <textarea id="apInfo" name="programme_info" maxlength="2000"><?= $h($audit['programme_info'] ?? '') ?></textarea>
+        <div class="ca-err"></div>
+      </div>
+      <div class="ca-field full">
+        <label for="apLeader">City Leader of <?= $h($audit['city_name']) ?></label>
+        <select id="apLeader" name="leader_user_id" data-current="<?= $adminLeader ? $h($adminLeader['name']) : '' ?>">
+          <option value=""><?= $adminLeader ? '— Keep ' . $h($adminLeader['name']) . ' —' : '— Assign later —' ?></option>
+          <?php foreach ($adminCandidates as $cu): ?>
+            <option value="<?= (int)$cu['id'] ?>"><?= $h($cu['name']) ?><?= $cu['email'] !== '' ? ' (' . $h($cu['email']) . ')' : '' ?></option>
+          <?php endforeach; ?>
+        </select>
+        <div class="ca-hint"><?= $adminLeader
+            ? $h($adminLeader['name']) . ' is the City Leader. A city has only one, so choosing someone else makes ' . $h($adminLeader['name']) . ' a Surveyor.'
+            : 'This city has no City Leader yet. A city has only one.' ?></div>
+      </div>
+      <div class="ca-hint full">The city (<?= $h($audit['city_name']) ?>) and state cannot be changed here. Changes show on the City Leader’s and surveyors’ dashboards the next time they load.</div>
+      <div class="ca-modal-actions">
+        <button type="button" class="ca-btn ghost" id="apEditCancel">Cancel</button>
+        <button type="submit" class="ca-btn" id="apEditSave">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="ca-modal-bg" id="apDeleteBg" hidden>
+  <div class="ca-modal ap-modal" role="dialog" aria-modal="true" aria-labelledby="apDelTitle">
+    <h3 id="apDelTitle">Delete this project?</h3>
+    <p>This stops all work on <b><?= $h($audit['name']) ?></b> straight away:
+      <?= (int)$adminImpact['roads'] ?> <?= $adminImpact['roads'] === 1 ? 'road' : 'roads' ?>,
+      <?= (int)$adminImpact['segments'] ?> <?= $adminImpact['segments'] === 1 ? 'segment' : 'segments' ?>
+      (<?= (int)$adminImpact['started'] ?> already worked on) and
+      <?= (int)$adminImpact['surveyors'] ?> <?= $adminImpact['surveyors'] === 1 ? 'surveyor' : 'surveyors' ?>.
+      It disappears from every dashboard, and the City Leader and surveyors are told. The audit data stays in the database but cannot be opened from the app.</p>
+    <div class="ca-field">
+      <label for="apDelConfirm">Type the project name to confirm</label>
+      <input id="apDelConfirm" type="text" autocomplete="off" placeholder="<?= $h($audit['name']) ?>" data-name="<?= $h($audit['name']) ?>">
+      <div class="ca-err"></div>
+    </div>
+    <div class="ca-modal-actions">
+      <button type="button" class="ca-btn ghost" id="apDelCancel">Cancel</button>
+      <button type="button" class="ca-btn ca-btn-danger" id="apDelGo" disabled>Delete project</button>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 <div class="ca-toast" id="caToast"></div>
 <div class="sb-overlay" id="sb-overlay"></div>
 <script nonce="<?= $nonce ?>">
@@ -500,5 +585,9 @@ ovl.addEventListener('click', () => { aside.classList.remove('open'); ovl.classL
 </script>
 <script nonce="<?= $nonce ?>" src="../js/confirm_box.js?v=<?= filemtime(__DIR__ . '/../js/confirm_box.js') ?>"></script>
 <script nonce="<?= $nonce ?>" src="../js/city_audit.js?v=<?= filemtime(__DIR__ . '/../js/city_audit.js') ?>"></script>
+<?php if ($isNational): ?>
+<script nonce="<?= $nonce ?>" src="../js/admin_project.js?v=<?= filemtime(__DIR__ . '/../js/admin_project.js') ?>"></script>
+<?php endif; ?>
+<script nonce="<?= $nonce ?>" src="../js/project_watch.js?v=<?= filemtime(__DIR__ . '/../js/project_watch.js') ?>" data-audit-id="<?= (int)$audit['id'] ?>" data-home="<?= $isNational ? 'platform_dashboard.php?notice=project_deleted_ok' : 'city_dashboard.php?notice=project_deleted' ?>"></script>
 </body>
 </html>

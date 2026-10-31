@@ -63,6 +63,13 @@ $roadId = (int)$data['road_id'];
 try {
     $repo = new RoadRepository($pdo);
 
+    // A project the Admin deleted is closed to everyone: work on it stops.
+    if ((new SurveyorWorkRepository($pdo))->projectDeletedForRoad($roadId)) {
+        http_response_code(410);
+        echo json_encode(['success' => false, 'error' => PROJECT_DELETED_MESSAGE, 'project_deleted' => true]);
+        exit;
+    }
+
     // City-audit roads: only a surveyor assigned to a segment of the road may start a session.
     if (!(new SurveyorWorkRepository($pdo))->mayOpenRoad($roadId, (int)$CURRENT_USER_ID)) {
         http_response_code(403);

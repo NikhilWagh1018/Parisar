@@ -31,6 +31,7 @@ $audit   = ($auditId !== false && $auditId !== null) ? $repo->find((int)$auditId
 if ($audit === null || (int)$audit['city_id'] !== (int)$CURRENT_USER_CITY_ID) {
     cityApiFail(404, 'Audit not found.');
 }
+cityApiFailIfDeleted($audit);
 
 $segmentId = filter_var($body['segment_id'] ?? null, FILTER_VALIDATE_INT);
 if ($segmentId === false || $segmentId === null || $segmentId < 1) {

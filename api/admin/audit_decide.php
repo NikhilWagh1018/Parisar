@@ -33,6 +33,7 @@ $audit   = ($auditId !== false && $auditId !== null) ? (new CityAuditRepository(
 if ($audit === null) {
     cityApiFail(404, 'Audit not found.');
 }
+cityApiFailIfDeleted($audit);
 
 $action = (string)($body['action'] ?? '');
 if (!in_array($action, ['approve', 'return'], true)) {
