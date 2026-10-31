@@ -110,7 +110,7 @@ if ($segNum > 0) {
   <?php endif; ?>
 </div>
 
-<form id="auditForm" onsubmit="event.preventDefault(); submitFullAudit();">
+<form id="auditForm" data-segment-length="<?php echo htmlspecialchars((string)$segLength, ENT_QUOTES, 'UTF-8'); ?>" onsubmit="event.preventDefault(); submitFullAudit();">
 
   <!-- Hidden fields — populated by form.js from URL params -->
   <input type="hidden" name="segment_id" id="segment_id">
@@ -193,6 +193,27 @@ if ($segNum > 0) {
               </button>
             </div>
             <span class="error-msg" id="gpsStart-error">Tap the GPS button to capture your current location</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         1b. ANY OBSTRUCTIONS AT ALL?
+    ══════════════════════════════════════ -->
+    <div class="section-card">
+      <div class="section-card-header" id="sec-obstructions">
+        <div class="section-card-icon icon-orange">🚧</div>
+        <div>
+          <div class="section-card-title section-anchor">Obstructions on this segment <span class="required-star">*</span></div>
+          <div class="section-card-subtitle">Add what you found in the Fixed, Movable and Parked sections below, or confirm there are none</div>
+        </div>
+      </div>
+      <div class="section-card-body">
+        <div class="field-group" id="wrap-noObstructions">
+          <div class="options">
+            <label><input type="checkbox" id="noObstructions" name="no_obstructions" value="1"
+                          onchange="clearReqError('wrap-noObstructions')"> No obstructions on this segment</label>
           </div>
         </div>
       </div>
@@ -296,7 +317,7 @@ if ($segNum > 0) {
       <div class="section-card-body">
 
         <div class="field-group">
-          <label class="field-label">Cycle Track Missing</label>
+          <label class="field-label">Cycle Track Missing <span class="required-star">*</span></label>
           <div class="options">
             <label><input type="radio" name="cycle_track_missing" value="Yes"
                           onchange="toggleMissingLength(this)"> Yes</label>
@@ -304,7 +325,7 @@ if ($segNum > 0) {
                           onchange="toggleMissingLength(this)"> No</label>
           </div>
           <div id="missingLengthBox">
-            <label>⚠ Missing Length (m)</label>
+            <label>⚠ Missing Length (m) <span class="required-star">*</span></label>
             <input type="text" inputmode="decimal" id="missingLength" name="missing_length"
                    placeholder="Enter missing cycle track length in meters"
                    oninput="missingLengthInput(this)" onblur="missingLengthBlur(this)">
@@ -354,11 +375,17 @@ if ($segNum > 0) {
       <div class="section-card-header" id="sec-intersections">
         <div class="section-card-icon icon-blue">🔀</div>
         <div>
-          <div class="section-card-title section-anchor">Intersections</div>
+          <div class="section-card-title section-anchor">Intersections <span class="required-star">*</span></div>
           <div class="section-card-subtitle">Junctions and crossings within this segment</div>
         </div>
       </div>
       <div class="section-card-body">
+        <div class="field-group" id="wrap-noIntersections">
+          <div class="options">
+            <label><input type="checkbox" id="noIntersections" name="no_intersections" value="1"
+                          onchange="clearReqError('wrap-noIntersections')"> No intersections in this segment</label>
+          </div>
+        </div>
         <div id="intersectionsContainer"></div>
         <button type="button" class="btn-add-intersection"
                 onclick="addIntersection()">＋ Add Intersection</button>
@@ -419,7 +446,7 @@ if ($segNum > 0) {
         </div>
 
         <div class="field-group">
-          <label class="field-label">Cycle track surface material</label>
+          <label class="field-label">Cycle track surface material <span class="required-star">*</span></label>
           <div class="options">
             <label><input type="radio" name="surface_material" value="Interlock Blocks"> Interlock Blocks</label>
             <label><input type="radio" name="surface_material" value="Concrete"> Concrete</label>
@@ -470,7 +497,7 @@ if ($segNum > 0) {
 
         <div class="field-row">
           <div class="field-group">
-            <label class="field-label">Shade</label>
+            <label class="field-label">Shade <span class="required-star">*</span></label>
             <div class="options">
               <label><input type="radio" name="shade" value="Yes"> Yes</label>
               <label><input type="radio" name="shade" value="No"> No</label>
@@ -478,7 +505,7 @@ if ($segNum > 0) {
             </div>
           </div>
           <div class="field-group">
-            <label class="field-label">Light (after sunset)</label>
+            <label class="field-label">Light (after sunset) <span class="required-star">*</span></label>
             <div class="options">
               <label><input type="radio" name="light_after_sunset" value="Yes"> Yes</label>
               <label><input type="radio" name="light_after_sunset" value="No"> No</label>
@@ -501,7 +528,7 @@ if ($segNum > 0) {
         </div>
 
         <div class="field-group">
-          <label class="field-label">Presence of Buffer Zone</label>
+          <label class="field-label">Presence of Buffer Zone <span class="required-star">*</span></label>
           <div class="options">
             <label><input type="radio" name="buffer_zone" value="Segregated"> Segregated</label>
             <label><input type="radio" name="buffer_zone" value="Buffer Zone"> Buffer Zone</label>
