@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $check = $pdo->prepare("SELECT role, is_active, city_id FROM users WHERE id = ?");
+    $check = $pdo->prepare("SELECT role, is_active, city_id, home_city FROM users WHERE id = ?");
     $check->execute([$targetId]);
     $target = $check->fetch(PDO::FETCH_ASSOC);
     if (!$target) {
@@ -178,25 +178,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Only the Admin changes roles (so only the
         // Admin creates City Leaders), and a City Leader needs a city.
-        $adminCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
-        $roleError  = validateRoleChange(
-            $CURRENT_USER_ROLE,
-            (string)$target['role'],
-            $target['city_id'] !== null ? (int)$target['city_id'] : null,
-            $newRole,
-            $targetId === $CURRENT_USER_ID,
-            $adminCount
-        );
-        if ($roleError !== null) {
-            http_response_code($CURRENT_USER_ROLE === 'admin' ? 400 : 403);
-            echo json_encode(['success' => false, 'error' => $roleError]);
-            exit;
+        $adminCount    = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'")->fetchColumn();
+        $currentCityId = $target['city_id'] !== null ? (int)$target['city_id'] : null;
+        $newCityId     = $currentCityId;
+        $cityAdded     = false;
+
+        // A person with no city yet is put in the city they chose at sign-up when
+        // they are made City Leader. The city is added if it is new to the app; if
+        // the change is refused below, that addition is undone.
+        $pdo->beginTransaction();
+        try {
+            if ($newRole === 'city_leader' && $CURRENT_USER_ROLE === 'admin') {
+                [$newCityId, $cityAdded] = cityForPromotion($pdo, $currentCityId, $target['home_city'] ?? null);
+            }
+            if ($newCityId !== null && $newCityId !== $currentCityId) {
+                try {
+                    cityAdoptSignups($pdo, $newCityId);   // the city's other sign-ups join it too
+                } catch (Throwable $e) {
+                    error_log('city sign-up placement failed: ' . $e->getMessage());
+                }
+            }
+
+            $roleError = validateRoleChange(
+                $CURRENT_USER_ROLE,
+                (string)$target['role'],
+                $newCityId,
+                $newRole,
+                $targetId === $CURRENT_USER_ID,
+                $adminCount
+            );
+            if ($roleError !== null) {
+                $pdo->rollBack();
+                http_response_code($CURRENT_USER_ROLE === 'admin' ? 400 : 403);
+                echo json_encode(['success' => false, 'error' => $roleError]);
+                exit;
+            }
+
+            if ($newCityId !== $currentCityId) {
+                $pdo->prepare("UPDATE users SET role = ?, city_id = ? WHERE id = ?")->execute([$newRole, $newCityId, $targetId]);
+            } else {
+                $pdo->prepare("UPDATE users SET role = ? WHERE id = ?")->execute([$newRole, $targetId]);
+            }
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
         }
 
-        $update = $pdo->prepare("UPDATE users SET role = ? WHERE id = ?");
-        $update->execute([$newRole, $targetId]);
+        $cityName = null;
+        if ($newCityId !== null) {
+            $nameStmt = $pdo->prepare('SELECT name FROM cities WHERE id = ?');
+            $nameStmt->execute([$newCityId]);
+            $cityName = $nameStmt->fetchColumn() ?: null;
+        }
+        if ($newCityId !== $currentCityId) {
+            try {
+                ActivityLogger::log($pdo, ActivityLogger::USER_CITY_CHANGED, $CURRENT_USER_ID, [
+                    'user_id'      => $targetId,
+                    'from_city_id' => $currentCityId,
+                    'to_city_id'   => $newCityId,
+                    'source'       => 'signup_city',
+                ]);
+            } catch (Throwable $e) {
+                error_log('Activity log for city assignment failed: ' . $e->getMessage());
+            }
+        }
 
-        echo json_encode(['success' => true]);
+        echo json_encode([
+            'success'    => true,
+            'city_id'    => $newCityId,
+            'city_name'  => $cityName,
+            'city_added' => $cityAdded,
+        ]);
         exit;
     }
 

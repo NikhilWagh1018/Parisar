@@ -117,6 +117,12 @@ if ($action === 'update_profile') {
             $addr  ?: null,
             $CURRENT_USER_ID,
         ]);
+        // Someone not yet in a city is placed in the one they named, if it exists.
+        try {
+            cityLinkUserToHomeCity($pdo, (int)$CURRENT_USER_ID);
+        } catch (Throwable $e) {
+            error_log('profile city link failed: ' . $e->getMessage());
+        }
         $_SESSION['user_name'] = $name;
         json_out(true, ['message' => 'Profile updated successfully.']);
     } catch (Throwable $e) {

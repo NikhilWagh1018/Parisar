@@ -386,7 +386,11 @@ document.addEventListener('click', e => {
     var newRole = e.target.value;
     if (newRole === previousRole) return;
 
+    var who = allSurveyors.find(function (x) { return x.id === rid; });
     var confirmMsg = 'Change this user\'s role from ' + ROLE_LABELS[previousRole] + ' to ' + ROLE_LABELS[newRole] + '?';
+    if (newRole === 'city_leader' && who && who.city_id == null && who.home_city) {
+      confirmMsg += '\n\nThey have no city yet, so they will be placed in the city they chose at sign-up: ' + who.home_city + '.';
+    }
     if (!confirm(confirmMsg)) {
       e.target.value = previousRole;
       return;
@@ -405,7 +409,16 @@ document.addEventListener('click', e => {
         return;
       }
       var s = allSurveyors.find(function (x) { return x.id === rid; });
-      if (s) s.role = newRole;
+      if (s) {
+        s.role = newRole;
+        if (data.city_id != null) {
+          s.city_id = data.city_id;
+          s.city_name = data.city_name || s.city_name;
+          if (!cities.some(function (c) { return c.id === data.city_id; })) {
+            cities.push({ id: data.city_id, name: data.city_name || '' });
+          }
+        }
+      }
       applyFilter();
     })
     .catch(function () {
