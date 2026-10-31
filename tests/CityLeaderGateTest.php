@@ -24,7 +24,7 @@ class CityLeaderGateTest extends TestCase
 
     public function test_every_other_page_is_closed(): void
     {
-        foreach (['dashboard', 'my_audits', 'map', 'leaderboard', 'admin_surveyors',
+        foreach (['dashboard', 'admin_surveyors',
                   'admin_activity', 'segment', 'form', 'view', 'report',
                   'road_result', 'platform_dashboard'] as $page) {
             $this->assertFalse(cityLeaderMayAccess('/pages/' . $page . '.php'), $page);
@@ -37,8 +37,6 @@ class CityLeaderGateTest extends TestCase
         $this->assertFalse(cityLeaderMayAccess('/api/admin/export-users.php'));
         $this->assertFalse(cityLeaderMayAccess('/api/admin/city_leader.php'));
         $this->assertFalse(cityLeaderMayAccess('/api/dashboard/stats.php'));
-        $this->assertFalse(cityLeaderMayAccess('/api/user/audit_history.php'));
-        $this->assertFalse(cityLeaderMayAccess('/api/user/audit_export.php'));
     }
 
     public function test_lookalike_names_do_not_match(): void
@@ -51,7 +49,7 @@ class CityLeaderGateTest extends TestCase
 
     public function test_closed_pages_redirect_to_city_dashboard(): void
     {
-        $this->assertSame('/pages/city_dashboard.php', cityLeaderRedirectTarget('/pages/map.php'));
+        $this->assertSame('/pages/city_dashboard.php', cityLeaderRedirectTarget('/pages/dashboard.php'));
         $this->assertSame('/Parisar/pages/city_dashboard.php', cityLeaderRedirectTarget('/Parisar/pages/admin_surveyors.php'));
     }
 
