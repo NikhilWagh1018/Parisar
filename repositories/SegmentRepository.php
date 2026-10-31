@@ -22,11 +22,9 @@ class SegmentRepository
      * Fetch a single segment row joined with its road's creator_id.
      * Returns null if not found.
      *
-     * Also includes road_name and segment_number — added for the
-     * before/after comparison view (audit_compare.php), which needed
-     * a friendly label for the segment. Purely additive; existing
-     * callers that only read id/status/road_id/creator_id/finalized_at
-     * are unaffected.
+     * Also includes road_name and segment_number, a friendly label for
+     * the segment. Callers that only read id/status/road_id/creator_id/
+     * finalized_at are unaffected.
      *
      * @return array{id:int,road_id:int,status:string,creator_id:int,segment_number:int,road_name:string}|null
      */
@@ -222,12 +220,12 @@ class SegmentRepository
      */
     public function latestAudit(int $segmentId): ?array
     {
-        // NOTE (fixed after live testing — same root cause as
-        // auditHistoryForSegment() below): segment_length is NOT a real
-        // column on segment_audits in production. This was silently
-        // breaking api/segments/audit-data.php (500 "Server error") on
-        // every call, since that endpoint calls this method directly to
-        // pre-fill the edit-audit form.
+        // NOTE (fixed after live testing): segment_length is NOT a real
+        // column on segment_audits in production; the length comes from
+        // the segments table via the JOIN. Selecting it from segment_audits
+        // was silently breaking api/segments/audit-data.php (500 "Server
+        // error") on every call, since that endpoint calls this method
+        // directly to pre-fill the edit-audit form.
         $stmt = $this->pdo->prepare(
             'SELECT sa.id, sa.session_id,
                     sa.start_landmark, sa.end_landmark, sa.gps_start, sa.gps_end,
@@ -255,59 +253,6 @@ class SegmentRepository
         $row['footpath_rating'] = json_decode($row['footpath_rating'] ?? '[]', true) ?? [];
 
         return $row;
-    }
-
-    /**
-     * Fetch every segment_audit row for a segment, submitted by a given
-     * user, oldest first — the raw input for the before/after comparison
-     * view (Reporting roadmap item 2). Deliberately scoped to $userId,
-     * same ownership rule as personalAuditList()/personalStats(): "My
-     * Audits" only shows/compares a user's own submissions, never audits
-     * by other surveyors on the same segment.
-     *
-     * Decodes the same JSON multi-select columns as latestAudit() so
-     * callers get arrays, not strings.
-     *
-     * NOTE (fixed after live testing): segment_length is NOT a real
-     * column on segment_audits in production — confirmed via live
-     * DESCRIBE segment_audits. It's derived here via a join to
-     * segments.length, same pattern personalAuditList() and
-     * latestAudit() above now both use. Selecting it as a bare
-     * segment_audits column (as originally written) throws "Unknown
-     * column 'segment_length' in field list" against the live DB —
-     * this was causing "Server error while loading comparison" in
-     * the browser (and, via latestAudit(), a 500 on
-     * api/segments/audit-data.php as well).
-     *
-     * @return list<array<string,mixed>>
-     */
-    public function auditHistoryForSegment(int $segmentId, int $userId): array
-    {
-        $stmt = $this->pdo->prepare(
-            'SELECT sa.id, sa.session_id,
-                    sa.start_landmark, sa.end_landmark, sa.gps_start, sa.gps_end,
-                    sa.cycle_track_missing, sa.missing_length, sa.cyclist_use, sa.better_surface,
-                    sa.surface_material, sa.people_walking, sa.signage_count, sa.shade,
-                    sa.light_after_sunset, sa.track_geometry, sa.buffer_zone,
-                    sa.segment_width, s.length AS segment_length, sa.comments,
-                    sa.surface_issues, sa.overhead_issues, sa.footpath_rating, sa.footpath_score,
-                    sa.public_id, sa.surveyor_id, sa.created_at
-               FROM segment_audits sa
-               JOIN segments s ON s.id = sa.segment_id
-              WHERE sa.segment_id = ? AND sa.surveyor_id = ?
-              ORDER BY sa.id ASC'
-        );
-        $stmt->execute([$segmentId, $userId]);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($rows as &$row) {
-            $row['surface_issues']  = json_decode($row['surface_issues']  ?? '[]', true) ?? [];
-            $row['overhead_issues'] = json_decode($row['overhead_issues'] ?? '[]', true) ?? [];
-            $row['footpath_rating'] = json_decode($row['footpath_rating'] ?? '[]', true) ?? [];
-        }
-        unset($row);
-
-        return $rows;
     }
 
     /**
@@ -370,210 +315,6 @@ class SegmentRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Personal audit summary stats for one surveyor, used on the
-     * "My Audits" history page header strip.
-     *
-     * Aggregates over the MOST RECENT audit per segment only — a segment
-     * can legally be re-audited (no unique constraint on segment_id in
-     * segment_audits), so a naive SUM/COUNT across all rows would
-     * double-count re-audited segments in both the segment count and
-     * the distance total.
-     *
-     * @return array{segments_audited:int, total_length_m:float, roads_touched:int, first_audit_at:?string}
-     */
-    public function personalStats(int $userId): array
-    {
-        $stmt = $this->pdo->prepare(
-            'SELECT
-                 COUNT(DISTINCT latest.segment_id) AS segments_audited,
-                 SUM(s.length)                      AS total_length_m,
-                 COUNT(DISTINCT s.road_id)          AS roads_touched,
-                 MIN(latest.created_at)             AS first_audit_at
-             FROM (
-                 SELECT segment_id, MAX(id) AS latest_audit_id
-                   FROM segment_audits
-                  WHERE surveyor_id = ?
-                  GROUP BY segment_id
-             ) latest_ids
-             JOIN segment_audits latest ON latest.id = latest_ids.latest_audit_id
-             JOIN segments s ON s.id = latest.segment_id'
-        );
-        $stmt->execute([$userId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        return [
-            'segments_audited' => (int)($row['segments_audited'] ?? 0),
-            'total_length_m'   => (float)($row['total_length_m'] ?? 0),
-            'roads_touched'    => (int)($row['roads_touched'] ?? 0),
-            'first_audit_at'   => $row['first_audit_at'] ?? null,
-        ];
-    }
-
-    /**
-     * Fetch every segment this user has audited (latest audit per segment
-     * only — same de-dup rule as personalStats()), joined with road name
-     * and that road's audit-session status for this user.
-     *
-     * Also returns audit_count — the TOTAL number of audits this user has
-     * submitted on that segment (not just the latest) — so callers (the
-     * "My Audits" list UI) can decide whether to show a "Compare" link
-     * for the before/after view, which only makes sense when a segment
-     * has been re-audited (audit_count >= 2).
-     *
-     * Filtering by date range, sorting by score, and pagination all
-     * happen in PHP on the caller side (api/user/audit_history_list.php)
-     * because condition score isn't a stored column — see ScoreService's
-     * calculateScoresForAuditIds().
-     *
-     * @return list<array<string,mixed>>
-     */
-    public function personalAuditList(int $userId): array
-    {
-        $stmt = $this->pdo->prepare(
-            'SELECT
-                 latest.id              AS audit_id,
-                 latest.segment_id,
-                 latest.segment_width,
-                 s.length               AS segment_length,
-                 latest.created_at,
-                 s.segment_number,
-                 s.road_id,
-                 r.name                 AS road_name,
-                 sess.status            AS session_status,
-                 (SELECT COUNT(*) FROM segment_audits sa2
-                   WHERE sa2.segment_id = latest.segment_id
-                     AND sa2.surveyor_id = ?)           AS audit_count
-             FROM (
-                 SELECT segment_id, MAX(id) AS latest_audit_id
-                   FROM segment_audits
-                  WHERE surveyor_id = ?
-                  GROUP BY segment_id
-             ) latest_ids
-             JOIN segment_audits latest ON latest.id = latest_ids.latest_audit_id
-             JOIN segments s ON s.id = latest.segment_id
-             JOIN roads r    ON r.id = s.road_id
-             LEFT JOIN audit_sessions sess
-                    ON sess.id = (
-                         SELECT id FROM audit_sessions
-                          WHERE road_id = s.road_id AND user_id = ?
-                          ORDER BY id DESC
-                          LIMIT 1
-                       )
-             ORDER BY latest.created_at DESC'
-        );
-        $stmt->execute([$userId, $userId, $userId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    /**
-     * Audited segments that have a captured GPS start point, for the Map
-     * View (Visibility & Motivation roadmap item #2). One row per segment,
-     * using that segment's latest audit for GPS + label data.
-     * segments.status ('pending'|'completed') drives pin color client-side.
-     *
-     * @param int|null $userId Pass a user id to scope to just that
-     *     surveyor's own audits ("My Audits" mode — the latest audit
-     *     *by that user* on each segment). Pass null for "All Audits"
-     *     mode — the latest audit by anyone on each segment, plus who
-     *     did it.
-     * @return list<array{
-     *     segment_id:int, road_id:int, road_name:string,
-     *     segment_number:int, status:string,
-     *     gps_start:string, start_label:?string, surveyor_name:?string
-     * }>
-     */
-    public function mapData(?int $userId, ?int $cityId = null): array
-    {
-        // $cityId (optional) restricts to roads in that city's road_groups.
-        $scopeClause = $userId !== null ? 'WHERE surveyor_id = ?' : '';
-        $cityClause  = $cityId !== null ? 'AND rg.city_id = ?' : '';
-        $stmt = $this->pdo->prepare(
-            "SELECT
-                 s.id            AS segment_id,
-                 s.road_id,
-                 r.name          AS road_name,
-                 s.segment_number,
-                 s.status,
-                 latest.gps_start,
-                 latest.start_landmark AS start_label,
-                 u.name          AS surveyor_name
-             FROM (
-                 SELECT segment_id, MAX(id) AS latest_audit_id
-                   FROM segment_audits
-                   $scopeClause
-                  GROUP BY segment_id
-             ) latest_ids
-             JOIN segment_audits latest ON latest.id = latest_ids.latest_audit_id
-             JOIN segments s ON s.id = latest.segment_id
-             JOIN roads r    ON r.id = s.road_id
-             LEFT JOIN road_groups rg ON rg.id = r.road_group_id
-             JOIN users u    ON u.id = latest.surveyor_id
-             WHERE latest.gps_start IS NOT NULL AND latest.gps_start != ''
-               $cityClause
-             ORDER BY r.name, s.segment_number"
-        );
-        $params = [];
-        if ($userId !== null) { $params[] = $userId; }
-        if ($cityId !== null) { $params[] = $cityId; }
-        $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    /**
-     * Roads this user can resume — the user's most recent audit_session
-     * on the road is 'active' AND the road still has at least one
-     * 'pending' segment. Used by "My Audits" Section 3 ("Continue where
-     * you left off").
-     *
-     * For each qualifying road, returns segment-progress counts, the
-     * next pending segment to resume at, and the most recent audit
-     * timestamp this user logged on that road (for "most recently
-     * touched" ordering — audit_sessions has no updated_at column, so
-     * segment_audits.created_at is the best available recency signal).
-     *
-     * Roads where the active session has no pending segments left
-     * (edge case — session not yet transitioned to completed) are
-     * excluded in PHP below, since there's nothing to resume there.
-     *
-     * @return list<array<string,mixed>>
-     */
-    public function personalContinueAudits(int $userId): array
-    {
-        $stmt = $this->pdo->prepare(
-            'SELECT
-                 r.id                  AS road_id,
-                 r.name                AS road_name,
-                 latest_sess.id        AS session_id,
-                 latest_sess.started_at AS session_started_at,
-                 (SELECT COUNT(*) FROM segments s2
-                   WHERE s2.road_id = r.id)                       AS total_segments,
-                 (SELECT COUNT(*) FROM segments s2
-                   WHERE s2.road_id = r.id AND s2.status = \'completed\') AS completed_segments,
-                 (SELECT s3.id FROM segments s3
-                   WHERE s3.road_id = r.id AND s3.status = \'pending\'
-                   ORDER BY s3.segment_number ASC LIMIT 1)         AS next_segment_id,
-                 (SELECT s3.segment_number FROM segments s3
-                   WHERE s3.road_id = r.id AND s3.status = \'pending\'
-                   ORDER BY s3.segment_number ASC LIMIT 1)         AS next_segment_number,
-                 (SELECT MAX(sa.created_at) FROM segment_audits sa
-                   JOIN segments s4 ON s4.id = sa.segment_id
-                  WHERE s4.road_id = r.id AND sa.surveyor_id = ?)  AS last_activity_at
-             FROM (
-                 SELECT road_id, MAX(id) AS latest_session_id
-                   FROM audit_sessions
-                  WHERE user_id = ?
-                  GROUP BY road_id
-             ) latest_ids
-             JOIN audit_sessions latest_sess ON latest_sess.id = latest_ids.latest_session_id
-             JOIN roads r ON r.id = latest_sess.road_id
-             WHERE latest_sess.status = \'active\'
-             ORDER BY last_activity_at DESC'
-        );
-        $stmt->execute([$userId, $userId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
     // ─────────────────────────────────────────────────────────────
     //  SEGMENT AUDIT WRITES
     // ─────────────────────────────────────────────────────────────
@@ -606,60 +347,8 @@ class SegmentRepository
     }
 
     // ─────────────────────────────────────────────────────────────
-    //  LEADERBOARD / STREAK — Visibility & Motivation roadmap #3
+    //  STREAK
     // ─────────────────────────────────────────────────────────────
-
-    /**
-     * Ranked surveyor totals: segment submissions + distance audited
-     * (sum of each audited segment's length), either all-time or
-     * scoped to the current ISO week (Mon–Sun, matches MySQL mode 3).
-     * Every segment_audits row counts once — this rewards submitted
-     * work, not just currently-completed segment state, so a segment
-     * re-audited by someone else doesn't retroactively strip credit.
-     *
-     * @return list<array{surveyor_id:int,surveyor_name:string,segments_completed:int,distance_m:float}>
-     */
-    public function leaderboardRows(bool $thisWeekOnly, ?int $cityId = null): array
-    {
-        // $cityId: null = every city; otherwise only audits on roads
-        // whose road_group belongs to that city.
-        $conditions = [];
-        if ($thisWeekOnly) {
-            $conditions[] = 'YEARWEEK(sa.created_at, 3) = YEARWEEK(CURDATE(), 3)';
-        }
-        if ($cityId !== null) {
-            $conditions[] = 'rg.city_id = :city_id';
-        }
-        $windowClause = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
-
-        $stmt = $this->pdo->prepare(
-            "SELECT
-                 u.id            AS surveyor_id,
-                 u.name          AS surveyor_name,
-                 COUNT(*)        AS segments_completed,
-                 COALESCE(SUM(s.length), 0) AS distance_m
-             FROM segment_audits sa
-             JOIN users u    ON u.id = sa.surveyor_id
-             JOIN segments s ON s.id = sa.segment_id
-             JOIN roads r    ON r.id = s.road_id
-             LEFT JOIN road_groups rg ON rg.id = r.road_group_id
-             {$windowClause}
-             GROUP BY u.id, u.name
-             ORDER BY segments_completed DESC, distance_m DESC, u.name ASC
-             LIMIT 50"
-        );
-        $stmt->execute($cityId !== null ? ['city_id' => $cityId] : []);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($rows as &$r) {
-            $r['surveyor_id']         = (int)$r['surveyor_id'];
-            $r['segments_completed']  = (int)$r['segments_completed'];
-            $r['distance_m']          = (float)$r['distance_m'];
-        }
-        unset($r);
-
-        return $rows;
-    }
 
     /**
      * Distinct calendar dates (Y-m-d strings, DESC) this user has

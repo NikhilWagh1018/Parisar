@@ -52,7 +52,7 @@ Parisar audits the quality of cycling infrastructure across Pune. CycleAudit rep
 1. A surveyor **defines a road** (start, end, GPS points, total length) and splits it into segments, either automatically at a fixed length or by hand.
 2. For each segment, they fill in an **audit form**: surface, shade, lighting, buffer zone, obstructions, and every intersection along it.
 3. The **scoring engine** turns those observations into Safety, Comfort and Continuity scores and one final 0 to 100 score with a condition label (Good to Very Bad).
-4. Results roll up into road-level scores, a **map**, **PDF and Excel reports**, and a **leaderboard** of surveyors.
+4. Results roll up into road-level scores and **PDF and Excel reports**.
 
 ## Features
 
@@ -65,13 +65,10 @@ Parisar audits the quality of cycling infrastructure across Pune. CycleAudit rep
 
 **Results and reporting**
 - Segment score and length-weighted road score
-- Interactive Leaflet map of audited roads
 - Road result page and printable report
 - **PDF** export (mPDF) and **Excel** export (PhpSpreadsheet)
-- "My audits" history with side-by-side comparison of audits and per-audit export
 
 **Engagement**
-- Weekly (ISO week, Mon to Sun) and all-time leaderboard, ranked by segments completed with distance as the tiebreaker
 - Audit streaks in IST with a one-day grace period, so a streak survives until a full day is missed
 - Public landing page with live stats
 
@@ -142,20 +139,18 @@ Parisar/
 ├── pages/                   # server-rendered app pages
 │   ├── dashboard.php        #   surveyor dashboard
 │   ├── form.php, segment.php#   audit workflow
-│   ├── map.php              #   Leaflet map
-│   ├── my_audits.php, view.php, report.php, road_result.php
-│   ├── leaderboard.php, profile.php
+│   ├── view.php, report.php, road_result.php, profile.php
 │   └── admin*.php           #   admin dashboard, surveyors, activity log
 ├── api/                     # JSON endpoints, grouped by domain
 │   ├── roads/, segments/, audit-sessions/
 │   ├── reports/             #   PDF and Excel export
-│   ├── user/, admin/, leaderboard/, dashboard/, public/
+│   ├── user/, admin/, dashboard/, public/
 ├── auth/                    # login, register, logout
 ├── config/                  # db, constants, guards, permissions, rate limiting, error handler
 ├── services/                # ScoreService, ScoreHelpers, IdGenerator
 ├── repositories/            # Road, Segment, AuditSession data access
-├── helpers/                 # Validator, StreakCalculator, ActivityLogger, AuditHistoryFilter
-├── js/                      # front-end modules (form-state, toast, loading-state, map, ...)
+├── helpers/                 # Validator, StreakCalculator, ActivityLogger
+├── js/                      # front-end modules (form-state, toast, loading-state, ...)
 ├── css/                     # stylesheets, incl. Leaflet
 ├── migrations/              # SQL migrations 000 to 008
 ├── tests/                   # PHPUnit suites

@@ -15,7 +15,6 @@
             "services/ScoreService.php",
             "helpers/Validator.php",
             "helpers/StreakCalculator.php",
-            "helpers/AuditHistoryFilter.php",
             "repositories/SegmentRepository.php"
         ]
     },
