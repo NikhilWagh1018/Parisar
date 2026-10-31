@@ -92,6 +92,16 @@ try {
         }
     }
 
+    // Every city in the audit network (audited or not), for the "More" list.
+    $allCities = [];
+    try {
+        foreach ($pdo->query('SELECT id, name FROM cities ORDER BY name ASC, id ASC')->fetchAll(PDO::FETCH_ASSOC) as $c) {
+            $allCities[] = ['id' => (int)$c['id'], 'name' => (string)$c['name']];
+        }
+    } catch (Throwable $e) {
+        $allCities = $cities;
+    }
+
     $scopeName = 'All cities';
     if ($cityId !== null) {
         $match = array_values(array_filter($cities, fn($c) => $c['id'] === $cityId));
@@ -170,6 +180,7 @@ try {
                 : 0,
         ],
         'cities'  => $cities,
+        'all_cities' => $allCities,
     ]);
 
     // Atomic write so a concurrent reader never sees a half-written file.
