@@ -53,6 +53,13 @@ $initials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
   .surv-filterbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
   .surv-filtercount { margin-left: auto; font-size: 0.8rem; opacity: 0.6; }
   .surv-empty { text-align: center; padding: 30px; opacity: 0.6; }
+  .reset-pw-btn {
+    padding: 5px 10px; margin-right: 6px; border-radius: 6px; cursor: pointer;
+    border: 1px solid rgba(127,127,127,0.35); background: transparent;
+    font-size: 0.75rem; font-family: inherit; color: inherit;
+  }
+  .reset-pw-btn:hover { background: rgba(127,127,127,0.12); }
+  .reset-pw-btn:disabled { opacity: 0.5; cursor: wait; }
 </style>
 </head>
 <body>
@@ -215,6 +222,11 @@ document.addEventListener('click', e => {
     var toggleBtn = (IS_NATIONAL_ADMIN || s.role === 'surveyor')
       ? '<button class="toggle-status-btn" data-id="' + s.id + '" data-active="' + s.is_active + '">' + (s.is_active ? 'Deactivate' : 'Reactivate') + '</button>'
       : '';
+    // Reset password: Admin on anyone but themselves, City Leader on surveyors.
+    // The API enforces this too, and refuses deactivated accounts (reactivate first).
+    var resetBtn = (s.is_active && !s.is_current_user && (IS_NATIONAL_ADMIN || s.role === 'surveyor'))
+      ? ' <button class="reset-pw-btn" type="button" data-id="' + s.id + '">Reset password</button>'
+      : '';
     tr.innerHTML =
       '<td><div class="surv-name-cell">' +
         '<div class="surv-avatar">' + escapeHtml(initials(s.name)) + '</div>' +
@@ -229,7 +241,7 @@ document.addEventListener('click', e => {
       '<td>' + fmtDate(s.last_audit_at || s.last_login) + '</td>' +
       '<td>' + fmtDate(s.created_at) + '</td>' +
       '<td>' + (s.is_active ? '<span style="color:#16a34a;font-weight:600;">Active</span>' : '<span style="color:#9ca3af;font-weight:600;">Inactive</span>') + '</td>' +
-      '<td style="white-space:nowrap;">' + toggleBtn + roleBtn + '</td>';
+      '<td style="white-space:nowrap;">' + toggleBtn + resetBtn + roleBtn + '</td>';
     return tr;
   }
 
@@ -285,6 +297,37 @@ document.addEventListener('click', e => {
     f.style.display = '';
   }
 
+  // Staff-driven password reset: the server makes a temporary password and it is
+  // shown once. Give it to the person privately; they must choose their own at
+  // their next sign-in.
+  function handleResetPassword(btn) {
+    var rid = parseInt(btn.dataset.id, 10);
+    var s = allSurveyors.find(function (x) { return x.id === rid; });
+    var who = s ? s.name : 'this user';
+    var msg = 'Reset the password for ' + who + '?\n\n' +
+      'Their current password stops working straight away. You will get a temporary password to give them. They must choose their own password when they next sign in.';
+    if (!confirm(msg)) return;
+    btn.disabled = true;
+    fetch('../api/admin/surveyors.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF, 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ id: rid, action: 'reset_password' })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      btn.disabled = false;
+      if (!data.success) { alert(data.error || 'Reset failed.'); return; }
+      var tp = String(data.temp_password || '');
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(tp).catch(function () {});
+        }
+      } catch (err) { /* the box below still lets you copy it */ }
+      window.prompt('Temporary password for ' + who + ' (copied if your browser allowed it). Share it privately. It is shown only once.', tp);
+    })
+    .catch(function () { btn.disabled = false; alert('Network error.'); });
+  }
+
   function handleCityChange(sel) {
     var rid = parseInt(sel.dataset.id, 10);
     var prev = sel.dataset.city;
@@ -311,6 +354,7 @@ document.addEventListener('click', e => {
   }
 
   document.getElementById('survTbody').addEventListener('click', function (e) {
+    if (e.target.classList.contains('reset-pw-btn')) { handleResetPassword(e.target); return; }
     if (e.target.classList.contains('toggle-status-btn')) {
       var id = parseInt(e.target.dataset.id, 10);
       var newActive = e.target.dataset.active !== 'true';

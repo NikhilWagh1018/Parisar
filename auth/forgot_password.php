@@ -28,6 +28,8 @@ require_once __DIR__ . '/../helpers/Mailer.php';
 
 header('Cache-Control: no-store');
 
+$emailResetAvailable = mailerConfigured();
+
 $error    = '';
 $sent     = false;
 $clientIp = getClientIp();
@@ -73,7 +75,12 @@ $cardTitle = 'Forgot password?';
 require __DIR__ . '/partials/shell_top.php';
 ?>
 
-      <?php if ($sent): ?>
+      <?php if (!$emailResetAvailable): ?>
+      <div class="alert" role="status">Password reset by email is not available yet.</div>
+      <p class="card-text">Ask your City Leader to reset your password for you. City Leaders can ask an Admin. You will get a temporary password and choose your own password when you sign in.</p>
+      <div class="card-links"><a href="login.php">Back to sign in</a></div>
+
+      <?php elseif ($sent): ?>
       <div class="alert alert--ok" role="status">
         If an account exists for that email, we have sent a link to reset the password.
         It works once and expires in <?= PASSWORD_RESET_TTL_MINUTES ?> minutes.
