@@ -180,11 +180,23 @@
     bar.hidden = false;
   }
 
+  // Tell the Cities section which cities have published audits (and how many).
+  function announceCities(cities) {
+    var detail = { failed: cities === null, cities: [] };
+    (cities || []).forEach(function (c) {
+      var n = state.all.filter(function (a) { return String(a.city_id) === String(c.id); }).length;
+      detail.cities.push({ id: c.id, name: c.name, count: n });
+    });
+    window.__caCities = detail;
+    window.dispatchEvent(new CustomEvent('ca:cities', { detail: detail }));
+  }
+
   fetch('/api/public/audits.php', { headers: { Accept: 'application/json' } })
     .then(function (r) { return r.json(); })
     .then(function (d) {
       if (!d || !d.success) throw new Error('bad response');
       state.all = d.audits || [];
+      announceCities(d.cities || []);
       grid.textContent = '';
       if (!state.all.length) {
         grid.appendChild(el('p', 'ax-empty', 'Published audits will appear here once the first city audit is approved.'));
@@ -195,6 +207,7 @@
       render();
     })
     .catch(function () {
+      announceCities(null);
       grid.textContent = '';
       grid.appendChild(el('p', 'ax-empty', 'Audit data is not available right now. Please try again later.'));
       crumbs.hidden = true;

@@ -11,7 +11,7 @@
 <meta property="og:image" content="https://cycleaudit.parisar.org/assets/parisar-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/landing.css?v=7">
+<link rel="stylesheet" href="css/landing.css?v=8">
 <script type="speculationrules">{"prerender":[{"where":{"href_matches":"/auth/login.php"},"eagerness":"moderate"}]}</script>
 </head>
 <body>
@@ -146,11 +146,9 @@
 </div></section>
 <section id="cities"><div class="mw">
   <div class="ey">Coverage</div><h2>Cities in the Audit Network</h2>
-  <p class="sub">Cities with published audits are marked with a green dot. Select one to see its audits; select it again to see all cities.</p>
-  <div class="cg-legend"><i></i>Has published audits<span>Other cities are part of the network and will appear here once their audit is approved.</span></div>
+  <p class="sub">Every city here has published audits. Select one to see its audits; select it again to see all cities.</p>
   <div class="cg" id="cities-grid"><p class="cg-empty">Loading cities…</p></div>
   <p class="cg-msg" id="cities-msg" aria-live="polite"></p>
-  <div class="cg-more" id="cities-more" hidden></div>
 </div></section>
 <section id="cta"><div class="mw">
   <div class="ey" style="justify-content:center">Audit Teams</div>
@@ -183,12 +181,10 @@
 </div></footer>
 <button id="topBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script src="js/landing.js?v=4"></script>
-<script src="js/landing_audits.js?v=4"></script>
+<script src="js/landing_audits.js?v=5"></script>
 <script>
 (function () {
   var cityEl  = document.getElementById('stat-city');
-  var allCities = [];
-  var citiesBuilt = false;
 
   // Original line drawings of well-known landmarks, keyed by lower-case city
   // name. Any other city gets the generic skyline.
@@ -219,13 +215,6 @@
     'new delhi': 'delhi', 'delhi-ncr': 'delhi', 'delhi ncr': 'delhi', 'ncr': 'delhi',
     'bangalore': 'bengaluru', 'bombay': 'mumbai', 'calcutta': 'kolkata', 'cochin': 'kochi'
   };
-  // The popular cities, in display order: [key, label].
-  var POPULAR = [
-    ['mumbai', 'Mumbai'], ['delhi', 'Delhi-NCR'], ['bengaluru', 'Bengaluru'],
-    ['hyderabad', 'Hyderabad'], ['chandigarh', 'Chandigarh'], ['ahmedabad', 'Ahmedabad'],
-    ['pune', 'Pune'], ['chennai', 'Chennai'], ['kolkata', 'Kolkata'], ['kochi', 'Kochi']
-  ];
-
   function cityKey(name) {
     var k = String(name).trim().toLowerCase();
     return CITY_ALIASES[k] || k;
@@ -237,7 +226,7 @@
   }
 
   function syncTiles() {
-    var els = document.querySelectorAll('#cities-grid .cc, #cities-more button');
+    var els = document.querySelectorAll('#cities-grid .cc');
     var cur = cityEl ? cityEl.value : '';
     for (var i = 0; i < els.length; i++) {
       var on = cur !== '' && els[i].getAttribute('data-id') === cur;
@@ -263,143 +252,49 @@
     if (el) el.textContent = text;
   }
 
-  function makeTile(label, key, city) {
+  function makeTile(city, i) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'cc';
-    b.innerHTML = iconFor(key);
+    b.className = 'cc has';
+    b.innerHTML = iconFor(city.name);
     var n = document.createElement('span');
-    n.textContent = label;
+    n.className = 'cc-n';
+    n.textContent = city.name;
     b.appendChild(n);
-    if (city) {
-      b.classList.add('has');
-      b.setAttribute('data-id', String(city.id));
-      b.setAttribute('aria-pressed', 'false');
-      b.addEventListener('click', function () { setCityMsg(''); selectCity(String(city.id)); });
-    } else {
-      b.addEventListener('click', function () {
-        setCityMsg(label + ' has no audit data yet.');
-      });
-    }
+    var c = document.createElement('small');
+    c.textContent = city.count === 1 ? '1 audit' : city.count + ' audits';
+    b.appendChild(c);
+    b.setAttribute('data-id', String(city.id));
+    b.setAttribute('aria-pressed', 'false');
+    b.style.setProperty('--i', i);
+    b.addEventListener('click', function () { setCityMsg(''); selectCity(String(city.id)); });
     return b;
   }
 
-  function makeMoreTile() {
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'cc cc-more';
-    b.id = 'cities-more-btn';
-    b.setAttribute('aria-expanded', 'false');
-    b.setAttribute('aria-controls', 'cities-more');
-    b.innerHTML = '<span class="cc-dots" aria-hidden="true">&middot;&middot;&middot;</span>';
-    var n = document.createElement('span');
-    n.textContent = 'More';
-    b.appendChild(n);
-    b.addEventListener('click', function () {
-      var panel = document.getElementById('cities-more');
-      if (!panel) return;
-      var open = panel.hidden;
-      panel.hidden = !open;
-      b.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-    return b;
-  }
-
-  // Every city in the audit network, as text. Cities with published audit data
-  // can be selected (like the tiles); the others are listed as plain text.
-  function renderMoreList(audited) {
-    var panel = document.getElementById('cities-more');
-    if (!panel) return;
-    panel.innerHTML = '';
-    var h = document.createElement('h3');
-    h.textContent = 'All cities';
-    panel.appendChild(h);
-    var byId = {};
-    audited.forEach(function (c) { byId[String(c.id)] = true; });
-    var list = allCities.length ? allCities : audited;
-    if (!list.length) {
-      var p = document.createElement('p');
-      p.className = 'cg-hint';
-      p.textContent = 'No cities have been added yet.';
-      panel.appendChild(p);
-      return;
-    }
-    var ul = document.createElement('ul');
-    ul.className = 'cg-list';
-    list.forEach(function (c) {
-      var li = document.createElement('li');
-      if (byId[String(c.id)]) {
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.textContent = c.name;
-        b.setAttribute('data-id', String(c.id));
-        b.setAttribute('aria-pressed', 'false');
-        b.addEventListener('click', function () { setCityMsg(''); selectCity(String(c.id)); });
-        li.appendChild(b);
-      } else {
-        var sp = document.createElement('span');
-        sp.className = 'cg-soon';
-        sp.textContent = c.name;
-        li.appendChild(sp);
-      }
-      ul.appendChild(li);
-    });
-    panel.appendChild(ul);
-    var hint = document.createElement('p');
-    hint.className = 'cg-hint';
-    hint.textContent = 'Cities in green have audit data. Select one to see its published audits; select it again to see all cities.';
-    panel.appendChild(hint);
-  }
-
-  function renderCityTiles(cities) {
+  // Tiles are built from the published audits: only cities that have one appear.
+  function renderCities(detail) {
     var grid = document.getElementById('cities-grid');
     if (!grid) return;
     grid.innerHTML = '';
-
-    // Index audited cities by normalised name.
-    var byKey = {};
-    cities.forEach(function (c) { byKey[cityKey(c.name)] = c; });
-
-    // The popular cities always appear, in order; audited ones are selectable.
-    POPULAR.forEach(function (p, i) {
-      var t = makeTile(p[1], p[0], byKey[p[0]] || null);
-      t.style.setProperty('--i', i);
-      grid.appendChild(t);
-      delete byKey[p[0]];
+    var cities = (detail && detail.cities) || [];
+    if (detail && detail.failed) {
+      grid.innerHTML = '<p class="cg-empty">Cities are not available right now. Please try again later.</p>';
+      return;
+    }
+    if (!cities.length) {
+      grid.innerHTML = '<p class="cg-empty">Cities will appear here once the first audit is approved and published.</p>';
+      return;
+    }
+    cities.forEach(function (c, i) {
+      grid.appendChild(makeTile(c, i));
+      if (cityEl) {
+        var opt = document.createElement('option');
+        opt.value = String(c.id);
+        opt.textContent = c.name;
+        cityEl.appendChild(opt);
+      }
     });
-
-    // One more tile opens the full list of cities, as text.
-    var more = makeMoreTile();
-    more.style.setProperty('--i', POPULAR.length);
-    grid.appendChild(more);
-    renderMoreList(cities);
     syncTiles();
-  }
-
-  function buildCityPicker(cities, everyCity) {
-    if (citiesBuilt || !Array.isArray(cities)) return;
-    citiesBuilt = true;
-    allCities = Array.isArray(everyCity) ? everyCity : [];
-    renderCityTiles(cities);
-    if (!cityEl) return;
-    cities.forEach(function (c) {
-      var opt = document.createElement('option');
-      opt.value = String(c.id);
-      opt.textContent = c.name;
-      cityEl.appendChild(opt);
-    });
-  }
-
-  // The cities list for the tiles comes from the public stats endpoint.
-  function loadStats() {
-    fetch('/api/public/stats.php')
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (!data.success) return;
-        buildCityPicker(data.cities, data.all_cities);
-        syncTiles();
-      })
-      .catch(function () {});
   }
 
   // The audit list can change the city filter too: keep the tiles in step.
@@ -409,7 +304,8 @@
     syncTiles();
   });
 
-  loadStats();
+  window.addEventListener('ca:cities', function (e) { renderCities(e.detail); });
+  if (window.__caCities) renderCities(window.__caCities);
 })();
 </script></body>
 </html>
