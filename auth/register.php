@@ -242,12 +242,13 @@ function ic(string $name): string
       <span class="accent rise" style="--i:2">Audit Network.</span>
     </h2>
     <p class="pitch-sub rise" style="--i:3">Register as a surveyor and contribute to your city's cycle infrastructure dataset. Your field data drives Parisar's advocacy with municipal bodies.</p>
-    <ul class="reg-points">
-      <li class="rise" style="--i:4"><span class="pt-ic"><?= ic('pin') ?></span><span><strong>Geo-referenced segments</strong>Every audit is tied to a precise road segment with GPS.</span></li>
-      <li class="rise" style="--i:5"><span class="pt-ic"><?= ic('chart') ?></span><span><strong>Multi-dimensional scoring</strong>Safety, Continuity and Comfort, scored from your field notes.</span></li>
-      <li class="rise" style="--i:6"><span class="pt-ic"><?= ic('file') ?></span><span><strong>PDF reports</strong>Stakeholder reports are generated from your submissions.</span></li>
-      <li class="rise" style="--i:7"><span class="pt-ic"><?= ic('leaf') ?></span><span><strong>Real impact</strong>Parisar uses your data to advocate for better cycling.</span></li>
-    </ul>
+    <h3 class="steps-h rise" style="--i:4">What happens next</h3>
+    <ol class="reg-steps">
+      <li class="rise" style="--i:5"><span class="stp-n">1</span><span><strong>Create your account</strong>It takes about a minute, and you are signed in straight away.</span></li>
+      <li class="rise" style="--i:6"><span class="stp-n">2</span><span><strong>Join your city's audit team</strong>Surveyors work with their city's team. If your city is not on CycleAudit yet, a Parisar admin will place you.</span></li>
+      <li class="rise" style="--i:7"><span class="stp-n">3</span><span><strong>Audit in the field</strong>Walk or ride a road, one segment at a time, and record what you find.</span></li>
+      <li class="rise" style="--i:8"><span class="stp-n">4</span><span><strong>See it published</strong>Once an admin approves your audit, it appears on the CycleAudit home page.</span></li>
+    </ol>
   </aside>
 
   <!-- RIGHT: form card -->
@@ -390,7 +391,7 @@ function ic(string $name): string
     </section>
   </main>
 
-  <footer class="credit rise" style="--i:8">
+  <footer class="credit rise" style="--i:9">
     <img src="../assets/parisar-logo.png" alt="Parisar" width="60" height="20">
     <span>An initiative by Parisar, Pune, Maharashtra</span>
   </footer>
