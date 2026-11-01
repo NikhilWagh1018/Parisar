@@ -2,14 +2,14 @@
 // "Password requests" panel for the City Leader and Admin dashboards.
 // People who forgot their password pick a new one and get a 6-digit code; the approver
 // phones them, checks it is really them, asks for the code and approves (helpers/PasswordRequest.php).
-// Expects: $pdo, $CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID. Renders nothing when no request is open,
-// and never breaks the dashboard if migration 026 has not been run yet.
+// Expects: $pdo, $CURRENT_USER_ROLE, $CURRENT_USER_ID, $CURRENT_USER_CITY_ID. Renders nothing when no request is open,
+// and never breaks the dashboard if migrations 026/027 have not been run yet.
 require_once __DIR__ . '/../../helpers/PasswordRequest.php';
 require_once __DIR__ . '/../../helpers/CityDashboard.php'; // cityLocalTime(): UTC -> India time
 
 $prRows = [];
 try {
-    $prRows = passwordRequestOpenFor($pdo, (string)$CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID);
+    $prRows = passwordRequestOpenFor($pdo, (string)$CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID, (int)$CURRENT_USER_ID);
 } catch (Throwable $e) {
     error_log('password_requests partial: ' . $e->getMessage());
 }
@@ -31,6 +31,13 @@ if ($prRows):
       <div class="pr-who">
         <b><?= $prH($r['name']) ?></b>
         <span class="pr-tag"><?= (string)$r['role'] === 'city_leader' ? 'City Leader' : 'Surveyor' ?></span>
+        <?php if (!$prAdmin && (string)$r['role'] === 'surveyor'): ?>
+          <?php if ((int)($r['team_leader_id'] ?? 0) === (int)$CURRENT_USER_ID): ?>
+            <span class="pr-tag pr-team">In your team</span>
+          <?php else: ?>
+            <span class="pr-tag pr-noteam" title="Every City Leader of this city can see this request until someone adds the surveyor to their team">No team yet</span>
+          <?php endif; ?>
+        <?php endif; ?>
         <small><?= $prH($r['email']) ?> · <?= $prH($r['city_name'] ?? 'No city') ?> · asked <?= $prH(cityLocalTime($r['created_at'])) ?></small>
         <small>
           <?php if (trim((string)($r['phone'] ?? '')) !== ''): ?>
@@ -54,6 +61,8 @@ if ($prRows):
 <style nonce="<?= $prNonce ?>">
 .pr-panel{background:#fff;border:1px solid #e3ded0;border-left:4px solid #d97706;border-radius:12px;padding:16px 18px;margin:0 0 16px}
 .pr-panel h3{margin:0 0 6px;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+.pr-team{background:#e4f2dc;color:#1f4d14}
+.pr-noteam{background:#f3ece0;color:#7a4b0c}
 .pr-count{padding:2px 9px;border-radius:99px;background:#d97706;color:#fff;font-size:.72rem;font-weight:700}
 .pr-help{margin:0 0 12px;font-size:.88rem;line-height:1.5;color:#4b5a3f}
 .pr-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
