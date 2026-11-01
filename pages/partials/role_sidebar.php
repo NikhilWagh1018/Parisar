@@ -3,10 +3,21 @@
 // Expects: $CURRENT_USER_NAME, $CURRENT_USER_ROLE, $CURRENT_USER_PIC, $activeNav
 $rsInitials = strtoupper(substr($CURRENT_USER_NAME, 0, 1));
 $rsHome     = roleHomePage($CURRENT_USER_ROLE);
-$rsItem = static function (string $key, string $href, string $label) use ($activeNav): string {
+require_once __DIR__ . '/../../helpers/SidebarCounts.php';
+// Small numbers beside the links: what needs you (amber) and how much is already finished (grey).
+$rsCounts = ['awaiting' => 0, 'published' => 0, 'review' => 0, 'completed' => 0];
+if (isset($pdo) && $pdo instanceof PDO) {
+    if ($CURRENT_USER_ROLE === 'admin') {
+        $rsCounts = array_merge($rsCounts, sidebarAdminCounts($pdo));
+    } elseif ($CURRENT_USER_ROLE === 'city_leader' && !empty($CURRENT_USER_ID)) {
+        $rsCounts = array_merge($rsCounts, sidebarLeaderCounts($pdo, (int)$CURRENT_USER_ID));
+    }
+}
+$rsItem = static function (string $key, string $href, string $label, int $badge = 0, bool $hot = false) use ($activeNav): string {
     $cls = 'nav-item' . ($activeNav === $key ? ' active' : '');
+    $b   = $badge > 0 ? '<span class="nav-badge' . ($hot ? ' hot' : '') . '">' . ($badge > 99 ? '99+' : $badge) . '</span>' : '';
     return '<a class="' . $cls . '" href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">'
-         . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
+         . '<span class="nav-label">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>' . $b . '</a>';
 };
 ?>
 <aside>
@@ -16,12 +27,17 @@ $rsItem = static function (string $key, string $href, string $label) use ($activ
     CycleAudit
   </div>
   <nav>
-    <div class="nav-section">Main</div>
-    <?= $rsItem('home', $rsHome, $CURRENT_USER_ROLE === 'admin' ? 'Dashboard' : 'City Dashboard') ?>
+    <div class="nav-section">Overview</div>
     <?php if ($CURRENT_USER_ROLE === 'admin'): ?>
-    <?= $rsItem('published', 'published_audits.php', 'Published Audits') ?>
+    <?= $rsItem('home', $rsHome, 'Dashboard', (int)$rsCounts['awaiting'], true) ?>
+    <div class="nav-section">Completed</div>
+    <?= $rsItem('published', 'published_audits.php', 'Published Audits', (int)$rsCounts['published']) ?>
+    <?php else: ?>
+    <?= $rsItem('home', $rsHome, 'City Dashboard', (int)$rsCounts['review'], true) ?>
     <?php endif; ?>
     <?php if ($CURRENT_USER_ROLE === 'city_leader'): ?>
+    <div class="nav-section">Completed</div>
+    <?= $rsItem('completed', 'city_completed.php', 'Completed audits', (int)$rsCounts['completed']) ?>
     <div class="nav-section">Manage</div>
     <?= $rsItem('roads', 'admin.php', 'Roads') ?>
     <?= $rsItem('team', 'city_team.php', 'My team') ?>

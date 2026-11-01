@@ -31,6 +31,11 @@ nav { flex: 1; padding: 14px 10px; display: flex; flex-direction: column; gap: 2
 }
 .nav-item:hover, .nav-item.active { background: rgba(255,255,255,.1); color: #fff; }
 .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-item.active { box-shadow: inset 3px 0 0 var(--gl); }
+.nav-label { flex: 1; min-width: 0; }
+.nav-badge { margin-left: auto; min-width: 22px; padding: 1px 8px; border-radius: 99px; text-align: center;
+  font-size: .68rem; font-weight: 700; line-height: 1.5; background: rgba(255,255,255,.14); color: rgba(255,255,255,.82); }
+.nav-badge.hot { background: #f59e0b; color: #2b1a00; }
 .nav-section { font-size: .65rem; font-weight: 700; letter-spacing: .1em;
   text-transform: uppercase; color: rgba(255,255,255,.3); padding: 16px 12px 6px; }
 .sb-user {

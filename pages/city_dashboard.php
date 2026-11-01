@@ -56,6 +56,13 @@ foreach ($audits as $k => $a) {
     }
 }
 
+// The dashboard shows work in progress. Finished (published) audits live under "Completed audits" in the sidebar.
+$split          = citySplitAudits($audits);
+$openAudits     = $split['open'];
+$completedAudits = $split['completed'];
+$totals         = cityDashTotals($openAudits);
+$completedUrl   = 'city_completed.php' . ($isNational && $city ? '?city_id=' . (int)$city['id'] : '');
+
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $nonce     = $h($_SESSION['csp_nonce'] ?? '');
 $csrf      = $h($_SESSION['csrf_token'] ?? '');
@@ -64,7 +71,7 @@ $cityName  = $city ? (string)$city['name'] : 'No city assigned';
 
 // ── Summary numbers for the hero, progress card and pipeline ──
 $cityMix = ['total' => 0, 'approved' => 0, 'submitted' => 0, 'needs_revisit' => 0, 'assigned' => 0, 'unassigned' => 0];
-foreach ($audits as $a0) {
+foreach ($openAudits as $a0) {
     $cityMix['total']         += (int)$a0['segment_count'];
     $cityMix['approved']      += (int)$a0['approved_count'];
     $cityMix['submitted']     += (int)$a0['submitted_count'];
@@ -128,7 +135,10 @@ $greeting     = cityGreeting($hour);
         </div>
         <div class="cx-metas">
           <span class="cx-meta"><?= cxIcon('pin') ?> <b><?= $h($cityName) ?></b></span>
-          <span class="cx-meta"><?= cxIcon('list') ?> <b><?= (int)$totals['audits'] ?></b> <?= $totals['audits'] === 1 ? 'audit' : 'audits' ?></span>
+          <span class="cx-meta"><?= cxIcon('route') ?> <b><?= count($openAudits) ?></b> open <?= count($openAudits) === 1 ? 'audit' : 'audits' ?></span>
+          <?php if ($completedAudits): ?>
+          <a class="cx-meta" href="<?= $h($completedUrl) ?>"><?= cxIcon('check') ?> <b><?= count($completedAudits) ?></b> completed</a>
+          <?php endif; ?>
         </div>
       </div>
     </section>
@@ -137,7 +147,7 @@ $greeting     = cityGreeting($hour);
     <?php if (!$isNational) { require __DIR__ . '/partials/password_requests.php'; } ?>
 
     <div class="cx-kpis">
-      <div class="cx-kpi"><span class="cx-kpi-ico g"><?= cxIcon('list') ?></span><div><b><?= (int)$totals['audits'] ?></b><span>Audits (<?= (int)$totals['open'] ?> open)</span></div></div>
+      <div class="cx-kpi"><span class="cx-kpi-ico g"><?= cxIcon('route') ?></span><div><b><?= count($openAudits) ?></b><span>Open audits<?= $completedAudits ? ' · ' . count($completedAudits) . ' completed' : '' ?></span></div></div>
       <div class="cx-kpi"><span class="cx-kpi-ico p"><?= cxIcon('check') ?></span><div><b><?= (int)$totals['approved'] ?> <small>/ <?= (int)$totals['segments'] ?></small></b><span>Segments approved</span></div></div>
       <div class="cx-kpi<?= $totals['submitted'] > 0 ? ' hot' : '' ?>"><span class="cx-kpi-ico o"><?= cxIcon('eye') ?></span><div><b><?= (int)$totals['submitted'] ?></b><span>Waiting for your review</span></div></div>
       <div class="cx-kpi"><span class="cx-kpi-ico b"><?= cxIcon('users') ?></span><div><b><?= (int)$totals['with_surveyors'] ?></b><span>Segments with surveyors</span></div></div>
@@ -146,11 +156,16 @@ $greeting     = cityGreeting($hour);
     <div class="cd-layout">
       <div class="cd-stack">
         <div class="card">
-          <div class="card-head"><h3>Your audits</h3></div>
+          <div class="card-head">
+            <h3>Open audits<?= $openAudits ? ' (' . count($openAudits) . ')' : '' ?></h3>
+            <?php if ($completedAudits): ?><a href="<?= $h($completedUrl) ?>">Completed audits (<?= count($completedAudits) ?>) →</a><?php endif; ?>
+          </div>
           <?php if (!$audits): ?>
             <div class="cx-empty"><?= cxIcon('list') ?><b>No audits yet</b>An Admin creates projects. Once one is set up for your city, you add its roads here.</div>
+          <?php elseif (!$openAudits): ?>
+            <div class="cx-empty"><?= cxIcon('check') ?><b>No open audits</b>Everything in <?= $h($cityName) ?> is finished. Find the reports under <a href="<?= $h($completedUrl) ?>">Completed audits</a>.</div>
           <?php endif; ?>
-          <?php foreach ($audits as $a):
+          <?php foreach ($openAudits as $a):
               $total    = (int)$a['segment_count'];
               $approved = (int)$a['approved_count'];
               $pct      = cityDashProgress($approved, $total);

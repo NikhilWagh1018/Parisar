@@ -12,6 +12,7 @@ require_once __DIR__ . '/../helpers/AdminDashboard.php';
 require_once __DIR__ . '/../helpers/Cities.php';
 require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 require_once __DIR__ . '/../repositories/AdminDashboardRepository.php';
+require_once __DIR__ . '/partials/cx_icons.php';
 
 if ($CURRENT_USER_ROLE !== 'admin') {
     header('Location: ' . roleHomePage($CURRENT_USER_ROLE));
@@ -34,6 +35,11 @@ $attention  = adminAttentionItems(
     adminStalledAudits($audits, new DateTimeImmutable('now', new DateTimeZone('UTC'))),
     adminCitiesWithoutLeader($cities)
 );
+// The dashboard lists work in progress. Finished (published) audits are under "Published Audits" in the sidebar.
+$openAudits     = array_values(array_filter($audits, static fn(array $a): bool => !in_array($a['status'], ['published', 'voided'], true)));
+$publishedCount = count($audits) - count($openAudits);
+$firstName      = trim((string)strtok(trim((string)($CURRENT_USER_NAME ?? '')), ' '));
+$greeting       = cityGreeting((int)(new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('G'));
 $pct = static fn(int $d, int $t): string => $t > 0 ? (string)round($d * 100 / $t) . '%' : '—';
 
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
@@ -76,6 +82,7 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
 <link nonce="<?= $nonce ?>" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/dashboard.css?v=<?= filemtime(__DIR__ . '/../css/dashboard.css') ?>">
 <link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/city_audit.css?v=<?= filemtime(__DIR__ . '/../css/city_audit.css') ?>">
+<link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/city_dashboard.css?v=<?= filemtime(__DIR__ . '/../css/city_dashboard.css') ?>">
 </head>
 <body>
 <?php require __DIR__ . '/partials/role_sidebar.php'; ?>
@@ -88,7 +95,27 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
     </div>
     <button class="btn-new" id="npNewBtn" type="button">+ New Project</button>
   </div>
-  <div class="content" id="npApp" data-csrf="<?= $csrf ?>" data-candidates="<?= $h(json_encode($leaderCandidates, JSON_UNESCAPED_UNICODE)) ?>" data-assign-city="<?= (int)($_GET['assign_leader'] ?? 0) ?>">
+  <div class="content cx-page" id="npApp" data-csrf="<?= $csrf ?>" data-candidates="<?= $h(json_encode($leaderCandidates, JSON_UNESCAPED_UNICODE)) ?>" data-assign-city="<?= (int)($_GET['assign_leader'] ?? 0) ?>">
+
+    <section class="cx-hero">
+      <div class="cx-hero-row">
+        <div>
+          <h2 class="cx-hello"><?= $h($greeting) ?><?= $firstName !== '' ? ', ' . $h($firstName) : '' ?></h2>
+          <p class="cx-hero-sub">
+            <?php if ($attention): ?>
+              <b><?= count($attention) ?></b> <?= count($attention) === 1 ? 'thing needs' : 'things need' ?> your attention.
+            <?php else: ?>
+              All clear. Nothing needs your attention right now.
+            <?php endif; ?>
+          </p>
+        </div>
+        <div class="cx-metas">
+          <span class="cx-meta"><?= cxIcon('route') ?> <b><?= (int)$inProgress ?></b> in progress</span>
+          <span class="cx-meta"><?= cxIcon('pin') ?> <b><?= count($cities) ?></b> <?= count($cities) === 1 ? 'city' : 'cities' ?></span>
+          <a class="cx-meta" href="published_audits.php"><?= cxIcon('check') ?> <b><?= (int)$publishedCount ?></b> published</a>
+        </div>
+      </div>
+    </section>
 
     <?php if ($CURRENT_USER_ROLE === 'admin') { require __DIR__ . '/partials/password_requests.php'; } ?>
 
@@ -143,20 +170,18 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
       </form>
     </div>
 
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-icon" style="background:#fee2e2">📝</div><div><div class="stat-val"><?= count($awaiting) ?></div><div class="stat-lbl">Awaiting your approval</div></div></div>
-      <div class="stat-card"><div class="stat-icon" style="background:#dbeafe">🛠️</div><div><div class="stat-val"><?= $inProgress ?></div><div class="stat-lbl">Audits in progress</div></div></div>
-      <div class="stat-card"><div class="stat-icon" style="background:#fef3c7">🏙️</div><div><div class="stat-val"><?= count($cities) ?></div><div class="stat-lbl">Cities</div></div></div>
-      <div class="stat-card"><div class="stat-icon" style="background:#dcfce7">✅</div><div><div class="stat-val"><?= $pct($done, $segs) ?></div><div class="stat-lbl">Segments done</div></div></div>
+    <div class="cx-kpis">
+      <div class="cx-kpi<?= count($awaiting) > 0 ? ' hot' : '' ?>"><span class="cx-kpi-ico o"><?= cxIcon('flag') ?></span><div><b><?= count($awaiting) ?></b><span>Awaiting your approval</span></div></div>
+      <div class="cx-kpi"><span class="cx-kpi-ico b"><?= cxIcon('route') ?></span><div><b><?= $inProgress ?></b><span>Audits in progress</span></div></div>
+      <div class="cx-kpi"><span class="cx-kpi-ico g"><?= cxIcon('pin') ?></span><div><b><?= count($cities) ?></b><span>Cities</span></div></div>
+      <div class="cx-kpi"><span class="cx-kpi-ico p"><?= cxIcon('check') ?></span><div><b><?= $pct($done, $segs) ?></b><span>Segments done</span></div></div>
     </div>
 
+    <?php if ($attention): ?>
     <div class="card" id="needsAttention">
       <div class="card-head">
-        <h3>Needs your attention<?= $attention ? ' (' . count($attention) . ')' : '' ?></h3>
+        <h3>Needs your attention (<?= count($attention) ?>)</h3>
       </div>
-      <?php if (!$attention): ?>
-        <p class="pd-clear">✅ All clear. Nothing needs your attention right now.</p>
-      <?php else: ?>
       <ul class="pd-attn">
         <?php foreach ($attention as $it): ?>
         <li class="pd-attn-row pd-<?= $h($it['tone']) ?>">
@@ -169,12 +194,13 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
         </li>
         <?php endforeach; ?>
       </ul>
-      <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <div class="card">
       <div class="card-head">
-        <h3>Audits across all cities</h3>
+        <h3>Audits in progress<?= $openAudits ? ' (' . count($openAudits) . ')' : '' ?></h3>
+        <?php if ($publishedCount > 0): ?><a href="published_audits.php">Published audits (<?= (int)$publishedCount ?>) →</a><?php endif; ?>
       </div>
       <div class="pd-scroll">
         <table class="pd-table">
@@ -182,8 +208,10 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
           <tbody>
           <?php if (!$audits): ?>
             <tr><td colspan="6" class="pd-empty">No audits yet. Use “+ New Project” to create the first one; the City Leader then adds its roads.</td></tr>
+          <?php elseif (!$openAudits): ?>
+            <tr><td colspan="6" class="pd-empty">No audits in progress. Finished audits are listed under <a class="pd-link" href="published_audits.php">Published Audits</a>.</td></tr>
           <?php endif; ?>
-          <?php foreach ($audits as $a):
+          <?php foreach ($openAudits as $a):
               $p = cityDashProgress($a['done_count'], $a['segment_count']); ?>
             <tr>
               <td><strong><?= $h($a['name']) ?></strong><span class="pd-sub"><?= $h(cityAuditDateLabel($a['audit_date'] ?? null, (int)$a['audit_year'])) ?> · <?= $h(cityPlural($a['road_count'], 'road', 'roads')) ?></span></td>

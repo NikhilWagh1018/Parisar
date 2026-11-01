@@ -172,6 +172,12 @@
 .cx-metas { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .cx-meta { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.12); padding: 5px 12px; border-radius: 99px; font-size: .8rem; color: #fff; }
 .cx-meta b { font-weight: 700; }
+a.cx-meta { text-decoration: none; transition: background .15s; }
+a.cx-meta:hover { background: rgba(255,255,255,.22); }
+.cx-empty a { color: var(--g); font-weight: 600; }
+/* Completed audits list */
+.cc-intro { margin: 0 0 14px; font-size: .86rem; color: var(--gray); }
+.cc-score b { font-weight: 700; }
 .cx-prog-info { margin: 14px 0 0; max-width: 760px; font-size: .84rem; line-height: 1.5; color: rgba(255,255,255,.82); white-space: pre-line; }
 .cx-hero .ca-badge { font-size: .74rem; padding: 4px 12px; }
 .cx-hero .ca-btn { background: #fff; color: var(--gd); }

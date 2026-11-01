@@ -130,6 +130,31 @@ function cityAuditAttention(string $status, array $c, ?string $adminNote = null,
  * @param list<array<string,mixed>> $audits  rows from CityDashboardRepository::auditSummaries()
  * @return array{audits:int,open:int,segments:int,approved:int,submitted:int,with_surveyors:int}
  */
+/**
+ * Split a city's audits into work still open and finished (published) work.
+ * Voided audits are dropped. Order inside each list is kept.
+ *
+ * @param list<array<string,mixed>> $audits
+ * @return array{open:list<array<string,mixed>>, completed:list<array<string,mixed>>}
+ */
+function citySplitAudits(array $audits): array
+{
+    $open = [];
+    $completed = [];
+    foreach ($audits as $a) {
+        $st = (string)($a['status'] ?? '');
+        if ($st === 'voided') {
+            continue;
+        }
+        if ($st === 'published') {
+            $completed[] = $a;
+        } else {
+            $open[] = $a;
+        }
+    }
+    return ['open' => $open, 'completed' => $completed];
+}
+
 function cityDashTotals(array $audits): array
 {
     $t = ['audits' => 0, 'open' => 0, 'segments' => 0, 'approved' => 0, 'submitted' => 0, 'with_surveyors' => 0];

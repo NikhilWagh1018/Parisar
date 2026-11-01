@@ -64,6 +64,19 @@ class CityDashboardTest extends TestCase
         $this->assertStringContainsString('Activate', $ready[0]['text']);
     }
 
+    public function test_audits_split_into_open_and_completed(): void
+    {
+        $audits = [
+            ['id' => 1, 'status' => 'published'], ['id' => 2, 'status' => 'active'],
+            ['id' => 3, 'status' => 'voided'], ['id' => 4, 'status' => 'awaiting_approval'],
+            ['id' => 5, 'status' => 'draft'], ['id' => 6, 'status' => 'published'],
+        ];
+        $s = citySplitAudits($audits);
+        $this->assertSame([2, 4, 5], array_column($s['open'], 'id'));        // still moving, kept in order
+        $this->assertSame([1, 6], array_column($s['completed'], 'id'));      // only published; voided is dropped
+        $this->assertSame(['open' => [], 'completed' => []], citySplitAudits([]));
+    }
+
     public function test_attention_for_an_open_audit(): void
     {
         $items = cityAuditAttention('in_review', ['total' => 5, 'submitted' => 2, 'needs_revisit' => 1, 'approved' => 1]);
