@@ -111,3 +111,28 @@ function teamSetMember(PDO $pdo, int $leaderId, ?int $leaderCityId, int $surveyo
     }
     return ['ok' => true, 'http' => 200, 'name' => (string)$u['name']];
 }
+
+/**
+ * Add several surveyors to this leader's team in one go. Each one goes through the same
+ * checks as teamSetMember(); the ones that fail are reported and do not stop the others.
+ *
+ * @param list<int> $surveyorIds
+ * @return array{added:list<int>, failed:array<int,string>}  failed: id => reason
+ */
+function teamAddMany(PDO $pdo, int $leaderId, ?int $leaderCityId, array $surveyorIds): array
+{
+    $added  = [];
+    $failed = [];
+    foreach (array_values(array_unique(array_map('intval', $surveyorIds))) as $id) {
+        if ($id <= 0) {
+            continue;
+        }
+        $r = teamSetMember($pdo, $leaderId, $leaderCityId, $id, true);
+        if ($r['ok']) {
+            $added[] = $id;
+        } else {
+            $failed[$id] = (string)($r['error'] ?? 'Could not add.');
+        }
+    }
+    return ['added' => $added, 'failed' => $failed];
+}
