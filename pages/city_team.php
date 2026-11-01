@@ -19,7 +19,6 @@ if ($CURRENT_USER_ROLE !== 'city_leader') {
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $nonce     = $h($_SESSION['csp_nonce'] ?? '');
 $activeNav = 'team';
-$tmStandalone = true;   // my_team.php: always show the list, already open
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -40,7 +39,7 @@ $tmStandalone = true;   // my_team.php: always show the list, already open
     <button class="sb-hamburger" id="sb-toggle" aria-label="Menu">&#9776;</button>
     <div class="topbar-left">
       <h1>My team</h1>
-      <p>City Leader workspace</p>
+      <p>Choose which surveyors are in your team</p>
     </div>
   </div>
   <div class="content cx-page">
