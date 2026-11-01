@@ -27,9 +27,18 @@ class PublicAuditRepository
                JOIN cities c ON c.id = a.city_id
                LEFT JOIN roads r    ON r.audit_id = a.id
                LEFT JOIN segments s ON s.road_id  = r.id
-              WHERE a.status = 'published'
+              WHERE a.status = 'published' AND a.public_hidden_at IS NULL
               GROUP BY a.id, a.name, a.state, a.audit_year, a.audit_date, a.city_id, c.name"
         )->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** True when the Admin has hidden this audit from the public pages. */
+    public function isHidden(int $auditId): bool
+    {
+        $q = $this->pdo->prepare('SELECT public_hidden_at FROM city_audits WHERE id = ?');
+        $q->execute([$auditId]);
+        $row = $q->fetch(PDO::FETCH_ASSOC);
+        return $row !== false && $row['public_hidden_at'] !== null;
     }
 
     /**

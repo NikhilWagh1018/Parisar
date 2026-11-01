@@ -136,8 +136,18 @@
       var id = parseInt(b.dataset.id, 10), name = b.dataset.name;
       ask({
         title: 'Unpublish this audit?', name: name, danger: false, typeName: false, button: 'Unpublish',
-        text: '“' + name + '” disappears from the home page. Nothing is deleted: it goes back to “Awaiting approval” on your dashboard, and approving it again publishes it again.',
+        text: '“' + name + '” is hidden from the home page. Nothing is deleted and it stays approved. You can publish it again any time from this page.',
         run: function () { return send('../api/admin/audit_unpublish.php', { audit_id: id }); }, done: 'audit_unpublished'
+      });
+    });
+  });
+  document.querySelectorAll('.pubRepublish').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var id = parseInt(b.dataset.id, 10), name = b.dataset.name;
+      ask({
+        title: 'Publish this audit again?', name: name, danger: false, typeName: false, button: 'Publish again',
+        text: '“' + name + '” appears on the home page again.',
+        run: function () { return send('../api/admin/audit_republish.php', { audit_id: id }); }, done: 'audit_republished'
       });
     });
   });

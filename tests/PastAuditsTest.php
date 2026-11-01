@@ -8,6 +8,7 @@ require_once __DIR__ . '/../helpers/PublicAudits.php';
 require_once __DIR__ . '/../helpers/PastAudits.php';
 require_once __DIR__ . '/../repositories/PastAuditRepository.php';
 require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
+require_once __DIR__ . '/../repositories/PublicAuditRepository.php';
 
 /** Past audits the Admin adds by hand, and the Admin's Unpublish (in-memory SQLite). */
 class PastAuditsTest extends TestCase
@@ -196,25 +197,68 @@ class PastAuditsTest extends TestCase
 
     // ── unpublish ───────────────────────────────────────────────
 
-    public function test_unpublish_sends_a_published_audit_back_to_awaiting_approval(): void
+    public function test_unpublish_only_hides_the_audit_and_publish_again_shows_it(): void
     {
         $pdo = new PDO('sqlite::memory:');
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY, city_id INTEGER NOT NULL, name TEXT, audit_year INTEGER,
             status TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            admin_note TEXT NULL, admin_decided_at TEXT NULL, admin_decided_by INTEGER NULL)');
+            admin_note TEXT NULL, admin_decided_at TEXT NULL, admin_decided_by INTEGER NULL, public_hidden_at TEXT NULL)');
+        $pdo->exec("INSERT INTO city_audits (id, city_id, name, audit_year, status) VALUES (1,1,'A',2026,'published'),(2,1,'B',2026,'in_review')");
+        $repo = new AuditReviewRepository($pdo);
+        $row = static fn() => $pdo->query('SELECT status, public_hidden_at, admin_decided_by FROM city_audits WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
+
+        $repo->unpublishAudit(['id' => 1, 'status' => 'published'], 9);
+        $r = $row();
+        // still approved (so nothing to approve again), only hidden
+        $this->assertSame('published', $r['status']);
+        $this->assertNotNull($r['public_hidden_at']);
+        $this->assertNull($r['admin_decided_by']);
+
+        $repo->republishAudit(['id' => 1, 'status' => 'published']);
+        $r = $row();
+        $this->assertSame('published', $r['status']);
+        $this->assertNull($r['public_hidden_at']);
+    }
+
+    public function test_unpublish_and_publish_again_refuse_a_wrong_state(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY, city_id INTEGER NOT NULL, name TEXT, audit_year INTEGER,
+            status TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, public_hidden_at TEXT NULL)');
         $pdo->exec("INSERT INTO city_audits (id, city_id, name, audit_year, status) VALUES (1,1,'A',2026,'published'),(2,1,'B',2026,'in_review')");
         $repo = new AuditReviewRepository($pdo);
 
+        $caught = [];
+        foreach ([
+            fn() => $repo->unpublishAudit(['id' => 2, 'status' => 'in_review'], 9),            // not published
+            fn() => $repo->republishAudit(['id' => 1, 'status' => 'published']),               // not hidden
+        ] as $call) {
+            try { $call(); } catch (DomainException $e) { $caught[] = true; }
+        }
+        $this->assertSame([true, true], $caught);
+
         $repo->unpublishAudit(['id' => 1, 'status' => 'published'], 9);
-        $row = $pdo->query('SELECT status, admin_decided_by FROM city_audits WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
-        $this->assertSame(['awaiting_approval', 9], [$row['status'], (int)$row['admin_decided_by']]);
+        $this->expectException(DomainException::class);   // hiding twice
+        $repo->unpublishAudit(['id' => 1, 'status' => 'published'], 9);
+    }
 
-        // and approving again publishes it again
-        $repo->approveAudit(['id' => 1, 'status' => 'awaiting_approval'], 9);
-        $this->assertSame('published', $pdo->query('SELECT status FROM city_audits WHERE id = 1')->fetchColumn());
-
-        $this->expectException(DomainException::class);
-        $repo->unpublishAudit(['id' => 2, 'status' => 'in_review'], 9);
+    public function test_a_hidden_audit_is_left_out_of_the_public_list_and_report(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec('CREATE TABLE cities (id INTEGER PRIMARY KEY, name TEXT)');
+        $pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY, city_id INTEGER, state TEXT, name TEXT, audit_year INTEGER, audit_date TEXT,
+            status TEXT, public_hidden_at TEXT NULL)');
+        $pdo->exec('CREATE TABLE roads (id INTEGER PRIMARY KEY, audit_id INTEGER)');
+        $pdo->exec('CREATE TABLE segments (id INTEGER PRIMARY KEY, road_id INTEGER, length REAL)');
+        $pdo->exec("INSERT INTO cities VALUES (1,'Pune')");
+        $pdo->exec("INSERT INTO city_audits (id, city_id, state, name, audit_year, audit_date, status, public_hidden_at) VALUES
+            (1,1,'MH','Shown',2026,'2026-10-01','published',NULL),
+            (2,1,'MH','Hidden',2026,'2026-10-02','published','2026-11-01 10:00:00')");
+        $repo = new PublicAuditRepository($pdo);
+        $this->assertSame(['Shown'], array_column($repo->published(), 'name'));
+        $this->assertSame([false, true], [$repo->isHidden(1), $repo->isHidden(2)]);
     }
 }

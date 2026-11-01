@@ -77,11 +77,11 @@ class PublicAuditsTest extends TestCase
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec('CREATE TABLE cities (id INTEGER PRIMARY KEY, name TEXT)');
         $pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY, city_id INTEGER, name TEXT, state TEXT, audit_year INTEGER,
-                    audit_date TEXT NULL, status TEXT)');
+                    audit_date TEXT NULL, status TEXT, public_hidden_at TEXT NULL)');
         $pdo->exec('CREATE TABLE roads (id INTEGER PRIMARY KEY, audit_id INTEGER NULL)');
         $pdo->exec('CREATE TABLE segments (id INTEGER PRIMARY KEY, road_id INTEGER, length REAL)');
         $pdo->exec("INSERT INTO cities VALUES (1,'Pune'),(2,'Mumbai')");
-        $pdo->exec("INSERT INTO city_audits VALUES
+        $pdo->exec("INSERT INTO city_audits (id, city_id, name, state, audit_year, audit_date, status) VALUES
             (1,1,'Published one','Maharashtra',2026,'2026-10-04','published'),
             (2,1,'Still in review','Maharashtra',2026,'2026-10-05','in_review'),
             (3,2,'Awaiting','Maharashtra',2026,'2026-10-06','awaiting_approval'),
