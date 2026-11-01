@@ -36,7 +36,7 @@ foreach ($audits as $a) {
         'kind' => 'live', 'id' => (int)$a['id'], 'name' => (string)$a['name'], 'city' => (string)$a['city_name'],
         'date' => publicAuditDate($a['audit_date'] ?? null, (int)$a['audit_year']),
         'detail' => cityPlural($a['road_count'], 'road', 'roads') . ' · ' . cityPlural($a['segment_count'], 'segment', 'segments'),
-        'view' => 'public_audit_report.php?id=' . (int)$a['id'],
+        'view' => 'public_audit_report.php?id=' . (int)$a['id'] . '&from=admin',
         'hidden' => !empty($a['public_hidden_at']),
     ];
 }

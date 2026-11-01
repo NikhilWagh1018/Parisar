@@ -64,6 +64,20 @@ if ($audit === null || ($audit['status'] ?? '') !== 'published' || (new PublicAu
 $isPublic  = true;
 $backUrl   = '../index.html#audits';
 $backLabel = '← Back to audit data';
+
+// Opened from the admin panel's Published Audits page ("View report" adds from=admin):
+// send a signed-in admin or city leader back there instead of the public home page.
+// The flag is honoured only for a visitor who already holds a signed-in admin session,
+// and no session is created for anonymous visitors.
+if (($_GET['from'] ?? '') === 'admin' && isset($_COOKIE[SESSION_NAME])) {
+    startSecureSession();
+    $viewerRole = (string)($_SESSION['user_role'] ?? '');
+    if (!empty($_SESSION['user_id']) && ($viewerRole === 'admin' || $viewerRole === 'city_leader')) {
+        $backUrl   = 'published_audits.php';
+        $backLabel = '← Back to Published Audits';
+    }
+    session_write_close();
+}
 $autoPrint = isset($_GET['download']) && $_GET['download'] === '1';
 $nonce     = htmlspecialchars($nonceRaw, ENT_QUOTES, 'UTF-8');
 
