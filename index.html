@@ -133,10 +133,18 @@
 </div></section>
 <section id="audits"><div class="mw">
   <div class="ey">Published audits</div><h2>Explore the Audit Data</h2>
-  <p class="sub">Every approved city audit, by year. Pick a year to see its audits, and use the filters to narrow them down.</p>
+  <p class="sub">Every approved city audit, by year. Pick a year to see its audits, and use the filters to narrow them down and sort to reorder them.</p>
   <div class="ax-filters" id="ax-filters" hidden>
     <label>City<select id="ax-city" aria-label="Filter by city"><option value="">All cities</option></select></label>
     <label>Condition<select id="ax-cond" aria-label="Filter by condition"><option value="">All conditions</option><option>Good</option><option>OK</option><option>Poor</option><option>Bad</option><option>Very Bad</option></select></label>
+    <label>Sort by<select id="ax-sort" aria-label="Sort audits">
+      <option value="newest">Newest first</option>
+      <option value="oldest">Oldest first</option>
+      <option value="best">Best score first</option>
+      <option value="worst">Worst score first</option>
+      <option value="longest">Longest first</option>
+      <option value="name">Name A to Z</option>
+    </select></label>
     <label class="ax-search">Search<input id="ax-q" type="search" placeholder="Audit or city name" aria-label="Search audits"></label>
     <button type="button" id="ax-clear" class="ax-clear">Clear filters</button>
   </div>
