@@ -100,6 +100,15 @@ class PublicAuditsTest extends TestCase
         $this->assertSame('Pune', $byId[1]['city_name']);
     }
 
+    public function test_hidden_audits_are_left_out_unless_asked_for(): void
+    {
+        $pdo = $this->db();
+        $pdo->exec("UPDATE city_audits SET public_hidden_at = '2026-11-01 10:00:00' WHERE id = 4");
+        $repo = new PublicAuditRepository($pdo);
+        $this->assertSame([1], array_column($repo->published(), 'id'), 'visitors never see a hidden audit');
+        $this->assertSame([1, 4], array_column($repo->published(true), 'id'), 'the admin list includes it');
+    }
+
     public function test_size_of_a_published_audit(): void
     {
         $byId = array_column((new PublicAuditRepository($this->db()))->published(), null, 'id');

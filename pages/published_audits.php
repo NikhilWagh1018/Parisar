@@ -16,6 +16,9 @@ require_once __DIR__ . '/../helpers/PublicAudits.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
 require_once __DIR__ . '/../repositories/AdminDashboardRepository.php';
 require_once __DIR__ . '/../repositories/PastAuditRepository.php';
+require_once __DIR__ . '/../repositories/PublicAuditRepository.php';
+require_once __DIR__ . '/../services/ScoreService.php';
+require_once __DIR__ . '/../helpers/PastAudits.php';
 
 if ($CURRENT_USER_ROLE !== 'admin') {
     header('Location: ' . roleHomePage($CURRENT_USER_ROLE));
@@ -25,6 +28,20 @@ if ($CURRENT_USER_ROLE !== 'admin') {
 $dash   = new AdminDashboardRepository($pdo);
 $cities = $dash->cities();
 $audits = adminSortAudits($dash->audits());
+
+// Condition, score and length of every published live audit (hidden ones too), worked out the same
+// way as the home page, so the filters here match what visitors see there.
+$pubRepo     = new PublicAuditRepository($pdo);
+$liveRows    = $pubRepo->published(true);
+$roadToAudit = $pubRepo->roadAuditMap(array_column($liveRows, 'id'));
+$scoresBy    = [];
+foreach (loadLatestSegmentScores(array_keys($roadToAudit), $pdo) as $s) {
+    $scoresBy[$roadToAudit[(int)$s['road_id']]][] = ['final' => $s['final'], 'length' => $s['length']];
+}
+$liveShape = [];
+foreach ($liveRows as $lr) {
+    $liveShape[(int)$lr['id']] = publicAuditShape($lr, cityReportAggregate($scoresBy[(int)$lr['id']] ?? []));
+}
 
 // Everything shown on the public Audit Data page: published live audits and past audits, newest first.
 $publishedRows = [];
@@ -38,9 +55,15 @@ foreach ($audits as $a) {
         'detail' => cityPlural($a['road_count'], 'road', 'roads') . ' · ' . cityPlural($a['segment_count'], 'segment', 'segments'),
         'view' => 'public_audit_report.php?id=' . (int)$a['id'] . '&from=admin',
         'hidden' => !empty($a['public_hidden_at']),
+        'city_id' => (string)($liveShape[(int)$a['id']]['city_id'] ?? $a['city_id'] ?? ''),
+        'state' => (string)($liveShape[(int)$a['id']]['state'] ?? ''),
+        'length_km' => (float)($liveShape[(int)$a['id']]['length_km'] ?? 0),
+        'score' => $liveShape[(int)$a['id']]['score'] ?? null,
+        'condition' => $liveShape[(int)$a['id']]['condition'] ?? null,
     ];
 }
 foreach ((new PastAuditRepository($pdo))->published() as $p) {
+    $ps = pastAuditShape($p);
     $publishedRows[] = [
         'kind' => 'past', 'id' => (int)$p['id'], 'name' => (string)$p['name'], 'city' => (string)$p['city_name'],
         'date' => substr((string)$p['audit_date'], 0, 10),
@@ -48,11 +71,19 @@ foreach ((new PastAuditRepository($pdo))->published() as $p) {
                     . ' · ' . rtrim(rtrim(number_format((float)$p['length_km'], 1, '.', ''), '0'), '.') . ' km',
         'view' => ((int)$p['has_report'] === 1) ? '../api/public/past_audit_report.php?id=' . (int)$p['id'] : '',
         'hidden' => false,
+        'city_id' => (string)$ps['city_id'], 'state' => $ps['state'], 'length_km' => (float)$ps['length_km'],
+        'score' => $ps['score'], 'condition' => $ps['condition'],
     ];
 }
 // Shown on the home page first, hidden ones after them; newest first within each group.
 usort($publishedRows, static fn(array $x, array $y): int => ($x['hidden'] <=> $y['hidden']) ?: strcmp($y['date'], $x['date']) ?: ($y['id'] <=> $x['id']));
 $visibleCount = count(array_filter($publishedRows, static fn(array $r): bool => !$r['hidden']));
+// Cities that have a published audit, for the City filter (A to Z).
+$filterCities = [];
+foreach ($publishedRows as $r) {
+    $filterCities[$r['city_id']] = $r['city'];
+}
+asort($filterCities, SORT_NATURAL | SORT_FLAG_CASE);
 
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $nonce     = $h($_SESSION['csp_nonce'] ?? '');
@@ -113,17 +144,34 @@ $today = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d'
         <h3>Published audits<?= $visibleCount ? ' (' . $visibleCount . ')' : '' ?></h3>
       </div>
       <p class="pd-card-note">Audits visitors can see on the home page. An approved audit appears here by itself. Unpublish hides one from the home page without deleting it, and Publish again brings it back. Add audits done before CycleAudit with “Add past audit”.</p>
+      <?php if ($publishedRows): ?>
+      <div class="pd-filters" id="pubFilters">
+        <label>City<select id="pubCity" aria-label="Filter by city"><option value="">All cities</option>
+          <?php foreach ($filterCities as $fcId => $fcName): ?><option value="<?= $h($fcId) ?>"><?= $h($fcName) ?></option><?php endforeach; ?>
+        </select></label>
+        <label>Condition<select id="pubCond" aria-label="Filter by condition"><option value="">All conditions</option><option>Good</option><option>OK</option><option>Poor</option><option>Bad</option><option>Very Bad</option></select></label>
+        <label>Sort by<select id="pubSort" aria-label="Sort audits">
+          <option value="newest">Newest first</option><option value="oldest">Oldest first</option>
+          <option value="best">Best score first</option><option value="worst">Worst score first</option>
+          <option value="longest">Longest first</option><option value="name">Name A to Z</option>
+        </select></label>
+        <label class="pd-fsearch">Search<input id="pubQ" type="search" placeholder="Audit or city name" aria-label="Search audits"></label>
+        <button type="button" id="pubClear" class="pd-fclear">Clear filters</button>
+      </div>
+      <p class="pd-fmsg" id="pubMsg" aria-live="polite"></p>
+      <?php endif; ?>
       <div class="pd-scroll">
         <table class="pd-table">
-          <thead><tr><th>Audit</th><th>City</th><th>Type</th><th></th></tr></thead>
-          <tbody>
+          <thead><tr><th>Audit</th><th>City</th><th>Condition</th><th>Type</th><th></th></tr></thead>
+          <tbody id="pubRows">
           <?php if (!$publishedRows): ?>
-            <tr><td colspan="4" class="pd-empty">Nothing is published yet. Approve an audit, or add a past audit.</td></tr>
+            <tr><td colspan="5" class="pd-empty">Nothing is published yet. Approve an audit, or add a past audit.</td></tr>
           <?php endif; ?>
           <?php foreach ($publishedRows as $pr): ?>
-            <tr<?= $pr['hidden'] ? ' style="opacity:.62"' : '' ?>>
+            <tr data-city="<?= $h($pr['city_id']) ?>" data-cond="<?= $h($pr['condition'] ?? '') ?>" data-score="<?= $pr['score'] === null ? '' : $h($pr['score']) ?>" data-len="<?= $h($pr['length_km']) ?>" data-date="<?= $h($pr['date']) ?>" data-name="<?= $h(mb_strtolower($pr['name'])) ?>" data-hidden="<?= $pr['hidden'] ? '1' : '0' ?>" data-text="<?= $h(mb_strtolower($pr['name'] . ' ' . $pr['city'] . ' ' . $pr['state'])) ?>"<?= $pr['hidden'] ? ' style="opacity:.62"' : '' ?>>
               <td><strong><?= $h($pr['name']) ?></strong><span class="pd-sub"><?= $h(cityAuditDateLabel($pr['date'], (int)substr($pr['date'], 0, 4))) ?> · <?= $h($pr['detail']) ?></span></td>
               <td><?= $h($pr['city']) ?></td>
+              <td><?php if ($pr['condition']): ?><span class="pd-cond pd-cond-<?= $h(strtolower(str_replace(' ', '-', (string)$pr['condition']))) ?>"><?= $h($pr['condition']) ?></span><span class="pd-sub">Score <?= $h($pr['score']) ?></span><?php else: ?><span class="pd-sub">Not scored</span><?php endif; ?></td>
               <td><?php if ($pr['hidden']): ?><span class="pd-chip pd-chip-past">Hidden from home page</span><?php else: ?><span class="pd-chip <?= $pr['kind'] === 'past' ? 'pd-chip-past' : 'pd-chip-published' ?>"><?= $pr['kind'] === 'past' ? 'Past audit' : 'Live audit' ?></span><?php endif; ?></td>
               <td class="pd-nowrap"><div class="pd-actions">
                 <?php if ($pr['view'] !== ''): ?><a class="pd-link" href="<?= $h($pr['view']) ?>" target="_blank" rel="noopener">View report</a><?php else: ?><span class="pd-sub">No report file</span><?php endif; ?>
@@ -133,6 +181,7 @@ $today = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d'
               </div></td>
             </tr>
           <?php endforeach; ?>
+            <tr id="pubNoMatch" hidden><td colspan="5" class="pd-empty">No published audits match these filters.</td></tr>
           </tbody>
         </table>
       </div>
@@ -224,6 +273,7 @@ $today = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d'
 <div class="ca-toast" id="caToast"></div>
 <script nonce="<?= $nonce ?>" src="../js/city_search.js?v=<?= filemtime(__DIR__ . '/../js/city_search.js') ?>"></script>
 <script nonce="<?= $nonce ?>" src="../js/admin_published.js?v=<?= filemtime(__DIR__ . '/../js/admin_published.js') ?>"></script>
+<script nonce="<?= $nonce ?>" src="../js/admin_published_filters.js?v=<?= filemtime(__DIR__ . '/../js/admin_published_filters.js') ?>"></script>
 <script nonce="<?= $nonce ?>">
 const tog = document.getElementById('sb-toggle'), ovl = document.getElementById('sb-overlay'), aside = document.querySelector('aside');
 tog.addEventListener('click', () => { aside.classList.add('open'); ovl.classList.add('show'); });
