@@ -25,6 +25,8 @@ class CityLeaderGateTest extends TestCase
     public function test_team_api_is_allowed(): void
     {
         $this->assertTrue(cityLeaderMayAccess('/api/admin/team.php'));
+        $this->assertTrue(cityLeaderMayAccess('/pages/city_team.php'));
+        $this->assertFalse(cityLeaderMayAccess('/pages/city_team.php.bak'));
         $this->assertTrue(cityLeaderMayAccess('/Parisar/api/admin/team.php'));
         $this->assertFalse(cityLeaderMayAccess('/api/admin/team.php.bak'));
     }
