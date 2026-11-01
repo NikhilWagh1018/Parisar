@@ -18,7 +18,7 @@ class AuditReviewTest extends TestCase
         $this->pdo = new PDO('sqlite::memory:');
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, role TEXT NOT NULL DEFAULT \'surveyor\',
-            is_active INTEGER NOT NULL DEFAULT 1, city_id INTEGER NULL)');
+            is_active INTEGER NOT NULL DEFAULT 1, city_id INTEGER NULL, team_leader_id INTEGER NULL)');
         $this->pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY, city_id INTEGER NOT NULL, status TEXT NOT NULL)');
         $this->pdo->exec('CREATE TABLE roads (id INTEGER PRIMARY KEY, name TEXT, audit_id INTEGER NULL)');
         $this->pdo->exec('CREATE TABLE segments (id INTEGER PRIMARY KEY, road_id INTEGER NOT NULL, segment_number INTEGER NOT NULL,
@@ -32,8 +32,8 @@ class AuditReviewTest extends TestCase
             segment_id INTEGER NOT NULL UNIQUE, surveyor_id INTEGER NOT NULL, assigned_by INTEGER NOT NULL,
             status TEXT NOT NULL DEFAULT \'assigned\', assigned_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             submitted_at TEXT NULL, reviewed_at TEXT NULL, reviewed_by INTEGER NULL, review_note TEXT NULL)');
-        $this->pdo->exec("INSERT INTO users VALUES (2,'Nick','city_leader',1,1),(10,'Asha','surveyor',1,1),(11,'Ravi','surveyor',1,1),
-            (12,'Inactive','surveyor',0,1),(13,'Mona','surveyor',1,2)");
+        $this->pdo->exec("INSERT INTO users (id, name, role, is_active, city_id) VALUES (2,'Nick','city_leader',1,1),(10,'Asha','surveyor',1,1),(11,'Ravi','surveyor',1,1),
+            (12,'Inactive','surveyor',0,1),(13,'Mona','surveyor',1,2),(14,'Other Leader','city_leader',1,1)");
         $this->pdo->exec("INSERT INTO city_audits VALUES (1,1,'active')");
         $this->pdo->exec("INSERT INTO roads VALUES (1,'F.C. Road',1)");
         $this->pdo->exec("INSERT INTO segments (id, road_id, segment_number, length, status) VALUES (1,1,1,250,'completed'),(2,1,2,250,'pending')");
@@ -165,6 +165,25 @@ class AuditReviewTest extends TestCase
         $this->assertSame(11, (int)$a['surveyor_id']);
         $this->assertSame('needs_revisit', $a['status']);
         $this->assertSame('Redo it', $a['review_note']);
+    }
+
+    public function test_send_back_only_to_a_surveyor_in_the_leaders_team(): void
+    {
+        $this->pdo->exec('UPDATE users SET team_leader_id = 2 WHERE id = 10');   // Asha is Nick's, Ravi is in nobody's team
+        $audit = array_merge($this->audit(), ['leader_user_id' => 2]);
+
+        $this->assertSame(['Asha'], array_column($this->repo->citySurveyors(1, 2), 'name'));
+        try {
+            $this->repo->sendBack($audit, 1, 2, 'Redo it', 11);
+            $this->fail('a surveyor outside the team must be refused');
+        } catch (DomainException $e) {
+            $this->assertStringContainsString('not in your team', $e->getMessage());
+            $this->assertSame('submitted', $this->assignment(1)['status']);
+        }
+
+        $this->pdo->exec('UPDATE users SET team_leader_id = 2 WHERE id = 11');
+        $this->repo->sendBack($audit, 1, 2, 'Redo it', 11);
+        $this->assertSame(11, (int)$this->assignment(1)['surveyor_id']);
     }
 
     public function test_send_back_rejects_inactive_or_other_city_surveyor(): void

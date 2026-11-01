@@ -18,7 +18,7 @@ class CityAuditRepositoryTest extends TestCase
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->pdo->exec('CREATE TABLE cities (id INTEGER PRIMARY KEY, name TEXT)');
         $this->pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, role TEXT NOT NULL DEFAULT \'surveyor\',
-            is_active INTEGER NOT NULL DEFAULT 1, city_id INTEGER NULL)');
+            is_active INTEGER NOT NULL DEFAULT 1, city_id INTEGER NULL, team_leader_id INTEGER NULL)');
         $this->pdo->exec('CREATE TABLE road_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, canonical_name TEXT NOT NULL,
             city_id INTEGER NOT NULL, is_flagged INTEGER NOT NULL DEFAULT 0)');
         $this->pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY AUTOINCREMENT, city_id INTEGER NOT NULL,
@@ -188,6 +188,48 @@ class CityAuditRepositoryTest extends TestCase
         $names = array_column($this->repo->assignableSurveyors(1), 'name');
         $this->assertSame(['Asha', 'Ravi'], $names);
         $this->assertSame(['Mumbai Mona'], array_column($this->repo->assignableSurveyors(2), 'name'));
+    }
+
+    public function test_a_leader_only_gets_their_own_team_when_the_city_has_several_leaders(): void
+    {
+        // City 1 has two active City Leaders (Nick 2, Other Admin 14). Asha is in Nick's team, Ravi in nobody's.
+        $this->pdo->exec('UPDATE users SET team_leader_id = 2 WHERE id = 10');
+        $this->assertSame(['Asha'], array_column($this->repo->assignableSurveyors(1, 2), 'name'));
+        $this->assertSame([], $this->repo->assignableSurveyors(1, 14));
+        $this->assertSame(['Asha', 'Ravi'], array_column($this->repo->assignableSurveyors(1), 'name'));
+    }
+
+    public function test_a_sole_leader_works_with_every_surveyor_of_the_city(): void
+    {
+        $this->pdo->exec('UPDATE users SET is_active = 0 WHERE id = 14');   // Nick is now the only leader
+        $this->assertSame(['Asha', 'Ravi'], array_column($this->repo->assignableSurveyors(1, 2), 'name'));
+    }
+
+    public function test_assigning_a_surveyor_outside_the_leaders_team_is_refused(): void
+    {
+        $this->pdo->exec('UPDATE users SET team_leader_id = 2 WHERE id = 10');
+        $a   = $this->newAudit();
+        $res = $this->repo->addRoad($a, 2, 1, 1000.0, 500.0);
+        $ids = $this->segmentIds($res['road_id']);
+        $this->pdo->exec('UPDATE city_audits SET leader_user_id = 2 WHERE id = ' . (int)$a['id']);
+        $a = $this->repo->find((int)$a['id']);
+
+        try {
+            $this->repo->assignSegments($a, 2, [$ids[0]], 11);   // Ravi is not in Nick's team
+            $this->fail('a surveyor outside the team must be refused');
+        } catch (DomainException $e) {
+            $this->assertStringContainsString('not in your team', $e->getMessage());
+        }
+        try {
+            $this->repo->assignRoad($a, 2, $res['road_id'], 11);
+            $this->fail('assigning a whole road to a surveyor outside the team must be refused');
+        } catch (DomainException $e) {
+            $this->assertStringContainsString('not in your team', $e->getMessage());
+        }
+        $this->assertSame(0, $this->repo->assignmentCounts((int)$a['id'])['assigned']);
+
+        $this->assertSame(1, $this->repo->assignSegments($a, 2, [$ids[0]], 10));   // Asha is in the team
+        $this->assertSame(1, $this->repo->assignmentCounts((int)$a['id'])['assigned']);
     }
 
     public function test_assign_segments_and_read_them_back(): void

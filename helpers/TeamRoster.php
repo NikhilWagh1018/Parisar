@@ -136,3 +136,29 @@ function teamAddMany(PDO $pdo, int $leaderId, ?int $leaderCityId, array $surveyo
     }
     return ['added' => $added, 'failed' => $failed];
 }
+
+/**
+ * Does this city split its surveyors between City Leaders? Only when it has two or more
+ * active City Leaders. With one leader there is nobody to split with (and the My team page
+ * is hidden), so that leader works with every surveyor of the city.
+ */
+function teamScopeApplies(PDO $pdo, int $cityId): bool
+{
+    $st = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role = 'city_leader' AND is_active = 1 AND city_id = ?");
+    $st->execute([$cityId]);
+    return (int)$st->fetchColumn() >= 2;
+}
+
+/**
+ * SQL to append to a surveyor query so a City Leader only sees / picks their own team.
+ * Returns [sql, params]. No limit when $leaderId is null or the city has a single leader.
+ *
+ * @return array{0:string, 1:list<int>}
+ */
+function teamScope(PDO $pdo, int $cityId, ?int $leaderId, string $alias = 'users'): array
+{
+    if ($leaderId === null || !teamScopeApplies($pdo, $cityId)) {
+        return ['', []];
+    }
+    return [' AND ' . $alias . '.team_leader_id = ?', [$leaderId]];
+}

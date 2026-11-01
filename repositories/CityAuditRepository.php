@@ -10,6 +10,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../helpers/CityAudit.php';
+require_once __DIR__ . '/../helpers/TeamRoster.php';
 
 class CityAuditRepository
 {
@@ -359,23 +360,25 @@ class CityAuditRepository
 
     // ── Surveyor assignment (Slice 3) ─────────────────────────────
 
-    /** Active surveyors of a city, for the assignment dropdowns.
+    /** Active surveyors a City Leader may assign: their own team when the city has several
+     *  City Leaders, every surveyor of the city otherwise. $leaderId null = no team limit.
      *  @return list<array{id:int,name:string}> */
-    public function assignableSurveyors(int $cityId): array
+    public function assignableSurveyors(int $cityId, ?int $leaderId = null): array
     {
+        [$scope, $scopeArgs] = teamScope($this->pdo, $cityId, $leaderId);
         $stmt = $this->pdo->prepare(
             "SELECT id, name FROM users
-              WHERE role = 'surveyor' AND is_active = 1 AND city_id = ?
+              WHERE role = 'surveyor' AND is_active = 1 AND city_id = ?" . $scope . "
               ORDER BY name ASC, id ASC"
         );
-        $stmt->execute([$cityId]);
+        $stmt->execute(array_merge([$cityId], $scopeArgs));
         return array_map(
             static fn(array $r): array => ['id' => (int)$r['id'], 'name' => (string)$r['name']],
             $stmt->fetchAll(PDO::FETCH_ASSOC)
         );
     }
 
-    private function requireCitySurveyor(int $cityId, int $surveyorId): void
+    private function requireCitySurveyor(int $cityId, int $surveyorId, ?int $leaderId = null): void
     {
         $stmt = $this->pdo->prepare(
             "SELECT COUNT(*) FROM users
@@ -384,6 +387,14 @@ class CityAuditRepository
         $stmt->execute([$surveyorId, $cityId]);
         if ((int)$stmt->fetchColumn() === 0) {
             throw new DomainException('That surveyor is not an active surveyor in this city.');
+        }
+        [$scope, $scopeArgs] = teamScope($this->pdo, $cityId, $leaderId);
+        if ($scope !== '') {
+            $t = $this->pdo->prepare('SELECT COUNT(*) FROM users WHERE id = ?' . $scope);
+            $t->execute(array_merge([$surveyorId], $scopeArgs));
+            if ((int)$t->fetchColumn() === 0) {
+                throw new DomainException('That surveyor is not in your team. Add them on the My team page first.');
+            }
         }
     }
 
@@ -405,7 +416,11 @@ class CityAuditRepository
             throw new DomainException('Select at least one segment.');
         }
         if ($surveyorId !== null) {
-            $this->requireCitySurveyor((int)$audit['city_id'], $surveyorId);
+            $this->requireCitySurveyor(
+                (int)$audit['city_id'],
+                $surveyorId,
+                isset($audit['leader_user_id']) ? (int)$audit['leader_user_id'] : null
+            );
         }
 
         $in = implode(',', array_fill(0, count($ids), '?'));
