@@ -13,11 +13,14 @@ class PublicAuditRepository
 
     /**
      * Every published audit with its city, size and total road length (metres).
+     * Audits the Admin hid from the public pages are left out, unless $includeHidden is true
+     * (the admin Published Audits page lists them too).
      *
      * @return list<array<string,mixed>>
      */
-    public function published(): array
+    public function published(bool $includeHidden = false): array
     {
+        $visible = $includeHidden ? '' : ' AND a.public_hidden_at IS NULL';
         return $this->pdo->query(
             "SELECT a.id, a.name, a.state, a.audit_year, a.audit_date, a.city_id, c.name AS city_name,
                     COUNT(DISTINCT r.id)          AS road_count,
@@ -27,7 +30,7 @@ class PublicAuditRepository
                JOIN cities c ON c.id = a.city_id
                LEFT JOIN roads r    ON r.audit_id = a.id
                LEFT JOIN segments s ON s.road_id  = r.id
-              WHERE a.status = 'published' AND a.public_hidden_at IS NULL
+              WHERE a.status = 'published'" . $visible . "
               GROUP BY a.id, a.name, a.state, a.audit_year, a.audit_date, a.city_id, c.name"
         )->fetchAll(PDO::FETCH_ASSOC);
     }
