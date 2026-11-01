@@ -1,6 +1,6 @@
 /* js/landing_audits.js
    Landing page "Audit data": published audits as cards, year -> audits,
-   with city / condition / search filters. Reads /api/public/audits.php. */
+   with city / condition / search filters and a sort. Reads /api/public/audits.php. */
 (function () {
   'use strict';
 
@@ -10,7 +10,7 @@
   var grid = $('ax-grid'), crumbs = $('ax-crumbs'), msg = $('ax-msg'), bar = $('ax-filters');
   if (!grid) return;
 
-  var state = { all: [], city: '', cond: '', q: '', year: null };
+  var state = { all: [], city: '', cond: '', q: '', sort: 'newest', year: null };
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -33,6 +33,31 @@
       if (q && (a.name + ' ' + a.city + ' ' + a.state).toLowerCase().indexOf(q) === -1) return false;
       return true;
     });
+  }
+
+  // Lower scores are better, so "best" sorts the lowest score first. Audits with no score go last.
+  function sorted(list) {
+    var byName = function (x, y) { return String(x.name).localeCompare(String(y.name)); };
+    var byDateDesc = function (x, y) { return String(y.date).localeCompare(String(x.date)) || byName(x, y); };
+    var score = function (a) { return a.score === null || a.score === undefined ? null : Number(a.score); };
+    var byScore = function (dir) {
+      return function (x, y) {
+        var sx = score(x), sy = score(y);
+        if (sx === null && sy === null) return byDateDesc(x, y);
+        if (sx === null) return 1;
+        if (sy === null) return -1;
+        return (sx - sy) * dir || byDateDesc(x, y);
+      };
+    };
+    var cmp = {
+      newest: byDateDesc,
+      oldest: function (x, y) { return String(x.date).localeCompare(String(y.date)) || byName(x, y); },
+      best: byScore(1),
+      worst: byScore(-1),
+      longest: function (x, y) { return (y.length_km - x.length_km) || byDateDesc(x, y); },
+      name: byName
+    }[state.sort] || byDateDesc;
+    return list.slice().sort(cmp);
   }
 
   function totals(list) {
@@ -131,7 +156,7 @@
   }
 
   function render() {
-    var list = filtered();
+    var list = sorted(filtered());
     if (state.year !== null && !list.some(function (a) { return a.year === state.year; })) {
       state.year = null;
     }
@@ -147,7 +172,7 @@
     if (state.year === null) {
       var years = {};
       list.forEach(function (a) { (years[a.year] = years[a.year] || []).push(a); });
-      Object.keys(years).sort(function (a, b) { return b - a; }).forEach(function (y) {
+      Object.keys(years).sort(function (a, b) { return state.sort === 'oldest' ? a - b : b - a; }).forEach(function (y) {
         grid.appendChild(card(y, '', years[y].length, totals(years[y]), function () {
           state.year = Number(y); render();
         }, years[y]));
@@ -159,7 +184,7 @@
   }
 
   function setupFilters(cities) {
-    var citySel = $('ax-city'), condSel = $('ax-cond'), q = $('ax-q');
+    var citySel = $('ax-city'), condSel = $('ax-cond'), sortSel = $('ax-sort'), q = $('ax-q');
     cities.forEach(function (c) {
       var o = el('option', null, c.name);
       o.value = String(c.id);
@@ -176,10 +201,11 @@
       state.city = citySel.value; state.year = null; render();
     });
     condSel.addEventListener('change', function () { state.cond = condSel.value; render(); });
+    sortSel.addEventListener('change', function () { state.sort = sortSel.value; render(); });
     q.addEventListener('input', function () { state.q = q.value; render(); });
     $('ax-clear').addEventListener('click', function () {
-      citySel.value = ''; condSel.value = ''; q.value = '';
-      state.city = ''; state.cond = ''; state.q = ''; state.year = null;
+      citySel.value = ''; condSel.value = ''; sortSel.value = 'newest'; q.value = '';
+      state.city = ''; state.cond = ''; state.q = ''; state.sort = 'newest'; state.year = null;
       render();
       window.dispatchEvent(new CustomEvent('ca:citychange', { detail: { id: '' } }));
     });
