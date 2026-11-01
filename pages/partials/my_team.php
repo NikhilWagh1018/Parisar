@@ -3,16 +3,20 @@
 // When a city has more than one City Leader, each one chooses which surveyors are in their own team.
 // A surveyor's "forgot password" request then goes only to their team leader (helpers/TeamRoster.php,
 // helpers/PasswordRequest.php). Surveyors in no team are shown to every City Leader of the city.
-// Expects: $pdo, $CURRENT_USER_ID, $CURRENT_USER_CITY_ID. Renders nothing for a city with a single
-// City Leader, and never breaks the dashboard if migration 027 has not been run yet.
+// Expects: $pdo, $CURRENT_USER_ID, $CURRENT_USER_CITY_ID. Used on pages/city_team.php ($tmStandalone = true:
+// always listed, already open). Elsewhere it renders nothing for a city with a single City Leader.
+// Never breaks the page if migration 027 has not been run yet.
 require_once __DIR__ . '/../../helpers/TeamRoster.php';
 
+$tmStandalone = $tmStandalone ?? false;
 $tmRows = [];
+$tmOthers = 0;
 try {
     if ($CURRENT_USER_CITY_ID !== null) {
         $tmLeaders = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role = 'city_leader' AND is_active = 1 AND city_id = ?");
         $tmLeaders->execute([(int)$CURRENT_USER_CITY_ID]);
-        if ((int)$tmLeaders->fetchColumn() > 1) {
+        $tmOthers = (int)$tmLeaders->fetchColumn() - 1;
+        if ($tmStandalone || $tmOthers > 0) {
             $tmRows = teamRoster($pdo, (int)$CURRENT_USER_ID, (int)$CURRENT_USER_CITY_ID);
         }
     }
@@ -25,10 +29,10 @@ if ($tmRows):
     $tmMine  = count(array_filter($tmRows, static fn(array $r): bool => $r['state'] === 'mine'));
 ?>
 <section class="tm-panel" id="tmPanel" data-csrf="<?= $tmH($_SESSION['csrf_token'] ?? '') ?>" aria-labelledby="tmTitle">
-  <details<?= $tmMine === 0 ? ' open' : '' ?>>
+  <details open>
     <summary id="tmTitle">My team <span class="tm-count" id="tmCount"><?= $tmMine ?></span></summary>
     <p class="tm-help">
-      Your city has more than one City Leader. Choose the surveyors who are in <b>your</b> team: their
+      <?php if ($tmOthers < 1): ?>You are the only City Leader in your city, so every request from your surveyors comes to you. If another City Leader joins, you can split the surveyors here. <?php else: ?>Your city has more than one City Leader. <?php endif; ?>Choose the surveyors who are in <b>your</b> team: their
       forgot-password requests then come to you only. A surveyor in no team is shown to every City Leader
       of the city until someone adds them.
     </p>
@@ -74,4 +78,6 @@ if ($tmRows):
 .tm-msg.err{color:#b42318}
 </style>
 <script nonce="<?= $tmNonce ?>" src="../js/my_team.js?v=<?= filemtime(__DIR__ . '/../../js/my_team.js') ?>"></script>
+<?php elseif ($tmStandalone): ?>
+<section class="tm-panel"><p class="tm-help" style="margin:0">There are no active surveyors in your city yet. Surveyors appear here once they have registered and an Admin has put them in your city.</p></section>
 <?php endif; ?>

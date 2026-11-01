@@ -36,6 +36,7 @@ const CITY_LEADER_ALLOWED_SCRIPTS = [
     'api/admin/password_requests.php',
     // Choose which surveyors are in their own team (panel on their dashboard).
     'api/admin/team.php',
+    'pages/city_team.php',
     'api/reports/export-city-excel.php',
 ];
 
