@@ -78,3 +78,13 @@ function publicAuditCities(array $audits): array
     }
     return $out;
 }
+
+/**
+ * Make the landing page's audit list fresh straight away. The list is cached on disk for a few
+ * minutes; call this whenever an audit is published, unpublished or deleted, or a past audit
+ * is added or removed. Never throws.
+ */
+function publicAuditsCacheClear(): void
+{
+    @unlink(sys_get_temp_dir() . '/cycleaudit_public_audits.json');
+}

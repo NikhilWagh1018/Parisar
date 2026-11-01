@@ -64,6 +64,27 @@ function nationalApiContext(string $role): array
     return $body;
 }
 
+/**
+ * Same checks as nationalApiContext() for a request that carries a file (multipart form):
+ * POST, an Admin, a valid CSRF token. Returns the posted fields.
+ *
+ * @return array<string,mixed>
+ */
+function nationalFormContext(string $role): array
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        cityApiFail(405, 'Method not allowed.');
+    }
+    if ($role !== 'admin') {
+        cityApiFail(403, 'Only an Admin can do this.');
+    }
+    $csrf = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!hash_equals((string)($_SESSION['csrf_token'] ?? ''), (string)$csrf)) {
+        cityApiFail(403, 'Invalid CSRF token.');
+    }
+    return $_POST;
+}
+
 /** Stops a write API with a clear message when the Admin has deleted the project. */
 function cityApiFailIfDeleted(?array $audit): void
 {

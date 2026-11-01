@@ -10,8 +10,11 @@ require_once __DIR__ . '/../config/admin_guard.php';
 require_once __DIR__ . '/../helpers/RoleHome.php';
 require_once __DIR__ . '/../helpers/AdminDashboard.php';
 require_once __DIR__ . '/../helpers/Cities.php';
+require_once __DIR__ . '/../helpers/PublicAudits.php';
+require_once __DIR__ . '/../helpers/CityDashboard.php';
 require_once __DIR__ . '/../repositories/AuditReviewRepository.php';
 require_once __DIR__ . '/../repositories/AdminDashboardRepository.php';
+require_once __DIR__ . '/../repositories/PastAuditRepository.php';
 
 if ($CURRENT_USER_ROLE !== 'admin') {
     header('Location: ' . roleHomePage($CURRENT_USER_ROLE));
@@ -34,6 +37,29 @@ $attention  = adminAttentionItems(
     adminStalledAudits($audits, new DateTimeImmutable('now', new DateTimeZone('UTC'))),
     adminCitiesWithoutLeader($cities)
 );
+// Everything shown on the public Audit Data page: published live audits and past audits, newest first.
+$publishedRows = [];
+foreach ($audits as $a) {
+    if ($a['status'] !== 'published') {
+        continue;
+    }
+    $publishedRows[] = [
+        'kind' => 'live', 'id' => (int)$a['id'], 'name' => (string)$a['name'], 'city' => (string)$a['city_name'],
+        'date' => publicAuditDate($a['audit_date'] ?? null, (int)$a['audit_year']),
+        'detail' => cityPlural($a['road_count'], 'road', 'roads') . ' · ' . cityPlural($a['segment_count'], 'segment', 'segments'),
+        'view' => 'public_audit_report.php?id=' . (int)$a['id'],
+    ];
+}
+foreach ((new PastAuditRepository($pdo))->published() as $p) {
+    $publishedRows[] = [
+        'kind' => 'past', 'id' => (int)$p['id'], 'name' => (string)$p['name'], 'city' => (string)$p['city_name'],
+        'date' => substr((string)$p['audit_date'], 0, 10),
+        'detail' => cityPlural((int)$p['road_count'], 'road', 'roads') . ' · ' . cityPlural((int)$p['segment_count'], 'segment', 'segments')
+                    . ' · ' . rtrim(rtrim(number_format((float)$p['length_km'], 1, '.', ''), '0'), '.') . ' km',
+        'view' => ((int)$p['has_report'] === 1) ? '../api/public/past_audit_report.php?id=' . (int)$p['id'] : '',
+    ];
+}
+usort($publishedRows, static fn(array $x, array $y): int => strcmp($y['date'], $x['date']) ?: ($y['id'] <=> $x['id']));
 $pct = static fn(int $d, int $t): string => $t > 0 ? (string)round($d * 100 / $t) . '%' : '—';
 
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
@@ -93,6 +119,17 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
     <?php if (($_GET['notice'] ?? '') === 'project_deleted_ok'): ?>
     <div class="card" role="status" style="border-left:4px solid #16a34a;background:#f0fdf4">
       <p style="margin:0;font-size:.92rem;line-height:1.5"><b>Project deleted.</b> It no longer appears on any dashboard and work on it has stopped. The City Leader and surveyors were told.</p>
+    </div>
+    <?php endif; ?>
+    <?php
+    $pubNotices = [
+        'past_audit_added'   => ['Past audit published.', 'It now appears on the home page.'],
+        'past_audit_deleted' => ['Past audit deleted.', 'It no longer appears on the home page.'],
+        'audit_unpublished'  => ['Audit unpublished.', 'It is off the home page. It is back under “Awaiting approval”, so you can publish it again.'],
+    ];
+    if (isset($pubNotices[$_GET['notice'] ?? ''])): $pn = $pubNotices[$_GET['notice']]; ?>
+    <div class="card" role="status" style="border-left:4px solid #16a34a;background:#f0fdf4">
+      <p style="margin:0;font-size:.92rem;line-height:1.5"><b><?= $h($pn[0]) ?></b> <?= $h($pn[1]) ?></p>
     </div>
     <?php endif; ?>
     <div class="card" id="npNewCard" style="display:none">
@@ -170,6 +207,36 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
       <?php endif; ?>
     </div>
 
+    <div class="card" id="pubCard">
+      <div class="card-head">
+        <h3>Published audits<?= $publishedRows ? ' (' . count($publishedRows) . ')' : '' ?></h3>
+        <button type="button" class="pd-btn pd-btn-solid" id="paAddBtn">+ Add past audit</button>
+      </div>
+      <p class="pd-card-note">These are the audits visitors see on the home page. An audit is published automatically when you approve it. Add audits done before CycleAudit with “Add past audit”.</p>
+      <div class="pd-scroll">
+        <table class="pd-table">
+          <thead><tr><th>Audit</th><th>City</th><th>Type</th><th></th></tr></thead>
+          <tbody>
+          <?php if (!$publishedRows): ?>
+            <tr><td colspan="4" class="pd-empty">Nothing is published yet. Approve an audit, or add a past audit.</td></tr>
+          <?php endif; ?>
+          <?php foreach ($publishedRows as $pr): ?>
+            <tr>
+              <td><strong><?= $h($pr['name']) ?></strong><span class="pd-sub"><?= $h(cityAuditDateLabel($pr['date'], (int)substr($pr['date'], 0, 4))) ?> · <?= $h($pr['detail']) ?></span></td>
+              <td><?= $h($pr['city']) ?></td>
+              <td><span class="pd-chip <?= $pr['kind'] === 'past' ? 'pd-chip-past' : 'pd-chip-published' ?>"><?= $pr['kind'] === 'past' ? 'Past audit' : 'Live audit' ?></span></td>
+              <td class="pd-nowrap pd-actions">
+                <?php if ($pr['view'] !== ''): ?><a class="pd-link" href="<?= $h($pr['view']) ?>" target="_blank" rel="noopener">View report</a><?php else: ?><span class="pd-sub">No report file</span><?php endif; ?>
+                <?php if ($pr['kind'] === 'live'): ?><button type="button" class="pd-link pubUnpublish" data-id="<?= (int)$pr['id'] ?>" data-name="<?= $h($pr['name']) ?>">Unpublish</button><?php endif; ?>
+                <button type="button" class="pd-link pd-link-danger pubDelete" data-kind="<?= $h($pr['kind']) ?>" data-id="<?= (int)$pr['id'] ?>" data-name="<?= $h($pr['name']) ?>">Delete</button>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-head">
         <h3>Audits across all cities</h3>
@@ -230,10 +297,86 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
     </div>
   </div>
 </main>
+<div class="ca-modal-bg" id="paAddBg" hidden>
+  <div class="ca-modal ap-modal" role="dialog" aria-modal="true" aria-labelledby="paAddTitle">
+    <h3 id="paAddTitle">Add a past audit</h3>
+    <p>For an audit done before CycleAudit. It is published on the home page as soon as you save it.</p>
+    <form id="paAddForm" class="ca-form" novalidate>
+      <div class="ca-field">
+        <label for="paCity">City *</label>
+        <input id="paCity" name="city_name" type="text" maxlength="100" autocomplete="off" placeholder="Start typing, e.g. Pune">
+        <div class="ca-err"></div>
+      </div>
+      <div class="ca-field">
+        <label for="paState">State</label>
+        <input id="paState" name="state" type="text" readonly tabindex="-1" placeholder="Fills in from the city">
+        <div class="ca-err"></div>
+      </div>
+      <div class="ca-field full">
+        <label for="paName">Audit name *</label>
+        <input id="paName" name="name" type="text" maxlength="150" placeholder="e.g. Pune Cycle Track Audit 2024–25">
+        <div class="ca-err"></div>
+      </div>
+      <div class="ca-field full">
+        <label for="paDate">Audit date *</label>
+        <input id="paDate" name="audit_date" type="date" min="2000-01-01" max="<?= $h($today) ?>">
+        <div class="ca-hint">The audit appears under the year of this date.</div>
+        <div class="ca-err"></div>
+      </div>
+      <div class="ca-field">
+        <label for="paRoads">Roads *</label>
+        <input id="paRoads" name="road_count" type="number" min="1" step="1" inputmode="numeric">
+        <div class="ca-err"></div>
+      </div>
+      <div class="ca-field">
+        <label for="paSegs">Segments *</label>
+        <input id="paSegs" name="segment_count" type="number" min="1" step="1" inputmode="numeric">
+        <div class="ca-err"></div>
+      </div>
+      <div class="ca-field">
+        <label for="paLen">Total length (km) *</label>
+        <input id="paLen" name="length_km" type="text" inputmode="decimal" placeholder="e.g. 12.5">
+        <div class="ca-err"></div>
+      </div>
+      <div class="ca-field">
+        <label for="paScore">Overall score <span style="font-weight:400">(optional)</span></label>
+        <input id="paScore" name="score" type="text" inputmode="decimal" placeholder="0 to 100, lower is better">
+        <div class="ca-hint">Sets the Good / OK / Poor / Bad badge. Leave empty for no badge.</div>
+        <div class="ca-err"></div>
+      </div>
+      <div class="ca-field full">
+        <label for="paReport">PDF report <span style="font-weight:400">(optional, up to 8 MB)</span></label>
+        <input id="paReport" name="report" type="file" accept="application/pdf,.pdf">
+        <div class="ca-hint">Visitors can open and download it from the audit card. Without it the card shows the summary only.</div>
+        <div class="ca-err"></div>
+      </div>
+      <div class="ca-modal-actions full">
+        <button type="button" class="ca-btn ghost" id="paAddCancel">Cancel</button>
+        <button type="submit" class="ca-btn" id="paAddSave">Publish past audit</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="ca-modal-bg" id="pubConfirmBg" hidden>
+  <div class="ca-modal ap-modal" role="dialog" aria-modal="true" aria-labelledby="pubConfTitle">
+    <h3 id="pubConfTitle"></h3>
+    <p id="pubConfText"></p>
+    <div class="ca-field" id="pubConfNameWrap" hidden>
+      <label for="pubConfName">Type the audit name to confirm</label>
+      <input id="pubConfName" type="text" autocomplete="off">
+      <div class="ca-err"></div>
+    </div>
+    <div class="ca-modal-actions">
+      <button type="button" class="ca-btn ghost" id="pubConfCancel">Cancel</button>
+      <button type="button" class="ca-btn" id="pubConfGo">Confirm</button>
+    </div>
+  </div>
+</div>
 <div class="sb-overlay" id="sb-overlay"></div>
 <div class="ca-toast" id="caToast"></div>
 <script nonce="<?= $nonce ?>" src="../js/city_search.js?v=<?= filemtime(__DIR__ . '/../js/city_search.js') ?>"></script>
 <script nonce="<?= $nonce ?>" src="../js/admin_new_project.js?v=<?= filemtime(__DIR__ . '/../js/admin_new_project.js') ?>"></script>
+<script nonce="<?= $nonce ?>" src="../js/admin_published.js?v=<?= filemtime(__DIR__ . '/../js/admin_published.js') ?>"></script>
 <script nonce="<?= $nonce ?>">
 const tog = document.getElementById('sb-toggle'), ovl = document.getElementById('sb-overlay'), aside = document.querySelector('aside');
 tog.addEventListener('click', () => { aside.classList.add('open'); ovl.classList.add('show'); });

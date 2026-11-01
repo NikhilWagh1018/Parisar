@@ -7,7 +7,8 @@ declare(strict_types=1);
 //  "Audit data" section: name, city, date, size and overall condition.
 //  The landing page groups them by year and month and applies the filters.
 //
-//  Only PUBLISHED audits (approved by the Admin, report final) are listed.
+//  Only PUBLISHED audits (approved by the Admin, report final) are listed, plus the
+//  past audits the Admin added by hand.
 //  Same protection as api/public/stats.php: per-IP request limit and a
 //  short disk cache, so a burst of visitors costs one computation.
 // ═══════════════════════════════════════════════════════════════
@@ -15,7 +16,7 @@ declare(strict_types=1);
 const PUBLIC_AUDITS_CACHE_TTL = 300; // seconds
 
 header('Content-Type: application/json');
-header('Cache-Control: public, max-age=300');
+header('Cache-Control: public, max-age=60');
 
 set_exception_handler(function (Throwable $e) {
     error_log('api/public/audits.php error: ' . $e->getMessage());
@@ -29,7 +30,9 @@ require_once __DIR__ . '/../../config/rate_limit.php';
 require_once __DIR__ . '/../../services/ScoreService.php';
 require_once __DIR__ . '/../../helpers/CityDashboard.php';
 require_once __DIR__ . '/../../helpers/PublicAudits.php';
+require_once __DIR__ . '/../../helpers/PastAudits.php';
 require_once __DIR__ . '/../../repositories/PublicAuditRepository.php';
+require_once __DIR__ . '/../../repositories/PastAuditRepository.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
@@ -68,6 +71,10 @@ foreach (loadLatestSegmentScores(array_keys($roadToAudit), $pdo) as $s) {
 $audits = [];
 foreach ($rows as $row) {
     $audits[] = publicAuditShape($row, cityReportAggregate($byAudit[(int)$row['id']] ?? []));
+}
+// Past audits the Admin added by hand (audits done before CycleAudit).
+foreach ((new PastAuditRepository($pdo))->published() as $past) {
+    $audits[] = pastAuditShape($past);
 }
 $audits = publicSortAudits($audits);
 

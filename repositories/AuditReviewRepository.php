@@ -341,6 +341,26 @@ class AuditReviewRepository
     }
 
     /**
+     * Admin takes a published audit off the public page. It goes back to "awaiting approval", so
+     * nothing is lost and the Admin can publish it again with one click from the Review screen.
+     */
+    public function unpublishAudit(array $audit, int $adminId): void
+    {
+        if ($audit['status'] !== 'published') {
+            throw new DomainException('This audit is not published.');
+        }
+        $upd = $this->pdo->prepare(
+            "UPDATE city_audits
+                SET status = 'awaiting_approval', admin_decided_at = CURRENT_TIMESTAMP, admin_decided_by = ?
+              WHERE id = ? AND status = 'published'"
+        );
+        $upd->execute([$adminId, (int)$audit['id']]);
+        if ($upd->rowCount() === 0) {
+            throw new DomainException('This audit was already unpublished. Reload the page.');
+        }
+    }
+
+    /**
      * Admin returns an audit to the City Leader with a required note saying what to change.
      * The audit goes back to in_review: the City Leader can send segments back to surveyors,
      * then close the audit and send it to the Admin again.

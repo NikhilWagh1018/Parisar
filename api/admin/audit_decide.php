@@ -23,6 +23,7 @@ set_exception_handler(function (Throwable $e) {
 require_once __DIR__ . '/../../config/admin_guard.php';
 require_once __DIR__ . '/../../helpers/CityApi.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
+require_once __DIR__ . '/../../helpers/PublicAudits.php';
 require_once __DIR__ . '/../../repositories/CityAuditRepository.php';
 require_once __DIR__ . '/../../repositories/AuditReviewRepository.php';
 
@@ -45,6 +46,7 @@ try {
     if ($action === 'approve') {
         $review->approveAudit($audit, (int)$CURRENT_USER_ID);
         ActivityLogger::log($pdo, ActivityLogger::AUDIT_APPROVED, $CURRENT_USER_ID, ['audit_id' => (int)$audit['id']]);
+        publicAuditsCacheClear();
         echo json_encode(['success' => true, 'status' => 'published']);
     } else {
         $review->returnAudit($audit, (int)$CURRENT_USER_ID, (string)($body['note'] ?? ''));
