@@ -341,8 +341,8 @@ class AuditReviewRepository
     }
 
     /**
-     * Admin takes a published audit off the public page. It goes back to "awaiting approval", so
-     * nothing is lost and the Admin can publish it again with one click from the Review screen.
+     * Admin hides a published audit from the public pages. The audit stays approved ("published"),
+     * so it does not come back to the Admin as something to approve; Publish again undoes it.
      */
     public function unpublishAudit(array $audit, int $adminId): void
     {
@@ -350,13 +350,28 @@ class AuditReviewRepository
             throw new DomainException('This audit is not published.');
         }
         $upd = $this->pdo->prepare(
-            "UPDATE city_audits
-                SET status = 'awaiting_approval', admin_decided_at = CURRENT_TIMESTAMP, admin_decided_by = ?
-              WHERE id = ? AND status = 'published'"
+            "UPDATE city_audits SET public_hidden_at = CURRENT_TIMESTAMP
+              WHERE id = ? AND status = 'published' AND public_hidden_at IS NULL"
         );
-        $upd->execute([$adminId, (int)$audit['id']]);
+        $upd->execute([(int)$audit['id']]);
         if ($upd->rowCount() === 0) {
-            throw new DomainException('This audit was already unpublished. Reload the page.');
+            throw new DomainException('This audit is already hidden from the home page. Reload the page.');
+        }
+    }
+
+    /** Admin shows a hidden audit on the public pages again. */
+    public function republishAudit(array $audit): void
+    {
+        if ($audit['status'] !== 'published') {
+            throw new DomainException('This audit is not published.');
+        }
+        $upd = $this->pdo->prepare(
+            "UPDATE city_audits SET public_hidden_at = NULL
+              WHERE id = ? AND status = 'published' AND public_hidden_at IS NOT NULL"
+        );
+        $upd->execute([(int)$audit['id']]);
+        if ($upd->rowCount() === 0) {
+            throw new DomainException('This audit is already on the home page. Reload the page.');
         }
     }
 

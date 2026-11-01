@@ -4,9 +4,9 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 //  api/admin/audit_unpublish.php
 //  POST { audit_id }
-//  The Admin takes a published audit off the public Audit Data page. The audit is not
-//  deleted: it goes back to "awaiting approval" (it shows up in "Needs your attention"),
-//  and approving it again publishes it again.
+//  The Admin hides a published audit from the public Audit Data page. The audit is not
+//  deleted and stays approved, so it does not show up as something to approve. "Publish
+//  again" (api/admin/audit_republish.php) shows it on the home page again.
 //  admin only.
 // ═══════════════════════════════════════════════════════════════
 
@@ -42,4 +42,4 @@ try {
 }
 ActivityLogger::log($pdo, ActivityLogger::AUDIT_UNPUBLISHED, $CURRENT_USER_ID, ['audit_id' => (int)$audit['id'], 'name' => (string)$audit['name']]);
 publicAuditsCacheClear();
-echo json_encode(['success' => true, 'status' => 'awaiting_approval']);
+echo json_encode(['success' => true]);

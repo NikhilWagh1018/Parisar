@@ -36,6 +36,7 @@ class ActivityLogger
     public const AUDIT_APPROVED          = 'audit_approved';
     public const AUDIT_RETURNED          = 'audit_returned';
     public const AUDIT_UNPUBLISHED       = 'audit_unpublished';
+    public const AUDIT_REPUBLISHED       = 'audit_republished';
     public const PAST_AUDIT_ADDED        = 'past_audit_added';
     public const PAST_AUDIT_DELETED      = 'past_audit_deleted';
 

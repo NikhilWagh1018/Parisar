@@ -37,6 +37,7 @@ foreach ($audits as $a) {
         'date' => publicAuditDate($a['audit_date'] ?? null, (int)$a['audit_year']),
         'detail' => cityPlural($a['road_count'], 'road', 'roads') . ' · ' . cityPlural($a['segment_count'], 'segment', 'segments'),
         'view' => 'public_audit_report.php?id=' . (int)$a['id'],
+        'hidden' => !empty($a['public_hidden_at']),
     ];
 }
 foreach ((new PastAuditRepository($pdo))->published() as $p) {
@@ -46,9 +47,12 @@ foreach ((new PastAuditRepository($pdo))->published() as $p) {
         'detail' => cityPlural((int)$p['road_count'], 'road', 'roads') . ' · ' . cityPlural((int)$p['segment_count'], 'segment', 'segments')
                     . ' · ' . rtrim(rtrim(number_format((float)$p['length_km'], 1, '.', ''), '0'), '.') . ' km',
         'view' => ((int)$p['has_report'] === 1) ? '../api/public/past_audit_report.php?id=' . (int)$p['id'] : '',
+        'hidden' => false,
     ];
 }
-usort($publishedRows, static fn(array $x, array $y): int => strcmp($y['date'], $x['date']) ?: ($y['id'] <=> $x['id']));
+// Shown on the home page first, hidden ones after them; newest first within each group.
+usort($publishedRows, static fn(array $x, array $y): int => ($x['hidden'] <=> $y['hidden']) ?: strcmp($y['date'], $x['date']) ?: ($y['id'] <=> $x['id']));
+$visibleCount = count(array_filter($publishedRows, static fn(array $r): bool => !$r['hidden']));
 
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $nonce     = $h($_SESSION['csp_nonce'] ?? '');
@@ -95,7 +99,8 @@ $today = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d'
     $pubNotices = [
         'past_audit_added'   => ['Past audit published.', 'It now appears on the home page.'],
         'past_audit_deleted' => ['Past audit deleted.', 'It no longer appears on the home page.'],
-        'audit_unpublished'  => ['Audit unpublished.', 'It is off the home page. It is back under “Awaiting approval”, so you can publish it again.'],
+        'audit_unpublished'  => ['Audit hidden.', 'It is off the home page. It is still approved and nothing else changed. Use Publish again to show it.'],
+        'audit_republished'  => ['Audit published again.', 'It is back on the home page.'],
     ];
     if (isset($pubNotices[$_GET['notice'] ?? ''])): $pn = $pubNotices[$_GET['notice']]; ?>
     <div class="card" role="status" style="border-left:4px solid #16a34a;background:#f0fdf4">
@@ -105,9 +110,9 @@ $today = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d'
 
     <div class="card" id="pubCard">
       <div class="card-head">
-        <h3>Published audits<?= $publishedRows ? ' (' . count($publishedRows) . ')' : '' ?></h3>
+        <h3>Published audits<?= $visibleCount ? ' (' . $visibleCount . ')' : '' ?></h3>
       </div>
-      <p class="pd-card-note">These are the audits visitors see on the home page. An audit is published automatically when you approve it. Add audits done before CycleAudit with “Add past audit”.</p>
+      <p class="pd-card-note">Audits visitors can see on the home page. An approved audit appears here by itself. Unpublish hides one from the home page without deleting it, and Publish again brings it back. Add audits done before CycleAudit with “Add past audit”.</p>
       <div class="pd-scroll">
         <table class="pd-table">
           <thead><tr><th>Audit</th><th>City</th><th>Type</th><th></th></tr></thead>
@@ -116,13 +121,14 @@ $today = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d'
             <tr><td colspan="4" class="pd-empty">Nothing is published yet. Approve an audit, or add a past audit.</td></tr>
           <?php endif; ?>
           <?php foreach ($publishedRows as $pr): ?>
-            <tr>
+            <tr<?= $pr['hidden'] ? ' style="opacity:.62"' : '' ?>>
               <td><strong><?= $h($pr['name']) ?></strong><span class="pd-sub"><?= $h(cityAuditDateLabel($pr['date'], (int)substr($pr['date'], 0, 4))) ?> · <?= $h($pr['detail']) ?></span></td>
               <td><?= $h($pr['city']) ?></td>
-              <td><span class="pd-chip <?= $pr['kind'] === 'past' ? 'pd-chip-past' : 'pd-chip-published' ?>"><?= $pr['kind'] === 'past' ? 'Past audit' : 'Live audit' ?></span></td>
+              <td><?php if ($pr['hidden']): ?><span class="pd-chip pd-chip-past">Hidden from home page</span><?php else: ?><span class="pd-chip <?= $pr['kind'] === 'past' ? 'pd-chip-past' : 'pd-chip-published' ?>"><?= $pr['kind'] === 'past' ? 'Past audit' : 'Live audit' ?></span><?php endif; ?></td>
               <td class="pd-nowrap pd-actions">
                 <?php if ($pr['view'] !== ''): ?><a class="pd-link" href="<?= $h($pr['view']) ?>" target="_blank" rel="noopener">View report</a><?php else: ?><span class="pd-sub">No report file</span><?php endif; ?>
-                <?php if ($pr['kind'] === 'live'): ?><button type="button" class="pd-link pubUnpublish" data-id="<?= (int)$pr['id'] ?>" data-name="<?= $h($pr['name']) ?>">Unpublish</button><?php endif; ?>
+                <?php if ($pr['kind'] === 'live' && $pr['hidden']): ?><button type="button" class="pd-link pubRepublish" data-id="<?= (int)$pr['id'] ?>" data-name="<?= $h($pr['name']) ?>">Publish again</button>
+                <?php elseif ($pr['kind'] === 'live'): ?><button type="button" class="pd-link pubUnpublish" data-id="<?= (int)$pr['id'] ?>" data-name="<?= $h($pr['name']) ?>">Unpublish</button><?php endif; ?>
                 <button type="button" class="pd-link pd-link-danger pubDelete" data-kind="<?= $h($pr['kind']) ?>" data-id="<?= (int)$pr['id'] ?>" data-name="<?= $h($pr['name']) ?>">Delete</button>
               </td>
             </tr>

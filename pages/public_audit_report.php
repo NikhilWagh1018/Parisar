@@ -23,6 +23,7 @@ require_once __DIR__ . '/../config/rate_limit.php';
 require_once __DIR__ . '/../helpers/CityDashboard.php';
 require_once __DIR__ . '/../helpers/CityDetailedReport.php';
 require_once __DIR__ . '/../repositories/CityAuditRepository.php';
+require_once __DIR__ . '/../repositories/PublicAuditRepository.php';
 require_once __DIR__ . '/../repositories/AuditReportRepository.php';
 require_once __DIR__ . '/../services/ScoreService.php';
 
@@ -56,7 +57,7 @@ if (!$rl['allowed']) {
 }
 
 $audit = (new CityAuditRepository($pdo))->find((int)($_GET['id'] ?? 0));
-if ($audit === null || ($audit['status'] ?? '') !== 'published') {
+if ($audit === null || ($audit['status'] ?? '') !== 'published' || (new PublicAuditRepository($pdo))->isHidden((int)$audit['id'])) {
     publicReportNotFound(404, 'This report is not available.');
 }
 
