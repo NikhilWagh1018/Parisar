@@ -53,9 +53,9 @@ $leaderId    = $audit['leader_user_id'] !== null ? (int)$audit['leader_user_id']
 $pdo->beginTransaction();
 try {
     $repo->deleteAudit($audit);
-    // Open work sessions on its roads end here, so nobody is left mid-audit on a deleted project.
+    // Open work sessions on its roads are archived (the status your database has for read-only sessions; 'abandoned' is not in the live enum), so nobody is left mid-audit on a deleted project.
     $pdo->prepare(
-        "UPDATE audit_sessions SET status = 'abandoned' WHERE status = 'active' AND road_id IN (SELECT id FROM roads WHERE audit_id = ?)"
+        "UPDATE audit_sessions SET status = 'archived' WHERE status = 'active' AND road_id IN (SELECT id FROM roads WHERE audit_id = ?)"
     )->execute([(int)$audit['id']]);
     $pdo->commit();
 } catch (DomainException $e) {
