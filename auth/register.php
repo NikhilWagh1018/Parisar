@@ -156,6 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$rateLimited) {
         $_SESSION['user_email']      = $email;
         $_SESSION['user_role']       = 'surveyor';
         $_SESSION['profile_picture'] = null;
+        $_SESSION['auth_at']         = time();   // see passwordChangedSinceLogin()
 
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));

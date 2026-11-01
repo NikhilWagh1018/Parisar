@@ -90,6 +90,8 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
   </div>
   <div class="content" id="npApp" data-csrf="<?= $csrf ?>" data-candidates="<?= $h(json_encode($leaderCandidates, JSON_UNESCAPED_UNICODE)) ?>" data-assign-city="<?= (int)($_GET['assign_leader'] ?? 0) ?>">
 
+    <?php if ($CURRENT_USER_ROLE === 'admin') { require __DIR__ . '/partials/password_requests.php'; } ?>
+
     <?php if (($_GET['notice'] ?? '') === 'project_deleted_ok'): ?>
     <div class="card" role="status" style="border-left:4px solid #16a34a;background:#f0fdf4">
       <p style="margin:0;font-size:.92rem;line-height:1.5"><b>Project deleted.</b> It no longer appears on any dashboard and work on it has stopped. The City Leader and surveyors were told.</p>

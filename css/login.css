@@ -303,3 +303,13 @@ html.js:not(.ready) .wheel-in { animation-play-state: paused; }
   .btn-submit.is-loading .ti { animation: none; }
   .f, .btn-submit { transition: none; }
 }
+
+/* ── Confirmation code shown after a password request ────────── */
+.code-box {
+  display: flex; flex-direction: column; align-items: center; gap: calc(2px * var(--s));
+  padding: calc(14px * var(--s)) calc(12px * var(--s));
+  background: var(--field); border: 1px dashed var(--field-line);
+  border-radius: calc(10px * var(--s));
+}
+.code-box small { font-size: calc(12.5px * var(--s)); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.code-box strong { font-family: var(--serif); font-size: calc(36px * var(--s)); font-weight: 600; letter-spacing: .14em; color: var(--ink); }

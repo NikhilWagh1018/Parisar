@@ -134,6 +134,7 @@ $greeting     = cityGreeting($hour);
     </section>
 
     <?php if (!$isNational) { require __DIR__ . '/partials/notifications.php'; } ?>
+    <?php if (!$isNational) { require __DIR__ . '/partials/password_requests.php'; } ?>
 
     <div class="cx-kpis">
       <div class="cx-kpi"><span class="cx-kpi-ico g"><?= cxIcon('list') ?></span><div><b><?= (int)$totals['audits'] ?></b><span>Audits (<?= (int)$totals['open'] ?> open)</span></div></div>
