@@ -25,6 +25,7 @@ require_once __DIR__ . '/../../config/admin_guard.php';
 require_once __DIR__ . '/../../helpers/CityApi.php';
 require_once __DIR__ . '/../../helpers/Cities.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
+require_once __DIR__ . '/../../helpers/PublicAudits.php';
 require_once __DIR__ . '/../../helpers/Notifications.php';
 require_once __DIR__ . '/../../repositories/CityAuditRepository.php';
 require_once __DIR__ . '/../../repositories/NotificationRepository.php';
@@ -87,4 +88,5 @@ try {
     error_log('project delete notification failed: ' . $e->getMessage());
 }
 
+publicAuditsCacheClear();
 echo json_encode(['success' => true]);

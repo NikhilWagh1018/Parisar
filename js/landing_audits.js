@@ -82,7 +82,9 @@
     }
     c.appendChild(top);
     c.appendChild(el('p', 'ax-audit-where', a.city + (a.state ? ', ' + a.state : '')));
-    c.appendChild(el('p', 'ax-audit-date', fmtDate(a.date)));
+    var when = el('p', 'ax-audit-date', fmtDate(a.date));
+    if (a.past) when.appendChild(el('span', 'ax-past', 'Past audit'));
+    c.appendChild(when);
     var dl = el('dl', 'ax-facts');
     [['Roads', a.roads], ['Segments', a.segments], ['Length', km(a.length_km)],
      ['Score', a.score === null ? '–' : String(a.score)]].forEach(function (f) {
@@ -94,18 +96,22 @@
     c.appendChild(dl);
 
     var acts = el('div', 'ax-audit-actions');
-    var base = 'pages/public_audit_report.php?id=' + encodeURIComponent(a.id);
-    var view = el('a', 'ax-btn', 'View report');
-    view.href = base;
-    view.target = '_blank';
-    view.rel = 'noopener';
-    var dlb = el('a', 'ax-btn ax-btn-ghost', 'Download');
-    dlb.href = base + '&download=1';
-    dlb.target = '_blank';
-    dlb.rel = 'noopener';
-    dlb.title = 'Opens the report and the print dialog: choose "Save as PDF"';
-    acts.appendChild(view);
-    acts.appendChild(dlb);
+    if (a.past && !a.report_url) {
+      acts.appendChild(el('p', 'ax-audit-note', 'Summary only. No report file for this audit.'));
+    } else {
+      var base = a.past ? a.report_url : 'pages/public_audit_report.php?id=' + encodeURIComponent(a.id);
+      var view = el('a', 'ax-btn', 'View report');
+      view.href = base;
+      view.target = '_blank';
+      view.rel = 'noopener';
+      var dlb = el('a', 'ax-btn ax-btn-ghost', 'Download');
+      dlb.href = base + (base.indexOf('?') === -1 ? '?' : '&') + 'download=1';
+      dlb.target = '_blank';
+      dlb.rel = 'noopener';
+      dlb.title = a.past ? 'Downloads the PDF report' : 'Opens the report and the print dialog: choose "Save as PDF"';
+      acts.appendChild(view);
+      acts.appendChild(dlb);
+    }
     c.appendChild(acts);
     return c;
   }
