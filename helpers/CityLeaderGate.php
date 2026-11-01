@@ -37,6 +37,8 @@ const CITY_LEADER_ALLOWED_SCRIPTS = [
     // Choose which surveyors are in their own team (panel on their dashboard).
     'api/admin/team.php',
     'pages/city_team.php',
+    // Their finished (published) audits, listed from the sidebar.
+    'pages/city_completed.php',
     'api/reports/export-city-excel.php',
 ];
 

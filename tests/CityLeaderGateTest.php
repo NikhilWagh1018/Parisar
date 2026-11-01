@@ -31,6 +31,13 @@ class CityLeaderGateTest extends TestCase
         $this->assertFalse(cityLeaderMayAccess('/api/admin/team.php.bak'));
     }
 
+    public function test_completed_audits_page_is_allowed(): void
+    {
+        $this->assertTrue(cityLeaderMayAccess('/pages/city_completed.php'));
+        $this->assertTrue(cityLeaderMayAccess('/Parisar/pages/city_completed.php'));
+        $this->assertFalse(cityLeaderMayAccess('/pages/city_completed.php.bak'));
+    }
+
     public function test_every_other_page_is_closed(): void
     {
         foreach (['dashboard', 'admin_surveyors',
