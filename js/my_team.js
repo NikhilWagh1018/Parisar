@@ -14,24 +14,27 @@
   var listAll  = document.getElementById('tmListAll');
   var msgEl    = document.getElementById('tmMsg');
   var search   = document.getElementById('tmSearch');
+  var addAll   = document.getElementById('tmAddAll');
   var filter   = 'all';
   var busy     = {};
+  var timer    = null;
+  var shownFree = [];            // surveyors an "Add all shown" would add
 
+  function byId(id) { return document.getElementById(id); }
   function el(tag, cls, text) {
     var n = document.createElement(tag);
     if (cls) { n.className = cls; }
     if (text !== undefined) { n.textContent = text; }
     return n;
   }
-
   function say(text, isErr) {
     msgEl.textContent = text || '';
     msgEl.className = 'tm-msg' + (isErr ? ' err' : '');
   }
-
   function matches(r, q) {
     return !q || (r.name + ' ' + r.email).toLowerCase().indexOf(q) !== -1;
   }
+  function byName(a, b) { return a.name.localeCompare(b.name) || a.id - b.id; }
 
   function row(r) {
     var li = el('li', 'tm-item');
@@ -54,41 +57,53 @@
   }
 
   function fill(list, items, emptyText) {
+    var frag = document.createDocumentFragment();
+    if (!items.length) { frag.appendChild(el('li', 'tm-empty', emptyText)); }
+    items.forEach(function (r) { frag.appendChild(row(r)); });
     list.textContent = '';
-    if (!items.length) { var li = el('li', 'tm-empty', emptyText); list.appendChild(li); return; }
-    items.forEach(function (r) { list.appendChild(row(r)); });
+    list.appendChild(frag);
   }
 
   function render() {
     var q = search.value.trim().toLowerCase();
-    var mine = rows.filter(function (r) { return r.state === 'mine'; });
-    var rest = rows.filter(function (r) { return r.state !== 'mine'; });
-    var free = rest.filter(function (r) { return r.state === 'free'; }).length;
+    var mine = rows.filter(function (r) { return r.state === 'mine'; }).sort(byName);
+    // Surveyors with no team first (they are the ones to act on), then those in other teams.
+    var rest = rows.filter(function (r) { return r.state !== 'mine'; }).sort(function (a, b) {
+      return (a.state === b.state ? 0 : (a.state === 'free' ? -1 : 1)) || byName(a, b);
+    });
+    var nFree  = rest.filter(function (r) { return r.state === 'free'; }).length;
 
     var shownMine = mine.filter(function (r) { return matches(r, q); });
-    var shownRest = rest.filter(function (r) {
-      return matches(r, q) && (filter === 'all' || r.state === filter);
-    });
+    var shownRest = rest.filter(function (r) { return matches(r, q) && (filter === 'all' || r.state === filter); });
+    shownFree = shownRest.filter(function (r) { return r.state === 'free'; });
 
     fill(listMine, shownMine, mine.length ? 'No one in your team matches your search.' : 'Nobody is in your team yet. Add surveyors from the list.');
     fill(listAll, shownRest, rest.length ? 'No surveyors match this search or filter.' : 'Every surveyor of your city is in your team.');
 
-    document.getElementById('tmStatMine').textContent  = String(mine.length);
-    document.getElementById('tmStatFree').textContent  = String(free);
-    document.getElementById('tmStatOther').textContent = String(rest.length - free);
-    document.getElementById('tmCountMine').textContent = String(mine.length);
-    document.getElementById('tmCountAll').textContent  = String(rest.length);
+    byId('tmCountMine').textContent = String(mine.length);
+    byId('tmCountAll').textContent  = String(rest.length);
+    byId('tmNAll').textContent      = String(rest.length);
+    byId('tmNFree').textContent     = String(nFree);
+    byId('tmNOther').textContent    = String(rest.length - nFree);
+
+    addAll.hidden = shownFree.length < 2;
+    addAll.textContent = 'Add all shown (' + shownFree.length + ')';
+    addAll.disabled = Object.keys(busy).length > 0;
+  }
+
+  function post(payload) {
+    return fetch('../api/admin/team.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify(payload)
+    }).then(function (res) { return res.json(); });
   }
 
   function change(r) {
     var adding = r.state !== 'mine';
     busy[r.id] = true; say('', false); render();
-    fetch('../api/admin/team.php', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf, 'X-Requested-With': 'XMLHttpRequest' },
-      body: JSON.stringify({ action: adding ? 'add' : 'remove', user_id: r.id })
-    }).then(function (res) { return res.json(); })
+    post({ action: adding ? 'add' : 'remove', user_id: r.id })
       .then(function (res) {
         delete busy[r.id];
         if (res && res.success) {
@@ -107,7 +122,36 @@
       });
   }
 
-  search.addEventListener('input', render);
+  addAll.addEventListener('click', function () {
+    var batch = shownFree.slice(0, 200);
+    if (batch.length < 2) { return; }
+    if (!window.confirm('Add ' + batch.length + ' surveyors to your team?')) { return; }
+    batch.forEach(function (r) { busy[r.id] = true; });
+    say('', false); render();
+    post({ action: 'add_many', user_ids: batch.map(function (r) { return r.id; }) })
+      .then(function (res) {
+        batch.forEach(function (r) { delete busy[r.id]; });
+        if (res && res.success) {
+          var added = res.added || [];
+          rows.forEach(function (r) { if (added.indexOf(r.id) !== -1) { r.state = 'mine'; r.other_leader = null; } });
+          var failed = Object.keys(res.failed || {}).length;
+          say(added.length + ' added to your team.' + (failed ? ' ' + failed + ' could not be added. Reload the page to see the latest.' : ''), failed > 0);
+        } else {
+          say((res && res.error) || 'Something went wrong. Please try again.', true);
+        }
+        render();
+      })
+      .catch(function () {
+        batch.forEach(function (r) { delete busy[r.id]; });
+        say('Something went wrong. Please try again.', true);
+        render();
+      });
+  });
+
+  search.addEventListener('input', function () {
+    clearTimeout(timer);
+    timer = setTimeout(render, 120);
+  });
   app.querySelectorAll('.tm-chip').forEach(function (c) {
     c.addEventListener('click', function () {
       filter = c.getAttribute('data-filter');

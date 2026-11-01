@@ -112,4 +112,15 @@ class TeamRosterTest extends TestCase
         $this->assertSame(409, teamSetMember($this->pdo, 2, 1, 3, true)['http']);
         $this->assertSame(8, $this->leaderOf(3));
     }
+
+    public function test_add_many_reports_what_failed_and_adds_the_rest(): void
+    {
+        teamSetMember($this->pdo, 8, 1, 9, true);                       // Sunil is Pooja's
+        $r = teamAddMany($this->pdo, 2, 1, [3, 9, 5, 10, 3, 0, 999]);   // Sam ok, Sunil taken, Sita other city, Dead inactive, dup, junk
+        $this->assertSame([3], $r['added']);
+        $this->assertSame([9, 5, 10, 999], array_keys($r['failed']));
+        $this->assertSame(2, $this->leaderOf(3));
+        $this->assertSame(8, $this->leaderOf(9));
+        $this->assertNull($this->leaderOf(5));
+    }
 }

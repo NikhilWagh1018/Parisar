@@ -34,22 +34,15 @@ $tmJson  = json_encode($tmRows, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JS
 <div id="tmApp" data-csrf="<?= $tmH($_SESSION['csrf_token'] ?? '') ?>">
   <p class="tm-intro">
     <?php if ($tmOthers < 1): ?>You are the only City Leader in your city, so every request from your surveyors comes to you. If another City Leader joins, you can split the surveyors here.
-    <?php else: ?>Your city has <b><?= $tmOthers + 1 ?></b> City Leaders. Add the surveyors who are in <b>your</b> team: their forgot-password requests then come to you only.<?php endif; ?>
-    A surveyor in no team is shown to every City Leader of the city until someone adds them.
+    <?php else: ?>Forgot-password requests from a surveyor in your team come to <b>you only</b>. A surveyor in no team is shown to all <?= $tmOthers + 1 ?> City Leaders of the city until someone adds them.<?php endif; ?>
   </p>
-
-  <div class="tm-stats" aria-live="polite">
-    <div class="tm-stat"><b id="tmStatMine">0</b><span>In my team</span></div>
-    <div class="tm-stat"><b id="tmStatFree">0</b><span>No team yet</span></div>
-    <div class="tm-stat"><b id="tmStatOther">0</b><span>In other teams</span></div>
-  </div>
 
   <div class="tm-toolbar">
     <input id="tmSearch" class="tm-search" type="search" placeholder="Search by name or email" autocomplete="off" aria-label="Search surveyors">
-    <div class="tm-chips" role="group" aria-label="Filter surveyors">
-      <button type="button" class="tm-chip on" data-filter="all">All</button>
-      <button type="button" class="tm-chip" data-filter="free">No team yet</button>
-      <button type="button" class="tm-chip" data-filter="other">In other teams</button>
+    <div class="tm-chips" role="group" aria-label="Show in the Surveyors list">
+      <button type="button" class="tm-chip on" data-filter="all">All <i id="tmNAll">0</i></button>
+      <button type="button" class="tm-chip" data-filter="free">No team yet <i id="tmNFree">0</i></button>
+      <button type="button" class="tm-chip" data-filter="other">In other teams <i id="tmNOther">0</i></button>
     </div>
   </div>
   <p class="tm-msg" id="tmMsg" role="status" aria-live="polite"></p>
@@ -60,30 +53,32 @@ $tmJson  = json_encode($tmRows, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JS
       <ul class="tm-list" id="tmListMine"></ul>
     </section>
     <section class="tm-box" aria-labelledby="tmAllTitle">
-      <h3 id="tmAllTitle">Surveyors <span class="tm-count tm-count-grey" id="tmCountAll">0</span></h3>
+      <h3 id="tmAllTitle">Surveyors <span class="tm-count tm-count-grey" id="tmCountAll">0</span>
+        <button type="button" class="tm-btn tm-bulk" id="tmAddAll" hidden>Add all shown</button>
+      </h3>
       <ul class="tm-list" id="tmListAll"></ul>
     </section>
   </div>
   <script type="application/json" id="tmData" nonce="<?= $tmNonce ?>"><?= $tmJson ?></script>
 </div>
 <style nonce="<?= $tmNonce ?>">
-.tm-intro{margin:0 0 14px;font-size:.9rem;line-height:1.55;color:#4b5a3f;max-width:820px}
-.tm-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
-.tm-stat{background:#fff;border:1px solid #e3ded0;border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:2px}
-.tm-stat b{font-size:1.5rem;line-height:1.1;font-family:'Playfair Display',serif}
-.tm-stat span{font-size:.78rem;color:#4b5a3f}
+.tm-intro{margin:0 0 12px;font-size:.9rem;line-height:1.55;color:#4b5a3f;max-width:820px}
 .tm-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px}
 .tm-search{flex:1;min-width:220px;max-width:380px;height:40px;padding:0 12px;border:1px solid #cfc9b8;border-radius:10px;font:inherit;background:#fff}
 .tm-chips{display:flex;flex-wrap:wrap;gap:6px}
 .tm-chip{height:34px;padding:0 14px;border-radius:99px;border:1px solid #cfc9b8;background:#fff;color:#4b5a3f;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer}
+.tm-chip i{font-style:normal;margin-left:4px;padding:0 6px;border-radius:99px;background:#eef0e8;font-size:.75rem}
 .tm-chip.on{background:#3d8a24;border-color:#3d8a24;color:#fff}
+.tm-chip.on i{background:rgba(255,255,255,.25)}
+.tm-bulk{margin-left:auto;height:30px;font-size:.8rem}
+.tm-bulk[hidden]{display:none}
 .tm-msg{min-height:1.2em;margin:4px 2px 8px;font-size:.85rem;color:#1f4d14}
 .tm-msg.err{color:#b42318}
 .tm-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-@media (max-width:900px){.tm-cols{grid-template-columns:1fr}.tm-stats{grid-template-columns:1fr 1fr 1fr}}
+@media (max-width:900px){.tm-cols{grid-template-columns:1fr}}
 .tm-box{background:#fff;border:1px solid #e3ded0;border-radius:12px;padding:14px 16px}
 .tm-mine{border-left:4px solid #3d8a24}
-.tm-box h3{margin:0 0 10px;font-size:1.02rem;display:flex;align-items:center;gap:8px}
+.tm-box h3{margin:0 0 10px;min-height:30px;font-size:1.02rem;display:flex;align-items:center;gap:8px}
 .tm-count{padding:2px 9px;border-radius:99px;background:#3d8a24;color:#fff;font-size:.72rem;font-weight:700}
 .tm-count-grey{background:#8a927f}
 .tm-help{font-size:.88rem;line-height:1.5;color:#4b5a3f}
