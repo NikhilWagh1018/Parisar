@@ -61,7 +61,7 @@ $nextId  = $canReview ? (new AuditReportRepository($pdo))->nextToReview((int)$au
 $nextUrl = $nextId !== null
     ? 'city_segment_review.php?audit_id=' . (int)$audit['id'] . '&segment_id=' . $nextId
     : $auditUrl . '#caReview';
-$surveyors = $canReview ? (new AuditReviewRepository($pdo))->citySurveyors((int)$audit['city_id']) : [];
+$surveyors = $canReview ? (new AuditReviewRepository($pdo))->citySurveyors((int)$audit['city_id'], isset($audit['leader_user_id']) ? (int)$audit['leader_user_id'] : null) : [];
 
 $h   = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $num = static fn($v): string => rtrim(rtrim(number_format((float)$v, 2, '.', ''), '0'), '.');

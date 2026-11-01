@@ -42,7 +42,9 @@ if ($canEdit && !$available) {
 }
 $roads     = $repo->roadsWithSegments((int)$audit['id']);
 $canAssign = !$isNational && $repo->canAssign($audit);
-$surveyors = $canAssign ? $repo->assignableSurveyors((int)$audit['city_id']) : [];
+$auditLeaderId = isset($audit['leader_user_id']) ? (int)$audit['leader_user_id'] : null;
+$teamOnly   = !$isNational && teamScopeApplies($pdo, (int)$audit['city_id']);
+$surveyors = $canAssign ? $repo->assignableSurveyors((int)$audit['city_id'], $auditLeaderId) : [];
 $counts    = $repo->assignmentCounts((int)$audit['id']);
 $canActivate = !$isNational && $audit['status'] === 'draft';
 $allAssigned = $counts['total'] > 0 && $counts['assigned'] === $counts['total'];
@@ -241,7 +243,11 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
         <div class="cd-track" style="margin-top:10px"><i style="width:<?= cityDashProgress((int)$counts['assigned'], (int)$counts['total']) ?>%"></i></div>
       <?php endif; ?>
       <?php if ($canAssign && !$surveyors): ?>
-        <p class="ca-hint-line">No active surveyors are registered in <?= $h($audit['city_name']) ?> yet, so segments cannot be assigned.</p>
+        <?php if ($teamOnly): ?>
+          <p class="ca-hint-line">Nobody is in your team yet, so segments cannot be assigned. Add surveyors on the <a href="city_team.php">My team</a> page first.</p>
+        <?php else: ?>
+          <p class="ca-hint-line">No active surveyors are registered in <?= $h($audit['city_name']) ?> yet, so segments cannot be assigned.</p>
+        <?php endif; ?>
       <?php elseif ($canActivate && !$canActivateNow): ?>
         <p class="ca-hint-line"><?= $counts['total'] === 0 ? 'Add a road, then assign its segments.' : 'Assign at least one segment to a surveyor to activate the audit. Roads cannot be added or removed after that.' ?></p>
       <?php elseif ($canActivate && !$allAssigned): ?>
@@ -380,7 +386,7 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
               <textarea class="ca-note" rows="2" maxlength="500" placeholder="What does the surveyor need to fix? (required)"></textarea>
               <select class="ca-seg-select ca-new-surveyor" aria-label="Surveyor for the re-audit">
                 <option value="">Same surveyor (<?= $h($sb['surveyor_name'] ?? 'Unknown') ?>)</option>
-                <?php foreach ($review->citySurveyors((int)$audit['city_id']) as $sv): ?>
+                <?php foreach ($review->citySurveyors((int)$audit['city_id'], $auditLeaderId) as $sv): ?>
                   <?php if ((int)$sv['id'] !== (int)$sb['surveyor_id']): ?>
                     <option value="<?= (int)$sv['id'] ?>">Assign to <?= $h($sv['name']) ?></option>
                   <?php endif; ?>
@@ -502,7 +508,7 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
                           <option value="<?= (int)$sv['id'] ?>" <?= (string)$sv['id'] === $cur ? 'selected' : '' ?>><?= $h($sv['name']) ?></option>
                         <?php endforeach; ?>
                         <?php if ($cur !== '' && !$known): ?>
-                          <option value="<?= $h($cur) ?>" selected><?= $h($s['assigned_name'] ?? 'Unknown') ?> (not active)</option>
+                          <option value="<?= $h($cur) ?>" selected><?= $h($s['assigned_name'] ?? 'Unknown') ?> (not in your team or inactive)</option>
                         <?php endif; ?>
                       </select>
                     <?php else: ?>

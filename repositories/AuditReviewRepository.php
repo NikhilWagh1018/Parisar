@@ -11,6 +11,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/../helpers/AuditReview.php';
+require_once __DIR__ . '/../helpers/TeamRoster.php';
 
 class AuditReviewRepository
 {
@@ -90,13 +91,15 @@ class AuditReviewRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /** Active surveyors of the city (for the "assign to a different surveyor" choice). @return list<array{id:int,name:string}> */
-    public function citySurveyors(int $cityId): array
+    /** Active surveyors the leader may pick for "assign to a different surveyor": their own team when
+     *  the city has several City Leaders, the whole city otherwise. @return list<array{id:int,name:string}> */
+    public function citySurveyors(int $cityId, ?int $leaderId = null): array
     {
+        [$scope, $scopeArgs] = teamScope($this->pdo, $cityId, $leaderId);
         $stmt = $this->pdo->prepare(
-            "SELECT id, name FROM users WHERE role = 'surveyor' AND is_active = 1 AND city_id = ? ORDER BY name ASC"
+            "SELECT id, name FROM users WHERE role = 'surveyor' AND is_active = 1 AND city_id = ?" . $scope . " ORDER BY name ASC"
         );
-        $stmt->execute([$cityId]);
+        $stmt->execute(array_merge([$cityId], $scopeArgs));
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -180,6 +183,17 @@ class AuditReviewRepository
             $u->execute([$newSurveyorId, (int)$audit['city_id']]);
             if ((int)$u->fetchColumn() === 0) {
                 throw new DomainException('Choose an active surveyor of this city.');
+            }
+            [$scope, $scopeArgs] = teamScope(
+                $this->pdo, (int)$audit['city_id'],
+                isset($audit['leader_user_id']) ? (int)$audit['leader_user_id'] : null
+            );
+            if ($scope !== '') {
+                $t = $this->pdo->prepare('SELECT COUNT(*) FROM users WHERE id = ?' . $scope);
+                $t->execute(array_merge([$newSurveyorId], $scopeArgs));
+                if ((int)$t->fetchColumn() === 0) {
+                    throw new DomainException('That surveyor is not in your team. Add them on the My team page first.');
+                }
             }
             $surveyorId = $newSurveyorId;
         }
