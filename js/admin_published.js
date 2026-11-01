@@ -1,4 +1,4 @@
-// Admin dashboard: "Published audits". Add a past audit (with an optional PDF), take a live audit off
+// Admin "Published audits" page. Add a past audit (with an optional PDF), take a live audit off
 // the home page (Unpublish) or delete one. Plain fetch + the page's CSRF token (data-csrf on #npApp).
 (function () {
   'use strict';
@@ -35,7 +35,7 @@
     }
     return data;
   }
-  function reload(notice) { window.location.href = 'platform_dashboard.php?notice=' + notice + '#pubCard'; }
+  function reload(notice) { window.location.href = 'published_audits.php?notice=' + notice; }
 
   // ── Add a past audit ───────────────────────────────────────
   var form = document.getElementById('paAddForm');
