@@ -54,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_email']      = $user['email'];
                 $_SESSION['user_role']       = $user['role'];
                 $_SESSION['profile_picture'] = $user['profile_picture'] ?? null;
+                $_SESSION['auth_at']         = time();   // see passwordChangedSinceLogin()
 
                 // Generate a CSRF token for this session
                 if (empty($_SESSION['csrf_token'])) {

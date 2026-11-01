@@ -39,6 +39,8 @@ class ActivityLogger
     public const AUDIT_REPUBLISHED       = 'audit_republished';
     public const PAST_AUDIT_ADDED        = 'past_audit_added';
     public const PAST_AUDIT_DELETED      = 'past_audit_deleted';
+    public const PASSWORD_REQUEST_APPROVED  = 'password_request_approved';
+    public const PASSWORD_REQUEST_DISMISSED = 'password_request_dismissed';
 
     /**
      * Log an activity.

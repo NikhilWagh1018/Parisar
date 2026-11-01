@@ -32,6 +32,8 @@ const CITY_LEADER_ALLOWED_SCRIPTS = [
     'pages/admin.php',
     'api/admin/roads.php',
     'api/admin/export-roads.php',
+    // Approve / dismiss a surveyor's "forgot password" request (panel on their dashboard).
+    'api/admin/password_requests.php',
     'api/reports/export-city-excel.php',
 ];
 

@@ -111,4 +111,11 @@ class CityLeaderGateTest extends TestCase
         $this->assertFalse(cityLeaderMayAccess('/api/admin/roads.php.bak'));
         $this->assertFalse(cityLeaderMayAccess('/api/reports/export-excel.php'));
     }
+
+    public function test_password_request_api_is_allowed_but_other_admin_apis_stay_closed(): void
+    {
+        $this->assertTrue(cityLeaderMayAccess('/api/admin/password_requests.php'));
+        $this->assertFalse(cityLeaderMayAccess('/api/admin/password_requests.php.bak'));
+        $this->assertFalse(cityLeaderMayAccess('/api/admin/surveyors.php'));
+    }
 }

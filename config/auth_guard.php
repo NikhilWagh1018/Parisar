@@ -107,6 +107,40 @@ if (!$freshUser || (int)$freshUser['is_active'] === 0) {
     exit;
 }
 
+// A password changed by an approved "forgot password" request ends every
+// sign-in that started before it (helpers/PasswordRequest.php).
+require_once __DIR__ . '/../helpers/PasswordRequest.php';
+if (passwordChangedSinceLogin($pdo, $CURRENT_USER_ID, (int)($_SESSION['auth_at'] ?? 0))) {
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(
+            session_name(), '', time() - 42000,
+            $params['path'], $params['domain'], $params['secure'], $params['httponly']
+        );
+    }
+    session_destroy();
+
+    $wantsJson = (
+        str_contains($_SERVER['HTTP_ACCEPT']         ?? '', 'application/json')
+        || strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest'
+        || str_contains($_SERVER['CONTENT_TYPE']     ?? '', 'application/json')
+    );
+    if ($wantsJson) {
+        header('Content-Type: application/json');
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Your password was changed. Please sign in again.']);
+    } else {
+        $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_FILENAME']));
+        $docRoot   = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '/');
+        $relPath   = ltrim(str_replace($docRoot, '', $scriptDir), '/');
+        $depth     = ($relPath !== '') ? count(explode('/', $relPath)) : 0;
+        $prefix    = $depth > 0 ? str_repeat('../', $depth) : './';
+        header("Location: {$prefix}auth/login.php");
+    }
+    exit;
+}
+
 $CURRENT_USER_ROLE     = (string)$freshUser['role'];
 $_SESSION['user_role'] = $CURRENT_USER_ROLE; // keep session cache in sync
 
