@@ -41,6 +41,8 @@ class ActivityLogger
     public const PAST_AUDIT_DELETED      = 'past_audit_deleted';
     public const PASSWORD_REQUEST_APPROVED  = 'password_request_approved';
     public const PASSWORD_REQUEST_DISMISSED = 'password_request_dismissed';
+    public const TEAM_MEMBER_ADDED          = 'team_member_added';
+    public const TEAM_MEMBER_REMOVED        = 'team_member_removed';
 
     /**
      * Log an activity.

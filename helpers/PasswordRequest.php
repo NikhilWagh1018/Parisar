@@ -9,7 +9,11 @@ declare(strict_types=1);
 //     NEW password. It is hashed at once and kept as a pending request; the
 //     old password keeps working. A 6-digit code is shown on their screen.
 //  2. The request goes to the person responsible:
-//        surveyor with a City Leader  -> the City Leader of their city
+//        surveyor with a City Leader  -> the City Leader of their city. When the
+//                                        surveyor is in a City Leader's team
+//                                        (users.team_leader_id) only that
+//                                        leader sees it; a surveyor in no team is
+//                                        shown to every City Leader of the city.
 //        surveyor with no City Leader -> an Admin
 //        City Leader                  -> an Admin
 //        Admin                        -> nobody (use scripts/make_admin_reset_sql.php)
@@ -23,7 +27,7 @@ declare(strict_types=1);
 //
 //  Times are Unix timestamps passed in (default: now) and stored as UTC
 //  'Y-m-d H:i:s' strings, so the database clock never matters.
-//  Needs migration 026.
+//  Needs migrations 026 and 027.
 // ═══════════════════════════════════════════════════════════════
 
 require_once __DIR__ . '/StaffPasswordReset.php';
@@ -162,18 +166,32 @@ function passwordRequestCreate(
 
 /**
  * SQL condition + parameters limiting requests to those addressed to this
- * approver. An Admin sees requests addressed to Admins; a City Leader sees
- * requests addressed to City Leaders for their own city. Anyone else: none.
+ * approver. The query must join the requester as `u` (users) and the request as `pr`.
+ *
+ *  - Admin: requests addressed to Admins.
+ *  - City Leader: requests addressed to City Leaders for their own city, and
+ *    only those from surveyors in their own team or in no team. A surveyor whose
+ *    team leader is no longer an active City Leader of that city counts as in no
+ *    team, so the request is never stranded.
+ *  - Anyone else: none.
  *
  * @return array{0:string, 1:list<mixed>}
  */
-function passwordRequestScope(string $actorRole, ?int $actorCityId): array
+function passwordRequestScope(string $actorRole, ?int $actorCityId, ?int $actorId = null): array
 {
     if ($actorRole === 'admin') {
         return ["pr.approver_role = 'admin'", []];
     }
-    if ($actorRole === 'city_leader' && $actorCityId !== null) {
-        return ["pr.approver_role = 'city_leader' AND pr.city_id = ?", [$actorCityId]];
+    if ($actorRole === 'city_leader' && $actorCityId !== null && $actorId !== null) {
+        return [
+            "pr.approver_role = 'city_leader' AND pr.city_id = ?
+             AND (u.team_leader_id IS NULL
+                  OR u.team_leader_id = ?
+                  OR NOT EXISTS (SELECT 1 FROM users tl
+                                  WHERE tl.id = u.team_leader_id AND tl.role = 'city_leader'
+                                    AND tl.is_active = 1 AND tl.city_id = pr.city_id))",
+            [$actorCityId, $actorId],
+        ];
     }
     return ['1 = 0', []];
 }
@@ -183,12 +201,12 @@ function passwordRequestScope(string $actorRole, ?int $actorCityId): array
  *
  * @return list<array<string,mixed>>
  */
-function passwordRequestOpenFor(PDO $pdo, string $actorRole, ?int $actorCityId, ?int $now = null): array
+function passwordRequestOpenFor(PDO $pdo, string $actorRole, ?int $actorCityId, ?int $actorId = null, ?int $now = null): array
 {
     $now ??= time();
-    [$cond, $params] = passwordRequestScope($actorRole, $actorCityId);
+    [$cond, $params] = passwordRequestScope($actorRole, $actorCityId, $actorId);
     $st = $pdo->prepare(
-        "SELECT pr.id, pr.created_at, pr.requested_ip, u.name, u.email, u.phone, u.role,
+        "SELECT pr.id, pr.created_at, pr.requested_ip, u.name, u.email, u.phone, u.role, u.team_leader_id,
                 (SELECT c.name FROM cities c WHERE c.id = u.city_id) AS city_name
            FROM password_requests pr
            JOIN users u ON u.id = pr.user_id
@@ -200,16 +218,16 @@ function passwordRequestOpenFor(PDO $pdo, string $actorRole, ?int $actorCityId, 
 }
 
 /** Number of open requests for this approver (the badge). */
-function passwordRequestOpenCount(PDO $pdo, string $actorRole, ?int $actorCityId, ?int $now = null): int
+function passwordRequestOpenCount(PDO $pdo, string $actorRole, ?int $actorCityId, ?int $actorId = null, ?int $now = null): int
 {
-    return count(passwordRequestOpenFor($pdo, $actorRole, $actorCityId, $now));
+    return count(passwordRequestOpenFor($pdo, $actorRole, $actorCityId, $actorId, $now));
 }
 
 /** @return array<string,mixed>|null the request, only when addressed to this approver */
-function passwordRequestFindScoped(PDO $pdo, int $id, string $actorRole, ?int $actorCityId): ?array
+function passwordRequestFindScoped(PDO $pdo, int $id, string $actorRole, ?int $actorCityId, ?int $actorId = null): ?array
 {
-    [$cond, $params] = passwordRequestScope($actorRole, $actorCityId);
-    $st = $pdo->prepare("SELECT pr.* FROM password_requests pr WHERE pr.id = ? AND $cond LIMIT 1");
+    [$cond, $params] = passwordRequestScope($actorRole, $actorCityId, $actorId);
+    $st = $pdo->prepare("SELECT pr.* FROM password_requests pr JOIN users u ON u.id = pr.user_id WHERE pr.id = ? AND $cond LIMIT 1");
     $st->execute(array_merge([$id], $params));
     $r = $st->fetch(PDO::FETCH_ASSOC);
     return $r ?: null;
@@ -238,7 +256,7 @@ function passwordRequestApprove(
     ?int $now = null
 ): array {
     $now ??= time();
-    $req = passwordRequestFindScoped($pdo, $id, $actorRole, $actorCityId);
+    $req = passwordRequestFindScoped($pdo, $id, $actorRole, $actorCityId, $actorId);
     if ($req === null) {
         return ['ok' => false, 'http' => 404, 'error' => 'Request not found.'];
     }
@@ -316,7 +334,7 @@ function passwordRequestApprove(
 function passwordRequestDismiss(PDO $pdo, int $id, string $actorRole, int $actorId, ?int $actorCityId, ?int $now = null): array
 {
     $now ??= time();
-    $req = passwordRequestFindScoped($pdo, $id, $actorRole, $actorCityId);
+    $req = passwordRequestFindScoped($pdo, $id, $actorRole, $actorCityId, $actorId);
     if ($req === null) {
         return ['ok' => false, 'http' => 404, 'error' => 'Request not found.'];
     }

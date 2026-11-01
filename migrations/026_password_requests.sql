@@ -13,13 +13,14 @@
 --  users.password_changed_at lets the site sign out every older session of a
 --  person whose password was changed by an approval.
 --
---  Railway: MySQL service > Database > Data > Query. Run both statements once,
---  in order, before the code that uses them is deployed.
+--  Railway: MySQL service > Database > Data > Query. Run the two statements one at a
+--  time (the query box accepts one statement per run), in order, before the
+--  code that uses them is deployed.
 -- ---------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `password_requests` (
-    `id`                INT UNSIGNED  NOT NULL AUTO_INCREMENT,
-    `user_id`           INT UNSIGNED  NOT NULL,
+    `id`                INT           NOT NULL AUTO_INCREMENT,
+    `user_id`           INT           NOT NULL,
     `approver_role`     VARCHAR(20)   NOT NULL,            -- 'city_leader' or 'admin'
     `city_id`           INT           NULL,                -- the person's city when it was asked
     `new_password_hash` VARCHAR(255)  NOT NULL,
@@ -27,15 +28,14 @@ CREATE TABLE IF NOT EXISTS `password_requests` (
     `code_tries`        TINYINT UNSIGNED NOT NULL DEFAULT 0,
     `status`            VARCHAR(12)   NOT NULL DEFAULT 'pending',  -- pending, approved, dismissed, replaced, locked
     `requested_ip`      VARCHAR(45)   NOT NULL DEFAULT '',
-    `handled_by`        INT UNSIGNED  NULL,
+    `handled_by`        INT           NULL,
     `handled_at`        DATETIME      NULL,
     `created_at`        DATETIME      NOT NULL,
     `expires_at`        DATETIME      NOT NULL,
 
     PRIMARY KEY (`id`),
     KEY `idx_pr_inbox`  (`status`, `approver_role`, `city_id`, `created_at`),
-    KEY `idx_pr_user`   (`user_id`, `created_at`),
-    CONSTRAINT `fk_pr_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+    KEY `idx_pr_user`   (`user_id`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE `users` ADD COLUMN `password_changed_at` DATETIME NULL AFTER `must_change_password`;

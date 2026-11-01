@@ -19,7 +19,7 @@ class PasswordRequestTest extends TestCase
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->pdo->exec('CREATE TABLE cities (id INTEGER PRIMARY KEY, name TEXT NOT NULL)');
         $this->pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT, phone TEXT, role TEXT NOT NULL,
-            city_id INTEGER NULL, password TEXT NULL, must_change_password INTEGER NOT NULL DEFAULT 0,
+            city_id INTEGER NULL, team_leader_id INTEGER NULL, password TEXT NULL, must_change_password INTEGER NOT NULL DEFAULT 0,
             password_changed_at TEXT NULL, is_active INTEGER NOT NULL DEFAULT 1)');
         $this->pdo->exec('CREATE TABLE password_resets (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
             token_hash TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, used_at TEXT NULL, created_at TEXT NOT NULL, requested_ip TEXT NULL)');
@@ -35,7 +35,9 @@ class PasswordRequestTest extends TestCase
             (4,'Bala Leader','bala@t.org','9800000004','city_leader',2,'old4'),
             (5,'Sita Surveyor','sita@t.org','9800000005','surveyor',2,'old5'),
             (6,'Lee Loner','lee@t.org','9800000006','surveyor',NULL,'old6'),
-            (7,'Nina Nashik','nina@t.org','9800000007','surveyor',3,'old7')");   // Nashik has no City Leader
+            (7,'Nina Nashik','nina@t.org','9800000007','surveyor',3,'old7'),   -- Nashik has no City Leader
+            (8,'Pooja Leader','pooja@t.org','9800000008','city_leader',1,'old8'),  -- Pune's second City Leader
+            (9,'Sunil Surveyor','sunil@t.org','9800000009','surveyor',1,'old9')");
     }
 
     /** Files a request as the person with this email; returns [requestId|null, code]. */
@@ -107,12 +109,12 @@ class PasswordRequestTest extends TestCase
     {
         $this->ask('sam@t.org'); $this->ask('sita@t.org'); $this->ask('lata@t.org'); $this->ask('lee@t.org');
         $names = fn(array $rows) => array_column($rows, 'name');
-        $this->assertSame(['Sam Surveyor'], $names(passwordRequestOpenFor($this->pdo, 'city_leader', 1, $this->now)));
-        $this->assertSame(['Sita Surveyor'], $names(passwordRequestOpenFor($this->pdo, 'city_leader', 2, $this->now)));
-        $this->assertSame(['Lata Leader', 'Lee Loner'], $names(passwordRequestOpenFor($this->pdo, 'admin', null, $this->now)));
-        $this->assertSame([], passwordRequestOpenFor($this->pdo, 'city_leader', null, $this->now), 'leader with no city sees nothing');
-        $this->assertSame([], passwordRequestOpenFor($this->pdo, 'surveyor', 1, $this->now));
-        $row = passwordRequestOpenFor($this->pdo, 'city_leader', 1, $this->now)[0];
+        $this->assertSame(['Sam Surveyor'], $names(passwordRequestOpenFor($this->pdo, 'city_leader', 1, 2, $this->now)));
+        $this->assertSame(['Sita Surveyor'], $names(passwordRequestOpenFor($this->pdo, 'city_leader', 2, 4, $this->now)));
+        $this->assertSame(['Lata Leader', 'Lee Loner'], $names(passwordRequestOpenFor($this->pdo, 'admin', null, 1, $this->now)));
+        $this->assertSame([], passwordRequestOpenFor($this->pdo, 'city_leader', null, 2, $this->now), 'leader with no city sees nothing');
+        $this->assertSame([], passwordRequestOpenFor($this->pdo, 'surveyor', 1, 3, $this->now));
+        $row = passwordRequestOpenFor($this->pdo, 'city_leader', 1, 2, $this->now)[0];
         $this->assertArrayNotHasKey('code_hash', $row);
         $this->assertArrayNotHasKey('new_password_hash', $row);
     }
@@ -121,7 +123,69 @@ class PasswordRequestTest extends TestCase
     {
         $this->ask('sam@t.org');
         $later = $this->now + PASSWORD_REQUEST_TTL_HOURS * 3600 + 1;
-        $this->assertSame([], passwordRequestOpenFor($this->pdo, 'city_leader', 1, $later));
+        $this->assertSame([], passwordRequestOpenFor($this->pdo, 'city_leader', 1, 2, $later));
+    }
+
+    // -- teams: two City Leaders in one city -------------------------
+
+    private function openNames(int $leaderId, int $cityId = 1): array
+    {
+        return array_column(passwordRequestOpenFor($this->pdo, 'city_leader', $cityId, $leaderId, $this->now), 'name');
+    }
+
+    public function test_surveyor_in_no_team_is_shown_to_every_leader_of_the_city(): void
+    {
+        $this->ask('sam@t.org');
+        $this->assertSame(['Sam Surveyor'], $this->openNames(2), 'Lata');
+        $this->assertSame(['Sam Surveyor'], $this->openNames(8), 'Pooja');
+        $this->assertSame([], $this->openNames(4, 2), 'a leader of another city never sees it');
+    }
+
+    public function test_surveyor_in_a_team_is_shown_only_to_that_leader(): void
+    {
+        $this->pdo->exec('UPDATE users SET team_leader_id = 8 WHERE id = 3');   // Sam is in Pooja's team
+        $this->pdo->exec('UPDATE users SET team_leader_id = 2 WHERE id = 9');   // Sunil is in Lata's team
+        $this->ask('sam@t.org'); $this->ask('sunil@t.org');
+        $this->assertSame(['Sunil Surveyor'], $this->openNames(2), 'Lata sees only her own team');
+        $this->assertSame(['Sam Surveyor'],   $this->openNames(8), 'Pooja sees only hers');
+    }
+
+    public function test_only_the_team_leader_can_approve_or_dismiss(): void
+    {
+        $this->pdo->exec('UPDATE users SET team_leader_id = 8 WHERE id = 3');
+        [$id, $code] = $this->ask('sam@t.org');
+        $this->assertSame(404, passwordRequestApprove($this->pdo, $id, $code, 'city_leader', 2, 1, $this->now)['http'], 'Lata is not Sam\'s leader');
+        $this->assertSame(404, passwordRequestDismiss($this->pdo, $id, 'city_leader', 2, 1, $this->now)['http']);
+        $this->assertSame('pending', $this->field('status', $id));
+        $this->assertSame(200, passwordRequestApprove($this->pdo, $id, $code, 'city_leader', 8, 1, $this->now)['http'], 'Pooja is');
+        $this->assertSame(8, (int)$this->field('handled_by', $id));
+    }
+
+    public function test_a_leader_cannot_act_without_a_known_id(): void
+    {
+        [$id] = $this->ask('sam@t.org');
+        $this->assertSame([], passwordRequestOpenFor($this->pdo, 'city_leader', 1, null, $this->now), 'no actor id: fail closed');
+        $this->assertSame('pending', $this->field('status', $id));
+    }
+
+    public function test_request_is_not_stranded_when_the_team_leader_is_gone(): void
+    {
+        $this->pdo->exec('UPDATE users SET team_leader_id = 8 WHERE id = 3');
+        $this->ask('sam@t.org');
+        $this->assertSame([], $this->openNames(2), 'hidden from Lata while Pooja is active');
+        $this->pdo->exec('UPDATE users SET is_active = 0 WHERE id = 8');            // Pooja deactivated
+        $this->assertSame(['Sam Surveyor'], $this->openNames(2), 'Lata can answer now');
+        $this->pdo->exec('UPDATE users SET is_active = 1, role = \'surveyor\' WHERE id = 8');   // Pooja demoted
+        $this->assertSame(['Sam Surveyor'], $this->openNames(2));
+        $this->pdo->exec('UPDATE users SET role = \'city_leader\', city_id = 2 WHERE id = 8');    // Pooja moved to another city
+        $this->assertSame(['Sam Surveyor'], $this->openNames(2));
+    }
+
+    public function test_admin_inbox_is_not_affected_by_teams(): void
+    {
+        $this->pdo->exec('UPDATE users SET team_leader_id = 8 WHERE id = 2');   // even a leader row with a team value
+        $this->ask('lata@t.org'); $this->ask('pooja@t.org');
+        $this->assertSame(['Lata Leader', 'Pooja Leader'], array_column(passwordRequestOpenFor($this->pdo, 'admin', null, 1, $this->now), 'name'));
     }
 
     // -- approve: the permission matrix -----------------------------
@@ -198,7 +262,7 @@ class PasswordRequestTest extends TestCase
         $this->assertSame(403, passwordRequestApprove($this->pdo, $id, $code, 'city_leader', 2, 1, $this->now)['http'], 'no longer in the leader\'s city');
         $this->pdo->exec('UPDATE users SET city_id = 1, is_active = 0 WHERE id = 3');
         $this->assertSame(403, passwordRequestApprove($this->pdo, $id, $code, 'city_leader', 2, 1, $this->now)['http'], 'deactivated');
-        $this->assertSame([], passwordRequestOpenFor($this->pdo, 'city_leader', 1, $this->now));
+        $this->assertSame([], passwordRequestOpenFor($this->pdo, 'city_leader', 1, 2, $this->now));
         $this->pdo->exec('UPDATE users SET is_active = 1, role = \'admin\' WHERE id = 3');   // promoted to Admin meanwhile
         $this->assertSame(403, passwordRequestApprove($this->pdo, $id, $code, 'city_leader', 2, 1, $this->now)['http']);
     }
