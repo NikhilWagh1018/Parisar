@@ -125,12 +125,12 @@ $today = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d'
               <td><strong><?= $h($pr['name']) ?></strong><span class="pd-sub"><?= $h(cityAuditDateLabel($pr['date'], (int)substr($pr['date'], 0, 4))) ?> · <?= $h($pr['detail']) ?></span></td>
               <td><?= $h($pr['city']) ?></td>
               <td><?php if ($pr['hidden']): ?><span class="pd-chip pd-chip-past">Hidden from home page</span><?php else: ?><span class="pd-chip <?= $pr['kind'] === 'past' ? 'pd-chip-past' : 'pd-chip-published' ?>"><?= $pr['kind'] === 'past' ? 'Past audit' : 'Live audit' ?></span><?php endif; ?></td>
-              <td class="pd-nowrap pd-actions">
+              <td class="pd-nowrap"><div class="pd-actions">
                 <?php if ($pr['view'] !== ''): ?><a class="pd-link" href="<?= $h($pr['view']) ?>" target="_blank" rel="noopener">View report</a><?php else: ?><span class="pd-sub">No report file</span><?php endif; ?>
                 <?php if ($pr['kind'] === 'live' && $pr['hidden']): ?><button type="button" class="pd-link pubRepublish" data-id="<?= (int)$pr['id'] ?>" data-name="<?= $h($pr['name']) ?>">Publish again</button>
                 <?php elseif ($pr['kind'] === 'live'): ?><button type="button" class="pd-link pubUnpublish" data-id="<?= (int)$pr['id'] ?>" data-name="<?= $h($pr['name']) ?>">Unpublish</button><?php endif; ?>
                 <button type="button" class="pd-link pd-link-danger pubDelete" data-kind="<?= $h($pr['kind']) ?>" data-id="<?= (int)$pr['id'] ?>" data-name="<?= $h($pr['name']) ?>">Delete</button>
-              </td>
+              </div></td>
             </tr>
           <?php endforeach; ?>
           </tbody>
