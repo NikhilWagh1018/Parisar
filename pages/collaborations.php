@@ -146,7 +146,7 @@ $notices = [
         </div>
         <input id="coLogo" name="logo" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
         <input type="hidden" name="remove_logo" id="coRemoveFlag" value="">
-        <div class="ca-hint">A wide logo on a plain or transparent background looks best. Without one, the card shows the organisation's initials.</div>
+        <div class="ca-hint">Any shape or size works: blank margins are trimmed and the logo is resized and centred automatically, so every logo looks alike on the home page. Without one, the card shows the organisation's initials.</div>
         <div class="ca-err"></div>
       </div>
       <div class="ca-modal-actions full">

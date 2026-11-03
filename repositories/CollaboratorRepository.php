@@ -9,6 +9,8 @@ declare(strict_types=1);
 //  Plain SQL that runs on MySQL and on SQLite (the tests use SQLite).
 // ═══════════════════════════════════════════════════════════════
 
+require_once __DIR__ . '/../helpers/LogoNormalizer.php';
+
 class CollaboratorRepository
 {
     private const COLS = "id, name, role_label, website_url, sort_order, is_visible, updated_at,
@@ -22,8 +24,11 @@ class CollaboratorRepository
         $mime = null;
         $data = null;
         if ($clean['logo'] !== null) {
-            $mime = (string)$clean['logo']['mime'];
-            $data = (string)file_get_contents((string)$clean['logo']['tmp']);
+            // Every logo is stored the same way: trimmed, evenly sized, centred (helpers/LogoNormalizer.php).
+            [$mime, $data] = collaboratorLogoNormalize(
+                (string)file_get_contents((string)$clean['logo']['tmp']),
+                (string)$clean['logo']['mime']
+            );
         }
         $next = (int)$this->pdo->query('SELECT COALESCE(MAX(sort_order), 0) + 1 FROM collaborators WHERE deleted_at IS NULL')->fetchColumn();
         $stmt = $this->pdo->prepare(
@@ -62,8 +67,12 @@ class CollaboratorRepository
         $stmt->bindValue($i++, $clean['role_label'], $clean['role_label'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $stmt->bindValue($i++, $clean['website_url'], $clean['website_url'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         if ($logo !== null) {
-            $stmt->bindValue($i++, (string)$logo['mime']);
-            $stmt->bindValue($i++, (string)file_get_contents((string)$logo['tmp']), PDO::PARAM_LOB);
+            [$nMime, $nData] = collaboratorLogoNormalize(
+                (string)file_get_contents((string)$logo['tmp']),
+                (string)$logo['mime']
+            );
+            $stmt->bindValue($i++, $nMime);
+            $stmt->bindValue($i++, $nData, PDO::PARAM_LOB);
         }
         $stmt->bindValue($i, $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -122,6 +131,34 @@ class CollaboratorRepository
             $bytes = stream_get_contents($bytes);
         }
         return ($bytes === null || $bytes === false || $bytes === '') ? null : [(string)$row['logo_mime'], (string)$bytes];
+    }
+
+    /**
+     * A logo saved before logos were normalised is converted the first time it is asked for, and the
+     * converted picture is kept. updated_at moves on, which changes the logo's address (&v=), so no
+     * browser holds on to the old picture. Returns the logo to send: [mime, bytes].
+     *
+     * @param array{0:string,1:string} $logo [mime, bytes] as stored
+     * @return array{0:string,1:string}
+     */
+    public function upgradeLogo(int $id, array $logo): array
+    {
+        if (collaboratorLogoIsNormalized($logo[1])) {
+            return $logo;
+        }
+        [$mime, $bytes] = collaboratorLogoNormalize($logo[1], $logo[0]);
+        if ($bytes === $logo[1]) {
+            return $logo;                    // could not be processed: leave it as it is
+        }
+        $stmt = $this->pdo->prepare(
+            'UPDATE collaborators SET logo_mime = ?, logo_data = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ? AND deleted_at IS NULL'
+        );
+        $stmt->bindValue(1, $mime);
+        $stmt->bindValue(2, $bytes, PDO::PARAM_LOB);
+        $stmt->bindValue(3, $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return [$mime, $bytes];
     }
 
     public function setVisible(int $id, bool $visible): bool
