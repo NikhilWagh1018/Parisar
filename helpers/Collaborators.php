@@ -12,6 +12,9 @@ declare(strict_types=1);
 const COLLAB_MAX_LOGO_BYTES = 1024 * 1024;   // 1 MB
 const COLLAB_MAX_LOGO_SIDE  = 4000;          // pixels
 const COLLAB_MIN_LOGO_SIDE  = 24;            // pixels
+const COLLAB_SCALE_MIN      = 50;            // logo size inside its round tile, in percent ...
+const COLLAB_SCALE_MAX      = 150;           // ... 100 = the automatic fit
+const COLLAB_SCALE_DEFAULT  = 100;
 
 /** Picture types a logo may have (SVG is left out on purpose: it can carry scripts). */
 const COLLAB_LOGO_TYPES = [
@@ -24,7 +27,7 @@ const COLLAB_LOGO_TYPES = [
 /**
  * Check what the Admin typed.
  *
- * @param array<string,mixed>      $in   posted fields (name, role_label, website_url, remove_logo)
+ * @param array<string,mixed>      $in   posted fields (name, role_label, website_url, logo_scale, remove_logo)
  * @param array<string,mixed>|null $file the logo's $_FILES entry (null or no file chosen = no new logo)
  * @return array{errors:array<string,string>,clean:array<string,mixed>}
  */
@@ -53,6 +56,18 @@ function collaboratorValidate(array $in, ?array $file): array
         }
     }
 
+    // The logo's size inside its circle (percent). Not sent = null = leave the saved size alone.
+    $scale = null;
+    $scaleRaw = trim((string)($in['logo_scale'] ?? ''));
+    if ($scaleRaw !== '') {
+        $n = filter_var($scaleRaw, FILTER_VALIDATE_INT);
+        if ($n === false || $n < COLLAB_SCALE_MIN || $n > COLLAB_SCALE_MAX) {
+            $e['logo_scale'] = 'Choose a logo size from ' . COLLAB_SCALE_MIN . '% to ' . COLLAB_SCALE_MAX . '%.';
+        } else {
+            $scale = (int)$n;
+        }
+    }
+
     $logo = null;
     $hasFile = $file !== null && (int)($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
     if ($hasFile) {
@@ -68,7 +83,7 @@ function collaboratorValidate(array $in, ?array $file): array
 
     return ['errors' => $e, 'clean' => [
         'name' => $name, 'role_label' => $role === '' ? null : $role, 'website_url' => $url,
-        'logo' => $logo, 'remove_logo' => $remove && $logo === null,
+        'logo' => $logo, 'logo_scale' => $scale, 'remove_logo' => $remove && $logo === null,
     ]];
 }
 
@@ -159,7 +174,15 @@ function collaboratorShape(array $row): array
         'role'     => ($row['role_label'] ?? null) === null || $row['role_label'] === '' ? null : (string)$row['role_label'],
         'url'      => ($row['website_url'] ?? null) === null || $row['website_url'] === '' ? null : (string)$row['website_url'],
         'logo_url' => ((int)($row['has_logo'] ?? 0)) === 1 ? '/api/public/collaborator_logo.php?id=' . $id . '&v=' . $v : null,
+        'logo_scale' => collaboratorScaleOf($row['logo_scale'] ?? null),
     ];
+}
+
+/** A stored logo size as a safe whole percent (anything unusable becomes the automatic fit). */
+function collaboratorScaleOf(mixed $v): int
+{
+    $n = filter_var($v, FILTER_VALIDATE_INT);
+    return ($n !== false && $n >= COLLAB_SCALE_MIN && $n <= COLLAB_SCALE_MAX) ? (int)$n : COLLAB_SCALE_DEFAULT;
 }
 
 /** Send a logo picture to the browser (shared by the public and the Admin endpoints). */

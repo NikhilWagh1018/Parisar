@@ -45,6 +45,11 @@
   var prev = document.getElementById('coLogoPrev');
   var mark = document.getElementById('coLogoMark');          // the initials shown when there is no logo
   var removeBtn = document.getElementById('coLogoRemove');
+  var disc = document.getElementById('coDisc');              // the round tile the preview sits in
+  var scaleField = document.getElementById('coScaleField');  // the size slider, shown only while there is a logo
+  var scaleIn = form.elements['logo_scale'];
+  var scaleOut = document.getElementById('coScaleOut');
+  var SCALE_DEFAULT = 100;
   var removeFlag = form.elements['remove_logo'];             // hidden: "1" = take the current logo away on save
   var savedSrc = '';          // the logo the collaborator has now (edit only)
 
@@ -65,7 +70,14 @@
       if (e) e.textContent = fields[name];
     });
   }
+  // The slider's value, drawn in the preview circle exactly as the home page draws it.
+  function applyScale() {
+    var n = parseInt(scaleIn.value, 10) || SCALE_DEFAULT;
+    disc.style.setProperty('--ls', String(n / 100));
+    scaleOut.textContent = n + '%';
+  }
   // With no logo the preview is the organisation's initials, the same as on the home page.
+  // The size slider only makes sense while there is a logo to size.
   function setPreview(src) {
     if (src) {
       prev.src = src; prev.hidden = false; mark.hidden = true;
@@ -74,6 +86,7 @@
       mark.textContent = initials(form.elements['name'].value);
       mark.hidden = false;
     }
+    scaleField.hidden = !src;
   }
   // The preview to show when no new file is chosen: the saved logo, unless it is being removed.
   function resetPreview() {
@@ -89,6 +102,8 @@
     form.elements['name'].value = edit ? data.name : '';
     form.elements['role_label'].value = edit ? data.role : '';
     form.elements['website_url'].value = edit ? data.url : '';
+    scaleIn.value = edit && data.scale ? data.scale : SCALE_DEFAULT;
+    applyScale();
     savedSrc = edit && data.logo ? data.logoSrc : '';
     removeFlag.value = '';
     resetPreview();
@@ -103,7 +118,8 @@
   document.querySelectorAll('.coEdit').forEach(function (b) {
     b.addEventListener('click', function () {
       openForm({ id: b.dataset.id, name: b.dataset.name, role: b.dataset.role, url: b.dataset.url,
-                 logo: b.dataset.logo === '1', logoSrc: b.dataset.logoSrc });
+                 logo: b.dataset.logo === '1', logoSrc: b.dataset.logoSrc,
+                 scale: parseInt(b.dataset.scale, 10) || SCALE_DEFAULT });
     });
   });
 
@@ -122,6 +138,11 @@
     var r = new FileReader();
     r.onload = function () { setPreview(String(r.result)); };
     r.readAsDataURL(f);
+  });
+  scaleIn.addEventListener('input', applyScale);
+  document.getElementById('coScaleReset').addEventListener('click', function () {
+    scaleIn.value = SCALE_DEFAULT;
+    applyScale();
   });
   removeBtn.addEventListener('click', function () {
     removeFlag.value = '1';

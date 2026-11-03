@@ -61,13 +61,13 @@ class LogoNormalizerTest extends TestCase
         }
     }
 
-    public function testLogoIsCentredAndInsideTheMargins(): void
+    public function testLogoIsCentredAndItsCornersStayInsideTheCircle(): void
     {
-        foreach ([[200, 200], [900, 120], [80, 400]] as [$w, $h]) {
+        foreach ([[200, 200], [900, 120], [80, 400], [1000, 100]] as [$w, $h]) {
             [, $bytes] = collaboratorLogoNormalize($this->logo($w, $h), 'image/png');
             [$x0, $y0, $x1, $y1] = $this->visibleBox($bytes);
-            $this->assertLessThanOrEqual(COLLAB_LOGO_CAP_W + 3, $x1 - $x0 + 1, "$w x $h width");
-            $this->assertLessThanOrEqual(COLLAB_LOGO_CAP_H + 3, $y1 - $y0 + 1, "$w x $h height");
+            $halfDiagonal = sqrt(($x1 - $x0 + 1) ** 2 + ($y1 - $y0 + 1) ** 2) / 2;
+            $this->assertLessThanOrEqual(COLLAB_LOGO_CIRCLE / 2 + 3, $halfDiagonal, "$w x $h fits the inner circle");
             $this->assertEqualsWithDelta((COLLAB_CANVAS_W - 1) / 2, ($x0 + $x1) / 2, 2.0, "$w x $h centred across");
             $this->assertEqualsWithDelta((COLLAB_CANVAS_H - 1) / 2, ($y0 + $y1) / 2, 2.0, "$w x $h centred down");
         }
@@ -104,8 +104,10 @@ class LogoNormalizerTest extends TestCase
         [, $square] = collaboratorLogoNormalize($this->logo(400, 400), 'image/png');
         [, $wide]   = collaboratorLogoNormalize($this->logo(800, 200), 'image/png');
         $ratio = $area($wide) / $area($square);
-        $this->assertGreaterThan(0.7, $ratio);
-        $this->assertLessThan(1.6, $ratio);
+        // A very wide logo is kept inside the circle, so it carries a little less area than a square one
+        // (but is wider), and never more.
+        $this->assertGreaterThan(0.45, $ratio);
+        $this->assertLessThan(1.2, $ratio);
     }
 
     public function testBadgeOnASolidColourKeepsItsBackground(): void
@@ -125,6 +127,16 @@ class LogoNormalizerTest extends TestCase
         $this->assertSame(['image/png', ''], collaboratorLogoNormalize('', 'image/png'));
         $header = "\x89PNG\r\n\x1a\n" . pack('N', 13) . 'IHDR' . pack('NN', 120, 60) . "\x08\x06\x00\x00\x00" . "\0\0\0\0";
         $this->assertSame(['image/png', $header], collaboratorLogoNormalize($header, 'image/png'));   // a header with no picture data
+    }
+
+    public function testALogoFromTheOldTwoToOneCanvasIsUpgraded(): void
+    {
+        $old = $this->logo(320, 160, 'clear', 30);         // the size every logo was stored at before the round tile
+        $this->assertFalse(collaboratorLogoIsNormalized($old));
+        [, $bytes] = collaboratorLogoNormalize($old, 'image/png');
+        $this->assertTrue(collaboratorLogoIsNormalized($bytes));
+        $info = getimagesizefromstring($bytes);
+        $this->assertSame([320, 320], [$info[0], $info[1]]);
     }
 
     public function testAnAlreadyNormalisedLogoIsRecognised(): void
@@ -149,7 +161,7 @@ class LogoNormalizerTest extends TestCase
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec('CREATE TABLE collaborators (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, role_label TEXT NULL,
             website_url TEXT NULL, logo_mime TEXT NULL, logo_data BLOB NULL, sort_order INTEGER NOT NULL DEFAULT 0,
-            is_visible INTEGER NOT NULL DEFAULT 1, created_by INTEGER NOT NULL,
+            is_visible INTEGER NOT NULL DEFAULT 1, logo_scale INTEGER NOT NULL DEFAULT 100, created_by INTEGER NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, deleted_at TEXT NULL)');
         $old = $this->logo(700, 300, 'white', 40);
         $stmt = $pdo->prepare("INSERT INTO collaborators (name, logo_mime, logo_data, created_by, updated_at) VALUES ('A', 'image/png', ?, 1, '2020-01-01 00:00:00')");

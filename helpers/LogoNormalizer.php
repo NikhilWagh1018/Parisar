@@ -6,19 +6,20 @@ declare(strict_types=1);
 //  Makes every collaborator logo the same kind of picture, whatever the Admin uploads:
 //    - blank margins (white or transparent) are trimmed off,
 //    - the logo is scaled by its AREA, so a wide wordmark and a square emblem carry the same
-//      visual weight (capped so neither can touch the edges),
-//    - it is centred on one fixed transparent canvas (320 x 160, a 2:1 box),
+//      visual weight, and its corners are kept inside one common inner circle, so nothing is
+//      ever cut off by the round tile it is shown in,
+//    - it is centred on one fixed transparent square canvas (320 x 320),
 //    - and saved as WebP (PNG when the server has no WebP), which is also far smaller.
 //  A logo on a solid colour (a badge) is kept as it is: only its size is normalised.
 //  Anything that cannot be decoded is returned untouched, so an upload never fails because of this.
 //  Needs the GD extension, which the Dockerfile installs.
 // ═══════════════════════════════════════════════════════════════
 
-const COLLAB_CANVAS_W   = 320;     // pixels: the stored size of every logo
-const COLLAB_CANVAS_H   = 160;
-const COLLAB_LOGO_AREA  = 12000;   // the pixel area every logo is aiming for (before the caps below)
-const COLLAB_LOGO_CAP_W = 264;     // the logo never gets wider than this ...
-const COLLAB_LOGO_CAP_H = 100;     // ... or taller than this, which leaves a margin all round
+const COLLAB_CANVAS_W   = 320;     // pixels: the stored size of every logo (a square: it is shown in a circle)
+const COLLAB_CANVAS_H   = 320;
+const COLLAB_LOGO_AREA  = 22000;   // the pixel area every logo is aiming for (before the circle limit below)
+const COLLAB_LOGO_CIRCLE = 236;    // the logo's corners stay inside a circle of this diameter, which
+                                   // leaves a margin inside the round tile (the whole canvas is 320)
 const COLLAB_WORK_SIDE  = 800;     // the picture is analysed at no more than this many pixels a side
 const COLLAB_WHITE      = 235;     // a pixel with every channel at or above this counts as blank white
 const COLLAB_ALPHA_GONE = 100;     // GD alpha (0 opaque .. 127 clear): at or above this = see-through
@@ -86,15 +87,18 @@ function collaboratorLogoRender(string $bytes): ?array
     $cw = $x1 - $x0 + 1;
     $ch = $y1 - $y0 + 1;
 
-    // 3. Its size on the canvas: the same area for every logo, within the caps.
+    // 3. Its size on the canvas: the same area for every logo, shrunk only as far as needed so that
+    //    its diagonal (corner to corner) fits the inner circle. A square or slightly wide logo gets
+    //    the full area; a very wide or very tall one gets a little less.
     $ratio = $cw / $ch;
     $tw = sqrt(COLLAB_LOGO_AREA * $ratio);
     $th = sqrt(COLLAB_LOGO_AREA / $ratio);
-    $fit = min(1.0, COLLAB_LOGO_CAP_W / $tw, COLLAB_LOGO_CAP_H / $th);
+    $diag = sqrt($tw * $tw + $th * $th);
+    $fit = min(1.0, COLLAB_LOGO_CIRCLE / $diag);
     $tw = max(1, (int)round($tw * $fit));
     $th = max(1, (int)round($th * $fit));
 
-    // 4. Centre it on the fixed transparent canvas.
+    // 4. Centre it on the fixed transparent square canvas.
     $canvas = imagecreatetruecolor(COLLAB_CANVAS_W, COLLAB_CANVAS_H);
     imagealphablending($canvas, false);
     imagesavealpha($canvas, true);

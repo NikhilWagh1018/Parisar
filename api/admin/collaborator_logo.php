@@ -25,11 +25,15 @@ if ($CURRENT_USER_ROLE !== 'admin') {
     echo 'Only an Admin can do this.';
     exit;
 }
-$logo = (new CollaboratorRepository($pdo))->logo((int)($_GET['id'] ?? 0), false);
+$repo = new CollaboratorRepository($pdo);
+$id   = (int)($_GET['id'] ?? 0);
+$logo = $repo->logo($id, false);
 if ($logo === null) {
     http_response_code(404);
     header('Content-Type: text/plain; charset=utf-8');
     echo 'No logo.';
     exit;
 }
+// Same as the public address: an older logo is converted (and kept) so the Admin sees what visitors see.
+$logo = $repo->upgradeLogo($id, $logo);
 collaboratorSendLogo($logo[0], $logo[1], false);
