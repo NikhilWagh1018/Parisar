@@ -43,9 +43,16 @@
   var saveBtn = document.getElementById('coFormSave');
   var title = document.getElementById('coFormTitle');
   var prev = document.getElementById('coLogoPrev');
-  var removeWrap = document.getElementById('coRemoveWrap');
-  var removeBox = form.elements['remove_logo'];
+  var mark = document.getElementById('coLogoMark');          // the initials shown when there is no logo
+  var removeBtn = document.getElementById('coLogoRemove');
+  var removeFlag = form.elements['remove_logo'];             // hidden: "1" = take the current logo away on save
   var savedSrc = '';          // the logo the collaborator has now (edit only)
+
+  // Same initials the home page card shows: first letters of the first two words.
+  function initials(name) {
+    var w = (String(name).match(/[\p{L}\p{N}]+/gu) || []).slice(0, 2);
+    return w.map(function (x) { return x.charAt(0).toUpperCase(); }).join('') || '?';
+  }
 
   function showErrors(fields) {
     form.querySelectorAll('.ca-field').forEach(function (f) { f.classList.remove('bad'); });
@@ -58,8 +65,21 @@
       if (e) e.textContent = fields[name];
     });
   }
+  // With no logo the preview is the organisation's initials, the same as on the home page.
   function setPreview(src) {
-    if (src) { prev.src = src; prev.hidden = false; } else { prev.removeAttribute('src'); prev.hidden = true; }
+    if (src) {
+      prev.src = src; prev.hidden = false; mark.hidden = true;
+    } else {
+      prev.removeAttribute('src'); prev.hidden = true;
+      mark.textContent = initials(form.elements['name'].value);
+      mark.hidden = false;
+    }
+  }
+  // The preview to show when no new file is chosen: the saved logo, unless it is being removed.
+  function resetPreview() {
+    var removed = removeFlag.value === '1';
+    setPreview(removed ? '' : savedSrc);
+    removeBtn.hidden = removed || !savedSrc;
   }
 
   function openForm(data) {
@@ -70,8 +90,8 @@
     form.elements['role_label'].value = edit ? data.role : '';
     form.elements['website_url'].value = edit ? data.url : '';
     savedSrc = edit && data.logo ? data.logoSrc : '';
-    setPreview(savedSrc);
-    removeWrap.hidden = !savedSrc;
+    removeFlag.value = '';
+    resetPreview();
     title.textContent = edit ? 'Edit collaborator' : 'Add a collaborator';
     saveBtn.textContent = edit ? 'Save changes' : 'Add collaborator';
     open(formBg);
@@ -89,21 +109,28 @@
 
   form.elements['logo'].addEventListener('change', function () {
     var f = form.elements['logo'].files[0];
-    if (!f) { setPreview(removeBox.checked ? '' : savedSrc); return; }
+    if (!f) { resetPreview(); return; }
     if (f.size > MAX_LOGO) {
       showErrors({ logo: 'The logo is too large. The limit is 1 MB.' });
       form.elements['logo'].value = '';
-      setPreview(removeBox.checked ? '' : savedSrc);
+      resetPreview();
       return;
     }
     showErrors({});
+    removeFlag.value = '';          // a new logo replaces the old one, so there is nothing to remove
+    removeBtn.hidden = true;
     var r = new FileReader();
     r.onload = function () { setPreview(String(r.result)); };
     r.readAsDataURL(f);
   });
-  removeBox.addEventListener('change', function () {
-    if (form.elements['logo'].files[0]) return;
-    setPreview(removeBox.checked ? '' : savedSrc);
+  removeBtn.addEventListener('click', function () {
+    removeFlag.value = '1';
+    form.elements['logo'].value = '';
+    resetPreview();
+  });
+  // While there is no logo, the initials follow the name as it is typed.
+  form.elements['name'].addEventListener('input', function () {
+    if (prev.hidden) mark.textContent = initials(form.elements['name'].value);
   });
 
   form.addEventListener('submit', async function (ev) {

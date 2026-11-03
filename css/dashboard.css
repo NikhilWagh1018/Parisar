@@ -683,5 +683,7 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 .co-thumb-empty { display: inline-flex; align-items: center; justify-content: center; background: var(--gp); color: var(--g); font-weight: 700; font-size: .85rem; padding: 0; }
 .co-logo-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .co-logo-row img[hidden] { display: none; }
-.co-check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .85rem; font-weight: 500; }
+.co-logo-row .co-thumb-empty[hidden] { display: none; }
+.co-logo-row .pd-link { background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit; font-size: .82rem; }
+.co-logo-row + input[type="file"] { margin-top: 10px; }
 .pd-actions .pd-link:disabled { opacity: .35; cursor: default; }

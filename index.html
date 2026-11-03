@@ -11,7 +11,7 @@
 <meta property="og:image" content="https://cycleaudit.parisar.org/assets/parisar-logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/landing.css?v=9">
+<link rel="stylesheet" href="css/landing.css?v=10">
 <script type="speculationrules">{"prerender":[{"where":{"href_matches":"/auth/login.php"},"eagerness":"moderate"}]}</script>
 </head>
 <body>
@@ -159,8 +159,10 @@
   <p class="cg-msg" id="cities-msg" aria-live="polite"></p>
 </div></section>
 <section id="collaborations" hidden><div class="mw">
-  <div class="ey">Collaborations</div><h2>Working with Parisar</h2>
-  <p class="sub">CycleAudit exists because of the organisations that work with Parisar to make cycling safer and easier in our cities.</p>
+  <div class="collab-head">
+    <div class="ey">Collaborations</div><h2>Working with Parisar</h2>
+    <p class="sub">CycleAudit exists because of the organisations that work with Parisar to make cycling safer and easier in our cities.</p>
+  </div>
   <div class="collab-grid" id="collab-grid"></div>
 </div></section>
 <section id="cta"><div class="mw">
@@ -195,7 +197,7 @@
 <button id="topBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script src="js/landing.js?v=4"></script>
 <script src="js/landing_audits.js?v=6"></script>
-<script src="js/landing_collab.js?v=1"></script>
+<script src="js/landing_collab.js?v=2"></script>
 <script>
 (function () {
   var cityEl  = document.getElementById('stat-city');
