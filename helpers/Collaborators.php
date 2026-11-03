@@ -15,6 +15,8 @@ const COLLAB_MIN_LOGO_SIDE  = 24;            // pixels
 const COLLAB_SCALE_MIN      = 50;            // logo size inside its round tile, in percent ...
 const COLLAB_SCALE_MAX      = 150;           // ... 100 = the automatic fit
 const COLLAB_SCALE_DEFAULT  = 100;
+const COLLAB_POS_MIN        = -50;           // logo position inside its round tile, in percent of the tile ...
+const COLLAB_POS_MAX        = 50;            // ... 0 = centred
 
 /** Picture types a logo may have (SVG is left out on purpose: it can carry scripts). */
 const COLLAB_LOGO_TYPES = [
@@ -27,7 +29,7 @@ const COLLAB_LOGO_TYPES = [
 /**
  * Check what the Admin typed.
  *
- * @param array<string,mixed>      $in   posted fields (name, role_label, website_url, logo_scale, remove_logo)
+ * @param array<string,mixed>      $in   posted fields (name, role_label, website_url, logo_scale, logo_x, logo_y, remove_logo)
  * @param array<string,mixed>|null $file the logo's $_FILES entry (null or no file chosen = no new logo)
  * @return array{errors:array<string,string>,clean:array<string,mixed>}
  */
@@ -68,6 +70,21 @@ function collaboratorValidate(array $in, ?array $file): array
         }
     }
 
+    // Where the logo sits in its circle (percent of the tile, 0 = centred). Not sent = null = unchanged.
+    $pos = ['logo_x' => null, 'logo_y' => null];
+    foreach (array_keys($pos) as $k) {
+        $raw = trim((string)($in[$k] ?? ''));
+        if ($raw === '') {
+            continue;
+        }
+        $n = filter_var($raw, FILTER_VALIDATE_INT);
+        if ($n === false || $n < COLLAB_POS_MIN || $n > COLLAB_POS_MAX) {
+            $e[$k] = 'The logo position must stay within the circle.';
+        } else {
+            $pos[$k] = (int)$n;
+        }
+    }
+
     $logo = null;
     $hasFile = $file !== null && (int)($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
     if ($hasFile) {
@@ -83,7 +100,7 @@ function collaboratorValidate(array $in, ?array $file): array
 
     return ['errors' => $e, 'clean' => [
         'name' => $name, 'role_label' => $role === '' ? null : $role, 'website_url' => $url,
-        'logo' => $logo, 'logo_scale' => $scale, 'remove_logo' => $remove && $logo === null,
+        'logo' => $logo, 'logo_scale' => $scale, 'logo_x' => $pos['logo_x'], 'logo_y' => $pos['logo_y'], 'remove_logo' => $remove && $logo === null,
     ]];
 }
 
@@ -175,6 +192,8 @@ function collaboratorShape(array $row): array
         'url'      => ($row['website_url'] ?? null) === null || $row['website_url'] === '' ? null : (string)$row['website_url'],
         'logo_url' => ((int)($row['has_logo'] ?? 0)) === 1 ? '/api/public/collaborator_logo.php?id=' . $id . '&v=' . $v : null,
         'logo_scale' => collaboratorScaleOf($row['logo_scale'] ?? null),
+        'logo_x'   => collaboratorPosOf($row['logo_x'] ?? null),
+        'logo_y'   => collaboratorPosOf($row['logo_y'] ?? null),
     ];
 }
 
@@ -183,6 +202,13 @@ function collaboratorScaleOf(mixed $v): int
 {
     $n = filter_var($v, FILTER_VALIDATE_INT);
     return ($n !== false && $n >= COLLAB_SCALE_MIN && $n <= COLLAB_SCALE_MAX) ? (int)$n : COLLAB_SCALE_DEFAULT;
+}
+
+/** A stored logo position as a safe whole percent (anything unusable becomes centred). */
+function collaboratorPosOf(mixed $v): int
+{
+    $n = filter_var($v, FILTER_VALIDATE_INT);
+    return ($n !== false && $n >= COLLAB_POS_MIN && $n <= COLLAB_POS_MAX) ? (int)$n : 0;
 }
 
 /** Send a logo picture to the browser (shared by the public and the Admin endpoints). */

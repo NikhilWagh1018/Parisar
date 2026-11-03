@@ -161,7 +161,7 @@ class LogoNormalizerTest extends TestCase
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec('CREATE TABLE collaborators (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, role_label TEXT NULL,
             website_url TEXT NULL, logo_mime TEXT NULL, logo_data BLOB NULL, sort_order INTEGER NOT NULL DEFAULT 0,
-            is_visible INTEGER NOT NULL DEFAULT 1, logo_scale INTEGER NOT NULL DEFAULT 100, created_by INTEGER NOT NULL,
+            is_visible INTEGER NOT NULL DEFAULT 1, logo_scale INTEGER NOT NULL DEFAULT 100, logo_x INTEGER NOT NULL DEFAULT 0, logo_y INTEGER NOT NULL DEFAULT 0, created_by INTEGER NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, deleted_at TEXT NULL)');
         $old = $this->logo(700, 300, 'white', 40);
         $stmt = $pdo->prepare("INSERT INTO collaborators (name, logo_mime, logo_data, created_by, updated_at) VALUES ('A', 'image/png', ?, 1, '2020-01-01 00:00:00')");

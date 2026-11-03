@@ -78,7 +78,7 @@ $notices = [
       <p class="pd-card-note">
         Visitors see the ones marked “Shown”, in this order, in a Collaborations section on the home page.
         <?php if (!$shown): ?><b>Nothing is shown yet, so the section is not on the home page.</b><?php endif; ?>
-        Hide takes one off the page without deleting it. Logos can be PNG, JPG, WebP or GIF, up to 1 MB, and are shown in a circle; the size of each can be set when you add or edit it.
+        Hide takes one off the page without deleting it. Logos can be PNG, JPG, WebP or GIF, up to 1 MB, and are shown in a circle; when you add or edit one you can drag the logo and resize it inside the circle.
       </p>
       <div class="pd-scroll">
         <table class="pd-table">
@@ -91,7 +91,7 @@ $notices = [
             <tr<?= $vis ? '' : ' style="opacity:.62"' ?>>
               <td>
                 <?php if ((int)$r['has_logo'] === 1): ?>
-                  <span class="co-disc" style="--ls:<?= $h(collaboratorScaleOf($r['logo_scale'] ?? null) / 100) ?>"><img src="../api/admin/collaborator_logo.php?id=<?= (int)$r['id'] ?>&amp;v=<?= (int)strtotime((string)$r['updated_at']) ?>" alt="" loading="lazy"></span>
+                  <span class="co-disc" style="--ls:<?= $h(collaboratorScaleOf($r['logo_scale'] ?? null) / 100) ?>;--lx:<?= collaboratorPosOf($r['logo_x'] ?? null) ?>%;--ly:<?= collaboratorPosOf($r['logo_y'] ?? null) ?>%"><img src="../api/admin/collaborator_logo.php?id=<?= (int)$r['id'] ?>&amp;v=<?= (int)strtotime((string)$r['updated_at']) ?>" alt="" loading="lazy"></span>
                 <?php else: ?>
                   <span class="co-disc co-disc-empty" aria-hidden="true"><?= $h($initials((string)$r['name'])) ?></span>
                 <?php endif; ?>
@@ -102,7 +102,7 @@ $notices = [
               <td class="pd-nowrap"><div class="pd-actions">
                 <button type="button" class="pd-link coMove" data-dir="up" data-id="<?= (int)$r['id'] ?>" aria-label="Move <?= $h($r['name']) ?> up"<?= $i === 0 ? ' disabled' : '' ?>>↑</button>
                 <button type="button" class="pd-link coMove" data-dir="down" data-id="<?= (int)$r['id'] ?>" aria-label="Move <?= $h($r['name']) ?> down"<?= $i === count($rows) - 1 ? ' disabled' : '' ?>>↓</button>
-                <button type="button" class="pd-link coEdit" data-id="<?= (int)$r['id'] ?>" data-name="<?= $h($r['name']) ?>" data-role="<?= $h($r['role_label'] ?? '') ?>" data-url="<?= $h($r['website_url'] ?? '') ?>" data-logo="<?= (int)$r['has_logo'] ?>" data-scale="<?= collaboratorScaleOf($r['logo_scale'] ?? null) ?>" data-logo-src="../api/admin/collaborator_logo.php?id=<?= (int)$r['id'] ?>&amp;v=<?= (int)strtotime((string)$r['updated_at']) ?>">Edit</button>
+                <button type="button" class="pd-link coEdit" data-id="<?= (int)$r['id'] ?>" data-name="<?= $h($r['name']) ?>" data-role="<?= $h($r['role_label'] ?? '') ?>" data-url="<?= $h($r['website_url'] ?? '') ?>" data-logo="<?= (int)$r['has_logo'] ?>" data-scale="<?= collaboratorScaleOf($r['logo_scale'] ?? null) ?>" data-x="<?= collaboratorPosOf($r['logo_x'] ?? null) ?>" data-y="<?= collaboratorPosOf($r['logo_y'] ?? null) ?>" data-logo-src="../api/admin/collaborator_logo.php?id=<?= (int)$r['id'] ?>&amp;v=<?= (int)strtotime((string)$r['updated_at']) ?>">Edit</button>
                 <button type="button" class="pd-link coToggle" data-id="<?= (int)$r['id'] ?>" data-do="<?= $vis ? 'hide' : 'show' ?>"><?= $vis ? 'Hide' : 'Show' ?></button>
                 <button type="button" class="pd-link pd-link-danger coDelete" data-id="<?= (int)$r['id'] ?>" data-name="<?= $h($r['name']) ?>">Remove</button>
               </div></td>
@@ -140,22 +140,22 @@ $notices = [
       <div class="ca-field full">
         <label for="coLogo">Logo <span style="font-weight:400">(optional, PNG, JPG, WebP or GIF, up to 1 MB)</span></label>
         <div class="co-logo-row">
-          <span class="co-disc co-disc-lg" id="coDisc" style="--ls:1"><img id="coLogoPrev" alt="" hidden><span class="co-mark" id="coLogoMark" aria-hidden="true">?</span></span>
-          <button type="button" class="pd-link pd-link-danger" id="coLogoRemove" hidden>Remove logo</button>
+          <span class="co-disc co-disc-lg" id="coDisc" style="--ls:1;--lx:0%;--ly:0%" aria-label="Logo preview"><img id="coLogoPrev" alt="" hidden draggable="false"><span class="co-mark" id="coLogoMark" aria-hidden="true">?</span></span>
+          <div class="co-adjust" id="coAdjust" hidden>
+            <div class="co-tip"><b>Drag the logo</b> to move it inside the circle. Use the slider, or scroll over the circle, to make it bigger or smaller. This is exactly how it looks on the home page.</div>
+            <div class="co-scale">
+              <input id="coScale" name="logo_scale" type="range" min="<?= COLLAB_SCALE_MIN ?>" max="<?= COLLAB_SCALE_MAX ?>" step="5" value="<?= COLLAB_SCALE_DEFAULT ?>" aria-label="Logo size">
+              <output id="coScaleOut" for="coScale"><?= COLLAB_SCALE_DEFAULT ?>%</output>
+              <button type="button" class="pd-link" id="coScaleReset">Reset</button>
+            </div>
+            <div><button type="button" class="pd-link pd-link-danger" id="coLogoRemove" hidden>Remove logo</button></div>
+          </div>
         </div>
+        <input type="hidden" name="logo_x" id="coX" value="0">
+        <input type="hidden" name="logo_y" id="coY" value="0">
         <input id="coLogo" name="logo" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
         <input type="hidden" name="remove_logo" id="coRemoveFlag" value="">
-        <div class="ca-hint">Any shape or size works: blank margins are trimmed and the logo is resized and centred in a circle automatically, so every logo looks alike on the home page. Without one, the card shows the organisation's initials.</div>
-        <div class="ca-err"></div>
-      </div>
-      <div class="ca-field full co-scale-field" id="coScaleField" hidden>
-        <label for="coScale">Logo size in the circle</label>
-        <div class="co-scale">
-          <input id="coScale" name="logo_scale" type="range" min="<?= COLLAB_SCALE_MIN ?>" max="<?= COLLAB_SCALE_MAX ?>" step="5" value="<?= COLLAB_SCALE_DEFAULT ?>">
-          <output id="coScaleOut" for="coScale"><?= COLLAB_SCALE_DEFAULT ?>%</output>
-          <button type="button" class="pd-link" id="coScaleReset">Automatic</button>
-        </div>
-        <div class="ca-hint">The preview above is exactly how it looks on the home page. 100% is the automatic fit; make it smaller or larger if this logo looks too big or too small next to the others.</div>
+        <div class="ca-hint">Any shape or size works: blank margins are trimmed and the logo is fitted into the circle automatically, so every logo starts out looking alike. Then you can move and resize it in the circle above. Without a logo, the card shows the organisation's initials.</div>
         <div class="ca-err"></div>
       </div>
       <div class="ca-modal-actions full">
