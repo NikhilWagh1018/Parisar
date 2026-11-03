@@ -31,6 +31,7 @@
             <file>tests/AdminApprovalTest.php</file>
             <file>tests/SidebarCountsTest.php</file>
             <file>tests/CollaboratorsTest.php</file>
+            <file>tests/LogoNormalizerTest.php</file>
         </testsuite>
         <testsuite name="Integration">
             <file>tests/SegmentRepositoryTest.php</file>

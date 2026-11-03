@@ -38,8 +38,12 @@ if (!$rl['allowed']) {
     collabLogoPlain(429, 'Too many requests. Please try again in a minute.');
 }
 
-$logo = (new CollaboratorRepository($pdo))->logo((int)($_GET['id'] ?? 0), true);
+$repo = new CollaboratorRepository($pdo);
+$id   = (int)($_GET['id'] ?? 0);
+$logo = $repo->logo($id, true);
 if ($logo === null) {
     collabLogoPlain(404, 'No logo.');
 }
+// A logo from before logos were normalised is converted (and kept) the first time it is shown.
+$logo = $repo->upgradeLogo($id, $logo);
 collaboratorSendLogo($logo[0], $logo[1], true);
