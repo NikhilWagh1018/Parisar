@@ -45,6 +45,8 @@ $rsItem = static function (string $key, string $href, string $label, int $badge 
     <div class="nav-section">Admin</div>
     <?= $rsItem('users', 'admin_surveyors.php', 'Users') ?>
     <?= $rsItem('activity', 'admin_activity.php', 'Activity Log') ?>
+    <div class="nav-section">Home page</div>
+    <?= $rsItem('collab', 'collaborations.php', 'Collaborations') ?>
     <?php endif; ?>
   </nav>
   <div class="sb-user">

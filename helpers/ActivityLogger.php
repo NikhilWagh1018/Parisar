@@ -39,6 +39,11 @@ class ActivityLogger
     public const AUDIT_REPUBLISHED       = 'audit_republished';
     public const PAST_AUDIT_ADDED        = 'past_audit_added';
     public const PAST_AUDIT_DELETED      = 'past_audit_deleted';
+    public const COLLABORATOR_ADDED      = 'collaborator_added';
+    public const COLLABORATOR_UPDATED    = 'collaborator_updated';
+    public const COLLABORATOR_SHOWN      = 'collaborator_shown';
+    public const COLLABORATOR_HIDDEN     = 'collaborator_hidden';
+    public const COLLABORATOR_REMOVED    = 'collaborator_removed';
     public const PASSWORD_REQUEST_APPROVED  = 'password_request_approved';
     public const PASSWORD_REQUEST_DISMISSED = 'password_request_dismissed';
     public const TEAM_MEMBER_ADDED          = 'team_member_added';

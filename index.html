@@ -21,7 +21,7 @@
     <span class="ln-sep" style="width:1px;height:22px;background:var(--bd);margin:0 4px;display:inline-block;vertical-align:middle;"></span>
     <span class="ln">CycleAudit</span>
   </a>
-  <div class="nl" id="nl"><a href="#about">About</a><a href="#how">How It Works</a><a href="#scoring">Scoring</a><a href="#audits">Audit Data</a><a href="#cities">Cities</a><a href="auth/login.php" class="cta">Sign In</a></div>
+  <div class="nl" id="nl"><a href="#about">About</a><a href="#how">How It Works</a><a href="#scoring">Scoring</a><a href="#audits">Audit Data</a><a href="#cities">Cities</a><a href="#collaborations" id="nav-collab" hidden>Collaborations</a><a href="auth/login.php" class="cta">Sign In</a></div>
   <div class="ham" id="ham" onclick="document.getElementById('nl').classList.toggle('open')"><span></span><span></span><span></span></div>
 </nav>
 <section id="hero">
@@ -158,6 +158,11 @@
   <div class="cg" id="cities-grid"><p class="cg-empty">Loading cities…</p></div>
   <p class="cg-msg" id="cities-msg" aria-live="polite"></p>
 </div></section>
+<section id="collaborations" hidden><div class="mw">
+  <div class="ey">Collaborations</div><h2>Working with Parisar</h2>
+  <p class="sub">CycleAudit exists because of the organisations that work with Parisar to make cycling safer and easier in our cities.</p>
+  <div class="collab-grid" id="collab-grid"></div>
+</div></section>
 <section id="cta"><div class="mw">
   <div class="ey" style="justify-content:center">Audit Teams</div>
   <h2 class="cta-h">Part of a City Audit Team?</h2>
@@ -190,6 +195,7 @@
 <button id="topBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script src="js/landing.js?v=4"></script>
 <script src="js/landing_audits.js?v=6"></script>
+<script src="js/landing_collab.js?v=1"></script>
 <script>
 (function () {
   var cityEl  = document.getElementById('stat-city');

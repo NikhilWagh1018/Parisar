@@ -350,3 +350,19 @@ footer{position:relative;padding-top:72px}
 
 .ax-past{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:99px;background:#e0e7ff;color:#3730a3;font-size:.68rem;font-weight:700;letter-spacing:.02em;vertical-align:1px}
 .ax-audit-note{margin:0;font-size:.8rem;color:var(--gray);line-height:1.4}
+
+/* Collaborations: the organisations working with Parisar (filled in by js/landing_collab.js) */
+#collaborations{background:#f6faec}
+#collaborations[hidden]{display:none}
+.collab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:36px}
+.collab-card{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;padding:26px 16px 20px;background:#fff;border:1px solid var(--bd);border-radius:14px;text-align:center;color:var(--ink);text-decoration:none;animation:fadeUp .55s ease both;transition:transform var(--T),box-shadow var(--T),border-color var(--T)}
+a.collab-card:hover,a.collab-card:focus-visible{transform:translateY(-3px);border-color:var(--gl);box-shadow:0 10px 28px rgba(24,31,16,.09)}
+a.collab-card:focus-visible{outline:2px solid var(--g);outline-offset:2px}
+.collab-logo{display:flex;align-items:center;justify-content:center;width:100%;height:68px}
+.collab-logo img{max-width:100%;max-height:68px;object-fit:contain}
+.collab-mark{display:flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:50%;background:var(--gp);color:var(--g);font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:800}
+.collab-name{font-size:.95rem;font-weight:700;line-height:1.35;color:var(--ink)}
+.collab-role{font-size:.76rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--grl)}
+.collab-visit{font-size:.76rem;font-weight:600;color:var(--g)}
+@media(max-width:640px){.collab-grid{grid-template-columns:repeat(2,1fr);gap:12px}.collab-card{padding:20px 10px 16px}}
+@media(prefers-reduced-motion:reduce){.collab-card{animation:none;transition:none}a.collab-card:hover{transform:none}}
