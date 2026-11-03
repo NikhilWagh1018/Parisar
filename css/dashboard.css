@@ -677,3 +677,11 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 .pd-cond-bad { background: #fee2e2; color: #b91c1c; }
 .pd-cond-very-bad { background: #f5d0d0; color: #8e1010; }
 @media (max-width: 640px) { .pd-filters label, .pd-filters select, .pd-filters input, .pd-fsearch input { width: 100%; min-width: 0; } .pd-fclear { width: 100%; } }
+
+/* Collaborations (Admin page) */
+.co-thumb { width: 64px; height: 44px; object-fit: contain; background: #fff; border: 1px solid var(--bd, #e5eadb); border-radius: 8px; padding: 4px; display: inline-block; vertical-align: middle; }
+.co-thumb-empty { display: inline-flex; align-items: center; justify-content: center; background: var(--gp); color: var(--g); font-weight: 700; font-size: .85rem; padding: 0; }
+.co-logo-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.co-logo-row img[hidden] { display: none; }
+.co-check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .85rem; font-weight: 500; }
+.pd-actions .pd-link:disabled { opacity: .35; cursor: default; }
