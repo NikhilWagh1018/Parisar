@@ -681,14 +681,19 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 /* Collaborations (Admin page) */
 /* The logo is shown in a round tile, the same as on the home page. --ls = the Admin's logo size (1 = automatic fit). */
 .co-disc { --dia: 52px; width: var(--dia); height: var(--dia); border-radius: 50%; background: #f6faec; border: 1px solid var(--bd, #e5eadb); overflow: hidden; display: inline-flex; align-items: center; justify-content: center; flex: none; vertical-align: middle; }
-.co-disc img { display: block; width: 100%; height: 100%; object-fit: contain; transform: scale(var(--ls, 1)); mix-blend-mode: multiply; }
+.co-disc img { display: block; width: 100%; height: 100%; object-fit: contain; transform: translate(var(--lx, 0%), var(--ly, 0%)) scale(var(--ls, 1)); mix-blend-mode: multiply; pointer-events: none; -webkit-user-drag: none; user-select: none; }
 .co-disc img[hidden], .co-disc .co-mark[hidden] { display: none; }
 .co-disc .co-mark, .co-disc-empty { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: var(--gp); color: var(--g); font-weight: 700; font-size: .95rem; }
-.co-disc-lg { --dia: 112px; }
+.co-disc-lg { --dia: 132px; position: relative; }
+.co-disc-edit { cursor: grab; touch-action: none; user-select: none; }
+.co-disc-edit.dragging { cursor: grabbing; }
+.co-disc-edit:focus-visible { outline: 2px solid var(--g); outline-offset: 2px; }
+.co-adjust { display: flex; flex-direction: column; gap: 6px; flex: 1 1 200px; min-width: 0; }
+.co-adjust[hidden] { display: none; }
+.co-adjust .co-tip { font-size: .78rem; color: var(--gray, #6b7280); line-height: 1.4; }
 .co-disc-lg .co-mark { font-size: 1.9rem; }
 .co-logo-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.co-scale { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
-.co-scale[hidden] { display: none; }
+.co-scale { display: flex; align-items: center; gap: 10px; }
 .ca-field .co-scale input[type="range"] { width: auto; flex: 1 1 160px; padding: 0; border: 0; background: none; accent-color: var(--g); cursor: pointer; }
 .co-scale output { min-width: 3.4em; font-weight: 700; font-size: .85rem; font-variant-numeric: tabular-nums; }
 .co-logo-row .pd-link { background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit; font-size: .82rem; }

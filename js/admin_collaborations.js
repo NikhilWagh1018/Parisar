@@ -46,10 +46,12 @@
   var mark = document.getElementById('coLogoMark');          // the initials shown when there is no logo
   var removeBtn = document.getElementById('coLogoRemove');
   var disc = document.getElementById('coDisc');              // the round tile the preview sits in
-  var scaleField = document.getElementById('coScaleField');  // the size slider, shown only while there is a logo
+  var adjust = document.getElementById('coAdjust');          // the size slider and tips, shown only while there is a logo
   var scaleIn = form.elements['logo_scale'];
   var scaleOut = document.getElementById('coScaleOut');
-  var SCALE_DEFAULT = 100;
+  var xIn = form.elements['logo_x'], yIn = form.elements['logo_y'];   // hidden: where the logo sits, in percent of the circle
+  var SCALE_DEFAULT = 100, SCALE_MIN = 50, SCALE_MAX = 150, POS_LIMIT = 50;
+  function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
   var removeFlag = form.elements['remove_logo'];             // hidden: "1" = take the current logo away on save
   var savedSrc = '';          // the logo the collaborator has now (edit only)
 
@@ -70,10 +72,14 @@
       if (e) e.textContent = fields[name];
     });
   }
-  // The slider's value, drawn in the preview circle exactly as the home page draws it.
-  function applyScale() {
-    var n = parseInt(scaleIn.value, 10) || SCALE_DEFAULT;
+  // Size and position, drawn in the preview circle exactly as the home page draws them.
+  function applyView() {
+    var n = clamp(parseInt(scaleIn.value, 10) || SCALE_DEFAULT, SCALE_MIN, SCALE_MAX);
+    var x = clamp(parseInt(xIn.value, 10) || 0, -POS_LIMIT, POS_LIMIT);
+    var y = clamp(parseInt(yIn.value, 10) || 0, -POS_LIMIT, POS_LIMIT);
     disc.style.setProperty('--ls', String(n / 100));
+    disc.style.setProperty('--lx', x + '%');
+    disc.style.setProperty('--ly', y + '%');
     scaleOut.textContent = n + '%';
   }
   // With no logo the preview is the organisation's initials, the same as on the home page.
@@ -86,7 +92,9 @@
       mark.textContent = initials(form.elements['name'].value);
       mark.hidden = false;
     }
-    scaleField.hidden = !src;
+    adjust.hidden = !src;
+    disc.classList.toggle('co-disc-edit', !!src);
+    disc.tabIndex = src ? 0 : -1;
   }
   // The preview to show when no new file is chosen: the saved logo, unless it is being removed.
   function resetPreview() {
@@ -103,7 +111,9 @@
     form.elements['role_label'].value = edit ? data.role : '';
     form.elements['website_url'].value = edit ? data.url : '';
     scaleIn.value = edit && data.scale ? data.scale : SCALE_DEFAULT;
-    applyScale();
+    xIn.value = edit && data.x ? data.x : 0;
+    yIn.value = edit && data.y ? data.y : 0;
+    applyView();
     savedSrc = edit && data.logo ? data.logoSrc : '';
     removeFlag.value = '';
     resetPreview();
@@ -119,7 +129,8 @@
     b.addEventListener('click', function () {
       openForm({ id: b.dataset.id, name: b.dataset.name, role: b.dataset.role, url: b.dataset.url,
                  logo: b.dataset.logo === '1', logoSrc: b.dataset.logoSrc,
-                 scale: parseInt(b.dataset.scale, 10) || SCALE_DEFAULT });
+                 scale: parseInt(b.dataset.scale, 10) || SCALE_DEFAULT,
+                 x: parseInt(b.dataset.x, 10) || 0, y: parseInt(b.dataset.y, 10) || 0 });
     });
   });
 
@@ -139,10 +150,53 @@
     r.onload = function () { setPreview(String(r.result)); };
     r.readAsDataURL(f);
   });
-  scaleIn.addEventListener('input', applyScale);
+  scaleIn.addEventListener('input', applyView);
+  // Back to the automatic fit: full size 100%, centred.
   document.getElementById('coScaleReset').addEventListener('click', function () {
-    scaleIn.value = SCALE_DEFAULT;
-    applyScale();
+    scaleIn.value = SCALE_DEFAULT; xIn.value = 0; yIn.value = 0;
+    applyView();
+  });
+
+  // Drag the logo inside the circle (mouse, pen or finger). The move is kept as a percentage of the circle,
+  // so it looks the same at any size on the home page.
+  var drag = null;
+  disc.addEventListener('pointerdown', function (ev) {
+    if (prev.hidden || (ev.button !== undefined && ev.button !== 0)) return;
+    ev.preventDefault();
+    drag = { px: ev.clientX, py: ev.clientY, x: parseInt(xIn.value, 10) || 0, y: parseInt(yIn.value, 10) || 0,
+             w: disc.getBoundingClientRect().width || 1 };
+    disc.classList.add('dragging');
+    try { disc.setPointerCapture(ev.pointerId); } catch (e) { /* older browsers: the move still works over the circle */ }
+  });
+  disc.addEventListener('pointermove', function (ev) {
+    if (!drag) return;
+    xIn.value = Math.round(clamp(drag.x + (ev.clientX - drag.px) / drag.w * 100, -POS_LIMIT, POS_LIMIT));
+    yIn.value = Math.round(clamp(drag.y + (ev.clientY - drag.py) / drag.w * 100, -POS_LIMIT, POS_LIMIT));
+    applyView();
+  });
+  function endDrag() { drag = null; disc.classList.remove('dragging'); }
+  disc.addEventListener('pointerup', endDrag);
+  disc.addEventListener('pointercancel', endDrag);
+  // Scroll over the circle to resize.
+  disc.addEventListener('wheel', function (ev) {
+    if (prev.hidden) return;
+    ev.preventDefault();
+    scaleIn.value = clamp((parseInt(scaleIn.value, 10) || SCALE_DEFAULT) + (ev.deltaY < 0 ? 5 : -5), SCALE_MIN, SCALE_MAX);
+    applyView();
+  }, { passive: false });
+  // Keyboard: arrows move the logo, + and - resize it.
+  disc.addEventListener('keydown', function (ev) {
+    if (prev.hidden) return;
+    var step = ev.shiftKey ? 5 : 1, x = parseInt(xIn.value, 10) || 0, y = parseInt(yIn.value, 10) || 0;
+    var s = parseInt(scaleIn.value, 10) || SCALE_DEFAULT;
+    if (ev.key === 'ArrowLeft') x -= step; else if (ev.key === 'ArrowRight') x += step;
+    else if (ev.key === 'ArrowUp') y -= step; else if (ev.key === 'ArrowDown') y += step;
+    else if (ev.key === '+' || ev.key === '=') s += 5; else if (ev.key === '-') s -= 5;
+    else return;
+    ev.preventDefault();
+    xIn.value = clamp(x, -POS_LIMIT, POS_LIMIT); yIn.value = clamp(y, -POS_LIMIT, POS_LIMIT);
+    scaleIn.value = clamp(s, SCALE_MIN, SCALE_MAX);
+    applyView();
   });
   removeBtn.addEventListener('click', function () {
     removeFlag.value = '1';

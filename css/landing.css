@@ -368,7 +368,7 @@ a.collab-card:focus-visible{outline:2px solid var(--g);outline-offset:2px}
    centred inside one common inner circle), so each one simply fills this round tile. --ls is the size the
    Admin chose for this organisation (1 = the automatic fit). Grey-scale makes the logos one colour; the real
    colours come back on hover. To keep the brand colours always, change the variable below to: none */
-.collab-logo img{--collab-logo-filter:grayscale(1) contrast(1.08);display:block;width:100%;height:100%;object-fit:contain;transform:scale(var(--ls,1));mix-blend-mode:multiply;filter:var(--collab-logo-filter);opacity:.82;transition:filter var(--T),opacity var(--T)}
+.collab-logo img{--collab-logo-filter:grayscale(1) contrast(1.08);display:block;width:100%;height:100%;object-fit:contain;transform:translate(var(--lx,0%),var(--ly,0%)) scale(var(--ls,1));mix-blend-mode:multiply;filter:var(--collab-logo-filter);opacity:.82;transition:filter var(--T),opacity var(--T)}
 a.collab-card:hover .collab-logo img,a.collab-card:focus-visible .collab-logo img{filter:none;opacity:1}
 .collab-mark{display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:var(--gp);color:var(--g);font-family:'Playfair Display',serif;font-size:2.1rem;font-weight:800}
 .collab-name{margin-top:4px;font-size:.98rem;font-weight:700;line-height:1.3;color:var(--ink);overflow-wrap:anywhere}

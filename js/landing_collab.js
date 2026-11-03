@@ -14,7 +14,7 @@
   var navLink = document.getElementById('nav-collab');
   if (!section || !grid) return;
 
-  var CACHE_KEY = 'parisar.collab.v2';
+  var CACHE_KEY = 'parisar.collab.v3';
   var LOGO_PREFIX = '/api/public/collaborator_logo.php?';
   var shown = null;               // the list on screen, as text, so an unchanged list is not redrawn
   var seen = null;                // reveals the cards when they scroll into view
@@ -42,6 +42,11 @@
     n = parseInt(n, 10);
     return n >= 50 && n <= 150 ? n : 100;
   }
+  // Where the Admin put the logo in its circle, in percent of the tile: -50 to 50, 0 = centred.
+  function posOf(n) {
+    n = parseInt(n, 10);
+    return n >= -50 && n <= 50 ? n : 0;
+  }
   // Keep only well-formed rows (the cached copy is read back from the browser, so it is checked too).
   function clean(list) {
     return (Array.isArray(list) ? list : []).filter(function (c) {
@@ -52,7 +57,9 @@
         role: typeof c.role === 'string' && c.role ? c.role : null,
         url: safeUrl(c.url),
         logo_url: safeLogo(c.logo_url),
-        scale: scaleOf(c.logo_scale)
+        scale: scaleOf(c.logo_scale),
+        x: posOf(c.logo_x),
+        y: posOf(c.logo_y)
       };
     });
   }
@@ -71,6 +78,8 @@
 
     var logo = el('div', 'collab-logo');
     logo.style.setProperty('--ls', String(c.scale / 100));
+    logo.style.setProperty('--lx', c.x + '%');
+    logo.style.setProperty('--ly', c.y + '%');
     if (c.logo_url) {
       var img = el('img');
       img.alt = c.name;

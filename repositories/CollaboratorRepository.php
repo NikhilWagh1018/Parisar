@@ -13,7 +13,7 @@ require_once __DIR__ . '/../helpers/LogoNormalizer.php';
 
 class CollaboratorRepository
 {
-    private const COLS = "id, name, role_label, website_url, sort_order, is_visible, updated_at, logo_scale,
+    private const COLS = "id, name, role_label, website_url, sort_order, is_visible, updated_at, logo_scale, logo_x, logo_y,
                           CASE WHEN logo_mime IS NULL THEN 0 ELSE 1 END AS has_logo";
 
     public function __construct(private PDO $pdo) {}
@@ -32,8 +32,8 @@ class CollaboratorRepository
         }
         $next = (int)$this->pdo->query('SELECT COALESCE(MAX(sort_order), 0) + 1 FROM collaborators WHERE deleted_at IS NULL')->fetchColumn();
         $stmt = $this->pdo->prepare(
-            'INSERT INTO collaborators (name, role_label, website_url, logo_mime, logo_data, sort_order, created_by, logo_scale)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO collaborators (name, role_label, website_url, logo_mime, logo_data, sort_order, created_by, logo_scale, logo_x, logo_y)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->bindValue(1, $clean['name']);
         $stmt->bindValue(2, $clean['role_label'], $clean['role_label'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
@@ -43,13 +43,15 @@ class CollaboratorRepository
         $stmt->bindValue(6, $next, PDO::PARAM_INT);
         $stmt->bindValue(7, $adminId, PDO::PARAM_INT);
         $stmt->bindValue(8, (int)($clean['logo_scale'] ?? COLLAB_SCALE_DEFAULT), PDO::PARAM_INT);
+        $stmt->bindValue(9, (int)($clean['logo_x'] ?? 0), PDO::PARAM_INT);
+        $stmt->bindValue(10, (int)($clean['logo_y'] ?? 0), PDO::PARAM_INT);
         $stmt->execute();
         return (int)$this->pdo->lastInsertId();
     }
 
     /**
      * Change the details. A new logo replaces the old one; remove_logo clears it; otherwise the
-     * logo is left alone. The logo size is changed only when one was sent.
+     * logo is left alone. The logo size and position are changed only when sent.
      *
      * @param array<string,mixed> $clean from collaboratorValidate()
      */
@@ -58,8 +60,16 @@ class CollaboratorRepository
         $sql = 'UPDATE collaborators SET name = ?, role_label = ?, website_url = ?, updated_at = CURRENT_TIMESTAMP';
         $logo = $clean['logo'];
         $scale = $clean['logo_scale'] ?? null;
+        $posX = $clean['logo_x'] ?? null;
+        $posY = $clean['logo_y'] ?? null;
         if ($scale !== null) {
             $sql .= ', logo_scale = ?';
+        }
+        if ($posX !== null) {
+            $sql .= ', logo_x = ?';
+        }
+        if ($posY !== null) {
+            $sql .= ', logo_y = ?';
         }
         if ($logo !== null) {
             $sql .= ', logo_mime = ?, logo_data = ?';
@@ -73,6 +83,12 @@ class CollaboratorRepository
         $stmt->bindValue($i++, $clean['website_url'], $clean['website_url'] === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         if ($scale !== null) {
             $stmt->bindValue($i++, (int)$scale, PDO::PARAM_INT);
+        }
+        if ($posX !== null) {
+            $stmt->bindValue($i++, (int)$posX, PDO::PARAM_INT);
+        }
+        if ($posY !== null) {
+            $stmt->bindValue($i++, (int)$posY, PDO::PARAM_INT);
         }
         if ($logo !== null) {
             [$nMime, $nData] = collaboratorLogoNormalize(
