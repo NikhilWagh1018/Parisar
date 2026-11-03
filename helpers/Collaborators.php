@@ -169,7 +169,11 @@ function collaboratorSendLogo(string $mime, string $bytes, bool $public): never
     header('Content-Length: ' . strlen($bytes));
     header('X-Content-Type-Options: nosniff');
     header("Content-Security-Policy: default-src 'none'; sandbox");
-    header('Cache-Control: ' . ($public ? 'public, max-age=86400' : 'private, no-cache'));
+    // The public logo address carries a version stamp (&v=...) that changes whenever the logo does,
+    // so a versioned logo can be kept for a year. Without the stamp it is kept for a day.
+    $cache = !$public ? 'private, no-cache'
+        : (isset($_GET['v']) ? 'public, max-age=31536000, immutable' : 'public, max-age=86400');
+    header('Cache-Control: ' . $cache);
     echo $bytes;
     exit;
 }

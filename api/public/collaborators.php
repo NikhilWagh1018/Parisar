@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 header('Content-Type: application/json');
 header('Cache-Control: public, max-age=30');
+header('Vary: Accept-Encoding');
 
 set_exception_handler(function (Throwable $e) {
     error_log('api/public/collaborators.php error: ' . $e->getMessage());
@@ -39,4 +40,13 @@ if (!$rl['allowed']) {
 }
 
 $items = array_map('collaboratorShape', (new CollaboratorRepository($pdo))->visible());
-echo json_encode(['success' => true, 'collaborators' => $items], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$body  = json_encode(['success' => true, 'collaborators' => $items], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+// A browser that already has this exact list gets a tiny "not modified" answer instead of the body.
+$hash = md5((string)$body);
+header('ETag: "' . $hash . '"');
+if (strpos((string)($_SERVER['HTTP_IF_NONE_MATCH'] ?? ''), $hash) !== false) {
+    http_response_code(304);
+    exit;
+}
+echo $body;

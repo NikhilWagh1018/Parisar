@@ -141,9 +141,11 @@ $notices = [
         <label for="coLogo">Logo <span style="font-weight:400">(optional, PNG, JPG, WebP or GIF, up to 1 MB)</span></label>
         <div class="co-logo-row">
           <img class="co-thumb" id="coLogoPrev" alt="" hidden>
-          <input id="coLogo" name="logo" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+          <span class="co-thumb co-thumb-empty" id="coLogoMark" aria-hidden="true">?</span>
+          <button type="button" class="pd-link pd-link-danger" id="coLogoRemove" hidden>Remove logo</button>
         </div>
-        <label class="co-check" id="coRemoveWrap" hidden><input type="checkbox" name="remove_logo" value="1"> Remove the current logo</label>
+        <input id="coLogo" name="logo" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+        <input type="hidden" name="remove_logo" id="coRemoveFlag" value="">
         <div class="ca-hint">A wide logo on a plain or transparent background looks best. Without one, the card shows the organisation's initials.</div>
         <div class="ca-err"></div>
       </div>

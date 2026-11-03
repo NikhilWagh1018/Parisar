@@ -352,17 +352,24 @@ footer{position:relative;padding-top:72px}
 .ax-audit-note{margin:0;font-size:.8rem;color:var(--gray);line-height:1.4}
 
 /* Collaborations: the organisations working with Parisar (filled in by js/landing_collab.js) */
-#collaborations{background:#f6faec}
+#collaborations{background:#f6faec;content-visibility:auto;contain-intrinsic-size:auto 520px}
 #collaborations[hidden]{display:none}
-.collab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:36px}
-.collab-card{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;padding:26px 16px 20px;background:#fff;border:1px solid var(--bd);border-radius:14px;text-align:center;color:var(--ink);text-decoration:none;animation:fadeUp .55s ease both;transition:transform var(--T),box-shadow var(--T),border-color var(--T)}
-a.collab-card:hover,a.collab-card:focus-visible{transform:translateY(-3px);border-color:var(--gl);box-shadow:0 10px 28px rgba(24,31,16,.09)}
+.collab-head{text-align:center}
+.collab-head .ey{justify-content:center}
+.collab-head .sub{margin-left:auto;margin-right:auto}
+/* Centred wrap rather than a grid: one, two or twenty organisations all look balanced. */
+.collab-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:18px;margin-top:40px}
+.collab-card{flex:0 1 228px;display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 16px 18px;background:#fff;border:1px solid var(--bd);border-radius:16px;text-align:center;color:var(--ink);text-decoration:none;opacity:0;transition:transform var(--T),box-shadow var(--T),border-color var(--T)}
+.collab-card.vs{opacity:1;animation:fadeUp .55s var(--d,0s) ease backwards}
+a.collab-card:hover,a.collab-card:focus-visible{transform:translateY(-4px);border-color:var(--gl);box-shadow:0 14px 32px rgba(24,31,16,.10)}
 a.collab-card:focus-visible{outline:2px solid var(--g);outline-offset:2px}
-.collab-logo{display:flex;align-items:center;justify-content:center;width:100%;height:68px}
-.collab-logo img{max-width:100%;max-height:68px;object-fit:contain}
+.collab-logo{display:flex;align-items:center;justify-content:center;width:100%;height:92px;padding:14px;background:#f9fbf3;border-radius:11px}
+.collab-logo img{max-width:100%;max-height:100%;object-fit:contain}
 .collab-mark{display:flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:50%;background:var(--gp);color:var(--g);font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:800}
-.collab-name{font-size:.95rem;font-weight:700;line-height:1.35;color:var(--ink)}
-.collab-role{font-size:.76rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--grl)}
-.collab-visit{font-size:.76rem;font-weight:600;color:var(--g)}
-@media(max-width:640px){.collab-grid{grid-template-columns:repeat(2,1fr);gap:12px}.collab-card{padding:20px 10px 16px}}
-@media(prefers-reduced-motion:reduce){.collab-card{animation:none;transition:none}a.collab-card:hover{transform:none}}
+.collab-name{margin-top:4px;font-size:.98rem;font-weight:700;line-height:1.3;color:var(--ink);overflow-wrap:anywhere}
+.collab-role{padding:3px 11px;border-radius:100px;background:var(--gp);font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--g)}
+.collab-visit{margin-top:auto;padding-top:4px;font-size:.78rem;font-weight:700;color:var(--g)}
+.collab-visit span{display:inline-block;transition:transform var(--T)}
+a.collab-card:hover .collab-visit span,a.collab-card:focus-visible .collab-visit span{transform:translate(2px,-2px)}
+@media(max-width:640px){.collab-grid{gap:12px}.collab-card{flex-basis:calc(50% - 6px);padding:12px 10px 14px}.collab-logo{height:76px;padding:10px}.collab-name{font-size:.9rem}.collab-role{padding:3px 8px;font-size:.6rem;letter-spacing:.03em;white-space:nowrap}}
+@media(prefers-reduced-motion:reduce){.collab-card{opacity:1;transition:none}.collab-card.vs{animation:none}a.collab-card:hover{transform:none}.collab-visit span{transition:none}}
