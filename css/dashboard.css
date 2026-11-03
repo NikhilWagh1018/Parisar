@@ -679,11 +679,18 @@ main { margin-left: var(--sw); flex: 1; display: flex; flex-direction: column; m
 @media (max-width: 640px) { .pd-filters label, .pd-filters select, .pd-filters input, .pd-fsearch input { width: 100%; min-width: 0; } .pd-fclear { width: 100%; } }
 
 /* Collaborations (Admin page) */
-.co-thumb { width: 64px; height: 44px; object-fit: contain; background: #fff; border: 1px solid var(--bd, #e5eadb); border-radius: 8px; padding: 4px; display: inline-block; vertical-align: middle; }
-.co-thumb-empty { display: inline-flex; align-items: center; justify-content: center; background: var(--gp); color: var(--g); font-weight: 700; font-size: .85rem; padding: 0; }
-.co-logo-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.co-logo-row img[hidden] { display: none; }
-.co-logo-row .co-thumb-empty[hidden] { display: none; }
+/* The logo is shown in a round tile, the same as on the home page. --ls = the Admin's logo size (1 = automatic fit). */
+.co-disc { --dia: 52px; width: var(--dia); height: var(--dia); border-radius: 50%; background: #f6faec; border: 1px solid var(--bd, #e5eadb); overflow: hidden; display: inline-flex; align-items: center; justify-content: center; flex: none; vertical-align: middle; }
+.co-disc img { display: block; width: 100%; height: 100%; object-fit: contain; transform: scale(var(--ls, 1)); mix-blend-mode: multiply; }
+.co-disc img[hidden], .co-disc .co-mark[hidden] { display: none; }
+.co-disc .co-mark, .co-disc-empty { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: var(--gp); color: var(--g); font-weight: 700; font-size: .95rem; }
+.co-disc-lg { --dia: 112px; }
+.co-disc-lg .co-mark { font-size: 1.9rem; }
+.co-logo-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.co-scale { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.co-scale[hidden] { display: none; }
+.ca-field .co-scale input[type="range"] { width: auto; flex: 1 1 160px; padding: 0; border: 0; background: none; accent-color: var(--g); cursor: pointer; }
+.co-scale output { min-width: 3.4em; font-weight: 700; font-size: .85rem; font-variant-numeric: tabular-nums; }
 .co-logo-row .pd-link { background: none; border: 0; padding: 0; cursor: pointer; font-family: inherit; font-size: .82rem; }
 .co-logo-row + input[type="file"] { margin-top: 10px; }
 .pd-actions .pd-link:disabled { opacity: .35; cursor: default; }

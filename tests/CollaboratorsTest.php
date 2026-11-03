@@ -25,7 +25,7 @@ class CollaboratorsTest extends TestCase
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec('CREATE TABLE collaborators (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, role_label TEXT NULL,
             website_url TEXT NULL, logo_mime TEXT NULL, logo_data BLOB NULL, sort_order INTEGER NOT NULL DEFAULT 0,
-            is_visible INTEGER NOT NULL DEFAULT 1, created_by INTEGER NOT NULL,
+            is_visible INTEGER NOT NULL DEFAULT 1, logo_scale INTEGER NOT NULL DEFAULT 100, created_by INTEGER NOT NULL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, deleted_at TEXT NULL)');
         return $pdo;
     }
@@ -233,12 +233,56 @@ class CollaboratorsTest extends TestCase
         $this->add($pdo, 'Beta');
         [$a, $b] = array_map('collaboratorShape', $repo->visible());
 
-        $this->assertSame(['id', 'name', 'role', 'url', 'logo_url'], array_keys($a));
+        $this->assertSame(['id', 'name', 'role', 'url', 'logo_url', 'logo_scale'], array_keys($a));
+        $this->assertSame(100, $a['logo_scale']);
         $this->assertSame('Funder', $a['role']);
         $this->assertSame('https://alpha.org', $a['url']);
         $this->assertMatchesRegularExpression('#^/api/public/collaborator_logo\.php\?id=\d+&v=\d+$#', (string)$a['logo_url']);
         $this->assertNull($b['role']);
         $this->assertNull($b['url']);
         $this->assertNull($b['logo_url']);
+    }
+
+    // ── logo size inside the round tile ────────────────────────
+
+    public function test_logo_size_is_checked_and_defaults_to_the_automatic_fit(): void
+    {
+        foreach (['49', '151', '0', '-20', 'abc', '99.5'] as $bad) {
+            $v = collaboratorValidate(['name' => 'A', 'logo_scale' => $bad], null);
+            $this->assertArrayHasKey('logo_scale', $v['errors'], $bad);
+        }
+        foreach (['50', '100', '150', ' 120 '] as $good) {
+            $v = collaboratorValidate(['name' => 'A', 'logo_scale' => $good], null);
+            $this->assertSame([], $v['errors'], $good);
+            $this->assertSame((int)trim($good), $v['clean']['logo_scale']);
+        }
+        $this->assertNull(collaboratorValidate(['name' => 'A'], null)['clean']['logo_scale']);   // not sent
+        $this->assertNull(collaboratorValidate(['name' => 'A', 'logo_scale' => ''], null)['clean']['logo_scale']);
+
+        $pdo = $this->pdo();
+        $id = $this->add($pdo, 'A');
+        $this->assertSame(100, (int)(new CollaboratorRepository($pdo))->find($id)['logo_scale']);
+    }
+
+    public function test_logo_size_is_saved_kept_and_shown_on_the_home_page(): void
+    {
+        $pdo = $this->pdo();
+        $repo = new CollaboratorRepository($pdo);
+        $id = $this->add($pdo, 'A', ['logo_scale' => '70']);
+        $this->assertSame(70, collaboratorShape($repo->find($id))['logo_scale']);
+
+        $repo->update($id, collaboratorValidate(['name' => 'A2'], null)['clean']);               // size not sent: kept
+        $this->assertSame(70, collaboratorShape($repo->find($id))['logo_scale']);
+
+        $repo->update($id, collaboratorValidate(['name' => 'A2', 'logo_scale' => '140'], null)['clean']);
+        $this->assertSame(140, collaboratorShape($repo->visible()[0])['logo_scale']);
+    }
+
+    public function test_an_unusable_stored_size_falls_back_to_the_automatic_fit(): void
+    {
+        foreach ([null, '', 'x', 0, 10, 500] as $junk) {
+            $this->assertSame(100, collaboratorScaleOf($junk));
+        }
+        $this->assertSame(65, collaboratorScaleOf('65'));
     }
 }
