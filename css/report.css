@@ -466,3 +466,75 @@ body {
   .footer-left img { height: 22px; }
   .footer-right { text-align: center; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Report polish: header people card, road banners, tidier tables
+   ═══════════════════════════════════════════════════════════════ */
+.rpt-header { padding:34px 44px 28px; }
+.rpt-title  { line-height:1.15; }
+.rpt-meta {
+  display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:0;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
+  border-radius:10px; overflow:hidden; position:relative; z-index:1;
+}
+.rpt-meta-item { padding:11px 14px; border-right:1px solid rgba(255,255,255,.1); min-width:0; }
+.rpt-meta-item:last-child { border-right:none; }
+.rpt-meta-item .k { color:rgba(255,255,255,.5); }
+.rpt-meta-item .v { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.rpt-people { display:flex; gap:12px; flex-wrap:wrap; margin-top:14px; position:relative; z-index:1; }
+.rpt-person {
+  flex:1 1 220px; padding:11px 16px; border-radius:10px;
+  background:rgba(134,185,59,.16); border:1px solid rgba(134,185,59,.38);
+}
+.rpt-person .k { font-size:.6rem; text-transform:uppercase; letter-spacing:.09em; color:rgba(255,255,255,.55); margin-bottom:2px; }
+.rpt-person .v { font-size:.98rem; font-weight:800; }
+.rpt-person .org { font-size:.78rem; color:rgba(255,255,255,.78); margin-top:1px; }
+
+.score-hero { background:linear-gradient(180deg,#f6fdf0,#fff); }
+.dim-card { transition:none; }
+.dim-bar, .dim-breakdown-bar { box-shadow:inset 0 1px 2px rgba(0,0,0,.06); }
+
+.road-head {
+  display:flex; justify-content:space-between; align-items:center; gap:16px;
+  margin:10px 0 18px; padding:14px 18px;
+  background:#f8fdf4; border:1.5px solid var(--border); border-left:6px solid var(--g);
+  border-radius:10px;
+}
+.road-no   { font-size:.62rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--lgray); }
+.road-name { font-size:1.2rem; font-weight:800; color:var(--gd); line-height:1.25; }
+.road-sub  { font-size:.78rem; color:var(--gray); margin-top:2px; }
+.road-score { text-align:right; flex-shrink:0; }
+.road-score .n { font-size:1.9rem; font-weight:800; line-height:1; }
+.road-score .d { font-size:.74rem; color:var(--lgray); margin-left:3px; }
+.road-score .r { font-size:.8rem; font-weight:700; margin-top:2px; }
+
+.segs-table { border:1px solid var(--border); border-radius:10px; overflow:hidden; border-collapse:separate; border-spacing:0; }
+.segs-table tbody tr:nth-child(even) td { background:#fafdf6; }
+.segs-table td, .segs-table th { text-align:left; }
+.segs-table th:nth-child(n+4), .segs-table td:nth-child(n+4) { white-space:nowrap; }
+.summary-box { font-size:.88rem; }
+.obs-list li, .rec-list li { line-height:1.5; }
+.seg-card { box-shadow:none; }
+.detail-row:nth-child(even) { background:#fafdf6; margin:0 -16px; padding-left:16px; padding-right:16px; }
+.rpt-footer { font-size:.72rem; }
+
+@media print {
+  .rpt-header { padding:24px 28px 20px; }
+  .rpt-meta, .rpt-person, .road-head { break-inside:avoid; }
+  .score-hero { padding:20px 28px; }
+  .rpt-body { padding:22px 28px; }
+  .road-head { margin-top:0; }
+}
+@media screen and (max-width: 768px) {
+  .rpt-meta { grid-template-columns:1fr 1fr; }
+  .rpt-meta-item { border-right:none; border-bottom:1px solid rgba(255,255,255,.1); padding:8px 10px; }
+  .rpt-people { margin-top:10px; }
+  .rpt-person { flex-basis:100%; padding:9px 12px; }
+  .road-head { padding:11px 12px; margin-bottom:12px; }
+  .road-name { font-size:1rem; }
+  .road-score .n { font-size:1.4rem; }
+  .segs-table { border:none; }
+  .segs-table tbody tr:nth-child(even) td { background:transparent; }
+  .detail-row:nth-child(even) { margin:0 -12px; padding-left:12px; padding-right:12px; }
+}

@@ -126,6 +126,25 @@
       }
     });
   });
+  // ── Audit page: add a segment to a road that is already in the audit ──
+  document.querySelectorAll('.ca-seg-add').forEach(function (b) {
+    b.addEventListener('click', async function () {
+      var card = b.closest('.ca-road');
+      var input = card.querySelector('.ca-seg-add-len');
+      var len = parseFloat(input.value);
+      if (!len || len < 10) { toast('Segment length must be at least 10 metres.', 'error'); input.focus(); return; }
+      if (!(await confirmBox({ title: 'Add segment', message: 'Add a ' + len + ' m segment to the end of ' + b.dataset.name + '?', confirmText: 'Add' }))) return;
+      b.disabled = true;
+      try {
+        await post('../api/city/audit_segment_add.php', { audit_id: app.dataset.auditId, road_id: b.dataset.roadId, segment_length: len });
+        saveOpen();
+        window.location.reload();
+      } catch (e) {
+        toast(e.message, 'error');
+        b.disabled = false;
+      }
+    });
+  });
   // ── Audit page: delete a segment made by mistake ──────────────
   document.querySelectorAll('.ca-seg-remove').forEach(function (b) {
     b.addEventListener('click', async function () {

@@ -58,6 +58,9 @@ $cityLabel = (string)($audit['city_name'] ?? '');
 $logoPath  = __DIR__ . '/../../assets/parisar-logo.png';
 $logoB64   = is_file($logoPath) ? 'data:image/png;base64,' . base64_encode((string)file_get_contents($logoPath)) : '';
 $orgName   = defined('APP_ORG') ? APP_ORG : 'Parisar';
+// The City Leader who runs this audit, and the organisation they belong to.
+try { $leader = (new CityAuditRepository($pdo))->leaderDetails($audit); } catch (Throwable $e) { $leader = null; }
+$roadLabel = count($roads) === 1 ? 'road' : 'roads';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -103,13 +106,29 @@ $orgName   = defined('APP_ORG') ? APP_ORG : 'Parisar';
     </div>
     <div class="rpt-meta">
       <div class="rpt-meta-item"><div class="k">City</div><div class="v"><?= $h($cityLabel !== '' ? $cityLabel : '—') ?></div></div>
-      <?php if (!$isPublic): ?><div class="rpt-meta-item"><div class="k">Prepared by</div><div class="v"><?= $h($audit['created_by_name'] ?? '—') ?></div></div><?php endif; ?>
       <div class="rpt-meta-item"><div class="k">Status</div><div class="v"><?= $h(cityStatusLabel($status)) ?></div></div>
       <div class="rpt-meta-item"><div class="k">Roads</div><div class="v"><?= count($roads) ?></div></div>
       <div class="rpt-meta-item"><div class="k">Total Length</div><div class="v"><?= $totalLen > 0 ? number_format($totalLen) . ' m' : '—' ?></div></div>
       <div class="rpt-meta-item"><div class="k">Segments</div><div class="v"><?= $approvedSegs ?>/<?= $totalSegs ?> approved</div></div>
       <div class="rpt-meta-item"><div class="k">Report Date</div><div class="v"><?= $h($printDate) ?></div></div>
     </div>
+    <?php if ($leader !== null || !$isPublic): ?>
+    <div class="rpt-people">
+      <?php if ($leader !== null): ?>
+      <div class="rpt-person">
+        <div class="k">City Leader</div>
+        <div class="v"><?= $h($leader['name']) ?></div>
+        <?php if ($leader['organisation'] !== null): ?><div class="org"><?= $h($leader['organisation']) ?></div><?php endif; ?>
+      </div>
+      <?php endif; ?>
+      <?php if (!$isPublic): ?>
+      <div class="rpt-person">
+        <div class="k">Prepared by</div>
+        <div class="v"><?= $h($audit['created_by_name'] ?? '—') ?></div>
+      </div>
+      <?php endif; ?>
+    </div>
+    <?php endif; ?>
   </div>
 
   <?php if ($overall):
@@ -161,11 +180,17 @@ $orgName   = defined('APP_ORG') ? APP_ORG : 'Parisar';
         $rcol     = $roadCond ? ratingColour($roadCond) : '#95a5a6';
     ?>
     <div<?= $roadNo > 1 ? ' style="page-break-before:always"' : '' ?>>
-      <div class="section-h" style="font-size:1.05rem;margin-top:<?= $roadNo > 1 ? '0' : '8px' ?>">
-        <span class="sec-num"><?= $roadNo ?></span> <?= $h($road['name']) ?>
-        <span style="margin-left:auto;color:<?= $rcol ?>;font-weight:800"><?= $agg ? $h($agg['score']) . ' / 100 · ' . $h($roadCond) : 'Not scored yet' ?></span>
+      <div class="road-head" style="border-left-color:<?= $rcol ?>">
+        <div>
+          <div class="road-no">Road <?= $roadNo ?> of <?= count($roads) ?></div>
+          <div class="road-name"><?= $h($road['name']) ?></div>
+          <div class="road-sub"><?= number_format($road['length']) ?> m · <?= $segCount ?> segment<?= $segCount !== 1 ? 's' : '' ?> · <?= $an['scored'] ?> approved</div>
+        </div>
+        <div class="road-score" style="color:<?= $rcol ?>">
+          <?php if ($agg): ?><span class="n"><?= $h($agg['score']) ?></span><span class="d">/ 100</span><div class="r"><?= $h($roadCond) ?></div>
+          <?php else: ?><div class="r">Not scored yet</div><?php endif; ?>
+        </div>
       </div>
-      <p style="font-size:.78rem;color:#5e6b54;margin:-4px 0 12px"><?= number_format($road['length']) ?> m · <?= $segCount ?> segment<?= $segCount !== 1 ? 's' : '' ?> · <?= $an['scored'] ?> approved</p>
 
       <!-- Quick Summary -->
       <div class="section-h"><span class="sec-num"><?= $sec() ?></span> Quick Summary</div>
@@ -315,6 +340,7 @@ $orgName   = defined('APP_ORG') ? APP_ORG : 'Parisar';
     </div>
     <div class="footer-right">
       <div>Audit: <strong><?= $h($audit['name']) ?></strong></div>
+      <?php if ($leader !== null): ?><div>City Leader: <strong><?= $h($leader['name']) ?><?= $leader['organisation'] !== null ? ' · ' . $h($leader['organisation']) : '' ?></strong></div><?php endif; ?>
       <?php if ($overall): ?><div>Overall Score: <strong><?= $h($overall['score']) ?>/100</strong> (<?= $h(scoreToCondition((float)$overall['score'])) ?>)</div><?php endif; ?>
       <div>Status: <strong><?= $h(cityReportStatusLine(cityStatusLabel($status), $approvedSegs, $totalSegs)) ?></strong></div>
       <div>Downloaded by: <strong><?= $h(cityReportDownloadLine($isPublic ? null : ($viewerName ?? ''), $isPublic ? null : ($viewerRole ?? ''), $printWhen)) ?></strong></div>
