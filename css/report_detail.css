@@ -15,8 +15,8 @@
 /* ── Header ─────────────────────────────────────────────────── */
 .rv-head {
   position: relative; overflow: hidden; color: var(--gd, #1a3d0a); padding: 24px 40px 30px;
-  /* Opaque colours only: see-through gradient stops are dropped by some PDF viewers. */
-  background: linear-gradient(200deg, #e1efcb 0%, #f1f8e6 40%, #ffffff 100%);
+  /* The fade is a tiny opaque PNG, not a CSS gradient: every PDF viewer draws a plain image, and some drop gradients. */
+  background: #f1f8e6 url("data:image/png;base64,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") no-repeat center / 100% 100%;
   -webkit-print-color-adjust: exact; print-color-adjust: exact;
   border-top: 7px solid var(--g, #3d7a1f);
 }
@@ -66,7 +66,7 @@
 /* ── Overall score ──────────────────────────────────────────── */
 .rv-hero {
   display: flex; align-items: center; gap: 40px; flex-wrap: wrap;
-  padding: 30px 40px; background: linear-gradient(180deg, #f4fbea, #fff);
+  padding: 30px 40px; background: #f9fdf4 url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAABgCAIAAACvyqTrAAAAYElEQVR42mP88vsVAzbAxIADsDAwMJKogxGHBE4dVLScinaw4BAfah4kw+ejHqRl/sCVrsiwnHEA8wddYpBxMCafwelB0tMVFT2IM0cNzgJg1IOkeJBxENbOVPQgFS0HABnGA/+SSQpHAAAAAElFTkSuQmCC") no-repeat center / 100% 100%;
   border-bottom: 1.5px solid var(--border, #d4edbb);
 }
 .rv-score { text-align: center; flex: 0 0 170px; }
@@ -156,7 +156,7 @@
 
 .rv-summary {
   padding: 15px 20px; border-radius: 10px; font-size: .88rem; line-height: 1.7; color: #2d3d20;
-  background: linear-gradient(135deg, #f0f9e8, #f8fdf4);
+  background: #f4fbee;
   border: 1.5px solid var(--border, #d4edbb); border-left: 4px solid var(--g, #3d7a1f);
 }
 .rv-summary strong { color: var(--gd, #1a3d0a); }
@@ -257,7 +257,7 @@
 
 /* ── Watermark: faint, centred, drawn over every page but too light to hide anything ── */
 .watermark { position: static; opacity: 1; }
-.watermark img { position: fixed; top: 50%; left: 50%; width: 62%; max-width: 560px; opacity: .06; transform: translate(-50%, -50%) rotate(-22deg); z-index: 50; pointer-events: none; }
+.watermark img { position: fixed; top: 50%; left: 50%; width: 70%; max-width: 640px; transform: translate(-50%, -50%); z-index: 50; pointer-events: none; }
 @media screen and (max-width: 768px) { .watermark img { width: 82%; } }
 
 .rv-sheet { width: 100%; border-collapse: collapse; border-spacing: 0; }
