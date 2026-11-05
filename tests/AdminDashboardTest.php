@@ -111,7 +111,7 @@ class AdminDashboardTest extends TestCase
         $pdo->exec('CREATE TABLE cities (id INTEGER PRIMARY KEY, name TEXT)');
         $pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, city_id INTEGER NULL, role TEXT)');
         $pdo->exec('CREATE TABLE road_groups (id INTEGER PRIMARY KEY, city_id INTEGER, is_verified INTEGER NOT NULL DEFAULT 1)');
-        $pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY, city_id INTEGER, name TEXT, audit_year INTEGER, audit_date TEXT NULL, status TEXT, public_hidden_at TEXT NULL,
+        $pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY, city_id INTEGER, name TEXT, audit_year INTEGER, audit_date TEXT NULL, status TEXT, public_hidden_at TEXT NULL, leader_user_id INTEGER NULL,
                     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
         $pdo->exec('CREATE TABLE roads (id INTEGER PRIMARY KEY, road_group_id INTEGER, audit_id INTEGER NULL)');
         $pdo->exec('CREATE TABLE segments (id INTEGER PRIMARY KEY, road_id INTEGER, status TEXT)');
@@ -119,10 +119,10 @@ class AdminDashboardTest extends TestCase
         $pdo->exec("INSERT INTO cities VALUES (1,'Pune'),(2,'Mumbai')");
         $pdo->exec("INSERT INTO users VALUES (1,'Pune Leader',1,'city_leader'),(2,'A',1,'surveyor'),(3,'B',1,'surveyor'),(4,'Root',NULL,'admin')");
         $pdo->exec("INSERT INTO road_groups VALUES (1,1,1),(2,1,0),(3,2,0)");
-        $pdo->exec("INSERT INTO city_audits (id,city_id,name,audit_year,status,updated_at) VALUES
-            (1,1,'Pune Audit',2026,'active','2026-09-01 00:00:00'),
-            (2,1,'Old',2025,'voided','2025-01-01 00:00:00'),
-            (3,2,'Empty',2026,'draft','2026-09-15 00:00:00')");
+        $pdo->exec("INSERT INTO city_audits (id,city_id,name,audit_year,status,leader_user_id,updated_at) VALUES
+            (1,1,'Pune Audit',2026,'active',1,'2026-09-01 00:00:00'),
+            (2,1,'Old',2025,'voided',NULL,'2025-01-01 00:00:00'),
+            (3,2,'Empty',2026,'draft',NULL,'2026-09-15 00:00:00')");
         $pdo->exec("INSERT INTO roads VALUES (1,1,1),(2,2,1),(3,3,NULL)");
         $pdo->exec("INSERT INTO segments VALUES (1,1,'completed'),(2,1,'pending'),(3,2,'completed'),(4,3,'completed')");
         $pdo->exec("INSERT INTO segment_audits VALUES (1,1,'2026-09-10 08:00:00'),(2,3,'2026-09-12 08:00:00')");
@@ -159,5 +159,7 @@ class AdminDashboardTest extends TestCase
         $this->assertSame('2026-09-15 00:00:00', $byId[3]['last_activity'], 'no submissions yet: falls back to the audit itself');
         $this->assertSame(0, $byId[3]['segment_count']);
         $this->assertSame('Mumbai', $byId[3]['city_name']);
+        $this->assertSame('Pune Leader', $byId[1]['leader_name'], 'the audit shows its assigned City Leader');
+        $this->assertNull($byId[3]['leader_name'], 'no leader assigned yet');
     }
 }

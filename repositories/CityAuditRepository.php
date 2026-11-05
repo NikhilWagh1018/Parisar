@@ -14,8 +14,9 @@ require_once __DIR__ . '/../helpers/TeamRoster.php';
 
 class CityAuditRepository
 {
-    /** Audit statuses in which roads can still be added or removed. */
-    public const EDITABLE_STATUSES = ['draft'];
+    /** Audit statuses in which roads can still be added or removed, and mistaken segments deleted.
+     *  Work already done on a road or segment still protects it (see removeRoad / removeSegment). */
+    public const EDITABLE_STATUSES = ['draft', 'active', 'in_review'];
 
     /** Audit statuses in which segments can still be (re)assigned to surveyors. */
     public const ASSIGNABLE_STATUSES = ['draft', 'active', 'in_review'];
@@ -358,6 +359,58 @@ class CityAuditRepository
         }
     }
 
+    /**
+     * Delete one segment that was created by mistake, only while nothing has been audited on it.
+     * Its surveyor assignment goes with it. The road's total length follows the segments left,
+     * and the remaining segments keep their numbers. If it was the road's last segment, the
+     * road is removed too.
+     *
+     * @param array<string,mixed> $audit  row from find()
+     * @return array{road_id:int, remaining:int}
+     */
+    public function removeSegment(array $audit, int $segmentId): array
+    {
+        if (!$this->isEditable($audit)) {
+            throw new DomainException('Segments can no longer be deleted from this audit.');
+        }
+        $q = $this->pdo->prepare(
+            'SELECT s.id, s.road_id, s.status, r.finalized_at
+               FROM segments s JOIN roads r ON r.id = s.road_id
+              WHERE s.id = ? AND r.audit_id = ?'
+        );
+        $q->execute([$segmentId, (int)$audit['id']]);
+        $seg = $q->fetch(PDO::FETCH_ASSOC);
+        if ($seg === false) {
+            throw new DomainException('That segment is not part of this audit.');
+        }
+        if ($seg['finalized_at'] !== null) {
+            throw new DomainException('This road is already finalised, so its segments cannot be deleted.');
+        }
+        if ((string)$seg['status'] !== 'pending') {
+            throw new DomainException('Auditing has already started on this segment, so it cannot be deleted.');
+        }
+        $roadId = (int)$seg['road_id'];
+
+        $this->pdo->beginTransaction();
+        try {
+            $this->pdo->prepare('DELETE FROM segment_assignments WHERE segment_id = ?')->execute([$segmentId]);
+            $this->pdo->prepare('DELETE FROM segments WHERE id = ?')->execute([$segmentId]);
+            $left = $this->pdo->prepare('SELECT COUNT(*), COALESCE(SUM(length), 0) FROM segments WHERE road_id = ?');
+            $left->execute([$roadId]);
+            [$remaining, $sum] = array_map('floatval', $left->fetch(PDO::FETCH_NUM));
+            if ((int)$remaining === 0) {
+                $this->pdo->prepare('DELETE FROM roads WHERE id = ?')->execute([$roadId]);
+            } else {
+                $this->pdo->prepare('UPDATE roads SET total_length = ? WHERE id = ?')->execute([$sum, $roadId]);
+            }
+            $this->pdo->commit();
+        } catch (Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+        return ['road_id' => $roadId, 'remaining' => (int)$remaining];
+    }
+
     // ── Surveyor assignment (Slice 3) ─────────────────────────────
 
     /** Active surveyors a City Leader may assign: their own team when the city has several
@@ -515,7 +568,8 @@ class CityAuditRepository
     /**
      * Move a draft audit to active. At least one segment must have a surveyor, and every
      * assigned segment must have an active surveyor of this city. The rest can be assigned
-     * after activation. From then on roads can no longer be added or removed.
+     * after activation. Roads and segments can still be added or removed later, as long as
+     * no auditing has started on them.
      */
     public function activate(array $audit): void
     {
