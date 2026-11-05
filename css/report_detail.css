@@ -297,6 +297,9 @@
   .rv-note { margin-bottom: 10px; }
   .rv-body { padding: 18px 28px 24px; }
   .rv-foot { padding: 10px 28px; }
+  /* Footer sits at the bottom edge of every printed page; the table's bottom spacer keeps content clear of it. */
+  .rv-foot { position: fixed; left: 10mm; right: 10mm; bottom: 8mm; z-index: 60; }
+  .rv-sheet > tfoot .rv-sp { height: 26mm; }
   .rv-h, .rv-road-head, .rv-note { break-after: avoid; page-break-after: avoid; }
   .rv-h + * { break-before: avoid; page-break-before: avoid; }
   .rv-strip, .rv-hero, .rv-dimcard, .rv-summary, .rv-critical, .rv-obs, .rv-recs li, .rv-card, .rv-person, .rv-road-head, .rv-table tr, .rv-facts { break-inside: avoid; page-break-inside: avoid; }
