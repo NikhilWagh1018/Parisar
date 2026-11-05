@@ -74,6 +74,15 @@ $ring = static function ($v, string $colour, int $size, int $stroke) use ($pct):
 $zones = static function ($v) use ($pct): string {
     return '<div class="rv-zones"><span></span><span></span><span></span><span></span><span></span><i style="left:' . round($pct($v), 2) . '%"></i></div>';
 };
+$svg = static fn(string $d): string => '<svg class="ic" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $d . '</svg>';
+$icon = [
+    'pin'   => $svg('<path d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>'),
+    'cal'   => $svg('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
+    'road'  => $svg('<path d="M8 3 4 21M16 3l4 18M12 4v3M12 11v3M12 18v3"/>'),
+    'ruler' => $svg('<rect x="2.5" y="8" width="19" height="8" rx="1.5"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/>'),
+    'seg'   => $svg('<path d="M3 12h4M10 12h4M17 12h4"/><circle cx="8.5" cy="12" r="0.6"/><circle cx="15.5" cy="12" r="0.6"/>'),
+    'check' => $svg('<circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.8 2.8L16.3 9.5"/>'),
+];
 $printDate = (new DateTimeImmutable('now', new DateTimeZone('Asia/Kolkata')))->format('d M Y');
 // The three score dimensions and what each one measures (explained in each road's breakdown).
 $dimInfo = [
@@ -105,27 +114,21 @@ $initial    = static fn(string $n): string => mb_strtoupper(mb_substr(trim($n) !
   </div>
 </div>
 
+<table class="rv-sheet" role="presentation"><thead><tr><td><div class="rv-sp"></div></td></tr></thead><tfoot><tr><td><div class="rv-sp"></div></td></tr></tfoot><tbody><tr><td>
 <div class="rv">
 
   <!-- ── Header: everything that identifies the audit lives here, and only here ── -->
   <header class="rv-head">
     <div class="rv-head-top">
-      <div class="rv-eyebrow"><?= $h($orgName) ?> · Cycle Track Audit Programme</div>
-      <?php if ($logoB64): ?><div class="rv-logo"><img src="<?= $logoB64 ?>" alt="<?= $h($orgName) ?>"><span>parisar.org</span></div><?php endif; ?>
+      <?php if ($logoB64): ?><img class="rv-logo" src="<?= $logoB64 ?>" alt="<?= $h($orgName) ?>"><?php else: ?><span class="rv-eyebrow"><?= $h($orgName) ?></span><?php endif; ?>
+      <div class="rv-head-meta"><span>Report generated</span><b><?= $h($printDate) ?></b></div>
     </div>
     <h1 class="rv-title"><?= $h($audit['name']) ?></h1>
     <div class="rv-chips">
       <?php $where = trim(($cityLabel !== '' ? $cityLabel : '') . (($audit['state'] ?? '') !== '' ? ($cityLabel !== '' ? ', ' : '') . $audit['state'] : '')); ?>
-      <?php if ($where !== ''): ?><span class="rv-chip">📍 <?= $h($where) ?></span><?php endif; ?>
-      <span class="rv-chip">📅 <?= $h(cityAuditDateLabel($audit['audit_date'] ?? null, (int)$audit['audit_year'])) ?></span>
-      <span class="rv-chip rv-status rv-status-<?= $statusTone ?>"><?= $h(cityStatusLabel($status)) ?></span>
-    </div>
-
-    <div class="rv-facts">
-      <div class="rv-fact"><div class="k">Roads</div><div class="v"><?= count($roads) ?></div></div>
-      <div class="rv-fact"><div class="k">Total length</div><div class="v"><?= $totalLen > 0 ? number_format($totalLen) . ' m' : '—' ?></div></div>
-      <div class="rv-fact"><div class="k">Segments</div><div class="v"><?= $approvedSegs ?>/<?= $totalSegs ?> <span>approved</span></div></div>
-      <div class="rv-fact"><div class="k">Report date</div><div class="v"><?= $h($printDate) ?></div></div>
+      <?php if ($where !== ''): ?><span class="rv-chip"><?= $icon['pin'] ?><?= $h($where) ?></span><?php endif; ?>
+      <span class="rv-chip"><?= $icon['cal'] ?>Audit date · <?= $h(cityAuditDateLabel($audit['audit_date'] ?? null, (int)$audit['audit_year'])) ?></span>
+      <span class="rv-chip"><?= $icon['road'] ?><?= count($roads) ?> <?= count($roads) === 1 ? 'road' : 'roads' ?><?= $totalLen > 0 ? ' · ' . number_format($totalLen) . ' m' : '' ?></span>
     </div>
 
     <?php if ($leader !== null || !$isPublic): ?>
@@ -133,24 +136,18 @@ $initial    = static fn(string $n): string => mb_strtoupper(mb_substr(trim($n) !
       <?php if ($leader !== null): ?>
       <div class="rv-person">
         <div class="rv-avatar"><?= $h($initial((string)$leader['name'])) ?></div>
-        <div>
-          <div class="k">City Leader</div>
-          <div class="v"><?= $h($leader['name']) ?></div>
-          <?php if ($leader['organisation'] !== null): ?><div class="org"><?= $h($leader['organisation']) ?></div><?php endif; ?>
-        </div>
+        <div><div class="k">City Leader</div><div class="v"><?= $h($leader['name']) ?><?php if ($leader['organisation'] !== null): ?> <span>· <?= $h($leader['organisation']) ?></span><?php endif; ?></div></div>
       </div>
       <?php endif; ?>
       <?php if (!$isPublic): ?>
       <div class="rv-person">
         <div class="rv-avatar rv-avatar-alt"><?= $h($initial((string)($audit['created_by_name'] ?? ''))) ?></div>
-        <div>
-          <div class="k">Prepared by</div>
-          <div class="v"><?= $h($audit['created_by_name'] ?? '—') ?></div>
-        </div>
+        <div><div class="k">Prepared by</div><div class="v"><?= $h($audit['created_by_name'] ?? '—') ?></div></div>
       </div>
       <?php endif; ?>
     </div>
     <?php endif; ?>
+    <div class="rv-lane" aria-hidden="true"></div>
   </header>
 
   <!-- ── Overall score ── -->
@@ -240,19 +237,6 @@ $initial    = static fn(string $n): string => mb_strtoupper(mb_substr(trim($n) !
           <em>No segment on this road is approved yet, so there is no score.</em>
         <?php endif; ?>
       </div>
-
-      <!-- Road at a glance: each segment drawn to scale along the road, coloured by its rating -->
-      <?php if ($road['length'] > 0): ?>
-      <div class="rv-strip" aria-label="Segments along the road">
-        <?php foreach ($road['rows'] as $sr):
-            $sOk = isset($sr['final']); $sc = $sOk ? ratingColour((string)$sr['rating']) : '#b9c4ad'; ?>
-        <div class="seg<?= $sOk ? '' : ' wait' ?>" style="flex:<?= max(0.0001, (float)$sr['length']) ?> 1 0;--c:<?= $sc ?>" title="Segment <?= (int)$sr['segment_number'] ?>">
-          <b><?= (int)$sr['segment_number'] ?></b><span><?= $sOk ? $h($sr['final']) : '–' ?></span>
-        </div>
-        <?php endforeach; ?>
-      </div>
-      <div class="rv-strip-ends"><span>0 m</span><span><?= number_format($road['length']) ?> m</span></div>
-      <?php endif; ?>
 
       <!-- Segment-wise scores -->
       <div class="rv-h"><span class="rv-num"><?= $sec() ?></span> Segment-wise scores</div>
@@ -378,6 +362,7 @@ $initial    = static fn(string $n): string => mb_strtoupper(mb_substr(trim($n) !
         : 'Downloaded by ' . $h(cityReportDownloadLine($viewerName ?? '', $viewerRole ?? '', $printWhen)) ?></div>
   </footer>
 </div>
+</td></tr></tbody></table>
 
 <script nonce="<?= $nonce ?>">
 document.getElementById('rdPrint').addEventListener('click', function () { window.print(); });
