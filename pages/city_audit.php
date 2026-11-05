@@ -486,6 +486,14 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
               <button class="ca-btn ghost ca-assign-road" type="button" data-road-id="<?= (int)$r['id'] ?>">Apply to all</button>
             </div>
             <?php endif; ?>
+            <?php if ($canEdit && $r['finalized_at'] === null): ?>
+            <div class="ca-road-bulk ca-seg-addbar">
+              <span>Add a segment to the end of this road:</span>
+              <input type="number" class="ca-seg-select ca-seg-add-len" min="10" step="any" inputmode="decimal"
+                     value="<?= $h($num($r['segment_length'] ?? 100)) ?>" aria-label="Length of the new segment in metres" style="width:96px"> m
+              <button class="ca-btn ghost ca-seg-add" type="button" data-road-id="<?= (int)$r['id'] ?>" data-name="<?= $h($r['name']) ?>">+ Add segment</button>
+            </div>
+            <?php endif; ?>
             <div class="rd-scroll">
               <table class="rd-table">
                 <thead><tr><th>#</th><th>From</th><th>To</th><th>Length</th><th>Status</th><th>Surveyor</th><?php if ($canEdit): ?><th></th><?php endif; ?></tr></thead>

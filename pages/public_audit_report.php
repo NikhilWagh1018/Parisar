@@ -11,8 +11,9 @@ declare(strict_types=1);
 //  · Only audits with status "published" are shown. Anything else
 //    (draft, in review, closed, voided, unknown id) gets the same
 //    plain "not found" page, so nobody can probe for unpublished work.
-//  · The names of the people involved (who prepared the audit, who
-//    surveyed each segment) are left out.
+//  · The names of the people who prepared the audit and who surveyed
+//    each segment are left out. The report does name the audit's City
+//    Leader and their organisation: they are the accountable lead.
 //  · "download=1" opens the print dialog on load; choose "Save as PDF".
 //  · Same per-IP request limit as the other public endpoints.
 // ═══════════════════════════════════════════════════════════════

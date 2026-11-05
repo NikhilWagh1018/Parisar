@@ -80,6 +80,28 @@ class CityAuditRepository
         return $row === false ? null : $row;
     }
 
+    /**
+     * Who leads this audit, for the report: the assigned City Leader's name and organisation.
+     * Null when no City Leader is assigned. The organisation is null when the leader has none on file.
+     *
+     * @param array<string,mixed> $audit  row from find()
+     * @return array{name:string, organisation:?string}|null
+     */
+    public function leaderDetails(array $audit): ?array
+    {
+        if (empty($audit['leader_user_id'])) {
+            return null;
+        }
+        $q = $this->pdo->prepare('SELECT name, organisation FROM users WHERE id = ?');
+        $q->execute([(int)$audit['leader_user_id']]);
+        $u = $q->fetch(PDO::FETCH_ASSOC);
+        if ($u === false || trim((string)$u['name']) === '') {
+            return null;
+        }
+        $org = trim((string)($u['organisation'] ?? ''));
+        return ['name' => trim((string)$u['name']), 'organisation' => $org !== '' ? $org : null];
+    }
+
     /** The Admin picks (or clears, with null) the City Leader a project belongs to. */
     public function setLeader(int $auditId, ?int $leaderUserId): void
     {
@@ -320,6 +342,79 @@ class CityAuditRepository
         }
 
         return ['road_id' => $roadId, 'public_id' => $publicId, 'segment_count' => count($plan)];
+    }
+
+    /**
+     * Add one segment to the end of a road that is already in the audit.
+     * It starts where the road's last segment ends, takes the next segment number and the road's
+     * total length grows with it. Allowed while the audit is editable and the road is not finalised.
+     *
+     * @param array<string,mixed> $audit  row from find()
+     * @return array{road_id:int, segment_id:int, segment_number:int, total_length:float}
+     */
+    public function addSegment(array $audit, int $userId, int $roadId, float $length): array
+    {
+        if (!$this->isEditable($audit)) {
+            throw new DomainException('Segments can no longer be added to this audit.');
+        }
+        if ($length < CITY_AUDIT_MIN_SEGMENT_LENGTH) {
+            throw new DomainException('Segment length must be at least 10 metres.');
+        }
+        $length = round($length, 2);
+
+        $q = $this->pdo->prepare('SELECT id, finalized_at, total_length FROM roads WHERE id = ? AND audit_id = ?');
+        $q->execute([$roadId, (int)$audit['id']]);
+        $road = $q->fetch(PDO::FETCH_ASSOC);
+        if ($road === false) {
+            throw new DomainException('That road is not part of this audit.');
+        }
+        if ($road['finalized_at'] !== null) {
+            throw new DomainException('This road is already finalised, so segments cannot be added.');
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $m = $this->pdo->prepare(
+                'SELECT COUNT(*), COALESCE(MAX(segment_number), 0), COALESCE(MAX(end_distance), 0)
+                   FROM segments WHERE road_id = ?'
+            );
+            $m->execute([$roadId]);
+            [$count, $lastNo, $lastEnd] = $m->fetch(PDO::FETCH_NUM);
+            if ((int)$count >= CITY_AUDIT_MAX_SEGMENTS) {
+                throw new DomainException('This road already has the maximum number of segments.');
+            }
+            $start = round((float)$lastEnd, 2);
+            $end   = round($start + $length, 2);
+            $no    = (int)$lastNo + 1;
+            if ($end > CITY_AUDIT_MAX_ROAD_LENGTH) {
+                throw new DomainException('The road cannot be longer than ' . CITY_AUDIT_MAX_ROAD_LENGTH . ' metres.');
+            }
+
+            $this->pdo->prepare(
+                'INSERT INTO segments
+                   (public_id, road_id, segment_number, start_label, end_label,
+                    start_distance, end_distance, length)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            )->execute([
+                'SEG-R' . $roadId . 'N' . $no, $roadId, $no,
+                cityAuditDistanceLabel($start), cityAuditDistanceLabel($end),
+                $start, $end, $length,
+            ]);
+            $segId = (int)$this->pdo->lastInsertId();
+            $this->pdo->prepare('UPDATE segments SET public_id = ? WHERE id = ?')
+                      ->execute(['SEG-' . str_pad((string)$segId, 4, '0', STR_PAD_LEFT), $segId]);
+
+            $sum = $this->pdo->prepare('SELECT COALESCE(SUM(length), 0) FROM segments WHERE road_id = ?');
+            $sum->execute([$roadId]);
+            $total = round((float)$sum->fetchColumn(), 2);
+            $this->pdo->prepare('UPDATE roads SET total_length = ? WHERE id = ?')->execute([$total, $roadId]);
+            $this->pdo->commit();
+        } catch (Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+
+        return ['road_id' => $roadId, 'segment_id' => $segId, 'segment_number' => $no, 'total_length' => $total];
     }
 
     /** Remove a road (and its segments) from an audit while nothing has been audited on it. */

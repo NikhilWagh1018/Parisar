@@ -18,7 +18,7 @@ class CityAuditRepositoryTest extends TestCase
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->pdo->exec('CREATE TABLE cities (id INTEGER PRIMARY KEY, name TEXT)');
         $this->pdo->exec('CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, role TEXT NOT NULL DEFAULT \'surveyor\',
-            is_active INTEGER NOT NULL DEFAULT 1, city_id INTEGER NULL, team_leader_id INTEGER NULL)');
+            is_active INTEGER NOT NULL DEFAULT 1, city_id INTEGER NULL, team_leader_id INTEGER NULL, organisation TEXT NULL)');
         $this->pdo->exec('CREATE TABLE road_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, canonical_name TEXT NOT NULL,
             city_id INTEGER NOT NULL, is_flagged INTEGER NOT NULL DEFAULT 0)');
         $this->pdo->exec('CREATE TABLE city_audits (id INTEGER PRIMARY KEY AUTOINCREMENT, city_id INTEGER NOT NULL,
@@ -450,5 +450,62 @@ class CityAuditRepositoryTest extends TestCase
         $this->assertSame('2026-10-04', $found['audit_date']);
         $this->assertSame(2026, (int)$found['audit_year']);
         $this->assertSame('2026-10-04', $this->repo->listForCity(1)[0]['audit_date']);
+    }
+    public function test_a_segment_can_be_added_to_the_end_of_an_existing_road(): void
+    {
+        $a   = $this->newAudit();
+        $res = $this->repo->addRoad($a, 2, 1, 250.0, 100.0);   // 100 + 100 + 50
+        $out = $this->repo->addSegment($a, 2, $res['road_id'], 80.0);
+
+        $this->assertSame(4, $out['segment_number']);
+        $this->assertSame(330.0, $out['total_length']);
+        $row = $this->pdo->query('SELECT start_distance, end_distance, length, start_label, end_label, status FROM segments WHERE id = ' . $out['segment_id'])->fetch(PDO::FETCH_ASSOC);
+        $this->assertSame(250.0, (float)$row['start_distance']);
+        $this->assertSame(330.0, (float)$row['end_distance']);
+        $this->assertSame(80.0, (float)$row['length']);
+        $this->assertSame('250m', $row['start_label']);
+        $this->assertSame('330m', $row['end_label']);
+        $this->assertSame('pending', $row['status']);
+        $this->assertSame(330.0, (float)$this->pdo->query('SELECT total_length FROM roads WHERE id = ' . $res['road_id'])->fetchColumn());
+    }
+
+    public function test_adding_a_segment_after_a_delete_keeps_numbers_unique(): void
+    {
+        $a   = $this->newAudit();
+        $res = $this->repo->addRoad($a, 2, 1, 300.0, 100.0);
+        $ids = $this->segmentIds($res['road_id']);
+        $this->repo->removeSegment($a, $ids[1]);                // numbers 1 and 3 remain
+        $out = $this->repo->addSegment($a, 2, $res['road_id'], 100.0);
+        $this->assertSame(4, $out['segment_number']);
+    }
+
+    public function test_adding_a_segment_is_refused_for_bad_input(): void
+    {
+        $a   = $this->newAudit();
+        $res = $this->repo->addRoad($a, 2, 1, 200.0, 100.0);
+        foreach ([[$res['road_id'], 5.0], [9999, 100.0]] as [$road, $len]) {
+            try {
+                $this->repo->addSegment($a, 2, $road, $len);
+                $this->fail('should be refused');
+            } catch (DomainException $e) {
+                $this->assertTrue(true);
+            }
+        }
+        $this->pdo->exec('UPDATE roads SET finalized_at = CURRENT_TIMESTAMP WHERE id = ' . $res['road_id']);
+        $this->expectException(DomainException::class);
+        $this->repo->addSegment($a, 2, $res['road_id'], 100.0);
+    }
+
+    public function test_leader_details_give_name_and_organisation(): void
+    {
+        $a = $this->newAudit();
+        $this->assertNull($this->repo->leaderDetails($a));
+
+        $this->pdo->exec("UPDATE users SET organisation = 'Pune Cycle Club' WHERE id = 2");
+        $this->repo->setLeader((int)$a['id'], 2);
+        $this->assertSame(['name' => 'Nick', 'organisation' => 'Pune Cycle Club'], $this->repo->leaderDetails($this->repo->find((int)$a['id'])));
+
+        $this->repo->setLeader((int)$a['id'], 14);   // no organisation on file
+        $this->assertSame(['name' => 'Other Admin', 'organisation' => null], $this->repo->leaderDetails($this->repo->find((int)$a['id'])));
     }
 }
