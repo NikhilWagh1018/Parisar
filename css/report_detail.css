@@ -15,9 +15,9 @@
 /* ── Header ─────────────────────────────────────────────────── */
 .rv-head {
   position: relative; overflow: hidden; color: var(--gd, #1a3d0a); padding: 24px 40px 30px;
-  background:
-    radial-gradient(360px 240px at 100% 0%, rgba(134, 185, 59, .20), transparent 72%),
-    linear-gradient(180deg, #f4faeb 0%, #ffffff 100%);
+  /* Opaque colours only: see-through gradient stops are dropped by some PDF viewers. */
+  background: linear-gradient(200deg, #e1efcb 0%, #f1f8e6 40%, #ffffff 100%);
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
   border-top: 7px solid var(--g, #3d7a1f);
 }
 .rv-head > * { position: relative; }

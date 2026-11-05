@@ -54,8 +54,11 @@ $totalLen   = array_sum(array_column($roads, 'length'));
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 $printWhen = cityLocalTime(gmdate('Y-m-d H:i:s')) . ' IST';
 $cityLabel = (string)($audit['city_name'] ?? '');
-$logoPath  = __DIR__ . '/../../assets/parisar-logo.png';
-$logoB64   = is_file($logoPath) ? 'data:image/png;base64,' . base64_encode((string)file_get_contents($logoPath)) : '';
+// Vector logo first: it stays sharp at any size and, unlike the transparent PNG, prints with no box behind it.
+$logoSvg   = __DIR__ . '/../../assets/parisar-logo.svg';
+$logoPng   = __DIR__ . '/../../assets/parisar-logo.png';
+$logoB64   = is_file($logoSvg) ? 'data:image/svg+xml;base64,' . base64_encode((string)file_get_contents($logoSvg))
+           : (is_file($logoPng) ? 'data:image/png;base64,' . base64_encode((string)file_get_contents($logoPng)) : '');
 $orgName   = defined('APP_ORG') ? APP_ORG : 'Parisar';
 // The City Leader who runs this audit, and the organisation they belong to.
 try { $leader = (new CityAuditRepository($pdo))->leaderDetails($audit); } catch (Throwable $e) { $leader = null; }
