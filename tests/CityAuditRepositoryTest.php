@@ -148,15 +148,21 @@ class CityAuditRepositoryTest extends TestCase
         }
     }
 
-    public function test_roads_cannot_change_once_audit_leaves_draft(): void
+    public function test_roads_can_change_while_active_but_not_once_finalised(): void
     {
         $a = $this->newAudit();
         $this->pdo->exec("UPDATE city_audits SET status = 'active' WHERE id = " . (int)$a['id']);
         $a = $this->repo->find((int)$a['id']);
+        $this->assertTrue($this->repo->isEditable($a));
+        $res = $this->repo->addRoad($a, 2, 1, 500.0, 100.0);
+        $this->repo->removeRoad($a, $res['road_id']);
+
+        $this->pdo->exec("UPDATE city_audits SET status = 'finalised' WHERE id = " . (int)$a['id']);
+        $a = $this->repo->find((int)$a['id']);
         $this->assertFalse($this->repo->isEditable($a));
         try {
             $this->repo->addRoad($a, 2, 1, 500.0, 100.0);
-            $this->fail('no adds after draft');
+            $this->fail('no adds once finalised');
         } catch (DomainException $e) {
             $this->assertTrue(true);
         }
@@ -373,7 +379,7 @@ class CityAuditRepositoryTest extends TestCase
         }
     }
 
-    public function test_assignments_continue_after_activation_but_roads_do_not(): void
+    public function test_assignments_and_road_edits_continue_after_activation(): void
     {
         $a   = $this->newAudit();
         $ids = $this->segmentIds($this->repo->addRoad($a, 2, 1, 500.0, 500.0)['road_id']);
@@ -382,7 +388,7 @@ class CityAuditRepositoryTest extends TestCase
         $a = $this->repo->find((int)$a['id']);
 
         $this->assertTrue($this->repo->canAssign($a));
-        $this->assertFalse($this->repo->isEditable($a));
+        $this->assertTrue($this->repo->isEditable($a));
         $this->repo->assignSegments($a, 2, $ids, 11);
         $this->assertSame('Ravi', $this->repo->roadsWithSegments((int)$a['id'])[0]['segments'][0]['assigned_name']);
 
@@ -404,6 +410,37 @@ class CityAuditRepositoryTest extends TestCase
         $this->repo->assignSegments($a, 2, $this->segmentIds($res['road_id']), 10);
         $this->repo->removeRoad($a, $res['road_id']);
         $this->assertSame(0, (int)$this->pdo->query('SELECT COUNT(*) FROM segment_assignments')->fetchColumn());
+    }
+
+    public function test_a_mistaken_segment_can_be_deleted_until_work_starts(): void
+    {
+        $a   = $this->newAudit();
+        $res = $this->repo->addRoad($a, 2, 1, 1000.0, 500.0);
+        $ids = $this->segmentIds($res['road_id']);
+        $this->repo->assignSegments($a, 2, [$ids[1]], 10);
+
+        $out = $this->repo->removeSegment($a, $ids[1]);
+        $this->assertSame(1, $out['remaining']);
+        $this->assertSame(0, (int)$this->pdo->query('SELECT COUNT(*) FROM segment_assignments')->fetchColumn());
+        $this->assertSame(500.0, (float)$this->pdo->query('SELECT total_length FROM roads WHERE id = ' . $res['road_id'])->fetchColumn());
+
+        $this->pdo->exec("UPDATE segments SET status = 'in_progress' WHERE id = " . $ids[0]);
+        try {
+            $this->repo->removeSegment($a, $ids[0]);
+            $this->fail('no delete once auditing started');
+        } catch (DomainException $e) {
+            $this->assertTrue(true);
+        }
+    }
+
+    public function test_deleting_the_last_segment_removes_the_road(): void
+    {
+        $a   = $this->newAudit();
+        $res = $this->repo->addRoad($a, 2, 1, 500.0, 500.0);
+        $ids = $this->segmentIds($res['road_id']);
+        $out = $this->repo->removeSegment($a, $ids[0]);
+        $this->assertSame(0, $out['remaining']);
+        $this->assertSame(0, (int)$this->pdo->query('SELECT COUNT(*) FROM roads')->fetchColumn());
     }
 
     public function test_the_audit_date_is_stored_and_listed(): void

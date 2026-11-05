@@ -126,6 +126,20 @@
       }
     });
   });
+  // ── Audit page: delete a segment made by mistake ──────────────
+  document.querySelectorAll('.ca-seg-remove').forEach(function (b) {
+    b.addEventListener('click', async function () {
+      if (!(await confirmBox({ title: 'Delete segment', message: 'Delete segment ' + b.dataset.no + ' of ' + b.dataset.name + '? Its surveyor assignment is removed too.', confirmText: 'Delete', danger: true }))) return;
+      b.disabled = true;
+      try {
+        await post('../api/city/audit_segment_remove.php', { audit_id: app.dataset.auditId, segment_id: b.dataset.segmentId });
+        window.location.reload();
+      } catch (e) {
+        toast(e.message, 'error');
+        b.disabled = false;
+      }
+    });
+  });
   // ── Audit page: assign surveyors ──────────────────────────────
   document.querySelectorAll('.ca-seg-assign').forEach(function (sel) {
     sel.addEventListener('change', async function () {
@@ -186,7 +200,7 @@
   var activateBtn = document.getElementById('caActivate');
   if (activateBtn) {
     activateBtn.addEventListener('click', async function () {
-      if (!(await confirmBox({ title: 'Activate audit', message: 'Activate this audit? Roads can no longer be added or removed afterwards.', confirmText: 'Activate' }))) return;
+      if (!(await confirmBox({ title: 'Activate audit', message: 'Activate this audit so surveyors can start? You can still add or remove roads and segments later, until auditing starts on them.', confirmText: 'Activate' }))) return;
       activateBtn.disabled = true;
       try {
         await post('../api/city/audit_activate.php', { audit_id: app.dataset.auditId });

@@ -16,6 +16,7 @@ const CITY_LEADER_ALLOWED_SCRIPTS = [
     'pages/city_audit.php',
     'api/city/audit_road_add.php',
     'api/city/audit_road_remove.php',
+    'api/city/audit_segment_remove.php',
     'api/city/audit_assign.php',
     'api/city/audit_activate.php',
     'api/city/audit_review.php',

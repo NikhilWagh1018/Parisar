@@ -204,18 +204,19 @@ $today     = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('Y-
       </div>
       <div class="pd-scroll">
         <table class="pd-table">
-          <thead><tr><th>Audit</th><th>City</th><th>Status</th><th>Progress</th><th>Last activity</th><th></th></tr></thead>
+          <thead><tr><th>Audit</th><th>City</th><th>City Leader</th><th>Status</th><th>Progress</th><th>Last activity</th><th></th></tr></thead>
           <tbody>
           <?php if (!$audits): ?>
-            <tr><td colspan="6" class="pd-empty">No audits yet. Use “+ New Project” to create the first one; the City Leader then adds its roads.</td></tr>
+            <tr><td colspan="7" class="pd-empty">No audits yet. Use “+ New Project” to create the first one; the City Leader then adds its roads.</td></tr>
           <?php elseif (!$openAudits): ?>
-            <tr><td colspan="6" class="pd-empty">No audits in progress. Finished audits are listed under <a class="pd-link" href="published_audits.php">Published Audits</a>.</td></tr>
+            <tr><td colspan="7" class="pd-empty">No audits in progress. Finished audits are listed under <a class="pd-link" href="published_audits.php">Published Audits</a>.</td></tr>
           <?php endif; ?>
           <?php foreach ($openAudits as $a):
               $p = cityDashProgress($a['done_count'], $a['segment_count']); ?>
             <tr>
               <td><strong><?= $h($a['name']) ?></strong><span class="pd-sub"><?= $h(cityAuditDateLabel($a['audit_date'] ?? null, (int)$a['audit_year'])) ?> · <?= $h(cityPlural($a['road_count'], 'road', 'roads')) ?></span></td>
               <td><?= $h($a['city_name']) ?></td>
+              <td><?php if ($a['leader_name'] !== null): ?><?= $h($a['leader_name']) ?><?php else: ?><span class="pd-warn-text">Not assigned</span><?php endif; ?></td>
               <td><span class="pd-chip pd-chip-<?= $h(adminAuditStatusClass((string)$a['status'])) ?>"><?= $h(adminAuditStatusLabel((string)$a['status'])) ?></span></td>
               <td>
                 <?php if ($a['segment_count'] > 0): ?>

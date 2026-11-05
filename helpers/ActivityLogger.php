@@ -27,6 +27,7 @@ class ActivityLogger
     public const AUDIT_DELETED      = 'audit_deleted';
     public const AUDIT_ROAD_ADDED   = 'audit_road_added';
     public const AUDIT_ROAD_REMOVED = 'audit_road_removed';
+    public const AUDIT_SEGMENT_REMOVED = 'audit_segment_removed';
     public const AUDIT_SEGMENTS_ASSIGNED = 'audit_segments_assigned';
     public const AUDIT_ACTIVATED    = 'audit_activated';
     public const AUDIT_SEGMENT_APPROVED  = 'audit_segment_approved';

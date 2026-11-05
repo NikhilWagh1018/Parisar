@@ -249,11 +249,11 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
           <p class="ca-hint-line">No active surveyors are registered in <?= $h($audit['city_name']) ?> yet, so segments cannot be assigned.</p>
         <?php endif; ?>
       <?php elseif ($canActivate && !$canActivateNow): ?>
-        <p class="ca-hint-line"><?= $counts['total'] === 0 ? 'Add a road, then assign its segments.' : 'Assign at least one segment to a surveyor to activate the audit. Roads cannot be added or removed after that.' ?></p>
+        <p class="ca-hint-line"><?= $counts['total'] === 0 ? 'Add a road, then assign its segments.' : 'Assign at least one segment to a surveyor to activate the audit.' ?></p>
       <?php elseif ($canActivate && !$allAssigned): ?>
-        <p class="ca-hint-line">You can activate now. The <?= (int)($counts['total'] - $counts['assigned']) ?> unassigned segment(s) can still be assigned later. Roads cannot be added or removed after activation.</p>
+        <p class="ca-hint-line">You can activate now. The <?= (int)($counts['total'] - $counts['assigned']) ?> unassigned segment(s) can still be assigned later.</p>
       <?php elseif ($audit['status'] === 'active'): ?>
-        <p class="ca-hint-line">This audit is active. Segments can still be reassigned until auditing starts on them.</p>
+        <p class="ca-hint-line">This audit is active. You can still add or remove roads and segments, and reassign segments, until auditing starts on them.</p>
       <?php endif; ?>
     </div>
 
@@ -488,7 +488,7 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
             <?php endif; ?>
             <div class="rd-scroll">
               <table class="rd-table">
-                <thead><tr><th>#</th><th>From</th><th>To</th><th>Length</th><th>Status</th><th>Surveyor</th></tr></thead>
+                <thead><tr><th>#</th><th>From</th><th>To</th><th>Length</th><th>Status</th><th>Surveyor</th><?php if ($canEdit): ?><th></th><?php endif; ?></tr></thead>
                 <tbody>
                 <?php foreach ($r['segments'] as $s): ?>
                   <tr>
@@ -515,6 +515,14 @@ $barClass = static fn(float $v): string => cityScoreBarClass($v);
                       <?= $s['assigned_name'] !== null ? $h($s['assigned_name']) : '—' ?>
                     <?php endif; ?>
                     </td>
+                    <?php if ($canEdit): ?>
+                    <td>
+                      <?php if ($s['status'] === 'pending'): ?>
+                        <button class="ca-btn danger ca-seg-remove" type="button" data-segment-id="<?= (int)$s['segment_id'] ?>"
+                                data-no="<?= (int)$s['segment_number'] ?>" data-name="<?= $h($r['name']) ?>">Delete</button>
+                      <?php endif; ?>
+                    </td>
+                    <?php endif; ?>
                   </tr>
                 <?php endforeach; ?>
                 </tbody>
