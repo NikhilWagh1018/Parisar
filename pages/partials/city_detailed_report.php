@@ -107,7 +107,9 @@ $initial    = static fn(string $n): string => mb_strtoupper(mb_substr(trim($n) !
 </head>
 <body>
 
-<?php if ($logoB64): ?><div class="watermark"><img src="<?= $logoB64 ?>" alt=""></div><?php endif; ?>
+<?php $wmPath = __DIR__ . '/../../assets/parisar-watermark.svg';
+      $wmB64 = is_file($wmPath) ? 'data:image/svg+xml;base64,' . base64_encode((string)file_get_contents($wmPath)) : ''; ?>
+<?php if ($wmB64): ?><div class="watermark"><img src="<?= $wmB64 ?>" alt=""></div><?php endif; ?>
 
 <div class="toolbar">
   <div class="toolbar-title">Detailed report</div>
@@ -304,9 +306,19 @@ $initial    = static fn(string $n): string => mb_strtoupper(mb_substr(trim($n) !
       </div>
       <?php endif; ?>
 
-      <?php if ($an['recommend']): ?>
+      <?php
+        // Recommendations are generated from what the audits recorded. A clean road has none, so show a short
+        // closing note instead of leaving the section out.
+        $recs = $an['recommend'];
+        if (!$recs && $an['scored'] > 0) {
+            $recs = ['No major issues were recorded on this road.'];
+            if ($an['weak']) { $recs[] = ucfirst((string)$an['weak']) . ' is the highest (weakest) dimension, so keep it under review.'; }
+            $recs[] = 'Continue routine maintenance and re-audit at regular intervals.';
+        }
+      ?>
+      <?php if ($recs): ?>
       <div class="rv-h"><span class="rv-num"><?= $sec() ?></span> Recommendations</div>
-      <ol class="rv-list rv-recs"><?php foreach ($an['recommend'] as $rec): ?><li><?= $h($rec) ?></li><?php endforeach; ?></ol>
+      <ol class="rv-list rv-recs"><?php foreach ($recs as $rec): ?><li><?= $h($rec) ?></li><?php endforeach; ?></ol>
       <?php endif; ?>
 
       <?php
