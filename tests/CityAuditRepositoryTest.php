@@ -508,4 +508,48 @@ class CityAuditRepositoryTest extends TestCase
         $this->repo->setLeader((int)$a['id'], 14);   // no organisation on file
         $this->assertSame(['name' => 'Other Admin', 'organisation' => null], $this->repo->leaderDetails($this->repo->find((int)$a['id'])));
     }
+    public function test_assignees_and_road_segment_lookups(): void
+    {
+        $a   = $this->newAudit();
+        $res = $this->repo->addRoad($a, 2, 1, 1500.0, 500.0);
+        $ids = $this->segmentIds($res['road_id']);
+        $this->repo->assignSegments($a, 2, [$ids[0], $ids[1]], 10);
+
+        $this->assertSame([$ids[0] => 10, $ids[1] => 10], $this->repo->assigneesOfSegments((int)$a['id'], $ids));
+        $this->assertSame([], $this->repo->assigneesOfSegments((int)$a['id'], []));
+        $this->assertSame([], $this->repo->assigneesOfSegments(9999, $ids));          // wrong audit
+        $this->assertSame($ids, $this->repo->segmentIdsOfRoad((int)$a['id'], $res['road_id']));
+        $this->assertSame([], $this->repo->segmentIdsOfRoad(9999, $res['road_id']));  // wrong audit
+
+        $this->pdo->exec('UPDATE segments SET status = \'assigned\' WHERE id = ' . (int)$ids[0]);
+        $this->assertSame([$ids[1], $ids[2]], $this->repo->segmentIdsOfRoad((int)$a['id'], $res['road_id'], true));
+    }
+
+    public function test_moving_a_segment_to_another_surveyor_tells_the_old_one(): void
+    {
+        // the case from the field: assigned to Asha, then moved to Ravi
+        require_once __DIR__ . '/../helpers/Notifications.php';
+        require_once __DIR__ . '/../repositories/NotificationRepository.php';
+        $this->pdo->exec('CREATE TABLE notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+            type TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL DEFAULT \'\', link TEXT NULL,
+            is_read INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+        $notes = new NotificationRepository($this->pdo);
+
+        $a   = $this->newAudit();
+        $ids = $this->segmentIds($this->repo->addRoad($a, 2, 1, 1000.0, 500.0)['road_id']);
+        $this->repo->assignSegments($a, 2, [$ids[0]], 10);
+
+        $before = $this->repo->assigneesOfSegments((int)$a['id'], [$ids[0]]);
+        $this->repo->assignSegments($a, 2, [$ids[0]], 11);
+        $plan = assignmentNotifyPlan($before, [$ids[0]], 11);
+        $notes->tellUnassigned($plan['lost'], (string)$a['name'], 'moved');
+
+        $this->assertSame(1, $plan['gained']);
+        $asha = $notes->unread(10);
+        $this->assertCount(1, $asha);
+        $this->assertStringContainsString('to another surveyor', $asha[0]['body']);
+        $this->assertCount(0, $notes->unread(11));    // Ravi is told about the new work by the endpoint, not here
+        // Asha's own list of assigned segments is already empty, as the dashboard reads it live
+        $this->assertSame([], array_keys($this->repo->assigneesOfSegments((int)$a['id'], [$ids[0]]), 10, true));
+    }
 }

@@ -20,6 +20,28 @@ class NotificationRepository
         return (int)$this->pdo->lastInsertId();
     }
 
+    /**
+     * Tell each surveyor in $lost (surveyor id => segment count) that segments were taken
+     * from them. Needs helpers/Notifications.php. One failing insert never stops the rest.
+     *
+     * @param array<int,int> $lost
+     * @param string         $reason 'moved' | 'cleared' | 'removed'
+     */
+    public function tellUnassigned(array $lost, string $auditName, string $reason): void
+    {
+        foreach ($lost as $surveyorId => $count) {
+            if ($count < 1) {
+                continue;
+            }
+            try {
+                $t = unassignmentNotificationText($auditName, (int)$count, $reason);
+                $this->create((int)$surveyorId, NOTIFY_UNASSIGNED, $t['title'], $t['body'], 'dashboard.php');
+            } catch (Throwable $e) {
+                error_log('NotificationRepository::tellUnassigned failed: ' . $e->getMessage());
+            }
+        }
+    }
+
     /** Newest unread notifications first.
      *  @return list<array{id:int,type:string,title:string,body:string,link:?string,created_at:string,is_read:bool}> */
     public function unread(int $userId, int $limit = 20): array

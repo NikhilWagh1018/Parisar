@@ -23,6 +23,8 @@ require_once __DIR__ . '/../../helpers/CityApi.php';
 require_once __DIR__ . '/../../helpers/CityAudit.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 require_once __DIR__ . '/../../repositories/CityAuditRepository.php';
+require_once __DIR__ . '/../../repositories/NotificationRepository.php';
+require_once __DIR__ . '/../../helpers/Notifications.php';
 
 $body = cityApiContext($CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID);
 $repo = new CityAuditRepository($pdo);
@@ -38,6 +40,14 @@ if ($roadId === false || $roadId === null) {
     cityApiFail(400, 'Invalid request.');
 }
 
+// Who holds this road's segments now, so they can be told once the road is gone.
+$segIds = [];
+$holders = [];
+try {
+    $segIds  = $repo->segmentIdsOfRoad((int)$audit['id'], (int)$roadId);
+    $holders = $repo->assigneesOfSegments((int)$audit['id'], $segIds);
+} catch (Throwable $e) { error_log('audit_road_remove lookup failed: ' . $e->getMessage()); }
+
 try {
     $repo->removeRoad($audit, (int)$roadId);
 } catch (DomainException $e) {
@@ -47,5 +57,13 @@ try {
 ActivityLogger::log($pdo, ActivityLogger::AUDIT_ROAD_REMOVED, $CURRENT_USER_ID, [
     'audit_id' => (int)$audit['id'], 'road_id' => (int)$roadId,
 ]);
+
+try {
+    (new NotificationRepository($pdo))->tellUnassigned(
+        assignmentNotifyPlan($holders, $segIds, null)['lost'], (string)$audit['name'], 'removed'
+    );
+} catch (Throwable $e) {
+    error_log('api/city/audit_road_remove.php notification failed: ' . $e->getMessage());
+}
 
 echo json_encode(['success' => true]);

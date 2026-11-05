@@ -41,6 +41,63 @@ class NotificationsTest extends TestCase
         $this->assertStringContainsString('once the audit is activated', $t['body']);
     }
 
+    // ── taking segments away ─────────────────────────────────────
+
+    public function test_moved_text_says_another_surveyor_has_it_now(): void
+    {
+        $t = unassignmentNotificationText('002', 1, 'moved');
+        $this->assertSame('Assignment changed', $t['title']);
+        $this->assertStringContainsString('moved 1 segment in the audit "002" to another surveyor', $t['body']);
+        $this->assertStringContainsString('It is no longer on your dashboard', $t['body']);
+
+        $many = unassignmentNotificationText('002', 3, 'moved');
+        $this->assertStringContainsString('3 segments', $many['body']);
+        $this->assertStringContainsString('They are no longer on your dashboard', $many['body']);
+    }
+
+    public function test_cleared_and_removed_texts_differ(): void
+    {
+        $this->assertStringContainsString('took you off 2 segments', unassignmentNotificationText('A', 2, 'cleared')['body']);
+        $removed = unassignmentNotificationText('A', 1, 'removed');
+        $this->assertSame('Assignment removed', $removed['title']);
+        $this->assertStringContainsString('removed 1 segment that you were assigned from the audit "A"', $removed['body']);
+    }
+
+    public function test_plan_tells_the_old_surveyor_when_work_moves(): void
+    {
+        // segments 1 and 2 were with surveyor 10; both move to 11
+        $plan = assignmentNotifyPlan([1 => 10, 2 => 10], [1, 2], 11);
+        $this->assertSame(['gained' => 2, 'lost' => [10 => 2]], $plan);
+    }
+
+    public function test_plan_does_not_notify_when_nothing_really_changes(): void
+    {
+        // giving a surveyor segments they already hold changes nothing
+        $this->assertSame(['gained' => 0, 'lost' => []], assignmentNotifyPlan([1 => 10, 2 => 10], [1, 2], 10));
+        // a partly new set: only the new segment counts for them
+        $this->assertSame(['gained' => 1, 'lost' => []], assignmentNotifyPlan([1 => 10], [1, 2], 10));
+    }
+
+    public function test_plan_for_clearing_and_for_first_time_assignment(): void
+    {
+        $this->assertSame(['gained' => 0, 'lost' => [10 => 1, 11 => 1]], assignmentNotifyPlan([1 => 10, 2 => 11, 3 => 11], [1, 2], null));
+        $this->assertSame(['gained' => 2, 'lost' => []], assignmentNotifyPlan([], [1, 2], 10));
+        $this->assertSame(['gained' => 0, 'lost' => []], assignmentNotifyPlan([], [], 10));
+    }
+
+    public function test_tell_unassigned_writes_one_notification_per_surveyor(): void
+    {
+        $this->repo->tellUnassigned([10 => 2, 11 => 1, 12 => 0], '002', 'moved');
+        $a = $this->repo->unread(10);
+        $this->assertCount(1, $a);
+        $this->assertSame(NOTIFY_UNASSIGNED, $a[0]['type']);
+        $this->assertSame('Assignment changed', $a[0]['title']);
+        $this->assertStringContainsString('2 segments', $a[0]['body']);
+        $this->assertSame('dashboard.php', $a[0]['link']);
+        $this->assertCount(1, $this->repo->unread(11));
+        $this->assertCount(0, $this->repo->unread(12));   // a count of 0 is skipped
+    }
+
     // ── repository ──────────────────────────────────────────────
 
     public function test_unread_lists_newest_first_and_only_for_that_user(): void

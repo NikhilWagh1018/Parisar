@@ -8,6 +8,7 @@ declare(strict_types=1);
 // ═══════════════════════════════════════════════════════════════
 
 const NOTIFY_ASSIGNED = 'segments_assigned';
+const NOTIFY_UNASSIGNED = 'segments_unassigned';
 const NOTIFY_PROJECT_DELETED = 'project_deleted';
 const NOTIFY_PROJECT_UPDATED = 'project_updated';
 const NOTIFY_LEADER_CHANGED  = 'city_leader_changed';
@@ -40,6 +41,56 @@ function assignmentNotificationText(string $auditName, string $auditStatus, int 
         : ' You can start from your dashboard.';
 
     return ['title' => 'New assignment', 'body' => $body];
+}
+
+/**
+ * What a surveyor is told when segments they were given are taken away again:
+ * moved to another surveyor, cleared, or deleted along with the segment / road.
+ *
+ * @param string $reason 'moved' | 'cleared' | 'removed'
+ * @return array{title:string, body:string}
+ */
+function unassignmentNotificationText(string $auditName, int $segments, string $reason): array
+{
+    $what = notifyPlural($segments, 'segment', 'segments');
+    $tail = ' ' . ($segments === 1 ? 'It is' : 'They are') . ' no longer on your dashboard.';
+    switch ($reason) {
+        case 'removed':
+            return ['title' => 'Assignment removed',
+                    'body'  => 'Your City Leader removed ' . $what . ' that you were assigned from the audit "' . $auditName . '".' . $tail];
+        case 'cleared':
+            return ['title' => 'Assignment removed',
+                    'body'  => 'Your City Leader took you off ' . $what . ' in the audit "' . $auditName . '".' . $tail];
+        default:
+            return ['title' => 'Assignment changed',
+                    'body'  => 'Your City Leader moved ' . $what . ' in the audit "' . $auditName . '" to another surveyor.' . $tail];
+    }
+}
+
+/**
+ * Who has to be told after an assignment change.
+ *
+ * @param array<int,int> $before  segment id => surveyor who held it before ($holders may omit unassigned segments)
+ * @param list<int>      $segmentIds every segment being changed
+ * @param int|null       $newSurveyorId the new surveyor, null when clearing
+ * @return array{gained:int, lost:array<int,int>}
+ *         gained = segments the new surveyor did not already have;
+ *         lost   = surveyor id => how many segments they lose
+ */
+function assignmentNotifyPlan(array $before, array $segmentIds, ?int $newSurveyorId): array
+{
+    $gained = 0;
+    $lost   = [];
+    foreach (array_unique(array_map('intval', $segmentIds)) as $segId) {
+        $old = $before[$segId] ?? null;
+        if ($newSurveyorId !== null && $old !== $newSurveyorId) {
+            $gained++;
+        }
+        if ($old !== null && $old !== $newSurveyorId) {
+            $lost[$old] = ($lost[$old] ?? 0) + 1;
+        }
+    }
+    return ['gained' => $gained, 'lost' => $lost];
 }
 
 /** What people on a project are told when the Admin deletes it. */

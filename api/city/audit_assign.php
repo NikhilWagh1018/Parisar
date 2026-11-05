@@ -43,6 +43,18 @@ if ($v['errors']) {
 }
 $c = $v['clean'];
 
+// Remember who holds these segments now, so whoever loses them can be told afterwards.
+$before = [];
+$touched = [];
+try {
+    $touched = $c['mode'] === 'road'
+        ? $repo->segmentIdsOfRoad((int)$audit['id'], (int)$c['road_id'], true)
+        : array_map('intval', $c['segment_ids']);
+    $before = $repo->assigneesOfSegments((int)$audit['id'], $touched);
+} catch (Throwable $e) {
+    error_log('api/city/audit_assign.php lookup failed: ' . $e->getMessage());
+}
+
 try {
     if ($c['mode'] === 'road') {
         $res = $repo->assignRoad($audit, $CURRENT_USER_ID, (int)$c['road_id'], $c['surveyor_id']);
@@ -60,22 +72,28 @@ ActivityLogger::log($pdo, ActivityLogger::AUDIT_SEGMENTS_ASSIGNED, $CURRENT_USER
     'segments'    => $res['assigned'],
 ]);
 
-// Tell the surveyor about it. A failure here must never undo or fail the assignment.
-if ($c['surveyor_id'] !== null && (int)$res['assigned'] > 0) {
-    try {
+// Tell the people involved. A failure here must never undo or fail the assignment.
+// The new surveyor hears only about segments they did not already have, and a surveyor
+// who loses segments (moved to someone else, or cleared) is told too.
+try {
+    $plan = assignmentNotifyPlan($before, $touched, $c['surveyor_id']);
+    $notifier = new NotificationRepository($pdo);
+
+    // If the lookup above failed we cannot tell what was already theirs, so tell them the lot.
+    $gained = $touched ? $plan['gained'] : (int)$res['assigned'];
+    if ($c['surveyor_id'] !== null && $gained > 0) {
         $roadName = null;
         if ($c['mode'] === 'road') {
             $rn = $pdo->prepare('SELECT name FROM roads WHERE id = ?');
             $rn->execute([(int)$c['road_id']]);
             $roadName = ($rn->fetchColumn() ?: null);
         }
-        $text = assignmentNotificationText((string)$audit['name'], (string)$audit['status'], (int)$res['assigned'], $roadName);
-        (new NotificationRepository($pdo))->create(
-            (int)$c['surveyor_id'], NOTIFY_ASSIGNED, $text['title'], $text['body'], 'dashboard.php'
-        );
-    } catch (Throwable $e) {
-        error_log('api/city/audit_assign.php notification failed: ' . $e->getMessage());
+        $text = assignmentNotificationText((string)$audit['name'], (string)$audit['status'], $gained, $roadName);
+        $notifier->create((int)$c['surveyor_id'], NOTIFY_ASSIGNED, $text['title'], $text['body'], 'dashboard.php');
     }
+    $notifier->tellUnassigned($plan['lost'], (string)$audit['name'], $c['surveyor_id'] === null ? 'cleared' : 'moved');
+} catch (Throwable $e) {
+    error_log('api/city/audit_assign.php notification failed: ' . $e->getMessage());
 }
 
 echo json_encode(['success' => true] + $res);
