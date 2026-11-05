@@ -52,7 +52,6 @@ $allDone    = $totalSegs > 0 && $approvedSegs === $totalSegs;
 $totalLen   = array_sum(array_column($roads, 'length'));
 
 $h         = static fn($v): string => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
-$printDate = date('d M Y');
 $printWhen = cityLocalTime(gmdate('Y-m-d H:i:s')) . ' IST';
 $cityLabel = (string)($audit['city_name'] ?? '');
 $logoPath  = __DIR__ . '/../../assets/parisar-logo.png';
@@ -60,7 +59,15 @@ $logoB64   = is_file($logoPath) ? 'data:image/png;base64,' . base64_encode((stri
 $orgName   = defined('APP_ORG') ? APP_ORG : 'Parisar';
 // The City Leader who runs this audit, and the organisation they belong to.
 try { $leader = (new CityAuditRepository($pdo))->leaderDetails($audit); } catch (Throwable $e) { $leader = null; }
-$roadLabel = count($roads) === 1 ? 'road' : 'roads';
+$manyRoads = count($roads) > 1;
+// Each score dimension is explained once, in the summary, instead of under every road.
+$dimInfo = [
+    ['Safety',     'safety',     'var(--safety-c)', 'Buffer zones, after-sunset lighting, intersection traffic devices, obstruction density'],
+    ['Continuity', 'continuity', 'var(--cont-c)',   'Ramps at intersections, markings and signage, obstruction count, missing track sections'],
+    ['Comfort',    'comfort',    'var(--comf-c)',   'Surface material, cyclists slowed by obstructions, shade, footpath quality'],
+];
+$statusTone = $status === 'published' ? 'ok' : (in_array($status, ['closed', 'awaiting_approval', 'with_admin'], true) ? 'wait' : 'plain');
+$initial    = static fn(string $n): string => mb_strtoupper(mb_substr(trim($n) !== '' ? trim($n) : '?', 0, 1));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -69,100 +76,95 @@ $roadLabel = count($roads) === 1 ? 'road' : 'roads';
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Audit Report — <?= $h($audit['name']) ?></title>
 <link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/report.css?v=<?= (int)@filemtime(__DIR__ . '/../../css/report.css') ?>">
-<style nonce="<?= $nonce ?>">
-/* Keep headings with their content and small blocks in one piece when printed. */
-@media print {
-  .section-h { break-after: avoid; page-break-after: avoid; }
-  .section-h + * { break-before: avoid; page-break-before: avoid; }
-  .summary-box, .critical-box, .obs-list li, .rec-list li, .segs-table tr, .dim-breakdown-grid { break-inside: avoid; }
-  .segs-table thead { display: table-header-group; }
-}
-</style>
+<link nonce="<?= $nonce ?>" rel="stylesheet" href="../css/report_detail.css?v=<?= (int)@filemtime(__DIR__ . '/../../css/report_detail.css') ?>">
 </head>
 <body>
 
 <?php if ($logoB64): ?><div class="watermark"><img src="<?= $logoB64 ?>" alt=""></div><?php endif; ?>
 
 <div class="toolbar">
-  <div class="toolbar-title">📄 <?= $h($audit['name']) ?> — Detailed Report</div>
+  <div class="toolbar-title">Detailed report</div>
   <div class="toolbar-btns">
     <a href="<?= $h($backUrl) ?>" class="tbtn tbtn-back"><?= $h($backLabel) ?></a>
     <button class="tbtn tbtn-print" type="button" id="rdPrint"><?= $isPublic ? '⬇ Download PDF' : '🖨 Print / Save PDF' ?></button>
   </div>
 </div>
 
-<div class="report">
+<div class="rv">
 
-  <div class="rpt-header">
-    <div class="rpt-header-top">
-      <div>
-        <div class="rpt-org"><?= $h($orgName) ?> — Cycle Track Audit Programme<?= $cityLabel !== '' ? ', ' . $h($cityLabel) : '' ?></div>
-        <div class="rpt-title"><?= $h($audit['name']) ?></div>
-        <div class="rpt-sub"><?= $h(cityAuditDateLabel($audit['audit_date'] ?? null, (int)$audit['audit_year'])) ?> · <?= $h($audit['state'] ?? '') ?></div>
-      </div>
-      <?php if ($logoB64): ?>
-      <div class="rpt-logo"><img src="<?= $logoB64 ?>" alt="Parisar"><div class="rpt-logo-text">parisar.org</div></div>
-      <?php endif; ?>
+  <!-- ── Header: everything that identifies the audit lives here, and only here ── -->
+  <header class="rv-head">
+    <div class="rv-head-top">
+      <div class="rv-eyebrow"><?= $h($orgName) ?> · Cycle Track Audit Programme</div>
+      <?php if ($logoB64): ?><div class="rv-logo"><img src="<?= $logoB64 ?>" alt="<?= $h($orgName) ?>"></div><?php endif; ?>
     </div>
-    <div class="rpt-meta">
-      <div class="rpt-meta-item"><div class="k">City</div><div class="v"><?= $h($cityLabel !== '' ? $cityLabel : '—') ?></div></div>
-      <div class="rpt-meta-item"><div class="k">Status</div><div class="v"><?= $h(cityStatusLabel($status)) ?></div></div>
-      <div class="rpt-meta-item"><div class="k">Roads</div><div class="v"><?= count($roads) ?></div></div>
-      <div class="rpt-meta-item"><div class="k">Total Length</div><div class="v"><?= $totalLen > 0 ? number_format($totalLen) . ' m' : '—' ?></div></div>
-      <div class="rpt-meta-item"><div class="k">Segments</div><div class="v"><?= $approvedSegs ?>/<?= $totalSegs ?> approved</div></div>
-      <div class="rpt-meta-item"><div class="k">Report Date</div><div class="v"><?= $h($printDate) ?></div></div>
+    <h1 class="rv-title"><?= $h($audit['name']) ?></h1>
+    <div class="rv-chips">
+      <?php $where = trim(($cityLabel !== '' ? $cityLabel : '') . (($audit['state'] ?? '') !== '' ? ($cityLabel !== '' ? ', ' : '') . $audit['state'] : '')); ?>
+      <?php if ($where !== ''): ?><span class="rv-chip">📍 <?= $h($where) ?></span><?php endif; ?>
+      <span class="rv-chip">📅 <?= $h(cityAuditDateLabel($audit['audit_date'] ?? null, (int)$audit['audit_year'])) ?></span>
+      <span class="rv-chip rv-status rv-status-<?= $statusTone ?>"><?= $h(cityStatusLabel($status)) ?></span>
     </div>
+
+    <div class="rv-facts">
+      <div class="rv-fact"><div class="k">Roads</div><div class="v"><?= count($roads) ?></div></div>
+      <div class="rv-fact"><div class="k">Total length</div><div class="v"><?= $totalLen > 0 ? number_format($totalLen) . ' m' : '—' ?></div></div>
+      <div class="rv-fact"><div class="k">Segments</div><div class="v"><?= $totalSegs ?></div></div>
+      <div class="rv-fact"><div class="k">Approved</div><div class="v"><?= $approvedSegs ?> <span>of <?= $totalSegs ?></span></div></div>
+    </div>
+
     <?php if ($leader !== null || !$isPublic): ?>
-    <div class="rpt-people">
+    <div class="rv-people">
       <?php if ($leader !== null): ?>
-      <div class="rpt-person">
-        <div class="k">City Leader</div>
-        <div class="v"><?= $h($leader['name']) ?></div>
-        <?php if ($leader['organisation'] !== null): ?><div class="org"><?= $h($leader['organisation']) ?></div><?php endif; ?>
+      <div class="rv-person">
+        <div class="rv-avatar"><?= $h($initial((string)$leader['name'])) ?></div>
+        <div>
+          <div class="k">City Leader</div>
+          <div class="v"><?= $h($leader['name']) ?></div>
+          <?php if ($leader['organisation'] !== null): ?><div class="org"><?= $h($leader['organisation']) ?></div><?php endif; ?>
+        </div>
       </div>
       <?php endif; ?>
       <?php if (!$isPublic): ?>
-      <div class="rpt-person">
-        <div class="k">Prepared by</div>
-        <div class="v"><?= $h($audit['created_by_name'] ?? '—') ?></div>
+      <div class="rv-person">
+        <div class="rv-avatar rv-avatar-alt"><?= $h($initial((string)($audit['created_by_name'] ?? ''))) ?></div>
+        <div>
+          <div class="k">Prepared by</div>
+          <div class="v"><?= $h($audit['created_by_name'] ?? '—') ?></div>
+        </div>
       </div>
       <?php endif; ?>
     </div>
     <?php endif; ?>
-  </div>
+  </header>
 
+  <!-- ── Overall score: shown once. Per-road scores are not repeated unless there are several roads ── -->
   <?php if ($overall):
-    $oc = ratingColour(scoreToCondition((float)$overall['score'])); ?>
-  <div class="score-hero">
-    <div class="final-score-wrap">
-      <div class="score-badge" style="border-color:<?= $oc ?>;background:<?= $oc ?>18;">
-        <div class="num" style="color:<?= $oc ?>"><?= $h($overall['score']) ?></div>
-        <div class="denom">/ 100</div>
-      </div>
-      <div class="score-rating" style="color:<?= $oc ?>"><?= $h(scoreToCondition((float)$overall['score'])) ?></div>
-      <div class="score-label">Overall Audit Score</div>
+    $oc   = ratingColour(scoreToCondition((float)$overall['score']));
+    $ocon = scoreToCondition((float)$overall['score']); ?>
+  <section class="rv-hero">
+    <div class="rv-score">
+      <div class="rv-badge" style="--c:<?= $oc ?>"><span class="num"><?= $h($overall['score']) ?></span><span class="den">/ 100</span></div>
+      <div class="rv-rating" style="color:<?= $oc ?>"><?= $h($ocon) ?></div>
+      <div class="rv-score-cap">Overall audit score<br>lower is better</div>
     </div>
-    <div class="dim-scores">
-      <?php foreach ([['🛡', 'Safety', $overall['safety'], 'var(--safety-c)'], ['🔗', 'Continuity', $overall['continuity'], 'var(--cont-c)'], ['🌿', 'Comfort', $overall['comfort'], 'var(--comf-c)']] as [$ic, $dl, $dv, $dc]): ?>
-      <div class="dim-card">
-        <div class="dim-icon"><?= $ic ?></div>
-        <div class="dim-val" style="color:<?= $dc ?>"><?= $h($dv) ?></div>
-        <div class="dim-lbl"><?= $dl ?></div>
-        <div class="dim-bar"><div class="dim-fill" style="width:<?= max(0, min(100, (float)$dv)) ?>%;background:<?= $dc ?>"></div></div>
+    <div class="rv-dims">
+      <?php foreach ($dimInfo as [$dn, $dk, $dc, $dtext]): $dv = $overall[$dk]; ?>
+      <div class="rv-dim">
+        <div class="rv-dim-top"><span class="rv-dim-name"><?= $dn ?></span><span class="rv-dim-val" style="color:<?= $dc ?>"><?= $h($dv) ?></span></div>
+        <div class="rv-bar"><div style="width:<?= max(0, min(100, (float)$dv)) ?>%;background:<?= $dc ?>"></div></div>
+        <div class="rv-dim-note"><?= $h($dtext) ?></div>
       </div>
       <?php endforeach; ?>
     </div>
-  </div>
+  </section>
   <?php endif; ?>
 
-  <div class="rpt-body">
-    <p style="font-size:.78rem;color:#5e6b54;margin-bottom:14px">Scores run from 0 to 100. <strong>Lower is better.</strong> Length-weighted across approved segments only.</p>
+  <div class="rv-body">
+    <p class="rv-note">Scores run from 0 to 100 and are length-weighted across approved segments only.</p>
 
     <?php if (!$allDone): ?>
-    <div class="incomplete-notice">
-      <span>⏳</span>
-      <span><b>Provisional report.</b> <?= $totalSegs - $approvedSegs ?> segment(s) are not approved yet and are left out of the scores below.</span>
-    </div>
+    <div class="rv-notice"><span>⏳</span><span><b>Provisional report.</b> <?= $totalSegs - $approvedSegs ?> segment<?= $totalSegs - $approvedSegs === 1 ? ' is' : 's are' ?> not approved yet and left out of the scores below.</span></div>
     <?php endif; ?>
 
     <?php if (!$roads): ?>
@@ -179,173 +181,144 @@ $roadLabel = count($roads) === 1 ? 'road' : 'roads';
         $roadCond = $agg ? scoreToCondition((float)$agg['score']) : null;
         $rcol     = $roadCond ? ratingColour($roadCond) : '#95a5a6';
     ?>
-    <div<?= $roadNo > 1 ? ' style="page-break-before:always"' : '' ?>>
-      <div class="road-head" style="border-left-color:<?= $rcol ?>">
+    <section class="rv-road"<?= $roadNo > 1 ? ' style="page-break-before:always;break-before:page"' : '' ?>>
+      <div class="rv-road-head" style="--c:<?= $rcol ?>">
         <div>
-          <div class="road-no">Road <?= $roadNo ?> of <?= count($roads) ?></div>
-          <div class="road-name"><?= $h($road['name']) ?></div>
-          <div class="road-sub"><?= number_format($road['length']) ?> m · <?= $segCount ?> segment<?= $segCount !== 1 ? 's' : '' ?> · <?= $an['scored'] ?> approved</div>
+          <?php if ($manyRoads): ?><div class="rv-road-no">Road <?= $roadNo ?> of <?= count($roads) ?></div><?php endif; ?>
+          <h2 class="rv-road-name"><?= $h($road['name']) ?></h2>
+          <div class="rv-road-sub"><?= number_format($road['length']) ?> m · <?= $segCount ?> segment<?= $segCount !== 1 ? 's' : '' ?><?= $an['scored'] !== $segCount ? ' · ' . $an['scored'] . ' approved' : '' ?></div>
         </div>
-        <div class="road-score" style="color:<?= $rcol ?>">
-          <?php if ($agg): ?><span class="n"><?= $h($agg['score']) ?></span><span class="d">/ 100</span><div class="r"><?= $h($roadCond) ?></div>
+        <?php if ($manyRoads): ?>
+        <div class="rv-road-score">
+          <?php if ($agg): ?>
+            <div class="n" style="color:<?= $rcol ?>"><?= $h($agg['score']) ?><small> / 100</small></div>
+            <div class="r" style="color:<?= $rcol ?>"><?= $h($roadCond) ?></div>
+            <div class="mini">Safety <b><?= $h($agg['safety']) ?></b> · Continuity <b><?= $h($agg['continuity']) ?></b> · Comfort <b><?= $h($agg['comfort']) ?></b></div>
           <?php else: ?><div class="r">Not scored yet</div><?php endif; ?>
         </div>
-      </div>
-
-      <!-- Quick Summary -->
-      <div class="section-h"><span class="sec-num"><?= $sec() ?></span> Quick Summary</div>
-      <div class="summary-box">
-        <strong><?= $h($road['name']) ?></strong> has
-        <strong><?= $segCount ?> segment<?= $segCount !== 1 ? 's' : '' ?></strong>
-        covering approximately <strong><?= number_format($road['length']) ?> metres</strong>.
-        <?php if ($agg): ?>
-          The road score is <?= $h($agg['score']) ?>/100, rated <strong><?= $h($roadCond) ?></strong>, from <?= $an['scored'] ?> approved segment<?= $an['scored'] !== 1 ? 's' : '' ?> (<?= number_format($an['audited_len']) ?> m).
-          <?php if ($an['worst'] && $an['best'] && $an['scored'] > 1): ?>
-            Weakest is Segment <?= (int)$an['worst']['segment_number'] ?> (<?= $h($an['worst']['final']) ?>/100); strongest is Segment <?= (int)$an['best']['segment_number'] ?> (<?= $h($an['best']['final']) ?>/100).
-          <?php endif; ?>
-          <?php if ($an['weak']): ?>
-            <strong><?= $h(ucfirst((string)$an['weak'])) ?></strong> is the main concern —
-            <?= $an['weak'] === 'comfort' ? 'surface quality, pedestrian conflict, and lack of shade reduce usability.'
-               : ($an['weak'] === 'safety' ? 'buffer zones, lighting, and obstruction density need attention.'
-               : 'missing sections, ramps, and signage gaps disrupt route continuity.') ?>
-          <?php endif; ?>
-        <?php else: ?>
-          <em>No segment on this road is approved yet, so there is no score.</em>
         <?php endif; ?>
       </div>
 
-      <!-- Segment-wise Scores -->
-      <div class="section-h"><span class="sec-num"><?= $sec() ?></span> Segment-wise Scores</div>
-      <table class="segs-table">
-        <thead><tr><th>#</th><th>Route</th><th>Length</th><?php if (!$isPublic): ?><th>Surveyed by</th><?php endif; ?><th>Safety</th><th>Continuity</th><th>Comfort</th><th>Final</th><th>Rating</th></tr></thead>
+      <!-- Summary: only what the numbers around it do not already say -->
+      <?php
+        $worstBest = $an['worst'] && $an['best'] && $an['scored'] > 1;
+        $concern   = $an['weak'] ? [
+            'comfort'    => 'surface quality, pedestrian conflict and lack of shade reduce usability.',
+            'safety'     => 'buffer zones, lighting and obstruction density need attention.',
+            'continuity' => 'missing sections, ramps and signage gaps disrupt route continuity.',
+        ][(string)$an['weak']] ?? '' : '';
+      ?>
+      <div class="rv-h"><span class="rv-num"><?= $sec() ?></span> Summary</div>
+      <div class="rv-summary">
+        <?php if (!$agg): ?>
+          <em>No segment on this road is approved yet, so there is no score.</em>
+        <?php elseif (!$worstBest && $concern === ''): ?>
+          Nothing stands out on this road.
+        <?php else: ?>
+          <?php if ($worstBest): ?>
+            Weakest is <strong>Segment <?= (int)$an['worst']['segment_number'] ?></strong> (<?= $h($an['worst']['final']) ?>/100); strongest is <strong>Segment <?= (int)$an['best']['segment_number'] ?></strong> (<?= $h($an['best']['final']) ?>/100).
+          <?php endif; ?>
+          <?php if ($concern !== ''): ?>
+            <strong><?= $h(ucfirst((string)$an['weak'])) ?></strong> is the main concern — <?= $h($concern) ?>
+          <?php endif; ?>
+        <?php endif; ?>
+      </div>
+
+      <!-- Segment-wise scores -->
+      <div class="rv-h"><span class="rv-num"><?= $sec() ?></span> Segment scores</div>
+      <table class="rv-table">
+        <thead><tr><th>#</th><th>Stretch</th><?php if (!$isPublic): ?><th>Surveyed by</th><?php endif; ?><th class="c">Safety</th><th class="c">Continuity</th><th class="c">Comfort</th><th>Score</th></tr></thead>
         <tbody>
         <?php $cum = 0.0; foreach ($road['rows'] as $sr):
             $start = $cum; $cum += (float)$sr['length'];
             $isScored = isset($sr['final']);
-            $col = $isScored ? ratingColour((string)$sr['rating']) : '#aaa'; ?>
+            $col = $isScored ? ratingColour((string)$sr['rating']) : '#95a5a6'; ?>
           <tr>
-            <td><strong><?= (int)$sr['segment_number'] ?></strong></td>
-            <td class="segs-route"><?= number_format($start) ?>m → <?= number_format($cum) ?>m</td>
-            <td><?= number_format((float)$sr['length']) ?> m</td>
-            <?php if (!$isPublic): ?><td><?= $h($sr['surveyor_name'] ?? '—') ?></td><?php endif; ?>
+            <td data-l="Segment"><strong><?= (int)$sr['segment_number'] ?></strong></td>
+            <td data-l="Stretch" class="rv-stretch"><?= number_format($start) ?> – <?= number_format($cum) ?> m</td>
+            <?php if (!$isPublic): ?><td data-l="Surveyed by"><?= $h($sr['surveyor_name'] ?? '—') ?></td><?php endif; ?>
             <?php if ($isScored): ?>
-              <td><?= $h($sr['safety_score']) ?></td><td><?= $h($sr['continuity_score']) ?></td><td><?= $h($sr['comfort_score']) ?></td>
-              <td><span class="score-pill" style="background:<?= $col ?>22;color:<?= $col ?>"><?= $h($sr['final']) ?></span></td>
-              <td style="color:<?= $col ?>;font-weight:700"><?= $h($sr['rating']) ?></td>
+              <td data-l="Safety" class="c"><?= $h($sr['safety_score']) ?></td>
+              <td data-l="Continuity" class="c"><?= $h($sr['continuity_score']) ?></td>
+              <td data-l="Comfort" class="c"><?= $h($sr['comfort_score']) ?></td>
+              <td data-l="Score"><span class="rv-pill" style="--c:<?= $col ?>"><b><?= $h($sr['final']) ?></b> <?= $h($sr['rating']) ?></span></td>
             <?php else: ?>
-              <td colspan="5"><span class="pill-pending">⏳ <?= $h(['submitted' => 'Waiting for review', 'needs_revisit' => 'Sent back', 'assigned' => 'With surveyor'][$sr['assignment_status'] ?? ''] ?? 'Not assigned') ?></span></td>
+              <td colspan="4"><span class="rv-pill rv-pill-wait">⏳ <?= $h(['submitted' => 'Waiting for review', 'needs_revisit' => 'Sent back', 'assigned' => 'With surveyor'][$sr['assignment_status'] ?? ''] ?? 'Not assigned') ?></span></td>
             <?php endif; ?>
           </tr>
         <?php endforeach; ?>
         </tbody>
       </table>
 
-      <?php if ($an['scored'] > 0): ?>
-      <!-- Score Breakdown by Dimension -->
-      <div class="section-h"><span class="sec-num"><?= $sec() ?></span> Score Breakdown by Dimension</div>
-      <div class="dim-breakdown-grid">
-        <?php foreach ([
-          ['🛡', 'Safety',     $an['avg']['safety'],     'var(--safety-c)', ['Buffer zone presence', 'After-sunset lighting', 'Intersection traffic devices', 'Partial obstruction density']],
-          ['🔗', 'Continuity', $an['avg']['continuity'], 'var(--cont-c)',   ['Missing ramps at intersections', 'Absent markings and signage', 'Total obstruction count', 'Missing track sections']],
-          ['🌿', 'Comfort',    $an['avg']['comfort'],    'var(--comf-c)',   ['Surface material type', 'Cyclist slowed by obstructions', 'Shade availability', 'Footpath quality rating']],
-        ] as [$ic, $nm, $val, $col, $factors]): ?>
-        <div class="dim-breakdown-card">
-          <div class="head"><span><?= $ic ?></span><span><?= $nm ?></span></div>
-          <div class="dim-big-score" style="color:<?= $col ?>"><?= $h($val) ?> / 100</div>
-          <div class="dim-breakdown-bar"><div class="dim-breakdown-fill" style="width:<?= max(0, min(100, (float)$val)) ?>%;background:<?= $col ?>"></div></div>
-          <div class="dim-factors"><?php foreach ($factors as $f): ?><span class="factor-bullet"><?= $h($f) ?></span><?php endforeach; ?></div>
-        </div>
-        <?php endforeach; ?>
-      </div>
-      <?php endif; ?>
-
       <?php if ($an['observations']): ?>
-      <div class="section-h"><span class="sec-num"><?= $sec() ?></span> Key Observations</div>
-      <ul class="obs-list">
+      <div class="rv-h"><span class="rv-num"><?= $sec() ?></span> Key observations</div>
+      <ul class="rv-list">
         <?php foreach ($an['observations'] as $o): ?>
-        <li class="<?= $h($o['type']) ?>"><span class="obs-icon"><?= $o['type'] === 'bad' ? '⚠️' : '📌' ?></span><span><?= $h($o['text']) ?></span></li>
+        <li class="rv-obs rv-obs-<?= $h($o['type']) ?>"><span class="ic"><?= $o['type'] === 'bad' ? '⚠️' : '📌' ?></span><span><?= $h($o['text']) ?></span></li>
         <?php endforeach; ?>
       </ul>
       <?php endif; ?>
 
       <?php if ($an['critical']): ?>
-      <div class="section-h"><span class="sec-num"><?= $sec() ?></span> Critical Issues</div>
-      <div class="critical-box">
+      <div class="rv-h"><span class="rv-num"><?= $sec() ?></span> Critical issues</div>
+      <div class="rv-critical">
         <?php foreach ($an['critical'] as $ci): ?>
-        <div class="critical-item"><div class="critical-dot"></div><span><?= $h($ci) ?></span></div>
+        <div class="item"><i></i><span><?= $h($ci) ?></span></div>
         <?php endforeach; ?>
       </div>
       <?php endif; ?>
 
       <?php if ($an['recommend']): ?>
-      <div class="section-h"><span class="sec-num"><?= $sec() ?></span> Recommendations</div>
-      <ol class="rec-list"><?php foreach ($an['recommend'] as $rec): ?><li><?= $h($rec) ?></li><?php endforeach; ?></ol>
+      <div class="rv-h"><span class="rv-num"><?= $sec() ?></span> Recommendations</div>
+      <ol class="rv-list rv-recs"><?php foreach ($an['recommend'] as $rec): ?><li><?= $h($rec) ?></li><?php endforeach; ?></ol>
       <?php endif; ?>
 
       <?php
         $cards = array_values(array_filter($road['rows'], static fn($x) => isset($x['final']) && isset($details[(int)($x['latest_audit_id'] ?? 0)])));
       ?>
       <?php if ($cards): ?>
-      <div class="section-h"><span class="sec-num"><?= $sec() ?></span> Segment Detail Cards</div>
-      <div class="seg-cards">
-        <?php foreach ($cards as $sr):
+      <div class="rv-h"><span class="rv-num"><?= $sec() ?></span> Segment details</div>
+      <div class="rv-cards">
+        <?php
+        $cum = 0.0; $spans = [];
+        foreach ($road['rows'] as $sr) { $spans[(int)$sr['segment_number']] = [$cum, $cum + (float)$sr['length']]; $cum += (float)$sr['length']; }
+        foreach ($cards as $sr):
             $det = $details[(int)$sr['latest_audit_id']]; $a = $det['audit'];
             $col = ratingColour((string)$sr['rating']);
+            [$f, $t] = $spans[(int)$sr['segment_number']] ?? [0, (float)$sr['length']];
             $rowsOut = [
-              'Surface Material' => $a['surface_material'] ?? null, 'Track Missing' => $a['cycle_track_missing'] ?? null,
-              'Buffer Zone' => $a['buffer_zone'] ?? null, 'Lighting' => $a['light_after_sunset'] ?? null,
-              'Shade' => $a['shade'] ?? null, 'Cyclist Can Use' => $a['cyclist_use'] ?? null,
-              'Better Surface' => $a['better_surface'] ?? null, 'Signage Count' => $a['seg_signage_count'] ?? 0,
-              'People Walking' => $a['people_walking'] ?? null, 'Intersections' => $det['intersections'],
+              'Surface material' => $a['surface_material'] ?? null, 'Track missing' => $a['cycle_track_missing'] ?? null,
+              'Buffer zone' => $a['buffer_zone'] ?? null, 'Lighting' => $a['light_after_sunset'] ?? null,
+              'Shade' => $a['shade'] ?? null, 'Cyclist can use' => $a['cyclist_use'] ?? null,
+              'Better surface' => $a['better_surface'] ?? null, 'Signage count' => $a['seg_signage_count'] ?? 0,
+              'People walking' => $a['people_walking'] ?? null, 'Intersections' => $det['intersections'],
               'Obstructions (total)' => $det['obs_total'],
             ]; ?>
-        <div class="seg-card">
-          <div class="seg-card-header" style="background:<?= $col ?>12;border-bottom:2px solid <?= $col ?>33;">
-            <div>
-              <div class="seg-card-title">Segment <?= (int)$sr['segment_number'] ?></div>
-              <div class="seg-card-sub">Length: <?= number_format((float)$sr['length']) ?>m</div>
-              <?php if (!$isPublic): ?><div class="seg-card-sub" style="margin-top:3px;color:#3d7a1f">Surveyed by: <strong style="color:#1f3d10"><?= $h($sr['surveyor_name'] ?? 'Not assigned') ?></strong></div><?php endif; ?>
-            </div>
-            <div class="seg-card-score">
-              <div class="val" style="color:<?= $col ?>"><?= $h($sr['final']) ?>/100</div>
-              <div class="label" style="color:<?= $col ?>"><?= $h($sr['rating']) ?></div>
-            </div>
+        <article class="rv-card">
+          <div class="rv-card-head" style="--c:<?= $col ?>">
+            <div><div class="t">Segment <?= (int)$sr['segment_number'] ?></div><div class="s"><?= number_format($f) ?> – <?= number_format($t) ?> m</div></div>
+            <span class="rv-pill" style="--c:<?= $col ?>"><b><?= $h($sr['final']) ?></b> <?= $h($sr['rating']) ?></span>
           </div>
-          <div class="seg-card-dims">
-            <?php foreach ([['Safety', $sr['safety_score'], 'var(--safety-c)'], ['Continuity', $sr['continuity_score'], 'var(--cont-c)'], ['Comfort', $sr['comfort_score'], 'var(--comf-c)']] as [$dn, $dv, $dc]): ?>
-            <div class="seg-dim-item"><div class="seg-dim-val" style="color:<?= $dc ?>"><?= $h($dv) ?></div><div class="seg-dim-lbl"><?= $dn ?></div></div>
-            <?php endforeach; ?>
-          </div>
-          <div class="seg-card-details">
+          <div class="rv-card-rows">
             <?php foreach ($rowsOut as $k => $v): [$disp, $cls] = cityDetailValue($v); ?>
-            <div class="detail-row"><span class="detail-key"><?= $h($k) ?></span><span class="detail-val <?= $cls ?>"><?= $h($disp) ?></span></div>
+            <div class="row"><span class="k"><?= $h($k) ?></span><span class="v <?= $cls ?>"><?= $h($disp) ?></span></div>
             <?php endforeach; ?>
           </div>
-        </div>
+        </article>
         <?php endforeach; ?>
       </div>
       <?php endif; ?>
-    </div>
+    </section>
     <?php endforeach; ?>
   </div>
 
-  <div class="rpt-footer">
-    <div class="footer-left">
-      <?php if ($logoB64): ?><img src="<?= $logoB64 ?>" alt="Parisar"><?php endif; ?>
-      <div class="footer-meta">
-        <div><strong><?= $h($orgName) ?> — Cycle Track Audit Programme</strong></div>
-        <div>parisar.org<?= $cityLabel !== '' ? ' | ' . $h($cityLabel) : '' ?></div>
-        <div>Generated by CycleAudit · <?= $h($orgName) ?></div>
-      </div>
-    </div>
-    <div class="footer-right">
-      <div>Audit: <strong><?= $h($audit['name']) ?></strong></div>
-      <?php if ($leader !== null): ?><div>City Leader: <strong><?= $h($leader['name']) ?><?= $leader['organisation'] !== null ? ' · ' . $h($leader['organisation']) : '' ?></strong></div><?php endif; ?>
-      <?php if ($overall): ?><div>Overall Score: <strong><?= $h($overall['score']) ?>/100</strong> (<?= $h(scoreToCondition((float)$overall['score'])) ?>)</div><?php endif; ?>
-      <div>Status: <strong><?= $h(cityReportStatusLine(cityStatusLabel($status), $approvedSegs, $totalSegs)) ?></strong></div>
-      <div>Downloaded by: <strong><?= $h(cityReportDownloadLine($isPublic ? null : ($viewerName ?? ''), $isPublic ? null : ($viewerRole ?? ''), $printWhen)) ?></strong></div>
-    </div>
-  </div>
+  <!-- ── Footer: branding and the download line only. Audit details are in the header. ── -->
+  <footer class="rv-foot">
+    <div><strong><?= $h($orgName) ?></strong> — Cycle Track Audit Programme · parisar.org</div>
+    <div>Generated by CycleAudit · <?= $isPublic
+        ? $h($printWhen)
+        : 'Downloaded by ' . $h(cityReportDownloadLine($viewerName ?? '', $viewerRole ?? '', $printWhen)) ?></div>
+  </footer>
 </div>
 
 <script nonce="<?= $nonce ?>">

@@ -23,6 +23,8 @@ require_once __DIR__ . '/../../helpers/CityApi.php';
 require_once __DIR__ . '/../../helpers/CityAudit.php';
 require_once __DIR__ . '/../../helpers/ActivityLogger.php';
 require_once __DIR__ . '/../../repositories/CityAuditRepository.php';
+require_once __DIR__ . '/../../repositories/NotificationRepository.php';
+require_once __DIR__ . '/../../helpers/Notifications.php';
 
 $body = cityApiContext($CURRENT_USER_ROLE, $CURRENT_USER_CITY_ID);
 $repo = new CityAuditRepository($pdo);
@@ -38,6 +40,10 @@ if ($segmentId === false || $segmentId === null) {
     cityApiFail(400, 'Invalid request.');
 }
 
+// Who holds the segment now, so they can be told once it is gone.
+$holder = [];
+try { $holder = $repo->assigneesOfSegments((int)$audit['id'], [(int)$segmentId]); } catch (Throwable $e) { error_log('audit_segment_remove lookup failed: ' . $e->getMessage()); }
+
 try {
     $res = $repo->removeSegment($audit, (int)$segmentId);
 } catch (DomainException $e) {
@@ -47,5 +53,13 @@ try {
 ActivityLogger::log($pdo, ActivityLogger::AUDIT_SEGMENT_REMOVED, $CURRENT_USER_ID, [
     'audit_id' => (int)$audit['id'], 'road_id' => $res['road_id'], 'segment_id' => (int)$segmentId,
 ]);
+
+try {
+    (new NotificationRepository($pdo))->tellUnassigned(
+        assignmentNotifyPlan($holder, [(int)$segmentId], null)['lost'], (string)$audit['name'], 'removed'
+    );
+} catch (Throwable $e) {
+    error_log('api/city/audit_segment_remove.php notification failed: ' . $e->getMessage());
+}
 
 echo json_encode(['success' => true, 'remaining' => $res['remaining']]);

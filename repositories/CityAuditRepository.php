@@ -645,6 +645,40 @@ class CityAuditRepository
         return ['assigned' => $n, 'skipped' => $skipped];
     }
 
+    /**
+     * Who holds each of these segments right now (segments with nobody are left out).
+     *
+     * @param list<int> $segmentIds
+     * @return array<int,int> segment id => surveyor id
+     */
+    public function assigneesOfSegments(int $auditId, array $segmentIds): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $segmentIds)));
+        if (!$ids) {
+            return [];
+        }
+        $in = implode(',', array_fill(0, count($ids), '?'));
+        $q  = $this->pdo->prepare("SELECT segment_id, surveyor_id FROM segment_assignments WHERE audit_id = ? AND segment_id IN ($in)");
+        $q->execute(array_merge([$auditId], $ids));
+        $out = [];
+        foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $out[(int)$row['segment_id']] = (int)$row['surveyor_id'];
+        }
+        return $out;
+    }
+
+    /** Ids of the segments of one road of this audit (only the pending ones when asked).
+     *  @return list<int> */
+    public function segmentIdsOfRoad(int $auditId, int $roadId, bool $pendingOnly = false): array
+    {
+        $q = $this->pdo->prepare(
+            'SELECT s.id FROM segments s JOIN roads r ON r.id = s.road_id
+              WHERE r.audit_id = ? AND r.id = ?' . ($pendingOnly ? " AND s.status = 'pending'" : '') . ' ORDER BY s.segment_number ASC'
+        );
+        $q->execute([$auditId, $roadId]);
+        return array_map('intval', $q->fetchAll(PDO::FETCH_COLUMN));
+    }
+
     /** @return array{total:int, assigned:int} segment counts for the whole audit */
     public function assignmentCounts(int $auditId): array
     {
