@@ -303,7 +303,9 @@
      it lives inside .rv-body and "avoid" keeps it with the block above it. */
   .rv-foot { break-before: avoid; page-break-before: avoid; }
   .rv-body { --bx: 28px; --bb: 8px; padding-bottom: var(--bb); }
-  .rv-body :last-child { break-after: avoid; page-break-after: avoid; }
+  /* Keep only the final card of the last road with the footer (a wider chain would chain whole sections together). */
+  .rv-road:last-of-type > :last-child,
+  .rv-road:last-of-type > :last-child > :last-child { break-after: avoid; page-break-after: avoid; }
   .rv-body > .rv-foot { margin-top: 14px; }
   .rv-h, .rv-road-head, .rv-note { break-after: avoid; page-break-after: avoid; }
   .rv-h + * { break-before: avoid; page-break-before: avoid; }
